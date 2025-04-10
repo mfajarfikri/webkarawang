@@ -76,3 +76,48 @@
 .menu-item-hover:hover {
     transform: translateX(4px);
 }
+
+/* Custom Scrollbar Styling */
+::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+}
+
+::-webkit-scrollbar-track {
+    background: rgba(241, 241, 241, 0.1);
+    border-radius: 10px;
+}
+
+.dark ::-webkit-scrollbar-track {
+    background: rgba(45, 45, 45, 0.2);
+}
+
+::-webkit-scrollbar-thumb {
+    background: linear-gradient(45deg, #999, #777);
+    border-radius: 10px;
+    border: 2px solid transparent;
+    background-clip: content-box;
+    transition: all 0.3s ease;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+    background: linear-gradient(45deg, #666, #444);
+    border: 2px solid transparent;
+    background-clip: content-box;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(45deg, #777, #555);
+    border: 2px solid transparent;
+    background-clip: content-box;
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(45deg, #555, #333);
+    border: 2px solid transparent;
+    background-clip: content-box;
+}
+
+::-webkit-scrollbar-corner {
+    background: transparent;
+}

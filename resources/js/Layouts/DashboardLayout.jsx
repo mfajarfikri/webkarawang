@@ -12,6 +12,7 @@ import {
     FaCog,
     FaGlobe,
 } from "react-icons/fa";
+import { Transition } from "@headlessui/react";
 
 export default function DashboardLayout({ children, title = "Dashboard" }) {
     const { auth } = usePage().props;
@@ -19,6 +20,9 @@ export default function DashboardLayout({ children, title = "Dashboard" }) {
     const [isClosing, setIsClosing] = useState(false);
     const [currentTime, setCurrentTime] = useState(new Date());
     const [collapsedSidebar, setCollapsedSidebar] = useState(false);
+    const [showWelcomeBanner, setShowWelcomeBanner] = useState(() => {
+        return localStorage.getItem("showWelcomeBanner") !== "false";
+    });
     const userName = auth?.user?.name || "Admin";
     const userRole = auth?.user?.role || "User";
 
@@ -41,6 +45,12 @@ export default function DashboardLayout({ children, title = "Dashboard" }) {
     // Toggle collapsed sidebar for desktop
     const toggleSidebar = () => {
         setCollapsedSidebar(!collapsedSidebar);
+    };
+
+    // Handler untuk menutup banner
+    const handleCloseBanner = () => {
+        setShowWelcomeBanner(false);
+        localStorage.setItem("showWelcomeBanner", "false");
     };
 
     return (
@@ -302,12 +312,42 @@ export default function DashboardLayout({ children, title = "Dashboard" }) {
                             {/* Sidebar content */}
                             <div className="flex flex-col h-full border-r border-gray-200 bg-white">
                                 <div className="flex-1 flex flex-col pt-5 pb-4 overflow-y-auto scrollbar-hide">
-                                    {!collapsedSidebar && (
+                                    {!collapsedSidebar && showWelcomeBanner && (
                                         <div className="px-4 mb-6">
-                                            <div className="bg-amber-50 rounded-lg p-3 flex items-center">
-                                                <div className="flex-shrink-0 bg-amber-100 rounded-md p-2">
+                                            <div className="bg-amber-50 rounded-lg p-3 flex items-center justify-between relative">
+                                                <div className="flex items-center">
+                                                    <div className="flex-shrink-0 bg-amber-100 rounded-md p-2">
+                                                        <svg
+                                                            className="h-6 w-6 text-amber-600"
+                                                            xmlns="http://www.w3.org/2000/svg"
+                                                            fill="none"
+                                                            viewBox="0 0 24 24"
+                                                            stroke="currentColor"
+                                                        >
+                                                            <path
+                                                                strokeLinecap="round"
+                                                                strokeLinejoin="round"
+                                                                strokeWidth={2}
+                                                                d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                                                            />
+                                                        </svg>
+                                                    </div>
+                                                    <div className="ml-3">
+                                                        <p className="text-sm font-medium text-amber-800">
+                                                            Selamat Datang!
+                                                        </p>
+                                                        <p className="text-xs text-amber-600">
+                                                            Admin Dashboard
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                                <button
+                                                    onClick={handleCloseBanner}
+                                                    className="absolute top-1 right-1 p-1 hover:bg-amber-100 rounded-full transition-colors duration-200"
+                                                    title="Tutup"
+                                                >
                                                     <svg
-                                                        className="h-6 w-6 text-amber-600"
+                                                        className="h-4 w-4 text-amber-600"
                                                         xmlns="http://www.w3.org/2000/svg"
                                                         fill="none"
                                                         viewBox="0 0 24 24"
@@ -317,18 +357,10 @@ export default function DashboardLayout({ children, title = "Dashboard" }) {
                                                             strokeLinecap="round"
                                                             strokeLinejoin="round"
                                                             strokeWidth={2}
-                                                            d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                                                            d="M6 18L18 6M6 6l12 12"
                                                         />
                                                     </svg>
-                                                </div>
-                                                <div className="ml-3">
-                                                    <p className="text-sm font-medium text-amber-800">
-                                                        Selamat Datang!
-                                                    </p>
-                                                    <p className="text-xs text-amber-600">
-                                                        Admin Dashboard
-                                                    </p>
-                                                </div>
+                                                </button>
                                             </div>
                                         </div>
                                     )}
@@ -411,7 +443,7 @@ function SidebarMenu({ collapsed = false }) {
             )}
 
             <Link
-                href="/karyawan"
+                href={route("karyawan.index")}
                 className={`group flex items-center ${
                     collapsed ? "justify-center" : ""
                 } px-3 py-2.5 text-sm font-medium rounded-lg ${
@@ -441,7 +473,7 @@ function SidebarMenu({ collapsed = false }) {
             )}
 
             <Link
-                href="/berita"
+                href={route("berita.index")}
                 className={`group flex items-center ${
                     collapsed ? "justify-center" : ""
                 } px-3 py-2.5 text-sm font-medium rounded-lg ${
@@ -463,7 +495,7 @@ function SidebarMenu({ collapsed = false }) {
             </Link>
 
             <Link
-                href="/gallery"
+                href={route("gallery")}
                 className={`group flex items-center ${
                     collapsed ? "justify-center" : ""
                 } px-3 py-2.5 text-sm font-medium rounded-lg ${
@@ -485,7 +517,7 @@ function SidebarMenu({ collapsed = false }) {
             </Link>
 
             <Link
-                href="/pengumuman"
+                // href={route("pengumuman.index")}
                 className={`group flex items-center ${
                     collapsed ? "justify-center" : ""
                 } px-3 py-2.5 text-sm font-medium rounded-lg ${
@@ -507,7 +539,7 @@ function SidebarMenu({ collapsed = false }) {
             </Link>
 
             <Link
-                href="/struktur-organisasi"
+                // href={route("struktur-organisasi.index")}
                 className={`group flex items-center ${
                     collapsed ? "justify-center" : ""
                 } px-3 py-2.5 text-sm font-medium rounded-lg ${
@@ -537,7 +569,7 @@ function SidebarMenu({ collapsed = false }) {
             )}
 
             <Link
-                href="/settings"
+                // href={route("settings.index")}
                 className={`group flex items-center ${
                     collapsed ? "justify-center" : ""
                 } px-3 py-2.5 text-sm font-medium rounded-lg ${
@@ -567,7 +599,7 @@ function SidebarMenu({ collapsed = false }) {
             )}
 
             <Link
-                href="/website"
+                href={route("home")}
                 className={`group flex items-center ${
                     collapsed ? "justify-center" : ""
                 } px-3 py-2.5 text-sm font-medium rounded-lg ${
