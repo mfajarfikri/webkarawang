@@ -15,6 +15,6 @@ class Jabatan extends Model
     ];
 
     public function karyawan() {
-        return $this->hasOne(Karyawan::class);
+        return $this->belongsTo(Karyawan::class);
     }
 }

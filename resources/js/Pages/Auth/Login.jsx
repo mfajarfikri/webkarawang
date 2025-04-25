@@ -17,7 +17,7 @@ export default function Login({ status, canResetPassword }) {
     };
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+        <div className="min-h-screen bg-gradient-to-br from-slate-50 to-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
             <Head title="Login" />
 
             <div className="sm:mx-auto sm:w-full sm:max-w-md">
@@ -166,7 +166,7 @@ export default function Login({ status, canResetPassword }) {
                             <button
                                 type="submit"
                                 disabled={processing}
-                                className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+                                className="w-full flex justify-center py-2 px-4 rounded-md shadow-sm text-sm font-medium text-white bg-[linear-gradient(to_right,_#3b82f6,_#6366f1,_#3b82f6)] bg-[length:200%_100%] bg-left hover:bg-right transition-[background-position] duration-1000 ease-in-out focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                             >
                                 {processing ? (
                                     <div className="flex items-center">

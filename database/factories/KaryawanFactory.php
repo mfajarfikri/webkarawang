@@ -20,15 +20,15 @@ class KaryawanFactory extends Factory
     public function definition(): array
     {
         // Pastikan ada data jabatan dan department
-        $jabatan = Karyawan::firstOrCreate([
-            'name' => 'Staff',
-            'level' => 1,
-        ]);
+        // $jabatan = Karyawan::firstOrCreate([
+        //     'name' => 'Staff',
+        //     'level' => 1,
+        // ]);
 
-        $department = Karyawan::firstOrCreate([
-            'name' => 'Transmisi',
-            'kode' => 'TRM',
-        ]);
+        // $department = Karyawan::firstOrCreate([
+        //     'name' => 'Transmisi',
+        //     'kode' => 'TRM',
+        // ]);
 
         // Array nama depan yang umum di Indonesia
         $namaDepan = ['Ahmad', 'Muhammad', 'Budi', 'Siti', 'Rina', 'Dedi', 'Eko', 'Dwi', 'Sri', 'Tri'];
@@ -44,8 +44,8 @@ class KaryawanFactory extends Factory
             'name' => $nama,
             'nip' => $this->faker->unique()->numerify('##########'),
             'email' => $this->faker->unique()->safeEmail(),
-            'jabatan_id' => $jabatan->id,
-            'department_id' => $department->id,
+            'jabatan_id' => 2,
+            'department_id' => 1,
             'kedudukan' => 'UPT Karawang',
             'is_active' => true,
             'foto_profil' => 'default.jpg',

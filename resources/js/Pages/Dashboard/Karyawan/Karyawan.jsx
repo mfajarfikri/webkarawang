@@ -1,20 +1,11 @@
 import React, { useState, useEffect } from "react";
 import { Head, Link, usePage } from "@inertiajs/react";
+import { router } from "@inertiajs/react";
 import DashboardLayout from "@/Layouts/DashboardLayout";
 import {
-    FaUserPlus,
     FaSearch,
-    FaFilter,
-    FaEllipsisV,
     FaEdit,
     FaTrash,
-    FaEye,
-    FaFileExport,
-    FaFileImport,
-    FaSortAmountDown,
-    FaSortAmountUp,
-    FaChevronLeft,
-    FaChevronRight,
     FaUserTie,
     FaBuilding,
     FaPhone,
@@ -22,7 +13,6 @@ import {
     FaIdCard,
     FaCalendarAlt,
     FaMapMarkerAlt,
-    FaUserCog,
     FaCheckCircle,
     FaTimesCircle,
     FaPlus,
@@ -30,8 +20,12 @@ import {
     FaUpload,
     FaFilter as FaFilterSolid,
 } from "react-icons/fa";
+import { DataGrid } from "@mui/x-data-grid";
+import { Chip } from "@mui/material";
 
 export default function EmployeeManagement() {
+    const { props } = usePage();
+    const { karyawan, departments } = props;
     const { auth } = usePage().props;
     const [searchQuery, setSearchQuery] = useState("");
     const [filterDepartment, setFilterDepartment] = useState("all");
@@ -45,72 +39,59 @@ export default function EmployeeManagement() {
     const [employeeToDelete, setEmployeeToDelete] = useState(null);
     const [actionDropdown, setActionDropdown] = useState(null);
     const [showFilters, setShowFilters] = useState(false);
-
-    // Data dummy untuk departemen
-    const departments = [
-        { id: "all", name: "Semua Departemen" },
-        { id: "engineering", name: "Teknik" },
-        { id: "operations", name: "Operasional" },
-        { id: "finance", name: "Keuangan" },
-        { id: "hr", name: "SDM" },
-        { id: "marketing", name: "Pemasaran" },
-        { id: "customer_service", name: "Layanan Pelanggan" },
-    ];
-
-    // Data dummy untuk karyawan (menggunakan data yang sudah ada)
-    const employeesData = [
-        {
-            id: 1,
-            name: "Budi Santoso",
-            position: "Senior Engineer",
-            department: "engineering",
-            employeeId: "EMP-001",
-            email: "budi.santoso@pln.co.id",
-            phone: "081234567890",
-            joinDate: "2018-05-15",
-            status: "active",
-            address: "Jl. Merdeka No. 123, Karawang",
-            photo: "https://randomuser.me/api/portraits/men/1.jpg",
-        },
-        // ... existing employee data
-    ];
+    const [importModalOpen, setImportModalOpen] = useState(false);
+    const [selectedFile, setSelectedFile] = useState(null);
+    const [importError, setImportError] = useState(null);
+    const [addModalOpen, setAddModalOpen] = useState(false);
+    const [newEmployee, setNewEmployee] = useState({
+        name: "",
+        nip: "",
+        email: "",
+        phone: "",
+        department_id: "",
+        jenis_kelamin: "",
+        joinDate: "",
+        address: "",
+        is_active: 1,
+        foto_profil: null,
+    });
 
     // Filter dan sort karyawan (menggunakan kode yang sudah ada)
-    const filteredEmployees = employeesData
-        .filter((employee) => {
-            const matchDepartment =
-                filterDepartment === "all" ||
-                employee.department === filterDepartment;
-            const matchStatus =
-                filterStatus === "all" || employee.status === filterStatus;
-            const matchSearch =
-                employee.name
-                    .toLowerCase()
-                    .includes(searchQuery.toLowerCase()) ||
-                employee.position
-                    .toLowerCase()
-                    .includes(searchQuery.toLowerCase()) ||
-                employee.employeeId
-                    .toLowerCase()
-                    .includes(searchQuery.toLowerCase());
-            return matchDepartment && matchStatus && matchSearch;
-        })
-        .sort((a, b) => {
-            if (sortField === "name") {
-                return sortDirection === "asc"
-                    ? a.name.localeCompare(b.name)
-                    : b.name.localeCompare(a.name);
-            } else if (sortField === "department") {
-                return sortDirection === "asc"
-                    ? a.department.localeCompare(b.department)
-                    : b.department.localeCompare(a.department);
-            } else if (sortField === "joinDate") {
-                return sortDirection === "asc"
-                    ? new Date(a.joinDate) - new Date(b.joinDate)
-                    : new Date(b.joinDate) - new Date(a.joinDate);
-            }
-            return 0;
-        });
+    const filteredEmployees = Array.isArray(karyawan)
+        ? karyawan
+              .filter((employee) => {
+                  const matchDepartment =
+                      filterDepartment === "all" ||
+                      employee.department.nama_department === filterDepartment;
+                  const matchStatus =
+                      filterStatus === "all" ||
+                      employee.is_active === parseInt(filterStatus);
+                  const matchSearch =
+                      employee.name
+                          .toLowerCase()
+                          .includes(searchQuery.toLowerCase()) ||
+                      employee.department.nama_department
+                          .toLowerCase()
+                          .includes(searchQuery.toLowerCase());
+                  return matchDepartment && matchStatus && matchSearch;
+              })
+              .sort((a, b) => {
+                  if (sortField === "name") {
+                      return sortDirection === "asc"
+                          ? a.name.localeCompare(b.name)
+                          : b.name.localeCompare(a.name);
+                  } else if (sortField === "department") {
+                      return sortDirection === "asc"
+                          ? a.department.localeCompare(b.department)
+                          : b.department.localeCompare(a.department);
+                  } else if (sortField === "joinDate") {
+                      return sortDirection === "asc"
+                          ? new Date(a.joinDate) - new Date(b.joinDate)
+                          : new Date(b.joinDate) - new Date(a.joinDate);
+                  }
+                  return 0;
+              })
+        : [];
 
     // Pagination (menggunakan kode yang sudah ada)
     const itemsPerPage = 5;
@@ -155,6 +136,57 @@ export default function EmployeeManagement() {
         }
     };
 
+    const columns = [
+        { field: "nip", headerName: "NIP", flex: 1 },
+        { field: "name", headerName: "Nama", flex: 1 },
+        { field: "email", headerName: "Email", flex: 1 },
+        {
+            field: "jenis_kelamin",
+            headerName: "Jenis Kelamin",
+            flex: 1,
+            valueGetter: (params) => {
+                if (!params || !params.row) return "-";
+                return params.row.jenis_kelamin === "L"
+                    ? "Laki-laki"
+                    : "Perempuan";
+            },
+        },
+        {
+            field: "jabatan",
+            headerName: "Jabatan",
+            flex: 1,
+            valueGetter: (params) => {
+                if (!params || !params.row) return "-";
+                return params.row.jabatan?.nama ?? "-";
+            },
+        },
+        {
+            field: "department",
+            headerName: "Department",
+            flex: 1,
+            renderCell: (params) => (
+                <span>{params.row.department?.nama ?? "-"}</span>
+            ),
+        },
+        {
+            field: "kedudukan",
+            headerName: "Kedudukan",
+            flex: 1,
+        },
+        {
+            field: "is_active",
+            headerName: "Status",
+            flex: 1,
+            renderCell: (params) => (
+                <Chip
+                    label={params.value ? "Aktif" : "Tidak Aktif"}
+                    color={params.value ? "success" : "default"}
+                    size="small"
+                />
+            ),
+        },
+    ];
+
     // Close dropdowns when clicking outside
     useEffect(() => {
         const handleClickOutside = () => {
@@ -166,6 +198,59 @@ export default function EmployeeManagement() {
             document.removeEventListener("click", handleClickOutside);
         };
     }, []);
+
+    const handleImport = (e) => {
+        e.preventDefault();
+        if (!selectedFile) {
+            setImportError("Please select a file");
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append("file", selectedFile);
+
+        router.post(route("karyawan.import"), formData, {
+            onSuccess: () => {
+                setImportModalOpen(false);
+                setSelectedFile(null);
+                setImportError(null);
+            },
+            onError: (errors) => {
+                setImportError(errors.file || "Failed to import file");
+            },
+        });
+    };
+
+    const downloadTemplate = () => {
+        window.location.href = route("karyawan.download-template");
+    };
+
+    const handleAddEmployee = (e) => {
+        e.preventDefault();
+
+        const formData = new FormData();
+        Object.keys(newEmployee).forEach((key) => {
+            formData.append(key, newEmployee[key]);
+        });
+
+        router.post(route("karyawan.store"), formData, {
+            onSuccess: () => {
+                setAddModalOpen(false);
+                setNewEmployee({
+                    name: "",
+                    nip: "",
+                    email: "",
+                    phone: "",
+                    department_id: "",
+                    jenis_kelamin: "",
+                    joinDate: "",
+                    address: "",
+                    is_active: 1,
+                    foto_profil: null,
+                });
+            },
+        });
+    };
 
     return (
         <DashboardLayout>
@@ -189,15 +274,24 @@ export default function EmployeeManagement() {
                                 </p>
                             </div>
                             <div className="flex flex-wrap gap-3">
-                                <button className="inline-flex items-center px-4 py-2 bg-white/10 backdrop-blur-sm hover:bg-white/20 text-white rounded-lg transition-all duration-200 shadow-sm">
+                                <button
+                                    onClick={downloadTemplate}
+                                    className="inline-flex items-center px-4 py-2 bg-white/10 backdrop-blur-sm hover:bg-white/20 text-white rounded-lg transition-all duration-200 shadow-sm"
+                                >
                                     <FaDownload className="mr-2" />
-                                    Export
+                                    Download Template
                                 </button>
-                                <button className="inline-flex items-center px-4 py-2 bg-white/10 backdrop-blur-sm hover:bg-white/20 text-white rounded-lg transition-all duration-200 shadow-sm">
+                                <button
+                                    onClick={() => setImportModalOpen(true)}
+                                    className="inline-flex items-center px-4 py-2 bg-white/10 backdrop-blur-sm hover:bg-white/20 text-white rounded-lg transition-all duration-200 shadow-sm"
+                                >
                                     <FaUpload className="mr-2" />
                                     Import
                                 </button>
-                                <button className="inline-flex items-center px-4 py-2 bg-white text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-200 shadow-sm font-medium">
+                                <button
+                                    onClick={() => setAddModalOpen(true)}
+                                    className="inline-flex items-center px-4 py-2 bg-white text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-200 shadow-sm font-medium"
+                                >
                                     <FaPlus className="mr-2" />
                                     Tambah Karyawan
                                 </button>
@@ -243,9 +337,15 @@ export default function EmployeeManagement() {
                                         setFilterDepartment(e.target.value)
                                     }
                                 >
+                                    <option value="all">
+                                        Semua Department
+                                    </option>
                                     {departments.map((dept) => (
-                                        <option key={dept.id} value={dept.id}>
-                                            {dept.name}
+                                        <option
+                                            key={dept.id}
+                                            value={dept.nama_department}
+                                        >
+                                            {dept.nama_department}
                                         </option>
                                     ))}
                                 </select>
@@ -259,10 +359,8 @@ export default function EmployeeManagement() {
                                     }
                                 >
                                     <option value="all">Semua Status</option>
-                                    <option value="active">Aktif</option>
-                                    <option value="inactive">
-                                        Tidak Aktif
-                                    </option>
+                                    <option value="1">Aktif</option>
+                                    <option value="0">Tidak Aktif</option>
                                 </select>
                             </div>
                         </div>
@@ -281,7 +379,7 @@ export default function EmployeeManagement() {
                                     Total Karyawan
                                 </h3>
                                 <p className="text-2xl font-bold text-gray-900">
-                                    {employeesData.length}
+                                    {karyawan.length}
                                 </p>
                             </div>
                         </div>
@@ -298,8 +396,8 @@ export default function EmployeeManagement() {
                                 </h3>
                                 <p className="text-2xl font-bold text-gray-900">
                                     {
-                                        employeesData.filter(
-                                            (e) => e.status === "active"
+                                        karyawan.filter(
+                                            (e) => e.is_active === 1
                                         ).length
                                     }
                                 </p>
@@ -318,8 +416,8 @@ export default function EmployeeManagement() {
                                 </h3>
                                 <p className="text-2xl font-bold text-gray-900">
                                     {
-                                        employeesData.filter(
-                                            (e) => e.status === "inactive"
+                                        karyawan.filter(
+                                            (e) => e.is_active === 0
                                         ).length
                                     }
                                 </p>
@@ -347,409 +445,17 @@ export default function EmployeeManagement() {
                 {/* Tabel Karyawan */}
                 <div className="bg-white shadow-sm rounded-xl overflow-hidden">
                     <div className="overflow-x-auto">
-                        <table className="min-w-full divide-y divide-gray-200">
-                            <thead className="bg-gray-50">
-                                <tr>
-                                    <th
-                                        scope="col"
-                                        className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                                    >
-                                        <div className="flex items-center">
-                                            <span>Karyawan</span>
-                                            <button
-                                                onClick={() =>
-                                                    toggleSort("name")
-                                                }
-                                                className="ml-1 text-gray-400 hover:text-gray-500"
-                                            >
-                                                {sortField === "name" &&
-                                                sortDirection === "asc" ? (
-                                                    <FaSortAmountUp className="h-3 w-3" />
-                                                ) : (
-                                                    <FaSortAmountDown className="h-3 w-3" />
-                                                )}
-                                            </button>
-                                        </div>
-                                    </th>
-                                    <th
-                                        scope="col"
-                                        className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                                    >
-                                        <div className="flex items-center">
-                                            <span>Departemen</span>
-                                            <button
-                                                onClick={() =>
-                                                    toggleSort("department")
-                                                }
-                                                className="ml-1 text-gray-400 hover:text-gray-500"
-                                            >
-                                                {sortField === "department" &&
-                                                sortDirection === "asc" ? (
-                                                    <FaSortAmountUp className="h-3 w-3" />
-                                                ) : (
-                                                    <FaSortAmountDown className="h-3 w-3" />
-                                                )}
-                                            </button>
-                                        </div>
-                                    </th>
-                                    <th
-                                        scope="col"
-                                        className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden md:table-cell"
-                                    >
-                                        Kontak
-                                    </th>
-                                    <th
-                                        scope="col"
-                                        className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden lg:table-cell"
-                                    >
-                                        <div className="flex items-center">
-                                            <span>Tanggal Bergabung</span>
-                                            <button
-                                                onClick={() =>
-                                                    toggleSort("joinDate")
-                                                }
-                                                className="ml-1 text-gray-400 hover:text-gray-500"
-                                            >
-                                                {sortField === "joinDate" &&
-                                                sortDirection === "asc" ? (
-                                                    <FaSortAmountUp className="h-3 w-3" />
-                                                ) : (
-                                                    <FaSortAmountDown className="h-3 w-3" />
-                                                )}
-                                            </button>
-                                        </div>
-                                    </th>
-                                    <th
-                                        scope="col"
-                                        className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                                    >
-                                        Status
-                                    </th>
-                                    <th
-                                        scope="col"
-                                        className="px-6 py-4 text-right text-xs font-medium text-gray-500 uppercase tracking-wider"
-                                    >
-                                        Aksi
-                                    </th>
-                                </tr>
-                            </thead>
-                            <tbody className="bg-white divide-y divide-gray-200">
-                                {paginatedEmployees.length > 0 ? (
-                                    paginatedEmployees.map((employee) => (
-                                        <tr
-                                            key={employee.id}
-                                            className="hover:bg-blue-50 transition-colors duration-150 cursor-pointer"
-                                            onClick={() =>
-                                                viewEmployee(employee)
-                                            }
-                                        >
-                                            <td className="px-6 py-4 whitespace-nowrap">
-                                                <div className="flex items-center">
-                                                    <div className="flex-shrink-0 h-10 w-10">
-                                                        <img
-                                                            className="h-10 w-10 rounded-full object-cover ring-2 ring-gray-100"
-                                                            src={employee.photo}
-                                                            alt={employee.name}
-                                                        />
-                                                    </div>
-                                                    <div className="ml-4">
-                                                        <div className="text-sm font-medium text-gray-900">
-                                                            {employee.name}
-                                                        </div>
-                                                        <div className="text-sm text-gray-500 flex items-center">
-                                                            <FaIdCard className="mr-1 text-gray-400 h-3 w-3" />
-                                                            {
-                                                                employee.employeeId
-                                                            }
-                                                        </div>
-                                                        <div className="text-sm text-gray-500 md:hidden">
-                                                            {employee.position}
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap">
-                                                <div className="text-sm text-gray-900 font-medium">
-                                                    {
-                                                        departments.find(
-                                                            (d) =>
-                                                                d.id ===
-                                                                employee.department
-                                                        )?.name
-                                                    }
-                                                </div>
-                                                <div className="text-sm text-gray-500 hidden md:block">
-                                                    {employee.position}
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap hidden md:table-cell">
-                                                <div className="text-sm text-gray-900 flex items-center">
-                                                    <FaEnvelope className="mr-1 text-gray-400 h-3 w-3" />
-                                                    {employee.email}
-                                                </div>
-                                                <div className="text-sm text-gray-500 flex items-center">
-                                                    <FaPhone className="mr-1 text-gray-400 h-3 w-3" />
-                                                    {employee.phone}
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 hidden lg:table-cell">
-                                                <div className="flex items-center">
-                                                    <FaCalendarAlt className="mr-1 text-gray-400 h-3 w-3" />
-                                                    {new Date(
-                                                        employee.joinDate
-                                                    ).toLocaleDateString(
-                                                        "id-ID",
-                                                        {
-                                                            day: "numeric",
-                                                            month: "long",
-                                                            year: "numeric",
-                                                        }
-                                                    )}
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap">
-                                                <span
-                                                    className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                                                        employee.status ===
-                                                        "active"
-                                                            ? "bg-green-100 text-green-800"
-                                                            : "bg-red-100 text-red-800"
-                                                    }`}
-                                                >
-                                                    {employee.status ===
-                                                    "active" ? (
-                                                        <>
-                                                            <FaCheckCircle className="mr-1 h-3 w-3 mt-0.5" />
-                                                            Aktif
-                                                        </>
-                                                    ) : (
-                                                        <>
-                                                            <FaTimesCircle className="mr-1 h-3 w-3 mt-0.5" />
-                                                            Tidak Aktif
-                                                        </>
-                                                    )}
-                                                </span>
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                                <div
-                                                    className="relative inline-block text-left"
-                                                    onClick={(e) =>
-                                                        e.stopPropagation()
-                                                    }
-                                                >
-                                                    <button
-                                                        onClick={(e) =>
-                                                            toggleActionDropdown(
-                                                                employee.id,
-                                                                e
-                                                            )
-                                                        }
-                                                        className="text-gray-400 hover:text-gray-500 focus:outline-none p-1 rounded-full hover:bg-gray-100"
-                                                    >
-                                                        <FaEllipsisV />
-                                                    </button>
-                                                    {actionDropdown ===
-                                                        employee.id && (
-                                                        <div className="origin-top-right absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-10">
-                                                            <div
-                                                                className="py-1 rounded-md bg-white shadow-xs"
-                                                                role="menu"
-                                                                aria-orientation="vertical"
-                                                            >
-                                                                <button
-                                                                    onClick={() =>
-                                                                        viewEmployee(
-                                                                            employee
-                                                                        )
-                                                                    }
-                                                                    className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900"
-                                                                    role="menuitem"
-                                                                >
-                                                                    <FaEye className="mr-3 h-4 w-4 text-gray-500" />
-                                                                    Lihat Detail
-                                                                </button>
-                                                                <button
-                                                                    className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900"
-                                                                    role="menuitem"
-                                                                >
-                                                                    <FaEdit className="mr-3 h-4 w-4 text-gray-500" />
-                                                                    Edit
-                                                                </button>
-                                                                <button
-                                                                    onClick={() =>
-                                                                        confirmDelete(
-                                                                            employee
-                                                                        )
-                                                                    }
-                                                                    className="flex items-center w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50"
-                                                                    role="menuitem"
-                                                                >
-                                                                    <FaTrash className="mr-3 h-4 w-4 text-red-500" />
-                                                                    Hapus
-                                                                </button>
-                                                            </div>
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    ))
-                                ) : (
-                                    <tr>
-                                        <td
-                                            colSpan="6"
-                                            className="px-6 py-10 text-center text-gray-500"
-                                        >
-                                            <div className="flex flex-col items-center justify-center">
-                                                <FaSearch className="h-10 w-10 text-gray-300 mb-2" />
-                                                <p>
-                                                    Tidak ada data karyawan yang
-                                                    ditemukan
-                                                </p>
-                                                <p className="text-sm">
-                                                    Coba ubah filter atau kata
-                                                    kunci pencarian
-                                                </p>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                )}
-                            </tbody>
-                        </table>
+                        <DataGrid
+                            className="text-wrap"
+                            rows={filteredEmployees}
+                            columns={columns}
+                            getRowId={(row) => row.id}
+                            rowsPerPageOptions={[10, 20, 50]}
+                            autoHeight
+                            pageSize={itemsPerPage}
+                            onPageChange={(newPage) => setCurrentPage(newPage)}
+                        />
                     </div>
-
-                    {/* Pagination - Modern Style */}
-                    {filteredEmployees.length > 0 && (
-                        <div className="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
-                            <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
-                                <div>
-                                    <p className="text-sm text-gray-700">
-                                        Menampilkan{" "}
-                                        <span className="font-medium">
-                                            {(currentPage - 1) * itemsPerPage +
-                                                1}
-                                        </span>{" "}
-                                        sampai{" "}
-                                        <span className="font-medium">
-                                            {Math.min(
-                                                currentPage * itemsPerPage,
-                                                filteredEmployees.length
-                                            )}
-                                        </span>{" "}
-                                        dari{" "}
-                                        <span className="font-medium">
-                                            {filteredEmployees.length}
-                                        </span>{" "}
-                                        hasil
-                                    </p>
-                                </div>
-                                <div>
-                                    <nav
-                                        className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px"
-                                        aria-label="Pagination"
-                                    >
-                                        <button
-                                            onClick={() =>
-                                                setCurrentPage((prev) =>
-                                                    prev > 1 ? prev - 1 : prev
-                                                )
-                                            }
-                                            disabled={currentPage === 1}
-                                            className={`relative inline-flex items-center px-3 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium ${
-                                                currentPage === 1
-                                                    ? "text-gray-300 cursor-not-allowed"
-                                                    : "text-gray-500 hover:bg-blue-50 hover:text-blue-600"
-                                            }`}
-                                        >
-                                            <span className="sr-only">
-                                                Previous
-                                            </span>
-                                            <FaChevronLeft className="h-4 w-4" />
-                                        </button>
-
-                                        {Array.from({ length: totalPages }).map(
-                                            (_, index) => (
-                                                <button
-                                                    key={index}
-                                                    onClick={() =>
-                                                        setCurrentPage(
-                                                            index + 1
-                                                        )
-                                                    }
-                                                    className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
-                                                        currentPage ===
-                                                        index + 1
-                                                            ? "z-10 bg-blue-600 border-blue-600 text-white"
-                                                            : "bg-white border-gray-300 text-gray-500 hover:bg-blue-50 hover:text-blue-600"
-                                                    }`}
-                                                >
-                                                    {index + 1}
-                                                </button>
-                                            )
-                                        )}
-
-                                        <button
-                                            onClick={() =>
-                                                setCurrentPage((prev) =>
-                                                    prev < totalPages
-                                                        ? prev + 1
-                                                        : prev
-                                                )
-                                            }
-                                            disabled={
-                                                currentPage === totalPages
-                                            }
-                                            className={`relative inline-flex items-center px-3 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium ${
-                                                currentPage === totalPages
-                                                    ? "text-gray-300 cursor-not-allowed"
-                                                    : "text-gray-500 hover:bg-blue-50 hover:text-blue-600"
-                                            }`}
-                                        >
-                                            <span className="sr-only">
-                                                Next
-                                            </span>
-                                            <FaChevronRight className="h-4 w-4" />
-                                        </button>
-                                    </nav>
-                                </div>
-                            </div>
-                            <div className="flex sm:hidden justify-between w-full">
-                                <button
-                                    onClick={() =>
-                                        setCurrentPage((prev) =>
-                                            prev > 1 ? prev - 1 : prev
-                                        )
-                                    }
-                                    disabled={currentPage === 1}
-                                    className={`relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md ${
-                                        currentPage === 1
-                                            ? "text-gray-300 bg-gray-50 cursor-not-allowed"
-                                            : "text-gray-700 bg-white hover:bg-blue-50 hover:text-blue-600"
-                                    }`}
-                                >
-                                    Sebelumnya
-                                </button>
-                                <span className="text-sm text-gray-700">
-                                    {currentPage} dari {totalPages}
-                                </span>
-                                <button
-                                    onClick={() =>
-                                        setCurrentPage((prev) =>
-                                            prev < totalPages ? prev + 1 : prev
-                                        )
-                                    }
-                                    disabled={currentPage === totalPages}
-                                    className={`relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md ${
-                                        currentPage === totalPages
-                                            ? "text-gray-300 bg-gray-50 cursor-not-allowed"
-                                            : "text-gray-700 bg-white hover:bg-blue-50 hover:text-blue-600"
-                                    }`}
-                                >
-                                    Selanjutnya
-                                </button>
-                            </div>
-                        </div>
-                    )}
                 </div>
             </div>
 
@@ -803,9 +509,15 @@ export default function EmployeeManagement() {
                                 <div className="absolute -bottom-12 left-6">
                                     <div className="h-24 w-24 rounded-full border-4 border-white overflow-hidden bg-white shadow-md">
                                         <img
-                                            src={currentEmployee.photo}
-                                            alt={currentEmployee.name}
-                                            className="h-full w-full object-cover"
+                                            src={
+                                                currentEmployee.foto_profil ===
+                                                null
+                                                    ? currentEmployee.jenis_kelamin ===
+                                                      "L"
+                                                        ? "/storage/img/default-l.jpg"
+                                                        : "/storage/img/default-p.jpg"
+                                                    : currentEmployee.foto_profil
+                                            }
                                         />
                                     </div>
                                 </div>
@@ -824,12 +536,12 @@ export default function EmployeeManagement() {
                                     </div>
                                     <span
                                         className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                                            currentEmployee.status === "active"
+                                            currentEmployee.is_active === 1
                                                 ? "bg-green-100 text-green-800"
                                                 : "bg-red-100 text-red-800"
                                         }`}
                                     >
-                                        {currentEmployee.status === "active" ? (
+                                        {currentEmployee.is_active === 1 ? (
                                             <>
                                                 <FaCheckCircle className="mr-1 h-3 w-3 mt-0.5" />
                                                 Aktif
@@ -851,7 +563,7 @@ export default function EmployeeManagement() {
                                             </div>
                                             <div className="mt-1 flex items-center text-sm text-gray-900">
                                                 <FaIdCard className="mr-2 text-blue-500 h-4 w-4" />
-                                                {currentEmployee.employeeId}
+                                                {currentEmployee.nip}
                                             </div>
                                         </div>
 
@@ -862,11 +574,8 @@ export default function EmployeeManagement() {
                                             <div className="mt-1 flex items-center text-sm text-gray-900">
                                                 <FaBuilding className="mr-2 text-blue-500 h-4 w-4" />
                                                 {
-                                                    departments.find(
-                                                        (d) =>
-                                                            d.id ===
-                                                            currentEmployee.department
-                                                    )?.name
+                                                    currentEmployee.department
+                                                        .nama_department
                                                 }
                                             </div>
                                         </div>
@@ -1016,6 +725,335 @@ export default function EmployeeManagement() {
                                     Batal
                                 </button>
                             </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Import Modal */}
+            {importModalOpen && (
+                <div className="fixed inset-0 z-50 overflow-y-auto">
+                    <div className="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+                        <div
+                            className="fixed inset-0 transition-opacity"
+                            aria-hidden="true"
+                        >
+                            <div className="absolute inset-0 bg-gray-500 opacity-75"></div>
+                        </div>
+
+                        <span
+                            className="hidden sm:inline-block sm:align-middle sm:h-screen"
+                            aria-hidden="true"
+                        >
+                            &#8203;
+                        </span>
+
+                        <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+                            <form onSubmit={handleImport}>
+                                <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                                    <div className="sm:flex sm:items-start">
+                                        <div className="mt-3 text-center sm:mt-0 sm:text-left w-full">
+                                            <h3 className="text-lg leading-6 font-medium text-gray-900">
+                                                Import Data Karyawan
+                                            </h3>
+                                            <div className="mt-4">
+                                                <p className="text-sm text-gray-500 mb-4">
+                                                    Silakan download template
+                                                    terlebih dahulu, isi data
+                                                    sesuai format, kemudian
+                                                    upload file Excel.
+                                                </p>
+                                                <button
+                                                    type="button"
+                                                    onClick={downloadTemplate}
+                                                    className="mb-4 inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md text-blue-700 bg-blue-100 hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                                                >
+                                                    <FaDownload className="mr-1 h-3 w-3" />
+                                                    Download Template
+                                                </button>
+                                                <input
+                                                    type="file"
+                                                    accept=".xlsx,.xls"
+                                                    onChange={(e) =>
+                                                        setSelectedFile(
+                                                            e.target.files[0]
+                                                        )
+                                                    }
+                                                    className="block w-full text-sm text-gray-500
+                                                        file:mr-4 file:py-2 file:px-4
+                                                        file:rounded-full file:border-0
+                                                        file:text-sm file:font-semibold
+                                                        file:bg-blue-50 file:text-blue-700
+                                                        hover:file:bg-blue-100"
+                                                />
+                                                {importError && (
+                                                    <p className="mt-2 text-sm text-red-600">
+                                                        {importError}
+                                                    </p>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                                    <button
+                                        type="submit"
+                                        className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:ml-3 sm:w-auto sm:text-sm"
+                                    >
+                                        Import
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setImportModalOpen(false);
+                                            setSelectedFile(null);
+                                            setImportError(null);
+                                        }}
+                                        className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
+                                    >
+                                        Cancel
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Add Employee Modal */}
+            {addModalOpen && (
+                <div className="fixed inset-0 z-50 overflow-y-auto">
+                    <div className="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+                        <div
+                            className="fixed inset-0 transition-opacity"
+                            aria-hidden="true"
+                            onClick={() => setAddModalOpen(false)}
+                        >
+                            <div className="absolute inset-0 bg-gray-500 opacity-75"></div>
+                        </div>
+
+                        <span
+                            className="hidden sm:inline-block sm:align-middle sm:h-screen"
+                            aria-hidden="true"
+                        >
+                            &#8203;
+                        </span>
+
+                        <div className="inline-block align-bottom bg-white rounded-xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+                            <form onSubmit={handleAddEmployee}>
+                                <div className="bg-white px-4 pt-5 pb-4 sm:p-6">
+                                    <h3 className="text-lg font-medium leading-6 text-gray-900 mb-4">
+                                        Tambah Karyawan Baru
+                                    </h3>
+
+                                    <div className="grid grid-cols-1 gap-4">
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700">
+                                                Nama Lengkap
+                                            </label>
+                                            <input
+                                                type="text"
+                                                required
+                                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                                                value={newEmployee.name}
+                                                onChange={(e) =>
+                                                    setNewEmployee({
+                                                        ...newEmployee,
+                                                        name: e.target.value,
+                                                    })
+                                                }
+                                            />
+                                        </div>
+
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700">
+                                                NIP
+                                            </label>
+                                            <input
+                                                type="text"
+                                                required
+                                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                                                value={newEmployee.nip}
+                                                onChange={(e) =>
+                                                    setNewEmployee({
+                                                        ...newEmployee,
+                                                        nip: e.target.value,
+                                                    })
+                                                }
+                                            />
+                                        </div>
+
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700">
+                                                Departemen
+                                            </label>
+                                            <select
+                                                required
+                                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                                                value={
+                                                    newEmployee.department_id
+                                                }
+                                                onChange={(e) =>
+                                                    setNewEmployee({
+                                                        ...newEmployee,
+                                                        department_id:
+                                                            e.target.value,
+                                                    })
+                                                }
+                                            >
+                                                <option value="">
+                                                    Pilih Departemen
+                                                </option>
+                                                {departments.map((dept) => (
+                                                    <option
+                                                        key={dept.id}
+                                                        value={dept.id}
+                                                    >
+                                                        {dept.nama_department}
+                                                    </option>
+                                                ))}
+                                            </select>
+                                        </div>
+
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700">
+                                                Email
+                                            </label>
+                                            <input
+                                                type="email"
+                                                required
+                                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                                                value={newEmployee.email}
+                                                onChange={(e) =>
+                                                    setNewEmployee({
+                                                        ...newEmployee,
+                                                        email: e.target.value,
+                                                    })
+                                                }
+                                            />
+                                        </div>
+
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700">
+                                                Nomor Telepon
+                                            </label>
+                                            <input
+                                                type="tel"
+                                                required
+                                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                                                value={newEmployee.phone}
+                                                onChange={(e) =>
+                                                    setNewEmployee({
+                                                        ...newEmployee,
+                                                        phone: e.target.value,
+                                                    })
+                                                }
+                                            />
+                                        </div>
+
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700">
+                                                Jenis Kelamin
+                                            </label>
+                                            <select
+                                                required
+                                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                                                value={
+                                                    newEmployee.jenis_kelamin
+                                                }
+                                                onChange={(e) =>
+                                                    setNewEmployee({
+                                                        ...newEmployee,
+                                                        jenis_kelamin:
+                                                            e.target.value,
+                                                    })
+                                                }
+                                            >
+                                                <option value="">
+                                                    Pilih Jenis Kelamin
+                                                </option>
+                                                <option value="L">
+                                                    Laki-laki
+                                                </option>
+                                                <option value="P">
+                                                    Perempuan
+                                                </option>
+                                            </select>
+                                        </div>
+
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700">
+                                                Tanggal Bergabung
+                                            </label>
+                                            <input
+                                                type="date"
+                                                required
+                                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                                                value={newEmployee.joinDate}
+                                                onChange={(e) =>
+                                                    setNewEmployee({
+                                                        ...newEmployee,
+                                                        joinDate:
+                                                            e.target.value,
+                                                    })
+                                                }
+                                            />
+                                        </div>
+
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700">
+                                                Alamat
+                                            </label>
+                                            <textarea
+                                                required
+                                                rows={3}
+                                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                                                value={newEmployee.address}
+                                                onChange={(e) =>
+                                                    setNewEmployee({
+                                                        ...newEmployee,
+                                                        address: e.target.value,
+                                                    })
+                                                }
+                                            />
+                                        </div>
+
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700">
+                                                Foto Profil
+                                            </label>
+                                            <input
+                                                type="file"
+                                                accept="image/*"
+                                                className="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                                                onChange={(e) =>
+                                                    setNewEmployee({
+                                                        ...newEmployee,
+                                                        foto_profil:
+                                                            e.target.files[0],
+                                                    })
+                                                }
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                                    <button
+                                        type="submit"
+                                        className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:ml-3 sm:w-auto sm:text-sm"
+                                    >
+                                        Simpan
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setAddModalOpen(false)}
+                                        className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
+                                    >
+                                        Batal
+                                    </button>
+                                </div>
+                            </form>
                         </div>
                     </div>
                 </div>

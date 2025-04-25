@@ -20,4 +20,9 @@ class HomeController extends Controller
     {
         return Inertia::render('Home/StrukturOrganisasi');
     }
+
+    public function berita()
+    {
+        return Inertia::render('Home/Berita');
+    }
 }

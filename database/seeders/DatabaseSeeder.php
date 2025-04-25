@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Models\Karyawan;
 use App\Models\User;
 // use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
@@ -27,5 +28,6 @@ class DatabaseSeeder extends Seeder
             UserSeeder::class,
             BeritaSeeder::class,
         ]);
+        Karyawan::factory()->count(100)->create();
     }
 }

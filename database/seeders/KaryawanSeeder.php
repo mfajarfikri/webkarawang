@@ -21,6 +21,7 @@ class KaryawanSeeder extends Seeder
                 'nip' => '1234567890',
                 'name' => 'Muhammad Fajar Fikri Fadilah',
                 'email' => 'fajarfikri31@gmail.com',
+                'jenis_kelamin' => 'L',
                 'jabatan_id' => 1, // MANAJER UPT
                 'department_id' => 1, // RENEV
                 'parent_id' => 1,

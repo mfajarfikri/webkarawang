@@ -15,8 +15,12 @@ class Berita extends Model
         'slug',
         'isi',
         'gambar',
-        'karyawan_id',
+        'user_id',
         'created_by',
+    ];
+
+    protected $casts = [
+        'gambar' => 'array'
     ];
 
     public function karyawan()

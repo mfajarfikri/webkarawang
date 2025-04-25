@@ -29,6 +29,7 @@ return new class extends Migration
             $table->string('nip')->unique();
             $table->string('name');
             $table->string('email')->unique();
+            $table->enum('jenis_kelamin', ['L', 'P']);
             $table->foreignId('jabatan_id')->constrained('jabatans');
             $table->foreignId('department_id')->nullable()->constrained('departments');
             $table->foreignId('parent_id')->nullable()->constrained('karyawans');

@@ -14,13 +14,12 @@ return new class extends Migration
         Schema::create('beritas', function (Blueprint $table) {
             $table->id();
             $table->string('judul');
-            $table->string('slug');
-            $table->text('isi');
-            $table->string('gambar');
-            $table->foreignId('karyawan_id')->constrained('karyawans');
-            $table->foreignId('created_by')->constrained('users');
-            $table->softDeletes();
+            $table->string('slug')->unique();
+            $table->longText('isi');
+            $table->json('gambar');
+            $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
             $table->timestamps();
+            $table->softDeletes();
         });
     }
 

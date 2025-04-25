@@ -249,7 +249,7 @@ export default function Berita({ berita: initialBerita }) {
 
                                 <div className="flex justify-between items-center pt-4 border-t border-gray-100">
                                     <Link
-                                        href={route("berita.show", item.id)}
+                                        // href={route("berita.show", item.id)}
                                         className="text-blue-600 hover:text-blue-700 text-sm font-medium"
                                     >
                                         Baca selengkapnya
