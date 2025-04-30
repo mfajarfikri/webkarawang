@@ -12,6 +12,8 @@ import {
     FaShare,
     FaEye,
 } from "react-icons/fa";
+import { format } from "date-fns";
+import { id } from "date-fns/locale";
 
 export default function Gallery() {
     const { auth } = usePage().props;
@@ -20,9 +22,42 @@ export default function Gallery() {
     const [activeCategory, setActiveCategory] = useState("all");
     const [searchQuery, setSearchQuery] = useState("");
     const [lightboxOpen, setLightboxOpen] = useState(false);
-    const [currentImage, setCurrentImage] = useState(null);
-    const [loaded, setLoaded] = useState(false);
+    const [currentImageIndex, setCurrentImageIndex] = useState(null);
+    const [loading, setLoading] = useState(false);
     const [isScrolled, setIsScrolled] = useState(false);
+    const [error, setError] = useState(null);
+    const [berita, setBerita] = useState([]);
+    const [allImages, setAllImages] = useState([]);
+
+    useEffect(() => {
+        const fetchBerita = async () => {
+            try {
+                const response = await axios.get("/api/berita");
+                const beritaData = response.data.berita || [];
+                setBerita(beritaData);
+
+                // Flatten all images from all berita items into a single array with metadata
+                const images = [];
+                beritaData.forEach((item) => {
+                    const gambarArray = JSON.parse(item.gambar);
+                    gambarArray.forEach((img) => {
+                        images.push({
+                            ...item,
+                            image: img,
+                        });
+                    });
+                });
+                setAllImages(images);
+            } catch (error) {
+                setError(error);
+                console.error("Error Fetching berita:", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchBerita();
+    }, []);
 
     // Data kategori
     const categories = [
@@ -34,150 +69,29 @@ export default function Gallery() {
         { id: "meeting", name: "Rapat" },
     ];
 
-    // Data gallery dengan gambar yang pasti muncul
-    const galleryItems = [
-        {
-            id: 1,
-            title: "Presentasi Program Kerja PLN",
-            category: "meeting",
-            date: "15 November 2023",
-            location: "Aula Utama PLN",
-            image: "https://images.unsplash.com/photo-1573167507387-6b4b98cb7c13?q=80&w=2069",
-            description:
-                "Presentasi program kerja tahunan oleh manajer divisi pengembangan.",
-        },
-        {
-            id: 2,
-            title: "Pelatihan Teknisi Listrik",
-            category: "training",
-            date: "10 November 2023",
-            location: "Pusat Pelatihan PLN",
-            image: "https://images.unsplash.com/photo-1581092921461-7d65ca45393a?q=80&w=2070",
-            description:
-                "Pelatihan keterampilan teknis kelistrikan untuk staf baru.",
-        },
-        {
-            id: 3,
-            title: "Peresmian PLTS Atap",
-            category: "ceremony",
-            date: "5 November 2023",
-            location: "Gedung Utama PLN",
-            image: "https://images.unsplash.com/photo-1509391366360-2e959784a276?q=80&w=2072",
-            description:
-                "Peresmian instalasi panel surya di atap gedung perkantoran.",
-        },
-        {
-            id: 4,
-            title: "Diskusi Panel Energi Terbarukan",
-            category: "meeting",
-            date: "1 November 2023",
-            location: "Ruang Konferensi PLN",
-            image: "https://images.unsplash.com/photo-1558403194-611308249627?q=80&w=2070",
-            description:
-                "Diskusi panel tentang masa depan energi terbarukan di Indonesia.",
-        },
-        {
-            id: 5,
-            title: "Rapat Koordinasi Triwulan",
-            category: "meeting",
-            date: "28 Oktober 2023",
-            location: "Ruang Rapat Utama",
-            image: "https://images.unsplash.com/photo-1517048676732-d65bc937f952?q=80&w=2070",
-            description: "Rapat koordinasi untuk evaluasi kinerja triwulan IV.",
-        },
-        {
-            id: 6,
-            title: "Bantuan Listrik untuk Sekolah",
-            category: "csr",
-            date: "25 Oktober 2023",
-            location: "SDN Sukamaju",
-            image: "https://images.unsplash.com/photo-1503676260728-1c00da094a0b?q=80&w=2022",
-            description:
-                "Program elektrifikasi untuk sekolah di daerah terpencil.",
-        },
-        {
-            id: 7,
-            title: "Workshop Energi Terbarukan",
-            category: "training",
-            date: "20 Oktober 2023",
-            location: "Aula Serbaguna PLN",
-            image: "https://images.unsplash.com/photo-1531482615713-2afd69097998?q=80&w=2070",
-            description:
-                "Workshop tentang perkembangan teknologi energi terbarukan.",
-        },
-        {
-            id: 8,
-            title: "Penandatanganan MoU",
-            category: "ceremony",
-            date: "15 Oktober 2023",
-            location: "Balai Kota",
-            image: "https://images.unsplash.com/photo-1560439514-4e9645039924?q=80&w=2070",
-            description:
-                "Penandatanganan nota kesepahaman untuk program elektrifikasi.",
-        },
-        {
-            id: 9,
-            title: "Seminar Kelistrikan Nasional",
-            category: "training",
-            date: "10 Oktober 2023",
-            location: "Hotel Grand Mercure",
-            image: "https://images.unsplash.com/photo-1475721027785-f74eccf877e2?q=80&w=2070",
-            description:
-                "Seminar nasional tentang perkembangan teknologi kelistrikan.",
-        },
-        {
-            id: 10,
-            title: "Kunjungan ke PLTA",
-            category: "visit",
-            date: "5 Oktober 2023",
-            location: "PLTA Cirata",
-            image: "https://images.unsplash.com/photo-1591448764624-d7973a442bff?q=80&w=2070",
-            description: "Kunjungan inspeksi dan evaluasi operasional PLTA.",
-        },
-        {
-            id: 11,
-            title: "Penanaman Pohon",
-            category: "csr",
-            date: "1 Oktober 2023",
-            location: "Taman Nasional",
-            image: "https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?q=80&w=2013",
-            description:
-                "Program CSR penanaman pohon untuk pelestarian lingkungan.",
-        },
-        {
-            id: 12,
-            title: "Rapat Direksi",
-            category: "meeting",
-            date: "25 September 2023",
-            location: "Ruang Rapat Eksekutif",
-            image: "https://images.unsplash.com/photo-1600880292203-757bb62b4baf?q=80&w=2070",
-            description: "Rapat direksi untuk membahas strategi perusahaan.",
-        },
-    ];
-
     // Efek untuk menandai bahwa gallery sudah dimuat
     useEffect(() => {
         // Simulasi loading
         const timer = setTimeout(() => {
-            setLoaded(true);
+            setLoading(true);
         }, 1000);
 
         return () => clearTimeout(timer);
     }, []);
 
     // Filter gallery berdasarkan kategori dan pencarian
-    const filteredGallery = galleryItems.filter((item) => {
+    const filteredImages = allImages.filter((item) => {
         const matchCategory =
             activeCategory === "all" || item.category === activeCategory;
         const matchSearch =
-            item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            item.description.toLowerCase().includes(searchQuery.toLowerCase());
+            item.judul.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            item.isi.toLowerCase().includes(searchQuery.toLowerCase());
         return matchCategory && matchSearch;
     });
 
     // Fungsi untuk membuka lightbox
-    const openLightbox = (item) => {
-        setCurrentImage(item);
+    const openLightbox = (index) => {
+        setCurrentImageIndex(index);
         setLightboxOpen(true);
         // Disable scroll saat lightbox terbuka
         document.body.style.overflow = "hidden";
@@ -192,19 +106,16 @@ export default function Gallery() {
 
     // Navigasi lightbox
     const navigateLightbox = (direction) => {
-        const currentIndex = galleryItems.findIndex(
-            (item) => item.id === currentImage.id
-        );
-        let newIndex;
-
         if (direction === "next") {
-            newIndex = (currentIndex + 1) % galleryItems.length;
+            setCurrentImageIndex(
+                (currentImageIndex + 1) % filteredImages.length
+            );
         } else {
-            newIndex =
-                (currentIndex - 1 + galleryItems.length) % galleryItems.length;
+            setCurrentImageIndex(
+                (currentImageIndex - 1 + filteredImages.length) %
+                    filteredImages.length
+            );
         }
-
-        setCurrentImage(galleryItems[newIndex]);
     };
 
     useEffect(() => {
@@ -327,21 +238,25 @@ export default function Gallery() {
                 {/* Gallery Grid */}
                 <div className="bg-gray-50 py-12">
                     <div className="container mx-auto px-4">
-                        {filteredGallery.length > 0 ? (
+                        {filteredImages.length > 0 ? (
                             <div
                                 className={`gallery-grid ${
-                                    loaded ? "opacity-100" : "opacity-0"
+                                    loading ? "opacity-100" : "opacity-0"
                                 } transition-opacity duration-500`}
                             >
-                                {filteredGallery.map((item) => (
-                                    <div key={item.id} className="gallery-item">
+                                {filteredImages.map((item, index) => (
+                                    <div
+                                        key={`${item.id}-${index}`}
+                                        className="gallery-item"
+                                    >
                                         <div
                                             className="rounded-xl overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 group h-full relative cursor-pointer"
-                                            onClick={() => openLightbox(item)}
+                                            onClick={() => openLightbox(index)}
                                         >
                                             <div className="aspect-w-1 aspect-h-1 w-full">
                                                 <img
-                                                    src={item.image}
+                                                    loading="lazy"
+                                                    src={`/storage/berita/${item.image}`}
                                                     alt={item.title}
                                                     className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
                                                 />
@@ -378,11 +293,21 @@ export default function Gallery() {
                                                         </span>
                                                     </div>
                                                     <h3 className="text-lg font-semibold text-white mb-2">
-                                                        {item.title}
+                                                        {item.judul}
                                                     </h3>
                                                     <div className="flex items-center text-xs text-gray-300 mb-3">
                                                         <FaCalendarAlt className="h-3 w-3 mr-1 text-blue-300" />
-                                                        <span>{item.date}</span>
+                                                        <span>
+                                                            {format(
+                                                                new Date(
+                                                                    item.created_at
+                                                                ),
+                                                                "dd MMMM yyyy",
+                                                                {
+                                                                    locale: id,
+                                                                }
+                                                            )}
+                                                        </span>
                                                     </div>
                                                     <button className="inline-flex items-center text-sm text-white bg-blue-600/80 hover:bg-blue-600 px-3 py-1.5 rounded-md transition-colors duration-200">
                                                         <FaEye className="mr-1.5 h-3.5 w-3.5" />
@@ -412,7 +337,7 @@ export default function Gallery() {
                 </div>
 
                 {/* Lightbox dengan tampilan modern */}
-                {lightboxOpen && currentImage && (
+                {lightboxOpen && currentImageIndex !== null && (
                     <div className="fixed inset-0 z-50 bg-black bg-opacity-95 flex items-center justify-center p-4">
                         <div className="relative w-full max-w-5xl mx-auto">
                             {/* Close button */}
@@ -442,8 +367,11 @@ export default function Gallery() {
                                 <div className="relative">
                                     <img
                                         loading="lazy"
-                                        src={currentImage.image}
-                                        alt={currentImage.title}
+                                        src={`/storage/berita/${filteredImages[currentImageIndex].image}`}
+                                        alt={
+                                            filteredImages[currentImageIndex]
+                                                .title
+                                        }
                                         className="w-full h-auto max-h-[70vh] object-contain"
                                     />
                                     <div className="absolute bottom-4 right-4 flex space-x-2">
@@ -457,19 +385,37 @@ export default function Gallery() {
                                 </div>
                                 <div className="p-6">
                                     <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                                        {currentImage.title}
+                                        {
+                                            filteredImages[currentImageIndex]
+                                                .title
+                                        }
                                     </h3>
                                     <p className="text-gray-600 mb-4">
-                                        {currentImage.description}
+                                        {
+                                            filteredImages[currentImageIndex]
+                                                .description
+                                        }
                                     </p>
                                     <div className="flex flex-wrap gap-4 text-sm text-gray-500">
                                         <div className="flex items-center">
                                             <FaCalendarAlt className="h-4 w-4 mr-2 text-blue-500" />
-                                            <span>{currentImage.date}</span>
+                                            <span>
+                                                {
+                                                    filteredImages[
+                                                        currentImageIndex
+                                                    ].date
+                                                }
+                                            </span>
                                         </div>
                                         <div className="flex items-center">
                                             <FaMapMarkerAlt className="h-4 w-4 mr-2 text-blue-500" />
-                                            <span>{currentImage.location}</span>
+                                            <span>
+                                                {
+                                                    filteredImages[
+                                                        currentImageIndex
+                                                    ].location
+                                                }
+                                            </span>
                                         </div>
                                     </div>
                                 </div>

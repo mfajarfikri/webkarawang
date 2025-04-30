@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import axios from "axios";
 import { Link, usePage, router } from "@inertiajs/react";
 import {
     FaSearch,
@@ -17,15 +18,35 @@ import {
     FaSignOutAlt,
 } from "react-icons/fa";
 import ApplicationLogo from "@/Components/ApplicationLogo";
-import { ToastContainer } from "react-toastify";
+import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
 export default function HomeLayout({ children }) {
     const { auth } = usePage().props;
     const [isScrolled, setIsScrolled] = useState(false);
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+    const [loading, setLoading] = useState(true);
     const [activeDropdown, setActiveDropdown] = useState(null);
     const [showLogoutModal, setShowLogoutModal] = useState(false);
+    const [berita, setBerita] = useState([]);
+    const [error, setError] = useState(null);
+    const beritaTerbaru = berita.slice(0, 3);
+
+    useEffect(() => {
+        const fetchBerita = async () => {
+            try {
+                const response = await axios.get("/api/berita");
+                setBerita(response.data.berita || []);
+            } catch (error) {
+                setError(error);
+                console.error("Error Fetching berita:", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchBerita();
+    }, []);
 
     // Deteksi scroll untuk mengubah navbar
     useEffect(() => {
@@ -56,7 +77,7 @@ export default function HomeLayout({ children }) {
     const navMenus = [
         {
             title: "Beranda",
-            url: "/",
+            url: route("home"),
         },
         {
             title: "Tentang Kami",
@@ -75,7 +96,7 @@ export default function HomeLayout({ children }) {
             title: "Layanan",
             url: "#",
             submenu: [
-                { title: "Layanan Pelanggan", url: "/layanan-pelanggan" },
+                { title: "Ruang Rapat", url: route("ruangRapat") },
                 { title: "Pasang Baru", url: "/pasang-baru" },
                 { title: "Tambah Daya", url: "/tambah-daya" },
                 {
@@ -89,7 +110,7 @@ export default function HomeLayout({ children }) {
             url: "#",
             submenu: [
                 { title: "Berita", url: "/berita" },
-                { title: "Pengumuman", url: "/pengumuman" },
+                { title: "Gardu Induk", url: route("gardu-induk") },
                 { title: "Tarif Listrik", url: "/tarif-listrik" },
                 { title: "FAQ", url: "/faq" },
             ],
@@ -174,7 +195,11 @@ export default function HomeLayout({ children }) {
                                 <div key={index} className="relative group">
                                     <Link
                                         href={menu.url}
-                                        className={`px-3 xl:px-4 py-2 text-sm font-medium text-gray-700 hover:text-blue-700 transition-colors duration-200 ${
+                                        className={`px-3 xl:px-4 py-2 text-sm font-medium ${
+                                            isScrolled
+                                                ? "text-black"
+                                                : "text-gray-700"
+                                        } hover:text-blue-700 transition-colors duration-200 ${
                                             menu.submenu
                                                 ? "flex items-center"
                                                 : ""
@@ -227,7 +252,7 @@ export default function HomeLayout({ children }) {
                                                     {auth.user.name.charAt(0)}
                                                 </span>
                                             </div>
-                                            <span className="font-medium text-sm sm:text-base hidden xs:block">
+                                            <span className="font-medium text-sm sm:text-base hidden sm:block">
                                                 {auth.user.name}
                                             </span>
                                         </div>
@@ -451,7 +476,8 @@ export default function HomeLayout({ children }) {
                                     <FaTwitter className="h-3 w-3 sm:h-4 sm:w-4" />
                                 </a>
                                 <a
-                                    href="#"
+                                    href="https://www.instagram.com/plnuptkarawang"
+                                    target="_blank"
                                     className="bg-gray-800 hover:bg-blue-600 h-7 w-7 sm:h-8 sm:w-8 rounded-full flex items-center justify-center transition-colors duration-200"
                                 >
                                     <FaInstagram className="h-3 w-3 sm:h-4 sm:w-4" />
@@ -517,6 +543,24 @@ export default function HomeLayout({ children }) {
                             <h3 className="text-sm sm:text-base font-semibold mb-3 sm:mb-4 text-white">
                                 Berita
                             </h3>
+                            <ul className="space-y-2 sm:space-y-3 text-xs sm:text-sm">
+                                {beritaTerbaru.map((b, index) => (
+                                    <li
+                                        className="flex items-start"
+                                        key={b.id ? b.id : index}
+                                    >
+                                        <Link
+                                            href={route(
+                                                "berita.detail",
+                                                b.slug
+                                            )}
+                                            className="text-gray-400 hover:text-blue-600"
+                                        >
+                                            {b.judul}
+                                        </Link>
+                                    </li>
+                                ))}
+                            </ul>
                         </div>
 
                         <div className="mt-4 sm:mt-0">

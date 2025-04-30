@@ -14,11 +14,14 @@ use App\Http\Controllers\StrukturOrganisasiController;
 use App\Http\Controllers\SettingsController;
 
 
-Route::controller(HomeController::class)->group(function() {
+Route::controller(HomeController::class)->group(function () {
     Route::get('/', 'index')->name('home');
+    Route::get('/gardu-induk', 'garduInduk')->name('gardu-induk');
     Route::get('/gallery', 'gallery')->name('gallery');
+    Route::get('/ruang-rapat', 'ruangRapat')->name("ruangRapat");
     Route::get('/struktur-organisasi', 'strukturOrganisasi')->name('struktur-organisasi');
     Route::get('/berita', 'berita')->name('berita');
+    Route::get('/berita/{slug}', 'beritaDetail')->name('berita.detail');
 });
 
 
@@ -35,7 +38,7 @@ Route::middleware('auth')->group(function () {
     Route::get('dashboard/berita', [BeritaController::class, 'index'])->name('berita.index');
     Route::get('dashboard/berita/create', [BeritaController::class, 'create'])->name('berita.create');
     Route::post('dashboard/berita/create', [BeritaController::class, 'store'])->name('berita.store');
-    
+    Route::get('dashboard/berita/{slug}', [BeritaController::class, 'show'])->name('berita.show');
 });
 
-require __DIR__.'/auth.php';
+require __DIR__ . '/auth.php';

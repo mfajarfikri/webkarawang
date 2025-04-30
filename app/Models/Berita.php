@@ -23,10 +23,10 @@ class Berita extends Model
         'gambar' => 'array'
     ];
 
-    public function karyawan()
-    {
-        return $this->belongsTo(Karyawan::class);
-    }
+    // public function karyawan()
+    // {
+    //     return $this->belongsTo(Karyawan::class);
+    // }
 
     public function user()
     {

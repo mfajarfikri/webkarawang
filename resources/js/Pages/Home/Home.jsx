@@ -6,18 +6,37 @@ import {
     FaClock,
     FaMapMarkerAlt,
     FaArrowRight,
-    FaLightbulb,
-    FaTools,
-    FaChartLine,
     FaUsers,
     FaBolt,
     FaIndustry,
     FaBuilding,
 } from "react-icons/fa";
+import axios from "axios";
+import { format } from "date-fns";
+import { id } from "date-fns/locale";
 
 export default function Home() {
     // State untuk carousel
     const [currentSlide, setCurrentSlide] = useState(0);
+    const [loading, setLoading] = useState(true);
+    const [berita, setBerita] = useState([]);
+    const BeritaTerbaru = berita.slice(0, 3);
+
+    useEffect(() => {
+        const fetchBerita = async () => {
+            try {
+                const response = await axios.get("/api/berita");
+                setBerita(response.data.berita || []);
+            } catch (error) {
+                setError(error);
+                console.error("Error Fetching berita:", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchBerita();
+    }, []);
 
     // Data carousel
     const carouselItems = [
@@ -47,40 +66,6 @@ export default function Home() {
                 "Mengembangkan teknologi terkini untuk sistem kelistrikan yang lebih efisien dan andal",
             buttonText: "Inovasi Kami",
             buttonLink: "/inovasi",
-        },
-    ];
-
-    // Data berita terbaru
-    const latestNews = [
-        {
-            id: 1,
-            title: "PLN Resmikan PLTS Terapung 145 MW di Cirata",
-            excerpt:
-                "Pembangkit Listrik Tenaga Surya (PLTS) terapung terbesar di Asia Tenggara ini akan mendukung program energi terbarukan nasional.",
-            date: "15 November 2023",
-            image: "https://images.unsplash.com/photo-1509391366360-2e959784a276?q=80&w=2072",
-            category: "Energi Terbarukan",
-            url: "/berita/plts-cirata",
-        },
-        {
-            id: 2,
-            title: "Program Elektrifikasi Desa Terpencil Capai 99.2%",
-            excerpt:
-                "PLN berhasil meningkatkan rasio elektrifikasi nasional hingga 99.2% termasuk di daerah-daerah terpencil Indonesia.",
-            date: "10 November 2023",
-            image: "https://images.unsplash.com/photo-1473341304170-971dccb5ac1e?q=80&w=2070",
-            category: "Elektrifikasi",
-            url: "/berita/elektrifikasi-desa",
-        },
-        {
-            id: 3,
-            title: "PLN Luncurkan Aplikasi Mobile Terbaru untuk Pelanggan",
-            excerpt:
-                "Aplikasi baru ini menawarkan fitur-fitur inovatif untuk memudahkan pelanggan dalam mengakses layanan kelistrikan.",
-            date: "5 November 2023",
-            image: "https://images.unsplash.com/photo-1555774698-0b77e0d5fac6?q=80&w=2070",
-            category: "Layanan Digital",
-            url: "/berita/aplikasi-mobile",
         },
     ];
 
@@ -329,30 +314,43 @@ export default function Home() {
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                        {latestNews.map((news) => (
+                        {BeritaTerbaru.map((news) => (
                             <div
                                 key={news.id}
                                 className="bg-white rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow duration-300"
                             >
                                 <div className="h-48 overflow-hidden">
                                     <img
-                                        src={news.image}
-                                        alt={news.title}
+                                        src={`/storage/berita/${
+                                            JSON.parse(news.gambar)[0]
+                                        }`}
+                                        alt={news.judul}
                                         className="w-full h-full object-cover transition-transform duration-500 hover:scale-105"
                                     />
                                 </div>
                                 <div className="p-6">
                                     <div className="flex items-center mb-3">
-                                        <span className="text-xs font-medium text-blue-600 bg-blue-50 px-2.5 py-0.5 rounded-full">
-                                            {news.category}
-                                        </span>
+                                        <div className="inline-flex gap-2">
+                                            <span className="flex justify-center items-center text-xs font-medium text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded-full">
+                                                <FaUsers />
+                                            </span>
+                                            |
+                                            <span className="text-xs text-gray-600">
+                                                {news.user?.name}
+                                            </span>
+                                        </div>
+
                                         <span className="text-xs text-gray-500 ml-2">
-                                            {news.date}
+                                            {format(
+                                                new Date(news.created_at),
+                                                "dd MM yyyy",
+                                                { locale: id }
+                                            )}
                                         </span>
                                     </div>
                                     <h3 className="text-xl font-semibold text-gray-900 mb-2 hover:text-blue-600 transition-colors">
                                         <Link href={news.url}>
-                                            {news.title}
+                                            {news.judul}
                                         </Link>
                                     </h3>
                                     <p className="text-gray-600 mb-4 line-clamp-2">

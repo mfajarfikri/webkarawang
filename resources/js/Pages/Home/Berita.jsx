@@ -1,41 +1,65 @@
 import HomeLayout from "@/Layouts/HomeLayout";
-import { Head } from "@inertiajs/react";
-import { useState } from "react";
+import { Head, Link } from "@inertiajs/react";
 import {
     FaCalendarAlt,
     FaUser,
     FaSearch,
-    FaFilter,
     FaChevronRight,
 } from "react-icons/fa";
+import { format } from "date-fns";
+import { id } from "date-fns/locale";
+import React, { useEffect, useState } from "react";
+import axios from "axios";
 
 export default function Berita() {
-    const [activeCategory, setActiveCategory] = useState("all");
     const [searchQuery, setSearchQuery] = useState("");
+    const [loading, setLoading] = useState(true);
+    const [berita, setBerita] = useState([]);
+    const [error, setError] = useState(null);
 
-    // Data kategori berita
-    const categories = [
-        { id: "all", name: "Semua" },
-        { id: "company", name: "Perusahaan" },
-        { id: "technology", name: "Teknologi" },
-        { id: "innovation", name: "Inovasi" },
-        { id: "community", name: "Komunitas" },
-    ];
+    useEffect(() => {
+        const fetchBerita = async () => {
+            try {
+                const response = await axios.get("/api/berita");
+                setBerita(response.data.berita || []);
+            } catch (error) {
+                setError(error);
+                console.error("Error Fetching berita:", error);
+            } finally {
+                setLoading(false);
+            }
+        };
 
-    // Data dummy berita (nanti bisa diganti dengan data dari backend)
-    const newsItems = [
-        {
-            id: 1,
-            title: "PLN UPT Karawang Berhasil Tingkatkan Keandalan Sistem Transmisi",
-            excerpt:
-                "PLN UPT Karawang mencatat prestasi gemilang dalam peningkatan keandalan sistem transmisi listrik melalui program pemeliharaan preventif.",
-            category: "technology",
-            image: "https://images.unsplash.com/photo-1473341304170-971dccb5ac1e?q=80&w=2070",
-            date: "20 Maret 2024",
-            author: "Tim Redaksi",
-        },
-        // ... tambahkan berita lainnya
-    ];
+        fetchBerita();
+    }, []);
+
+    // Filter berita based on activeCategory and searchQuery
+    const filteredBerita = berita.filter((news) => {
+        const matchesSearch =
+            news.judul.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            news.isi.toLowerCase().includes(searchQuery.toLowerCase());
+        return matchesSearch;
+    });
+
+    if (loading) {
+        return (
+            <HomeLayout>
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 text-center text-gray-700">
+                    Memuat berita...
+                </div>
+            </HomeLayout>
+        );
+    }
+
+    if (error) {
+        return (
+            <HomeLayout>
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 text-center text-red-600">
+                    Terjadi kesalahan saat memuat berita.
+                </div>
+            </HomeLayout>
+        );
+    }
 
     return (
         <>
@@ -47,15 +71,16 @@ export default function Berita() {
                         <img
                             src="https://images.unsplash.com/photo-1558403194-611308249627?q=80&w=2070"
                             alt="Hero Background"
-                            className="w-full h-full object-cover opacity-20"
+                            className="w-full h-full object-cover"
                         />
+                        <div className="absolute inset-0 bg-black opacity-50"></div>
                     </div>
-                    <div className="relative z-10 max-w-7xl mx-auto px-4 py-16 sm:px-6 lg:px-8">
+                    <div className="relative z-10 max-w-7xl mx-auto px-4 py-20 sm:px-6 lg:px-8">
                         <div className="text-center">
-                            <h1 className="text-4xl font-bold tracking-tight text-white sm:text-5xl lg:text-6xl">
+                            <h1 className="text-5xl font-extrabold tracking-tight text-white sm:text-6xl lg:text-7xl drop-shadow-lg">
                                 Berita Terkini
                             </h1>
-                            <p className="mt-6 max-w-2xl mx-auto text-xl text-blue-100">
+                            <p className="mt-6 max-w-3xl mx-auto text-2xl text-blue-200 drop-shadow-md">
                                 Temukan informasi terbaru seputar PLN UPT
                                 Karawang dan perkembangan industri kelistrikan
                             </p>
@@ -79,24 +104,8 @@ export default function Berita() {
                                     onChange={(e) =>
                                         setSearchQuery(e.target.value)
                                     }
+                                    aria-label="Cari berita"
                                 />
-                            </div>
-                            <div className="flex space-x-2 overflow-x-auto pb-2 md:pb-0">
-                                {categories.map((category) => (
-                                    <button
-                                        key={category.id}
-                                        onClick={() =>
-                                            setActiveCategory(category.id)
-                                        }
-                                        className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap ${
-                                            activeCategory === category.id
-                                                ? "bg-blue-600 text-white"
-                                                : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                                        } transition-colors duration-200`}
-                                    >
-                                        {category.name}
-                                    </button>
-                                ))}
                             </div>
                         </div>
                     </div>
@@ -104,54 +113,73 @@ export default function Berita() {
 
                 {/* News Grid */}
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                        {newsItems.map((news) => (
-                            <article
-                                key={news.id}
-                                className="bg-white rounded-xl shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden group"
-                            >
-                                <div className="relative h-48 overflow-hidden">
-                                    <img
-                                        src={news.image}
-                                        alt={news.title}
-                                        className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-500"
-                                    />
-                                    <div className="absolute top-4 left-4">
-                                        <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-600 text-white">
-                                            {
-                                                categories.find(
-                                                    (c) =>
-                                                        c.id === news.category
-                                                )?.name
-                                            }
-                                        </span>
+                    {filteredBerita.length === 0 ? (
+                        <div className="text-center text-gray-500">
+                            Tidak ada berita yang sesuai.
+                        </div>
+                    ) : (
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                            {filteredBerita.map((news) => (
+                                <article
+                                    key={news.id}
+                                    className="bg-white rounded-xl shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden group"
+                                >
+                                    <div className="relative h-48 overflow-hidden">
+                                        {news.gambar &&
+                                        JSON.parse(news.gambar).length > 0 ? (
+                                            <img
+                                                loading="lazy"
+                                                src={`/storage/berita/${
+                                                    JSON.parse(news.gambar)[0]
+                                                }`}
+                                                alt={news.judul}
+                                                className="w-full h-48 object-cover rounded hover:scale-110 transition-all duration-500"
+                                            />
+                                        ) : (
+                                            ""
+                                        )}
                                     </div>
-                                </div>
-                                <div className="p-6">
-                                    <div className="flex items-center text-sm text-gray-500 mb-4">
-                                        <FaCalendarAlt className="h-4 w-4 mr-2" />
-                                        <span>{news.date}</span>
-                                        <span className="mx-2">•</span>
-                                        <FaUser className="h-4 w-4 mr-2" />
-                                        <span>{news.author}</span>
+                                    <div className="p-6">
+                                        <div className="flex items-center text-sm text-gray-500 mb-4">
+                                            <FaCalendarAlt className="h-4 w-4 mr-2" />
+                                            <span>
+                                                {format(
+                                                    new Date(news.created_at),
+                                                    "dd MMM yyyy",
+                                                    {
+                                                        locale: id,
+                                                    }
+                                                )}
+                                            </span>
+                                            <span className="mx-2">•</span>
+                                            <FaUser className="h-4 w-4 mr-2" />
+                                            <span>{news.user?.name}</span>
+                                        </div>
+                                        <h3 className="text-xl font-bold text-gray-900 mb-3 group-hover:text-blue-600 transition-colors duration-200">
+                                            {news.judul}
+                                        </h3>
+                                        <p
+                                            className="text-gray-600 mb-4 line-clamp-2"
+                                            dangerouslySetInnerHTML={{
+                                                __html: news.isi,
+                                            }}
+                                        />
+                                        <div className="flex justify-between items-center pt-4 border-t border-gray-100">
+                                            <Link
+                                                href={route(
+                                                    "berita.detail",
+                                                    news.slug
+                                                )}
+                                                className="text-blue-600 hover:text-blue-700 text-sm font-medium"
+                                            >
+                                                Baca selengkapnya
+                                            </Link>
+                                        </div>
                                     </div>
-                                    <h3 className="text-xl font-bold text-gray-900 mb-3 group-hover:text-blue-600 transition-colors duration-200">
-                                        {news.title}
-                                    </h3>
-                                    <p className="text-gray-600 mb-4 line-clamp-2">
-                                        {news.excerpt}
-                                    </p>
-                                    <a
-                                        href="#"
-                                        className="inline-flex items-center text-blue-600 font-medium hover:text-blue-800 transition-colors duration-200"
-                                    >
-                                        Baca Selengkapnya
-                                        <FaChevronRight className="ml-2 h-4 w-4" />
-                                    </a>
-                                </div>
-                            </article>
-                        ))}
-                    </div>
+                                </article>
+                            ))}
+                        </div>
+                    )}
                 </div>
             </HomeLayout>
         </>

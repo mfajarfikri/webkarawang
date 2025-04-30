@@ -124,14 +124,10 @@ export default function Create({ karyawans, flash, auth }) {
                     canvas.toBlob(
                         (blob) => {
                             // Buat file baru dengan tipe JPEG
-                            const newFile = new File(
-                                [blob],
-                                `${file.name}.jpg`,
-                                {
-                                    type: "image/jpeg",
-                                    lastModified: Date.now(),
-                                }
-                            );
+                            const newFile = new File([blob], `${file.name}`, {
+                                type: "image/jpeg",
+                                lastModified: Date.now(),
+                            });
                             resolve(newFile);
                         },
                         "image/jpeg",

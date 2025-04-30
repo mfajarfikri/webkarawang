@@ -18,7 +18,15 @@ class BeritaController extends Controller
      */
     public function index()
     {
-        return Inertia::render('Dashboard/Berita/Berita');
+        // $berita = Berita::with('user')->latest()->get();
+
+        // return response()->json([
+        //     'berita' => $berita
+        // ]);
+
+        return Inertia::render('Dashboard/Berita/Berita', [
+            'berita' => Berita::with('user')->latest()->paginate(6)
+        ]);
     }
 
     /**
@@ -54,14 +62,14 @@ class BeritaController extends Controller
         $photos = [];
         if ($request->hasFile('gambar')) {
             $gambar = $request->file('gambar');
-            
+
             foreach ($gambar as $file) {
                 // Periksa jika file valid
                 if ($file->isValid()) {
                     // Nama file gambar
-                    $namaGambar = time() . '_' . $file->getClientOriginalName();
+                    $namaGambar = time() . '_' . uniqid() . $file->getClientOriginalName();
                     // Simpan gambar ke direktori public/berita
-                    $file->storeAs('public/berita', $namaGambar);
+                    $file->storeAs('berita', $namaGambar, 'public');
                     // Tambahkan nama file ke dalam array photos
                     $photos[] = $namaGambar;
                 }
@@ -95,15 +103,16 @@ class BeritaController extends Controller
                 'message' => 'Gagal membuat Berita: ' . $e->getMessage()
             ], 500);
         }
-
     }
 
     /**
      * Display the specified resource.
      */
-    public function show(Berita $berita)
+    public function show($slug)
     {
-        //
+        return Inertia::render('Dashboard/Berita/Detail', [
+            'berita' => Berita::where('slug', $slug)->first()
+        ]);
     }
 
     /**
@@ -134,9 +143,9 @@ class BeritaController extends Controller
             if ($berita->gambar) {
                 Storage::delete('public/berita/' . $berita->gambar);
             }
-            
+
             $gambar = $request->file('gambar');
-            $namaGambar = time() . '_' . $gambar->getClientOriginalName();
+            $namaGambar = time() . '_' . str_replace(' ', '-', $gambar->getClientOriginalName());
             $gambar->storeAs('public/berita', $namaGambar);
             $data['gambar'] = $namaGambar;
         }
@@ -155,7 +164,7 @@ class BeritaController extends Controller
         if ($berita->gambar) {
             Storage::delete('public/berita/' . $berita->gambar);
         }
-        
+
         $berita->delete();
 
         return redirect()->route('berita.index')

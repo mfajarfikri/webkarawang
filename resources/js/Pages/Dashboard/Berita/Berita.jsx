@@ -10,94 +10,18 @@ import {
     FaSearch,
     FaSpinner,
     FaNewspaper,
-    FaCheckCircle,
-    FaTimesCircle,
-    FaEye,
     FaEllipsisV,
+    FaArrowLeft,
+    FaArrowRight,
 } from "react-icons/fa";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
 import { toast } from "react-hot-toast";
 import debounce from "lodash/debounce";
 
-export default function Berita({ berita: initialBerita }) {
-    // Tambahkan data dummy berita
-    const dummyBerita = {
-        data: [
-            {
-                id: 1,
-                judul: "PLN UPT Karawang Berhasil Tingkatkan Keandalan Sistem Transmisi",
-                isi: "PLN UPT Karawang mencatat prestasi gemilang dalam peningkatan keandalan sistem transmisi listrik. Melalui program pemeliharaan preventif dan implementasi teknologi smart grid, tingkat gangguan transmisi berhasil ditekan hingga 30% dibanding tahun sebelumnya.",
-                gambar: "https://images.unsplash.com/photo-1473341304170-971dccb5ac1e?q=80&w=2070",
-                created_at: "2024-03-20T08:00:00.000Z",
-                karyawan: {
-                    name: "Ahmad Subarjo",
-                },
-            },
-            {
-                id: 2,
-                judul: "Inovasi Baru: Implementasi IoT untuk Monitoring Gardu Induk",
-                isi: "Tim teknis PLN UPT Karawang mengembangkan sistem monitoring berbasis Internet of Things (IoT) untuk pengawasan real-time pada gardu induk. Inovasi ini memungkinkan deteksi dini potensi gangguan dan respons yang lebih cepat terhadap masalah teknis.",
-                gambar: "https://images.unsplash.com/photo-1509391366360-2e959784a276?q=80&w=2072",
-                created_at: "2024-03-19T10:30:00.000Z",
-                karyawan: {
-                    name: "Siti Nurhaliza",
-                },
-            },
-            {
-                id: 3,
-                judul: "Program Pemeliharaan Transformator Daya 500kV Berhasil Diselesaikan",
-                isi: "PLN UPT Karawang telah menyelesaikan program pemeliharaan rutin transformator daya 500kV di seluruh gardu induk wilayah operasional. Kegiatan ini merupakan bagian dari upaya menjaga keandalan pasokan listrik untuk industri dan pelanggan premium.",
-                gambar: "https://images.unsplash.com/photo-1558403194-611308249627?q=80&w=2070",
-                created_at: "2024-03-18T09:15:00.000Z",
-                karyawan: {
-                    name: "Budi Santoso",
-                },
-            },
-            {
-                id: 4,
-                judul: "Kunjungan Kerja Direktur Transmisi Jawa Bagian Barat",
-                isi: "Direktur Transmisi Jawa Bagian Barat melakukan kunjungan kerja ke PLN UPT Karawang untuk meninjau kesiapan infrastruktur transmisi dalam menghadapi beban puncak. Dalam kunjungan tersebut, dibahas juga rencana pengembangan jaringan untuk 5 tahun ke depan.",
-                gambar: "https://images.unsplash.com/photo-1497435334941-8c899ee9e8e9?q=80&w=2074",
-                created_at: "2024-03-17T14:20:00.000Z",
-                karyawan: {
-                    name: "Rini Widiastuti",
-                },
-            },
-            {
-                id: 5,
-                judul: "Pelatihan K3 untuk Petugas Pemeliharaan Transmisi",
-                isi: "Sebanyak 50 petugas pemeliharaan transmisi PLN UPT Karawang mengikuti pelatihan Keselamatan dan Kesehatan Kerja (K3). Pelatihan ini fokus pada prosedur kerja aman pada ketinggian dan penanganan peralatan bertegangan tinggi.",
-                gambar: "https://images.unsplash.com/photo-1581094794329-c8112a89af12?q=80&w=2070",
-                created_at: "2024-03-16T11:45:00.000Z",
-                karyawan: {
-                    name: "Dedi Kurniawan",
-                },
-            },
-            {
-                id: 6,
-                judul: "Pencapaian Zero Trip pada Sistem Transmisi Bulan Februari",
-                isi: "PLN UPT Karawang mencatatkan prestasi zero trip pada sistem transmisi selama bulan Februari 2024. Pencapaian ini merupakan hasil dari konsistensi dalam pemeliharaan preventif dan respons cepat terhadap potensi gangguan.",
-                gambar: "https://images.unsplash.com/photo-1498084393753-b411b2d26b34?q=80&w=2069",
-                created_at: "2024-03-15T13:00:00.000Z",
-                karyawan: {
-                    name: "Eko Prasetyo",
-                },
-            },
-        ],
-        // Tambahkan informasi paginasi
-        current_page: 1,
-        per_page: 6,
-        total: 6,
-        links: [
-            { url: null, label: "&laquo; Previous", active: false },
-            { url: "?page=1", label: "1", active: true },
-            { url: null, label: "Next &raquo;", active: false },
-        ],
-    };
-
+export default function Berita({ berita: initialBerita, response }) {
     const [searchTerm, setSearchTerm] = useState("");
-    const [berita, setBerita] = useState(initialBerita || dummyBerita);
+    const [berita, setBerita] = useState(initialBerita || "");
     const [isLoading, setIsLoading] = useState(false);
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [beritaToDelete, setBeritaToDelete] = useState(null);
@@ -122,8 +46,8 @@ export default function Berita({ berita: initialBerita }) {
     useEffect(() => {
         if (searchTerm) {
             const filteredBerita = {
-                ...dummyBerita,
-                data: dummyBerita.data.filter(
+                ...berita,
+                data: berita.data.filter(
                     (item) =>
                         item.judul
                             .toLowerCase()
@@ -135,7 +59,7 @@ export default function Berita({ berita: initialBerita }) {
             };
             setBerita(filteredBerita);
         } else {
-            setBerita(initialBerita || dummyBerita);
+            setBerita(initialBerita || berita);
         }
         return () => debouncedSearch.cancel();
     }, [searchTerm]);
@@ -207,26 +131,38 @@ export default function Berita({ berita: initialBerita }) {
 
                 {/* Berita Grid */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {berita?.data?.map((item) => (
+                    {initialBerita?.data?.map((item) => (
                         <div
                             key={item.id}
                             className="bg-white rounded-xl shadow-sm hover:shadow-md transition-all duration-300"
                         >
                             <div className="relative h-48 overflow-hidden rounded-t-xl">
+                                {/* {item.gambar} */}
                                 <img
-                                    src={
-                                        item.gambar ||
-                                        "https://images.unsplash.com/photo-1473341304170-971dccb5ac1e?q=80&w=2070"
-                                    }
+                                    src={`/storage/berita/${
+                                        JSON.parse(item.gambar)[0]
+                                    }`}
                                     alt={item.judul}
                                     loading="lazy"
                                     className="w-full h-full object-cover"
                                 />
+                                <button
+                                    onClick={""}
+                                    className="absolute left-4 top-1/2 transform -translate-y-1/2 bg-black/50 p-2 rounded-full text-white"
+                                >
+                                    <FaArrowLeft />
+                                </button>
+                                <button
+                                    onClick={""}
+                                    className="absolute right-4 top-1/2 transform -translate-y-1/2 bg-black/50 p-2 rounded-full text-white"
+                                >
+                                    <FaArrowRight />
+                                </button>
                                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/30 to-transparent" />
                                 <div className="absolute bottom-4 left-4 right-4 flex justify-between items-center text-white">
                                     <div className="flex items-center text-sm">
                                         <FaUser className="mr-2" />
-                                        {item.karyawan?.name || "Admin"}
+                                        {item.user.name || "-"}
                                     </div>
                                     <div className="flex items-center text-sm">
                                         <FaCalendar className="mr-2" />
@@ -243,13 +179,16 @@ export default function Berita({ berita: initialBerita }) {
                                 <h2 className="text-xl font-semibold text-gray-800 line-clamp-2 mb-3">
                                     {item.judul}
                                 </h2>
-                                <p className="text-gray-600 line-clamp-3 mb-4">
-                                    {item.isi}
-                                </p>
+                                <p
+                                    className="text-gray-600 line-clamp-3 mb-4"
+                                    dangerouslySetInnerHTML={{
+                                        __html: item.isi,
+                                    }}
+                                />
 
                                 <div className="flex justify-between items-center pt-4 border-t border-gray-100">
                                     <Link
-                                        // href={route("berita.show", item.id)}
+                                        href={route("berita.show", item.slug)}
                                         className="text-blue-600 hover:text-blue-700 text-sm font-medium"
                                     >
                                         Baca selengkapnya
@@ -301,7 +240,8 @@ export default function Berita({ berita: initialBerita }) {
                 </div>
 
                 {/* Empty State */}
-                {(!berita?.data || berita?.data?.length === 0) && (
+                {(!initialBerita?.data ||
+                    initialBerita?.data?.length === 0) && (
                     <div className="text-center py-12">
                         <FaNewspaper className="mx-auto h-12 w-12 text-gray-400" />
                         <h3 className="mt-2 text-lg font-medium text-gray-900">
