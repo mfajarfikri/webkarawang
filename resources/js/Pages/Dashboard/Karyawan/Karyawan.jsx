@@ -443,16 +443,14 @@ export default function EmployeeManagement() {
                 </div>
 
                 {/* Tabel Karyawan */}
-                <div className="bg-white shadow-sm rounded-xl overflow-hidden">
-                    <div className="overflow-x-auto">
+                <div className="bg-white shadow-sm">
+                    <div className="h-[100vh] w-full overflow-hidden">
                         <DataGrid
                             className="text-wrap"
                             rows={filteredEmployees}
                             columns={columns}
                             getRowId={(row) => row.id}
                             rowsPerPageOptions={[10, 20, 50]}
-                            autoHeight
-                            pageSize={itemsPerPage}
                             onPageChange={(newPage) => setCurrentPage(newPage)}
                         />
                     </div>

@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Models\Berita;
-use Illuminate\Http\Request;
 use Inertia\Inertia;
 
 class HomeController extends Controller
@@ -49,5 +48,14 @@ class HomeController extends Controller
         return Inertia::render('Home/BeritaDetail', [
             'berita' => $berita
         ]);
+    }
+
+    public function ktt() {
+        return Inertia::render('Home/Ktt');
+    }
+
+    public function anomali()
+    {
+        return Inertia::render('Home/Anomali/Anomali');
     }
 }

@@ -5,6 +5,7 @@ import {
     FaUser,
     FaSearch,
     FaChevronRight,
+    FaEye,
 } from "react-icons/fa";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
@@ -33,6 +34,23 @@ export default function Berita() {
         fetchBerita();
     }, []);
 
+    // Function to increment read count for a berita by slug
+    const incrementReadCount = async (slug) => {
+        try {
+            await axios.post(`/api/berita/${slug}/increment-read`);
+            // Optionally update local state to reflect increment
+            setBerita((prevBerita) =>
+                prevBerita.map((news) =>
+                    news.slug === slug
+                        ? { ...news, read_count: (news.read_count || 0) + 1 }
+                        : news
+                )
+            );
+        } catch (error) {
+            console.error("Failed to increment read count:", error);
+        }
+    };
+
     // Filter berita based on activeCategory and searchQuery
     const filteredBerita = berita.filter((news) => {
         const matchesSearch =
@@ -60,7 +78,6 @@ export default function Berita() {
             </HomeLayout>
         );
     }
-
     return (
         <>
             <Head title="Berita" />
@@ -69,11 +86,13 @@ export default function Berita() {
                 <div className="relative bg-blue-900 overflow-hidden">
                     <div className="absolute inset-0">
                         <img
-                            src="https://images.unsplash.com/photo-1558403194-611308249627?q=80&w=2070"
+                            src={`/img/heroBerita.jpg`}
                             alt="Hero Background"
-                            className="w-full h-full object-cover"
+                            className="w-full h-full object-cover object-center"
+                            loading="eager"
+                            fetchpriority="high"
                         />
-                        <div className="absolute inset-0 bg-black opacity-50"></div>
+                        <div className="absolute inset-0 bg-gradient-to-b from-black/70 to-black/50"></div>
                     </div>
                     <div className="relative z-10 max-w-7xl mx-auto px-4 py-20 sm:px-6 lg:px-8">
                         <div className="text-center">
@@ -140,40 +159,57 @@ export default function Berita() {
                                         )}
                                     </div>
                                     <div className="p-6">
-                                        <div className="flex items-center text-sm text-gray-500 mb-4">
-                                            <FaCalendarAlt className="h-4 w-4 mr-2" />
-                                            <span>
-                                                {format(
-                                                    new Date(news.created_at),
-                                                    "dd MMM yyyy",
-                                                    {
-                                                        locale: id,
-                                                    }
-                                                )}
-                                            </span>
-                                            <span className="mx-2">•</span>
-                                            <FaUser className="h-4 w-4 mr-2" />
-                                            <span>{news.user?.name}</span>
+                                        <div className="flex items-center justify-between text-sm text-gray-500 mb-4 space-x-4">
+                                            <div className="flex items-baseline space-x-1">
+                                                <FaCalendarAlt className="h-2 w-2" />
+                                                <span className="text-xs">
+                                                    {format(
+                                                        new Date(
+                                                            news.created_at
+                                                        ),
+                                                        "d MMM yyyy",
+                                                        {
+                                                            locale: id,
+                                                        }
+                                                    )}
+                                                </span>
+                                            </div>{" "}
                                         </div>
-                                        <h3 className="text-xl font-bold text-gray-900 mb-3 group-hover:text-blue-600 transition-colors duration-200">
-                                            {news.judul}
-                                        </h3>
-                                        <p
-                                            className="text-gray-600 mb-4 line-clamp-2"
-                                            dangerouslySetInnerHTML={{
-                                                __html: news.isi,
-                                            }}
-                                        />
-                                        <div className="flex justify-between items-center pt-4 border-t border-gray-100">
+                                        <h3 className="text-xl line-clamp-2 font-bold text-gray-900 mb-3 group-hover:text-blue-600 transition-colors duration-200">
                                             <Link
                                                 href={route(
                                                     "berita.detail",
                                                     news.slug
                                                 )}
-                                                className="text-blue-600 hover:text-blue-700 text-sm font-medium"
+                                                onClick={() =>
+                                                    incrementReadCount(
+                                                        news.slug
+                                                    )
+                                                }
                                             >
-                                                Baca selengkapnya
+                                                {news.judul}
                                             </Link>
+                                        </h3>
+                                        <p
+                                            className="text-gray-600 mb-4 line-clamp-2"
+                                            dangerouslySetInnerHTML={{
+                                                __html: news.excerpt,
+                                            }}
+                                        />
+                                        <div className="flex justify-between items-center text-sm text-gray-500 space-x-4">
+                                            <div className="text-xs">
+                                                {news.user.name}
+                                            </div>
+                                            <div className="flex justify-between items-center">
+                                                <div className="flex items-center space-x-1">
+                                                    <FaEye className="text-gray-300" />
+                                                    <span className="text-gray-400 text-xs">
+                                                        dilihat{" "}
+                                                        {news.read_count || 0}{" "}
+                                                        kali
+                                                    </span>
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
                                 </article>

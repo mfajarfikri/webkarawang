@@ -40,9 +40,8 @@ export default function Detail({ berita }) {
                     <h1 className="text-3xl md:text-4xl font-bold text-center text-gray-800 mb-8">
                         {berita.judul}
                     </h1>
-
                     {/* Carousel */}
-                    <div className="relative w-full aspect-video overflow-hidden rounded-2xl shadow-xl mb-8">
+                    <div className="relative w-full aspect-video overflow-hidden rounded-2xl shadow-xl mb-1">
                         {gambarArray.map((item, index) => (
                             <div
                                 key={index}
@@ -90,6 +89,7 @@ export default function Detail({ berita }) {
                             ))}
                         </div>
                     </div>
+                    <div className="mb-6 text-xs italic">{berita.excerpt}</div>
 
                     {/* Berita description */}
                     {berita.isi && (

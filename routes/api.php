@@ -10,3 +10,4 @@ Route::get('/user', function (Request $request) {
 })->middleware('auth:sanctum');
 
 Route::get('/berita', [GuestController::class, 'berita']);
+Route::post('/berita/{slug}/increment-read', [GuestController::class, 'incrementReadCount']);

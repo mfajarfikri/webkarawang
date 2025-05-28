@@ -11,6 +11,7 @@ import {
     FaHouseUser,
     FaCog,
     FaGlobe,
+    FaBuilding,
 } from "react-icons/fa";
 import { Transition } from "@headlessui/react";
 
@@ -337,7 +338,7 @@ export default function DashboardLayout({ children, title = "Dashboard" }) {
                                                             Selamat Datang!
                                                         </p>
                                                         <p className="text-xs text-amber-600">
-                                                            Admin Dashboard
+                                                            {auth.user.name}
                                                         </p>
                                                     </div>
                                                 </div>
@@ -492,6 +493,27 @@ function SidebarMenu({ collapsed = false }) {
                     title="Berita"
                 />
                 {!collapsed && <span>Berita</span>}
+            </Link>
+            <Link
+                href={route("ktt.index")}
+                className={`group flex items-center ${
+                    collapsed ? "justify-center" : ""
+                } px-3 py-2.5 text-sm font-medium rounded-lg ${
+                    isActive("/ktt")
+                        ? "bg-blue-50 text-blue-700"
+                        : "text-gray-700 hover:bg-blue-50 hover:text-blue-700"
+                } transition-colors duration-200 menu-item-hover`}
+            >
+                <FaBuilding
+                    className={`${collapsed ? "" : "mr-3"} h-5 w-5 ${
+                        isActive("/ktt")
+                            ? "text-blue-600"
+                            : "text-gray-500 group-hover:text-blue-600"
+                    }`}
+                    aria-label="ktt"
+                    title="ktt"
+                />
+                {!collapsed && <span>KTT</span>}
             </Link>
 
             <Link

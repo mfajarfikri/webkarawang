@@ -23,6 +23,7 @@ import {
     FaAlignJustify,
     FaSave,
     FaSpinner,
+    FaLevelDownAlt,
 } from "react-icons/fa";
 import { useForm } from "@inertiajs/react";
 import { ToastContainer, toast } from "react-toastify";
@@ -45,8 +46,13 @@ import {
     TbTablePlus,
 } from "react-icons/tb";
 import axios from "axios";
+import Modal from "react-modal";
 
 export default function Create({ karyawans, flash, auth }) {
+    React.useEffect(() => {
+        Modal.setAppElement(document.body);
+    }, []);
+
     const generateSlug = (text) => {
         if (!text) return ""; // jika kosong, kembalikan string kosong
         return text
@@ -59,9 +65,33 @@ export default function Create({ karyawans, flash, auth }) {
 
     const { data, setData, post, processing, errors, reset } = useForm({
         judul: "",
+        excerpt: "",
         slug: generateSlug(),
         isi: "",
     });
+
+    const initialDataRef = React.useRef({
+        judul: "",
+        excerpt: "",
+        slug: generateSlug(""),
+        isi: "",
+        photos: [],
+    });
+
+    const isDirty = () => {
+        const initialData = initialDataRef.current;
+        const formChanged =
+            data.judul !== initialData.judul ||
+            data.excerpt !== initialData.excerpt ||
+            data.slug !== initialData.slug ||
+            data.isi !== initialData.isi;
+
+        const photosChanged =
+            photos.length !== initialData.photos.length ||
+            photos.some((photo, index) => photo !== initialData.photos[index]);
+
+        return formChanged || photosChanged;
+    };
 
     useEffect(() => {
         if (data.judul) {
@@ -69,10 +99,84 @@ export default function Create({ karyawans, flash, auth }) {
         }
     }, [data.judul]);
 
-    const formData = new FormData();
     const [photos, setPhotos] = useState([]); // will store File objects
     const [previewPhotos, setPreviewPhotos] = useState([]); // will store preview URLs
     const fileInputRef = useRef(null);
+    const [isDirtyState, setIsDirtyState] = useState(false);
+    const [showLeaveModal, setShowLeaveModal] = useState(false);
+    const [pendingNavigation, setPendingNavigation] = useState(null);
+
+    useEffect(() => {
+        // Set initial data snapshot on mount
+        initialDataRef.current = {
+            judul: data.judul,
+            excerpt: data.excerpt,
+            slug: data.slug,
+            isi: data.isi,
+            photos: photos,
+        };
+    }, []);
+
+    useEffect(() => {
+        const dirty = isDirty();
+        setIsDirtyState(dirty);
+        console.log("isDirty:", dirty);
+    }, [data, photos]);
+
+    // Handle browser refresh or close
+    useEffect(() => {
+        const handleBeforeUnload = (e) => {
+            if (isDirty()) {
+                e.preventDefault();
+                e.returnValue = "";
+                return "";
+            }
+        };
+        window.addEventListener("beforeunload", handleBeforeUnload);
+        return () => {
+            window.removeEventListener("beforeunload", handleBeforeUnload);
+        };
+    }, [data, photos]);
+
+    // Handle Inertia navigation using router.before
+    useEffect(() => {
+        const handleBefore = (event) => {
+            if (isDirty()) {
+                event.preventDefault();
+                setPendingNavigation(event.detail.visit);
+                setShowLeaveModal(true);
+                console.log("Navigation prevented, showing modal");
+            }
+        };
+        const unsubscribe = router.on("before", handleBefore);
+        return () => {
+            if (typeof unsubscribe === "function") {
+                unsubscribe();
+            }
+        };
+    }, [data, photos]);
+
+    const confirmLeave = () => {
+        setShowLeaveModal(false);
+        if (pendingNavigation) {
+            console.log("Confirm leave pendingNavigation:", pendingNavigation);
+            if (typeof pendingNavigation.retry === "function") {
+                pendingNavigation.retry();
+            } else if (pendingNavigation.url) {
+                router.visit(pendingNavigation.url);
+            }
+            setPendingNavigation(null);
+        }
+    };
+
+    const cancelLeave = () => {
+        setShowLeaveModal(false);
+        setPendingNavigation(null);
+    };
+
+    useEffect(() => {
+        console.log("Modal showLeaveModal state:", showLeaveModal);
+    }, [showLeaveModal]);
 
     const toastConfig = {
         position: "top-right",
@@ -219,10 +323,6 @@ export default function Create({ karyawans, flash, auth }) {
                 autoClose: 3000,
             });
         }
-
-        // const newPreviews = files.map((file) => URL.createObjectURL(file));
-        // setPhotos((prevPhotos) => [...prevPhotos, ...files]);
-        // setPreviewPhotos((prevPreview) => [...prevPreview, ...newPreviews]);
     };
 
     const removePhoto = (index) => {
@@ -246,9 +346,8 @@ export default function Create({ karyawans, flash, auth }) {
     const handleSubmit = async (e) => {
         e.preventDefault();
 
-        setIsSubmitting(true); // Mengatur status pengiriman
+        setIsSubmitting(true);
 
-        // Validasi untuk foto (jika belum ada foto yang dipilih)
         if (photos.length === 0) {
             toast.error("Harap Tambahkan minimal 1 foto", toastConfig);
             setIsSubmitting(false);
@@ -258,7 +357,11 @@ export default function Create({ karyawans, flash, auth }) {
         const formData = new FormData();
         formData.append("judul", data.judul);
         formData.append("slug", data.slug);
-        formData.append("isi", data.isi);
+        formData.append("excerpt", data.excerpt);
+        const processedContent = data.isi
+            .replace(/<p><br><\/p>/g, '<p class="mb-4"></p>')
+            .replace(/<p>/g, '<p class="mb-4">');
+        formData.append("isi", processedContent);
         formData.append("karyawan_id", data.karyawan_id);
         photos.forEach((file) => {
             formData.append("gambar[]", file);
@@ -273,15 +376,11 @@ export default function Create({ karyawans, flash, auth }) {
                 },
             });
 
-            // Menampilkan notifikasi sukses setelah data berhasil dikirim
             toast.success(`Berita ${data.judul} berhasil dibuat`, toastConfig);
-
-            // Reset form dan gambar
             reset();
             setPhotos([]);
             setPreviewPhotos([]);
 
-            // Mengarahkan pengguna ke halaman berita
             setTimeout(() => {
                 router.visit(route("berita.index"));
             }, 2000);
@@ -294,7 +393,7 @@ export default function Create({ karyawans, flash, auth }) {
                 toastConfig
             );
         } finally {
-            setIsSubmitting(false); // Mengatur status pengiriman kembali ke false
+            setIsSubmitting(false);
         }
     };
 
@@ -496,6 +595,14 @@ export default function Create({ karyawans, flash, auth }) {
                         >
                             <FaAlignJustify className="w-4 h-4" />
                         </button>
+                        <button
+                            onClick={() =>
+                                editor.chain().focus().setHardBreak().run()
+                            }
+                            title="Hard Break"
+                        >
+                            <FaLevelDownAlt className="w-4 h-4" />
+                        </button>
                         <div className="w-px h-6 bg-gray-200 mx-1"></div>
                         <button
                             onClick={() =>
@@ -681,7 +788,18 @@ export default function Create({ karyawans, flash, auth }) {
     };
 
     const extensions = [
-        StarterKit,
+        StarterKit.configure({
+            paragraph: {
+                HTMLAttributes: {
+                    class: "mb-4",
+                },
+            },
+            hardBreak: {
+                HTMLAttributes: {
+                    class: "my-4",
+                },
+            },
+        }),
         Table.configure({
             resizable: true,
         }),
@@ -712,9 +830,12 @@ export default function Create({ karyawans, flash, auth }) {
                                 type="text"
                                 id="judul"
                                 value={data.judul}
-                                onChange={(e) =>
-                                    setData("judul", e.target.value)
-                                }
+                                onChange={(e) => {
+                                    setData("judul", e.target.value);
+                                }}
+                                onInput={() => {
+                                    if (!isDirtyState) setIsDirtyState(true);
+                                }}
                                 className="mt-1 block w-full rounded-md uppercase border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                                 required
                                 autoComplete="off"
@@ -725,7 +846,6 @@ export default function Create({ karyawans, flash, auth }) {
                                 </p>
                             )}
                         </div>
-
                         <div>
                             <label
                                 htmlFor="slug"
@@ -750,6 +870,55 @@ export default function Create({ karyawans, flash, auth }) {
                                 </p>
                             )}
                         </div>
+                        {showLeaveModal && (
+                            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                                <div className="bg-white rounded-lg p-6 max-w-md mx-auto">
+                                    <h2 className="text-lg font-semibold mb-4">
+                                        Perubahan belum disimpan
+                                    </h2>
+                                    <p className="mb-6">
+                                        Anda memiliki perubahan yang belum
+                                        disimpan. Apakah Anda yakin ingin
+                                        meninggalkan halaman ini?
+                                    </p>
+                                    <p className="text-red-600 font-bold">
+                                        Modal is visible
+                                    </p>
+                                    <div className="flex justify-end space-x-4">
+                                        <button
+                                            onClick={cancelLeave}
+                                            className="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400"
+                                        >
+                                            Batal
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={confirmLeave}
+                                            className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+                                        >
+                                            Tinggalkan
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                        <div className="">
+                            <label
+                                htmlFor="excerpt"
+                                className="block text-sm font-medium text-gray-700"
+                            >
+                                Excerpt
+                            </label>
+                            <textarea
+                                name="excerpt"
+                                className="block mt-1 shadow-sm italic text-xs rounded-md border-gray-300 w-full"
+                                value={data.excerpt}
+                                onChange={(e) =>
+                                    setData("excerpt", e.target.value)
+                                }
+                            ></textarea>
+                        </div>
+
                         <div>
                             <label
                                 htmlFor="foto_berita"
@@ -862,7 +1031,6 @@ export default function Create({ karyawans, flash, auth }) {
                                 </div>
                             )}
                         </div>
-
                         <div>
                             <label className="block text-sm font-medium text-gray-700">
                                 Isi Berita
@@ -883,7 +1051,6 @@ export default function Create({ karyawans, flash, auth }) {
                                 </p>
                             )}
                         </div>
-
                         <div className="flex justify-end">
                             <button
                                 type="submit"

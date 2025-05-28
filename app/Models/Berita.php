@@ -13,10 +13,12 @@ class Berita extends Model
     protected $fillable = [
         'judul',
         'slug',
+        'excerpt',
         'isi',
         'gambar',
         'user_id',
         'created_by',
+        'read_count',
     ];
 
     protected $casts = [

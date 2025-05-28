@@ -16,4 +16,20 @@ class GuestController extends Controller
             'berita' => $berita
         ]);
     }
+
+    /**
+     * Increment the read count for a berita by slug.
+     */
+    public function incrementReadCount($slug)
+    {
+        $berita = Berita::where('slug', $slug)->first();
+
+        if (!$berita) {
+            return response()->json(['message' => 'Berita not found'], 404);
+        }
+
+        $berita->increment('read_count');
+
+        return response()->json(['message' => 'Read count incremented successfully']);
+    }
 }

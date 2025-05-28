@@ -17,14 +17,16 @@ export default function Login({ status, canResetPassword }) {
     };
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-slate-50 to-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+        <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
             <Head title="Login" />
 
             <div className="sm:mx-auto sm:w-full sm:max-w-md">
                 <div className="flex justify-center">
-                    <ApplicationLogo className="w-20 h-20" />
+                    <div className="bg-white p-4 rounded-full shadow-lg">
+                        <ApplicationLogo className="w-20 h-20" />
+                    </div>
                 </div>
-                <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
+                <h2 className="mt-6 text-center text-3xl font-extrabold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
                     Selamat Datang Kembali
                 </h2>
                 <p className="mt-2 text-center text-sm text-gray-600">
@@ -33,9 +35,9 @@ export default function Login({ status, canResetPassword }) {
             </div>
 
             <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-                <div className="bg-white py-8 px-4 shadow-xl rounded-lg sm:px-10 border border-gray-100">
+                <div className="bg-white py-8 px-4 shadow-2xl rounded-2xl sm:px-10 border border-gray-100 backdrop-blur-sm bg-opacity-90">
                     {status && (
-                        <div className="mb-4 p-4 rounded-md bg-green-50 border border-green-200">
+                        <div className="mb-4 p-4 rounded-xl bg-green-50 border border-green-200">
                             <p className="text-sm font-medium text-green-800">
                                 {status}
                             </p>
@@ -50,9 +52,9 @@ export default function Login({ status, canResetPassword }) {
                             >
                                 Email
                             </label>
-                            <div className="mt-1 relative rounded-md shadow-sm">
+                            <div className="mt-1 relative rounded-lg shadow-sm">
                                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                    <FaEnvelope className="h-5 w-5 text-gray-400" />
+                                    <FaEnvelope className="h-5 w-5 text-blue-500" />
                                 </div>
                                 <input
                                     id="email"
@@ -64,11 +66,11 @@ export default function Login({ status, canResetPassword }) {
                                     onChange={(e) =>
                                         setData("email", e.target.value)
                                     }
-                                    className={`appearance-none block w-full pl-10 px-3 py-2 border ${
+                                    className={`appearance-none block w-full pl-10 px-3 py-2.5 border ${
                                         errors.email
                                             ? "border-red-300"
                                             : "border-gray-300"
-                                    } rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm`}
+                                    } rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition duration-150 ease-in-out`}
                                     placeholder="Masukkan email Anda"
                                 />
                             </div>
@@ -86,9 +88,9 @@ export default function Login({ status, canResetPassword }) {
                             >
                                 Password
                             </label>
-                            <div className="mt-1 relative rounded-md shadow-sm">
+                            <div className="mt-1 relative rounded-lg shadow-sm">
                                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                    <FaLock className="h-5 w-5 text-gray-400" />
+                                    <FaLock className="h-5 w-5 text-blue-500" />
                                 </div>
                                 <input
                                     id="password"
@@ -100,11 +102,11 @@ export default function Login({ status, canResetPassword }) {
                                     onChange={(e) =>
                                         setData("password", e.target.value)
                                     }
-                                    className={`appearance-none block w-full pl-10 pr-10 px-3 py-2 border ${
+                                    className={`appearance-none block w-full pl-10 pr-10 px-3 py-2.5 border ${
                                         errors.password
                                             ? "border-red-300"
                                             : "border-gray-300"
-                                    } rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm`}
+                                    } rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition duration-150 ease-in-out`}
                                     placeholder="Masukkan password Anda"
                                 />
                                 <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
@@ -113,7 +115,7 @@ export default function Login({ status, canResetPassword }) {
                                         onClick={() =>
                                             setShowPassword(!showPassword)
                                         }
-                                        className="text-gray-400 hover:text-gray-500 focus:outline-none"
+                                        className="text-gray-400 hover:text-blue-500 focus:outline-none transition duration-150 ease-in-out"
                                     >
                                         {showPassword ? (
                                             <FaEyeSlash className="h-5 w-5" />
@@ -140,7 +142,7 @@ export default function Login({ status, canResetPassword }) {
                                     onChange={(e) =>
                                         setData("remember", e.target.checked)
                                     }
-                                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded transition duration-150 ease-in-out"
                                 />
                                 <label
                                     htmlFor="remember"
@@ -154,7 +156,7 @@ export default function Login({ status, canResetPassword }) {
                                 <div className="text-sm">
                                     <Link
                                         href={route("password.request")}
-                                        className="font-medium text-blue-600 hover:text-blue-500"
+                                        className="font-medium text-blue-600 hover:text-blue-500 transition duration-150 ease-in-out"
                                     >
                                         Lupa password?
                                     </Link>
@@ -166,7 +168,7 @@ export default function Login({ status, canResetPassword }) {
                             <button
                                 type="submit"
                                 disabled={processing}
-                                className="w-full flex justify-center py-2 px-4 rounded-md shadow-sm text-sm font-medium text-white bg-[linear-gradient(to_right,_#3b82f6,_#6366f1,_#3b82f6)] bg-[length:200%_100%] bg-left hover:bg-right transition-[background-position] duration-1000 ease-in-out focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                                className="w-full flex justify-center py-2.5 px-4 rounded-lg shadow-sm text-sm font-medium text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200 ease-in-out transform hover:scale-[1.02]"
                             >
                                 {processing ? (
                                     <div className="flex items-center">
@@ -214,7 +216,7 @@ export default function Login({ status, canResetPassword }) {
                         <div className="mt-6">
                             <Link
                                 href={route("register")}
-                                className="w-full flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200"
+                                className="w-full flex justify-center py-2.5 px-4 border border-gray-300 rounded-lg shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200 ease-in-out transform hover:scale-[1.02]"
                             >
                                 Daftar Sekarang
                             </Link>

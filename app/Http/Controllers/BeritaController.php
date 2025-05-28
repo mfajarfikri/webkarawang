@@ -18,12 +18,6 @@ class BeritaController extends Controller
      */
     public function index()
     {
-        // $berita = Berita::with('user')->latest()->get();
-
-        // return response()->json([
-        //     'berita' => $berita
-        // ]);
-
         return Inertia::render('Dashboard/Berita/Berita', [
             'berita' => Berita::with('user')->latest()->paginate(6)
         ]);
@@ -48,6 +42,7 @@ class BeritaController extends Controller
         $validator = Validator::make($request->all(), [
             'judul' => 'required|string|max:255',
             'isi' => 'required|string',
+            'excerpt' => 'required|string',
             'gambar' => 'required|array',
             'gambar.*' => 'required|image|max:5048',
         ]);
@@ -87,6 +82,7 @@ class BeritaController extends Controller
             $berita = Berita::create([
                 'judul' => $request->judul,
                 'slug' => $request->slug,
+                'excerpt' => $request->excerpt,
                 'user_id' => Auth::id(),
                 'isi' => $request->isi,
                 'gambar' => json_encode($photos),  // Simpan array gambar dalam bentuk JSON
@@ -110,8 +106,14 @@ class BeritaController extends Controller
      */
     public function show($slug)
     {
+        $berita = Berita::where('slug', $slug)->first();
+
+        if ($berita) {
+            $berita->increment('read_count');
+        }
+
         return Inertia::render('Dashboard/Berita/Detail', [
-            'berita' => Berita::where('slug', $slug)->first()
+            'berita' => $berita
         ]);
     }
 
@@ -170,4 +172,6 @@ class BeritaController extends Controller
         return redirect()->route('berita.index')
             ->with('success', 'Berita berhasil dihapus');
     }
+
+
 }

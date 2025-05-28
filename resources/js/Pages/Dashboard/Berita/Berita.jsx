@@ -17,7 +17,6 @@ import {
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
 import { toast } from "react-hot-toast";
-import debounce from "lodash/debounce";
 
 export default function Berita({ berita: initialBerita, response }) {
     const [searchTerm, setSearchTerm] = useState("");
@@ -28,41 +27,12 @@ export default function Berita({ berita: initialBerita, response }) {
     const [actionDropdown, setActionDropdown] = useState(null);
     const { flash } = usePage().props;
 
-    // Live Search dengan Debounce
-    const debouncedSearch = debounce(async (value) => {
-        setIsLoading(true);
-        try {
-            const response = await fetch(`/api/berita/search?q=${value}`);
-            const data = await response.json();
-            setBerita(data);
-        } catch (error) {
-            console.error("Search error:", error);
-            toast.error("Gagal melakukan pencarian");
-        } finally {
-            setIsLoading(false);
-        }
-    }, 300);
-
-    useEffect(() => {
-        if (searchTerm) {
-            const filteredBerita = {
-                ...berita,
-                data: berita.data.filter(
-                    (item) =>
-                        item.judul
-                            .toLowerCase()
-                            .includes(searchTerm.toLowerCase()) ||
-                        item.isi
-                            .toLowerCase()
-                            .includes(searchTerm.toLowerCase())
-                ),
-            };
-            setBerita(filteredBerita);
-        } else {
-            setBerita(initialBerita || berita);
-        }
-        return () => debouncedSearch.cancel();
-    }, [searchTerm]);
+    const filteredBerita =
+        berita?.data?.filter(
+            (item) =>
+                item.judul.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                item.user.name.toLowerCase().includes(searchTerm.toLowerCase())
+        ) || [];
 
     const handleDelete = async (id) => {
         try {
@@ -131,7 +101,7 @@ export default function Berita({ berita: initialBerita, response }) {
 
                 {/* Berita Grid */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {initialBerita?.data?.map((item) => (
+                    {filteredBerita.map((item) => (
                         <div
                             key={item.id}
                             className="bg-white rounded-xl shadow-sm hover:shadow-md transition-all duration-300"
@@ -146,18 +116,6 @@ export default function Berita({ berita: initialBerita, response }) {
                                     loading="lazy"
                                     className="w-full h-full object-cover"
                                 />
-                                <button
-                                    onClick={""}
-                                    className="absolute left-4 top-1/2 transform -translate-y-1/2 bg-black/50 p-2 rounded-full text-white"
-                                >
-                                    <FaArrowLeft />
-                                </button>
-                                <button
-                                    onClick={""}
-                                    className="absolute right-4 top-1/2 transform -translate-y-1/2 bg-black/50 p-2 rounded-full text-white"
-                                >
-                                    <FaArrowRight />
-                                </button>
                                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/30 to-transparent" />
                                 <div className="absolute bottom-4 left-4 right-4 flex justify-between items-center text-white">
                                     <div className="flex items-center text-sm">

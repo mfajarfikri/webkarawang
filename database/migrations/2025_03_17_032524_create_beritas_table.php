@@ -15,6 +15,7 @@ return new class extends Migration
             $table->id();
             $table->string('judul');
             $table->string('slug')->unique();
+            $table->text('excerpt');
             $table->longText('isi');
             $table->json('gambar');
             $table->foreignId('user_id')->constrained('users')->onDelete('cascade');

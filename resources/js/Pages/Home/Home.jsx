@@ -20,7 +20,21 @@ export default function Home() {
     const [currentSlide, setCurrentSlide] = useState(0);
     const [loading, setLoading] = useState(true);
     const [berita, setBerita] = useState([]);
+    const [ktt, setKtt] = useState([]);
     const BeritaTerbaru = berita.slice(0, 3);
+
+    useEffect(() => {
+        axios
+            .get(route("ktt.index"))
+            .then((response) => {
+                setKtt(response.data);
+                setLoading(false);
+            })
+            .catch((error) => {
+                console.error("Error Fetching Data Ktt", error);
+                setLoading(false);
+            });
+    }, []);
 
     useEffect(() => {
         const fetchBerita = async () => {
@@ -259,7 +273,7 @@ export default function Home() {
                             </div>
                             <div className="mb-4">
                                 <div className="text-3xl font-bold text-purple-600 mb-2">
-                                    76
+                                    {ktt.length}
                                 </div>
                                 <p className="text-gray-600">Total Pelanggan</p>
                             </div>
@@ -334,22 +348,25 @@ export default function Home() {
                                             <span className="flex justify-center items-center text-xs font-medium text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded-full">
                                                 <FaUsers />
                                             </span>
-                                            |
                                             <span className="text-xs text-gray-600">
-                                                {news.user?.name}
+                                                {news.user?.name},
                                             </span>
                                         </div>
-
-                                        <span className="text-xs text-gray-500 ml-2">
+                                        <span className="text-xs text-gray-500 ml-1">
                                             {format(
                                                 new Date(news.created_at),
-                                                "dd MM yyyy",
+                                                "dd MMM yyyy",
                                                 { locale: id }
                                             )}
                                         </span>
                                     </div>
                                     <h3 className="text-xl font-semibold text-gray-900 mb-2 hover:text-blue-600 transition-colors">
-                                        <Link href={news.url}>
+                                        <Link
+                                            href={route(
+                                                "berita.detail",
+                                                news.slug
+                                            )}
+                                        >
                                             {news.judul}
                                         </Link>
                                     </h3>

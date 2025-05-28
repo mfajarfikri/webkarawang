@@ -111,8 +111,8 @@ export default function HomeLayout({ children }) {
             submenu: [
                 { title: "Berita", url: "/berita" },
                 { title: "Gardu Induk", url: route("gardu-induk") },
-                { title: "Tarif Listrik", url: "/tarif-listrik" },
-                { title: "FAQ", url: "/faq" },
+                { title: "KTT", url: "/ktt" },
+                { title: "Anomali", url: "/anomali" },
             ],
         },
         {
@@ -444,58 +444,58 @@ export default function HomeLayout({ children }) {
 
             {/* Footer - Lebih modern dan simpel */}
             <footer className="bg-gray-900 text-white">
-                <div className="container mx-auto px-4 py-8 sm:py-10">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+                <div className="container mx-auto px-4 py-6">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                         <div>
-                            <div className="flex items-center mb-4 sm:mb-5">
-                                <ApplicationLogo className="h-8 w-8 sm:h-10 sm:w-10" />
+                            <div className="flex items-center mb-3">
+                                <ApplicationLogo className="h-7 w-7" />
                                 <div className="ml-2">
-                                    <h1 className="text-lg sm:text-xl font-bold text-white">
+                                    <h1 className="text-base font-bold text-white">
                                         PLN
                                     </h1>
-                                    <p className="text-[8px] sm:text-[10px] text-blue-300 font-medium tracking-wide">
+                                    <p className="text-[8px] text-blue-300 font-medium tracking-wide">
                                         UPT KARAWANG
                                     </p>
                                 </div>
                             </div>
-                            <p className="text-gray-400 text-xs sm:text-sm mb-4 sm:mb-5 leading-relaxed">
+                            <p className="text-gray-400 text-xs mb-3 leading-relaxed">
                                 Menjadi Perusahaan Global Top 500 dan #1 Pilihan
                                 Pelanggan untuk Solusi Energi.
                             </p>
-                            <div className="flex space-x-2 sm:space-x-3">
+                            <div className="flex space-x-2">
                                 <a
                                     href="#"
-                                    className="bg-gray-800 hover:bg-blue-600 h-7 w-7 sm:h-8 sm:w-8 rounded-full flex items-center justify-center transition-colors duration-200"
+                                    className="bg-gray-800 hover:bg-blue-600 h-6 w-6 rounded-full flex items-center justify-center transition-colors duration-200"
                                 >
-                                    <FaFacebookF className="h-3 w-3 sm:h-4 sm:w-4" />
+                                    <FaFacebookF className="h-3 w-3" />
                                 </a>
                                 <a
                                     href="#"
-                                    className="bg-gray-800 hover:bg-blue-600 h-7 w-7 sm:h-8 sm:w-8 rounded-full flex items-center justify-center transition-colors duration-200"
+                                    className="bg-gray-800 hover:bg-blue-600 h-6 w-6 rounded-full flex items-center justify-center transition-colors duration-200"
                                 >
-                                    <FaTwitter className="h-3 w-3 sm:h-4 sm:w-4" />
+                                    <FaTwitter className="h-3 w-3" />
                                 </a>
                                 <a
                                     href="https://www.instagram.com/plnuptkarawang"
                                     target="_blank"
-                                    className="bg-gray-800 hover:bg-blue-600 h-7 w-7 sm:h-8 sm:w-8 rounded-full flex items-center justify-center transition-colors duration-200"
+                                    className="bg-gray-800 hover:bg-blue-600 h-6 w-6 rounded-full flex items-center justify-center transition-colors duration-200"
                                 >
-                                    <FaInstagram className="h-3 w-3 sm:h-4 sm:w-4" />
+                                    <FaInstagram className="h-3 w-3" />
                                 </a>
                                 <a
                                     href="#"
-                                    className="bg-gray-800 hover:bg-blue-600 h-7 w-7 sm:h-8 sm:w-8 rounded-full flex items-center justify-center transition-colors duration-200"
+                                    className="bg-gray-800 hover:bg-blue-600 h-6 w-6 rounded-full flex items-center justify-center transition-colors duration-200"
                                 >
-                                    <FaYoutube className="h-3 w-3 sm:h-4 sm:w-4" />
+                                    <FaYoutube className="h-3 w-3" />
                                 </a>
                             </div>
                         </div>
 
-                        <div className="mt-4 sm:mt-0">
-                            <h3 className="text-sm sm:text-base font-semibold mb-3 sm:mb-4 text-white">
+                        <div>
+                            <h3 className="text-sm font-semibold mb-2 text-white">
                                 Tautan Cepat
                             </h3>
-                            <ul className="space-y-1 sm:space-y-2 text-xs sm:text-sm">
+                            <ul className="space-y-1 text-xs">
                                 <li>
                                     <a
                                         href="#"
@@ -539,16 +539,13 @@ export default function HomeLayout({ children }) {
                             </ul>
                         </div>
 
-                        <div className="mt-4 sm:mt-0">
-                            <h3 className="text-sm sm:text-base font-semibold mb-3 sm:mb-4 text-white">
+                        <div>
+                            <h3 className="text-sm font-semibold mb-2 text-white">
                                 Berita
                             </h3>
-                            <ul className="space-y-2 sm:space-y-3 text-xs sm:text-sm">
+                            <ul className="space-y-1 text-xs">
                                 {beritaTerbaru.map((b, index) => (
-                                    <li
-                                        className="flex items-start"
-                                        key={b.id ? b.id : index}
-                                    >
+                                    <li key={b.id ? b.id : index}>
                                         <Link
                                             href={route(
                                                 "berita.detail",
@@ -563,26 +560,26 @@ export default function HomeLayout({ children }) {
                             </ul>
                         </div>
 
-                        <div className="mt-4 sm:mt-0">
-                            <h3 className="text-sm sm:text-base font-semibold mb-3 sm:mb-4 text-white">
+                        <div>
+                            <h3 className="text-sm font-semibold mb-2 text-white">
                                 Kontak Kami
                             </h3>
-                            <ul className="space-y-2 sm:space-y-3 text-xs sm:text-sm">
+                            <ul className="space-y-1 text-xs">
                                 <li className="flex items-start">
-                                    <FaMapMarkerAlt className="h-4 w-4 sm:h-5 sm:w-5 mr-2 mt-0.5 text-blue-400 flex-shrink-0" />
+                                    <FaMapMarkerAlt className="h-4 w-4 mr-2 mt-0.5 text-blue-400 flex-shrink-0" />
                                     <span className="text-gray-400">
                                         Jl. Raya Kosambi Klari No.1, RT.2/RW.7,
                                         Pancawati, Karawang, Jawa Barat 41371
                                     </span>
                                 </li>
                                 <li className="flex items-center">
-                                    <FaPhoneAlt className="h-3 w-3 sm:h-4 sm:w-4 mr-2 text-blue-400 flex-shrink-0" />
+                                    <FaPhoneAlt className="h-3 w-3 mr-2 text-blue-400 flex-shrink-0" />
                                     <span className="text-gray-400">
                                         123-456-789
                                     </span>
                                 </li>
                                 <li className="flex items-center">
-                                    <FaEnvelope className="h-3 w-3 sm:h-4 sm:w-4 mr-2 text-blue-400 flex-shrink-0" />
+                                    <FaEnvelope className="h-3 w-3 mr-2 text-blue-400 flex-shrink-0" />
                                     <span className="text-gray-400">
                                         galleryuptkrwg@gmail.com
                                     </span>
@@ -592,15 +589,15 @@ export default function HomeLayout({ children }) {
                     </div>
                 </div>
 
-                <div className="border-t border-gray-800 py-4">
+                <div className="border-t border-gray-800 py-3">
                     <div className="container mx-auto px-4">
                         <div className="flex flex-col sm:flex-row justify-between items-center">
-                            <p className="text-gray-500 text-xs sm:text-sm">
+                            <p className="text-gray-500 text-xs">
                                 &copy; {new Date().getFullYear()} PLN. Hak Cipta
                                 Dilindungi.
                             </p>
-                            <div className="mt-3 sm:mt-0">
-                                <ul className="flex space-x-4 sm:space-x-6 text-[10px] sm:text-xs">
+                            <div className="mt-2 sm:mt-0">
+                                <ul className="flex space-x-4 text-[10px]">
                                     <li>
                                         <a
                                             href="#"
