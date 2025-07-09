@@ -272,13 +272,13 @@ export default function HomeLayout({ children }) {
                                         }`}
                                     >
                                         <Link
-                                            href={route("dashboard")}
+                                            href={route("dashboard.index")}
                                             className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                                         >
                                             Dashboard
                                         </Link>
                                         <Link
-                                            href={route("profile.edit")}
+                                            href={route("dashboard.profile.edit")}
                                             className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                                         >
                                             Profil
@@ -548,7 +548,7 @@ export default function HomeLayout({ children }) {
                                     <li key={b.id ? b.id : index}>
                                         <Link
                                             href={route(
-                                                "berita.detail",
+                                                "dashboard.berita.show",
                                                 b.slug
                                             )}
                                             className="text-gray-400 hover:text-blue-600"

@@ -36,11 +36,11 @@ export default function Berita({ berita: initialBerita, response }) {
 
     const handleDelete = async (id) => {
         try {
-            await router.delete(route("berita.destroy", id));
+            await router.delete(route("dashboard.berita.destroy", id));
             toast.success("Berita berhasil dihapus");
             setShowDeleteModal(false);
             setBeritaToDelete(null);
-        } catch (error) {
+        } catch (error) {   
             toast.error("Gagal menghapus berita");
         }
     };
@@ -72,7 +72,7 @@ export default function Berita({ berita: initialBerita, response }) {
                                 </p>
                             </div>
                             <Link
-                                href={route("berita.create")}
+                                href={route("dashboard.berita.create")}
                                 className="inline-flex items-center px-4 py-2 bg-white text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-200 shadow-sm font-medium"
                             >
                                 <FaPlus className="mr-2" />
@@ -146,7 +146,7 @@ export default function Berita({ berita: initialBerita, response }) {
 
                                 <div className="flex justify-between items-center pt-4 border-t border-gray-100">
                                     <Link
-                                        href={route("berita.show", item.slug)}
+                                        href={route("dashboard.berita.show", item.slug)}
                                         className="text-blue-600 hover:text-blue-700 text-sm font-medium"
                                     >
                                         Baca selengkapnya
@@ -165,7 +165,7 @@ export default function Berita({ berita: initialBerita, response }) {
                                                 <div className="py-1">
                                                     <Link
                                                         href={route(
-                                                            "berita.edit",
+                                                            "dashboard.berita.edit",
                                                             item.id
                                                         )}
                                                         className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
@@ -210,7 +210,7 @@ export default function Berita({ berita: initialBerita, response }) {
                         </p>
                         <div className="mt-6">
                             <Link
-                                href={route("berita.create")}
+                                href={route("dashboard.berita.create")}
                                 className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
                             >
                                 <FaPlus className="mr-2" />

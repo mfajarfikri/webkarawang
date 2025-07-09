@@ -1,12 +1,14 @@
 <?php
 
-use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\DashboardController;
-use App\Http\Controllers\KaryawanController;
-use App\Http\Controllers\HomeController;
-use App\Http\Controllers\BeritaController;
 use App\Http\Controllers\KttController;
+use App\Http\Controllers\HomeController;
+use App\Http\Controllers\RoleController;
+use App\Http\Controllers\UserController;
+use App\Http\Controllers\BeritaController;
+use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\PermissionController;
 
 
 Route::controller(HomeController::class)->group(function () {
@@ -15,7 +17,7 @@ Route::controller(HomeController::class)->group(function () {
     Route::get('/berita/{slug}', 'beritaDetail')->name('berita.detail');
     Route::get('/gardu-induk', 'garduInduk')->name('gardu-induk');
     Route::get('/gallery', 'gallery')->name('gallery');
-    Route::get('/ktt', 'ktt')->name('ktt');
+    Route::get('/ktt', 'ktt')->name('ktt.index');
     Route::get('/ruang-rapat', 'ruangRapat')->name("ruangRapat");
     Route::get('/struktur-organisasi', 'strukturOrganisasi')->name('struktur-organisasi');
     Route::get('/anomali', 'anomali')->name('anomali');
@@ -23,23 +25,41 @@ Route::controller(HomeController::class)->group(function () {
 
 
 Route::middleware('auth')->group(function () {
-    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
-    Route::get('dashboard/profile', [ProfileController::class, 'edit'])->name('profile.edit');
-    Route::patch('dashboard/profile', [ProfileController::class, 'update'])->name('profile.update');
-    Route::delete('dashboard/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard.index');
+});
 
-    Route::get('dashboard/karyawan', [KaryawanController::class, 'index'])->name('karyawan.index');
-    Route::post('dashboard/karyawan', [KaryawanController::class, 'store'])->name('karyawan.store');
-    Route::get('dashboard/karyawan/download-template', [KaryawanController::class, 'downloadTemplate'])->name('karyawan.download-template');
-    Route::post('dashboard/karyawan/import', [KaryawanController::class, 'importExcel'])->name('karyawan.import');
+Route::middleware(['auth'])->prefix('dashboard')->group(function () {
 
-    Route::get('dashboard/berita', [BeritaController::class, 'index'])->name('berita.index');
-    Route::get('dashboard/berita/create', [BeritaController::class, 'create'])->name('berita.create');
-    Route::post('dashboard/berita/create', [BeritaController::class, 'store'])->name('berita.store');
-    Route::get('dashboard/berita/{slug}', [BeritaController::class, 'show'])->name('berita.show');
+    
+    Route::get('profile', [ProfileController::class, 'edit'])->name('dashboard.profile.edit');
+    Route::patch('profile', [ProfileController::class, 'update'])->name('dashboard.profile.update');
+    Route::delete('profile', [ProfileController::class, 'destroy'])->name('dashboard.profile.destroy');
 
-    Route::get('dashboard/ktt', [KttController::class, 'index'])->name('ktt.index');
-    Route::post('dashboard/ktt', [KttController::class, 'store'])->name('ktt.store');
+    Route::get('berita', [BeritaController::class, 'index'])->name('dashboard.berita.index');
+    Route::get('berita/create', [BeritaController::class, 'create'])->name('dashboard.berita.create');
+    Route::post('berita/create', [BeritaController::class, 'store'])->name('dashboard.berita.store');
+    Route::get('berita/{slug}', [BeritaController::class, 'show'])->name('dashboard.berita.show');
+
+    Route::get('ktt', [KttController::class, 'index'])->name('dashboard.ktt.index');
+    Route::post('ktt', [KttController::class, 'store'])->name('dashboard.ktt.store');
+
+    Route::get('user', [UserController::class, 'index'])->name('dashboard.user.index');
+    Route::post('user', [UserController::class, 'store'])->name('dashboard.user.store');
+    Route::get('user/{id}/role', [UserController::class, 'showAssignRoleForm'])->name('dashboard.user.role.edit');
+    Route::post('user/{id}/role', [UserController::class, 'updateRole'])->name('dashboard.user.role.update');
+
+    Route::get('role', [RoleController::class, 'index'])->name('role.index');
+    Route::post('roles', [RoleController::class, 'store']);
+    Route::resource('roles', RoleController::class)->only(['edit', 'update']);
+    Route::resource('permissions', PermissionController::class)->names('permissions');
+    Route::delete('roles/{role}', [RoleController::class, 'destroy']);
+
+    Route::get('permission', [PermissionController::class, 'index'])->name('permission.index');
+    Route::post('permissions', [PermissionController::class, 'store']);
+    Route::delete('permissions/{permission}', [PermissionController::class, 'destroy']);
+
+    Route::get('role/{id}/permissions', [RoleController::class, 'editPermissions'])->name('role.permissions.edit');
+    Route::post('role/{id}/permissions', [RoleController::class, 'updatePermissions'])->name('role.permissions.update');
 });
 
 require __DIR__ . '/auth.php';

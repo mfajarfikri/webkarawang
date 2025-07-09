@@ -13,15 +13,18 @@ return new class extends Migration
     {
         Schema::create('users', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('karyawan_id')->constrained('karyawans');
             $table->string('name');
             $table->string('email')->unique();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
+            $table->string('jabatan')->nullable();
+            $table->string('kedudukan')->nullable();
+            $table->string('foto_profil')->nullable();
             $table->rememberToken();
-            $table->enum('role', ['superadmin', 'admin', 'user'])->default('user');
             $table->softDeletes();
             $table->timestamps();
+
+            
         });
 
         Schema::create('password_reset_tokens', function (Blueprint $table) {

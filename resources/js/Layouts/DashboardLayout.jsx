@@ -12,6 +12,9 @@ import {
     FaCog,
     FaGlobe,
     FaBuilding,
+    FaUser,
+    FaUserShield, // Role management
+    FaKey,        // Permission management
 } from "react-icons/fa";
 import { Transition } from "@headlessui/react";
 
@@ -435,36 +438,7 @@ function SidebarMenu({ collapsed = false }) {
                 {!collapsed && <span>Dashboard</span>}
             </Link>
 
-            {!collapsed && (
-                <div className="pt-2 pb-1">
-                    <p className="px-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">
-                        Manajemen
-                    </p>
-                </div>
-            )}
-
-            <Link
-                href={route("karyawan.index")}
-                className={`group flex items-center ${
-                    collapsed ? "justify-center" : ""
-                } px-3 py-2.5 text-sm font-medium rounded-lg ${
-                    isActive("/karyawan")
-                        ? "bg-blue-50 text-blue-700"
-                        : "text-gray-700 hover:bg-blue-50 hover:text-blue-700"
-                } transition-colors duration-200 menu-item-hover`}
-            >
-                <FaUsers
-                    className={`${collapsed ? "" : "mr-3"} h-5 w-5 ${
-                        isActive("/karyawan")
-                            ? "text-blue-600"
-                            : "text-gray-500 group-hover:text-blue-600"
-                    }`}
-                    aria-label="Kelola Karyawan"
-                    title="Kelola Karyawan"
-                />
-                {!collapsed && <span>Kelola Karyawan</span>}
-            </Link>
-
+            
             {!collapsed && (
                 <div className="pt-2 pb-1">
                     <p className="px-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">
@@ -474,7 +448,7 @@ function SidebarMenu({ collapsed = false }) {
             )}
 
             <Link
-                href={route("berita.index")}
+                href={route("dashboard.berita.index")}
                 className={`group flex items-center ${
                     collapsed ? "justify-center" : ""
                 } px-3 py-2.5 text-sm font-medium rounded-lg ${
@@ -495,7 +469,7 @@ function SidebarMenu({ collapsed = false }) {
                 {!collapsed && <span>Berita</span>}
             </Link>
             <Link
-                href={route("ktt.index")}
+                href={route("dashboard.ktt.index")}
                 className={`group flex items-center ${
                     collapsed ? "justify-center" : ""
                 } px-3 py-2.5 text-sm font-medium rounded-lg ${
@@ -539,7 +513,7 @@ function SidebarMenu({ collapsed = false }) {
             </Link>
 
             <Link
-                // href={route("pengumuman.index")}
+                // href={route("dashboard.pengumuman.index")}
                 className={`group flex items-center ${
                     collapsed ? "justify-center" : ""
                 } px-3 py-2.5 text-sm font-medium rounded-lg ${
@@ -561,7 +535,7 @@ function SidebarMenu({ collapsed = false }) {
             </Link>
 
             <Link
-                // href={route("struktur-organisasi.index")}
+                // href={route("dashboard.struktur-organisasi.index")}
                 className={`group flex items-center ${
                     collapsed ? "justify-center" : ""
                 } px-3 py-2.5 text-sm font-medium rounded-lg ${
@@ -581,6 +555,27 @@ function SidebarMenu({ collapsed = false }) {
                 />
                 {!collapsed && <span>Struktur Organisasi</span>}
             </Link>
+            <Link
+                href={route("dashboard.user.index")}
+                className={`group flex items-center ${
+                    collapsed ? "justify-center" : ""
+                } px-3 py-2.5 text-sm font-medium rounded-lg ${
+                    isActive("/user")
+                        ? "bg-blue-50 text-blue-700"
+                        : "text-gray-700 hover:bg-blue-50 hover:text-blue-700"
+                } transition-colors duration-200 menu-item-hover`}
+            >
+                <FaUser
+                    className={`${collapsed ? "" : "mr-3"} h-5 w-5 ${
+                        isActive("/user")
+                            ? "text-blue-600"
+                            : "text-gray-500 group-hover:text-blue-600"
+                    }`}
+                    aria-label="User"
+                    title="User"
+                />
+                {!collapsed && <span>User</span>}
+            </Link>
 
             {!collapsed && (
                 <div className="pt-2 pb-1">
@@ -591,7 +586,7 @@ function SidebarMenu({ collapsed = false }) {
             )}
 
             <Link
-                // href={route("settings.index")}
+                // href={route("dashboard.settings.index")}
                 className={`group flex items-center ${
                     collapsed ? "justify-center" : ""
                 } px-3 py-2.5 text-sm font-medium rounded-lg ${
@@ -610,6 +605,49 @@ function SidebarMenu({ collapsed = false }) {
                     title="Pengaturan"
                 />
                 {!collapsed && <span>Pengaturan</span>}
+            </Link>
+
+            <Link
+                href={"/dashboard/role"}
+                className={`group flex items-center ${
+                    collapsed ? "justify-center" : ""
+                } px-3 py-2.5 text-sm font-medium rounded-lg ${
+                    isActive("/dashboard/role")
+                        ? "bg-blue-50 text-blue-700"
+                        : "text-gray-700 hover:bg-blue-50 hover:text-blue-700"  
+                } transition-colors duration-200 menu-item-hover`}
+            >
+                <FaUserShield
+                    className={`${collapsed ? "" : "mr-3"} h-5 w-5 ${
+                        isActive("/dashboard/role")
+                            ? "text-blue-600"
+                            : "text-gray-500 group-hover:text-blue-600"
+                    }`}
+                    aria-label="Role"
+                    title="Role"
+                />
+                {!collapsed && <span>Role</span>}
+            </Link>
+            <Link
+                href={"/dashboard/permission"}
+                className={`group flex items-center ${
+                    collapsed ? "justify-center" : ""
+                } px-3 py-2.5 text-sm font-medium rounded-lg ${
+                    isActive("/dashboard/permission")
+                        ? "bg-blue-50 text-blue-700"
+                        : "text-gray-700 hover:bg-blue-50 hover:text-blue-700"
+                } transition-colors duration-200 menu-item-hover`}
+            >
+                <FaKey
+                    className={`${collapsed ? "" : "mr-3"} h-5 w-5 ${
+                        isActive("/dashboard/permission")
+                            ? "text-blue-600"
+                            : "text-gray-500 group-hover:text-blue-600"
+                    }`}
+                    aria-label="Permission"
+                    title="Permission"
+                />
+                {!collapsed && <span>Permission</span>}
             </Link>
 
             {!collapsed && (
@@ -632,7 +670,7 @@ function SidebarMenu({ collapsed = false }) {
             >
                 <FaGlobe
                     className={`${collapsed ? "" : "mr-3"} h-5 w-5 ${
-                        isActive("/website")
+                        isActive("/dashboard.website")
                             ? "text-blue-600"
                             : "text-gray-500 group-hover:text-blue-600"
                     }`}

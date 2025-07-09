@@ -22,12 +22,10 @@ class DatabaseSeeder extends Seeder
         // ]);
 
         $this->call([
-            DepartmentSeeder::class,
-            JabatanSeeder::class,
-            KaryawanSeeder::class,
+            // DepartmentSeeder::class,
+            // JabatanSeeder::class,
             UserSeeder::class,
             BeritaSeeder::class,
         ]);
-        Karyawan::factory()->count(100)->create();
     }
 }
