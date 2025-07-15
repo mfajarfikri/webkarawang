@@ -1,144 +1,29 @@
 import { Head, usePage } from "@inertiajs/react";
 import DashboardLayout from "../../../Layouts/DashboardLayout";
-import { FaUser, FaUsers, FaEnvelope, FaUserTie, FaKey } from "react-icons/fa";
-import { DataGrid } from "@mui/x-data-grid";
-import { Box } from "@mui/material";
-import { Dialog, DialogTitle, DialogContent, DialogActions, Button as MuiButton, CircularProgress } from '@mui/material';
-import { useState } from 'react';
-import { router } from '@inertiajs/react';
-
-function NoRowsOverlay() {
-    return (
-        <Box className="flex flex-col items-center justify-center h-full py-10 text-gray-400">
-            <FaUser className="text-4xl mb-2 text-blue-200" />
-            <div className="text-lg font-semibold">Belum ada data user.</div>
-        </Box>
-    );
-}
+import {
+    FaUser,
+    FaUsers,
+    FaEnvelope,
+    FaUserTie,
+    FaKey,
+    FaPlus,
+    FaFilter,
+} from "react-icons/fa";
+import {
+    Dialog,
+    DialogTitle,
+    DialogContent,
+    DialogActions,
+    Button as MuiButton,
+    CircularProgress,
+} from "@mui/material";
+import { useState } from "react";
+import { router } from "@inertiajs/react";
+import React from "react";
+import ErrorBoundary from "@/Components/ErrorBoundary";
 
 export default function User() {
     const { users = [] } = usePage().props;
-
-    // DataGrid columns
-    const columns = [
-        {
-            field: "no",
-            headerName: "No",
-            width: 70,
-            sortable: false,
-            filterable: false,
-            renderCell: (params) => (
-                <div className="flex h-full justify-center items-center">
-                    {params.api.getRowIndexRelativeToVisibleRows(params.row.id) + 1}
-                </div>
-            ),
-            headerClassName: 'datagrid-header',
-        },
-        {
-            field: "foto_profil",
-            headerName: "Foto",
-            width: 80,
-            sortable: false,
-            filterable: false,
-            renderCell: (params) =>
-                params.row.foto_profil ? (
-                    <img
-                        src={params.row.foto_profil}
-                        alt={params.row.name}
-                        className="h-10 w-10 rounded-full object-cover border border-gray-200 shadow-sm"
-                    />
-                ) : (
-                    <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-lg border border-gray-200 shadow-sm">
-                        <span className="w-full text-center flex items-center justify-center">
-                            {params.row.name?.split(' ').map(n => n[0]).join('').substring(0,2)}
-                        </span>
-                    </div>
-                ),
-            headerClassName: 'datagrid-header',
-        },
-        {
-            field: "name",
-            headerName: "Nama",
-            flex: 1,
-            minWidth: 150,
-            renderCell: (params) => (
-                <span className="flex items-center gap-2 font-medium text-gray-900">
-                    <FaUserTie className="text-blue-400" /> {params.row.name}
-                </span>
-            ),
-            headerClassName: 'datagrid-header',
-        },
-        {
-            field: "email",
-            headerName: "Email",
-            flex: 1,
-            minWidth: 180,
-            renderCell: (params) => (
-                <span className="flex items-center gap-2 text-gray-700">
-                    <FaEnvelope className="text-gray-300" /> {params.row.email}
-                </span>
-            ),
-            headerClassName: 'datagrid-header',
-        },
-        {
-            field: "role",
-            headerName: "Role",
-            flex: 1,
-            minWidth: 100,
-            renderCell: (params) => (
-                <span className="text-gray-800">
-                    {params.row.role || "-"}
-                </span>
-            ),
-            headerClassName: 'datagrid-header',
-        },
-        {
-            field: "penempatan",
-            headerName: "Penempatan",
-            flex: 1,
-            minWidth: 160,
-            renderCell: (params) => (
-                <span className="text-gray-800">
-                    {params.row.penempatan || "-"}
-                </span>
-            ),
-            headerClassName: 'datagrid-header',
-        },
-        {
-            field: "tanda_tangan",
-            headerName: "Tanda Tangan",
-            flex: 1,
-            minWidth: 120,
-            renderCell: (params) => (
-                params.row.tanda_tangan ? (
-                    <span className="text-green-600 font-semibold">Ada</span>
-                ) : (
-                    <span className="text-gray-400">-</span>
-                )
-            ),
-            headerClassName: 'datagrid-header',
-        },
-        {
-            field: 'kelola_role',
-            headerName: '',
-            width: 120,
-            sortable: false,
-            filterable: false,
-            renderCell: (params) => (
-                <button
-                    type="button"
-                    onClick={() => openRoleModal(params.row)}
-                    className="inline-flex items-center gap-2 px-3 py-1.5 rounded bg-blue-600 text-white hover:bg-blue-700 transition text-xs font-semibold shadow-sm"
-                    title="Kelola Role"
-                >
-                    <FaKey className="text-white text-sm" />
-                    Kelola Role
-                </button>
-            ),
-            headerClassName: 'datagrid-header',
-        },
-    ];
-
     const [roleModalOpen, setRoleModalOpen] = useState(false);
     const [roleModalUser, setRoleModalUser] = useState(null);
     const [roleModalRoles, setRoleModalRoles] = useState([]);
@@ -168,15 +53,19 @@ export default function User() {
     const handleRoleModalSave = () => {
         setRoleModalSaving(true);
         setRoleModalError("");
-        router.post(`/dashboard/user/${roleModalUser.id}/role`, { role: roleModalCurrent }, {
-            onError: (errors) => {
-                setRoleModalError(errors.role || "");
-            },
-            onFinish: () => {
-                setRoleModalSaving(false);
-                setRoleModalOpen(false);
-            },
-        });
+        router.post(
+            `/dashboard/user/${roleModalUser.id}/role`,
+            { role: roleModalCurrent },
+            {
+                onError: (errors) => {
+                    setRoleModalError(errors.role || "");
+                },
+                onFinish: () => {
+                    setRoleModalSaving(false);
+                    setRoleModalOpen(false);
+                },
+            }
+        );
     };
 
     const [createModalOpen, setCreateModalOpen] = useState(false);
@@ -198,7 +87,7 @@ export default function User() {
         setCreateLoading(false);
         // Fetch all roles for dropdown
         try {
-            const res = await fetch('/dashboard/role?modal=1');
+            const res = await fetch("/dashboard/role?modal=1");
             const data = await res.json();
             setAllRoles(data.roles || []);
         } catch {
@@ -209,234 +98,588 @@ export default function User() {
     const handleCreateUser = () => {
         setCreateLoading(true);
         setCreateError({});
-        router.post('/dashboard/user', {
-            name: createName,
-            email: createEmail,
-            password: createPassword,
-            role: createRole,
-        }, {
-            onError: (errors) => {
-                setCreateError(errors || {});
+        router.post(
+            "/dashboard/user",
+            {
+                name: createName,
+                email: createEmail,
+                password: createPassword,
+                role: createRole,
             },
-            onFinish: () => {
-                setCreateLoading(false);
-            },
-            onSuccess: () => {
-                setCreateModalOpen(false);
-            },
-        });
+            {
+                onError: (errors) => {
+                    setCreateError(errors || {});
+                },
+                onFinish: () => {
+                    setCreateLoading(false);
+                },
+                onSuccess: () => {
+                    setCreateModalOpen(false);
+                },
+            }
+        );
     };
+
+    // Pagination state
+    const [page, setPage] = useState(1);
+    const [rowsPerPage, setRowsPerPage] = useState(8);
+    const [filterOpen, setFilterOpen] = useState(false);
+    const [filterName, setFilterName] = useState("");
+
+    // Filtered rows
+    const filteredRows = users.filter(
+        (user) =>
+            filterName.trim() === "" ||
+            user.name.toLowerCase().includes(filterName.toLowerCase())
+    );
+    const totalRows = filteredRows.length;
+    const totalPages = Math.ceil(totalRows / rowsPerPage);
+    const paginatedRows = filteredRows.slice(
+        (page - 1) * rowsPerPage,
+        page * rowsPerPage
+    );
+    // Reset page if filter changes
+    React.useEffect(() => {
+        setPage(1);
+    }, [filterName, rowsPerPage]);
 
     return (
         <>
             <Head title="User" />
             <DashboardLayout>
-                {/* Header */}
                 <div className="py-6 w-full mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="flex justify-between items-center mb-4">
-                        <h1 className="text-2xl md:text-3xl font-bold text-gray-800">Manajemen User</h1>
-                        <button
-                            onClick={openCreateModal}
-                            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-semibold shadow-sm transition"
-                        >
-                            + Tambah User
-                        </button>
-                    </div>
-                    <div className="bg-gradient-to-r from-blue-700 to-indigo-800 rounded-xl shadow-lg mb-6 overflow-hidden">
-                        <div className="px-6 py-8 md:px-10 md:py-10 flex flex-col md:flex-row md:items-center justify-between">
-                            <div className="mb-6 md:mb-0">
-                                <h1 className="text-2xl md:text-3xl font-bold text-white flex items-center">
-                                    <div className="flex items-center justify-center bg-blue-600 rounded-full w-12 h-12 mr-3">
-                                        <FaUsers className="text-blue-200" />
-                                    </div>
+                    <div className="bg-gradient-to-br from-blue-50 via-white to-blue-100 rounded-2xl shadow-xl border border-blue-100 p-0 md:p-0 overflow-hidden">
+                        <div className="px-6 pt-6 pb-2 border-b border-blue-100 bg-white/80 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                            <div>
+                                <h2 className="text-xl font-bold text-blue-800 mb-1 flex items-center gap-2">
+                                    <FaUsers className="text-blue-400 text-2xl" />
                                     Manajemen User
-                                </h1>
-                                <p className="mt-2 text-blue-100 max-w-2xl">
-                                    Kelola data user aplikasi dengan tampilan profesional dan modern.
+                                </h2>
+                                <p className="text-blue-700/80 text-sm mb-2">
+                                    Kelola data user aplikasi dengan tampilan
+                                    profesional dan modern.
                                 </p>
                             </div>
-                            <div className="flex flex-col items-end">
-                                <div className="bg-white rounded-xl shadow p-4 flex items-center gap-4">
-                                    <div className="bg-blue-100 rounded-full p-3">
-                                        <FaUser className="text-blue-600 text-2xl" />
-                                    </div>
-                                    <div>
-                                        <div className="text-xs text-gray-500 font-medium">Total User</div>
-                                        <div className="text-2xl font-bold text-gray-900">{users.length}</div>
-                                    </div>
+                            <button
+                                onClick={openCreateModal}
+                                className="bg-gradient-to-r from-blue-600 to-blue-400 text-white px-5 py-2 rounded-lg shadow hover:from-blue-700 hover:to-blue-500 font-semibold flex items-center gap-2 transition"
+                            >
+                                <FaPlus /> Tambah User
+                            </button>
+                        </div>
+                        <div className="px-2 md:px-6 pb-6 pt-4 bg-white/70">
+                            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-2">
+                                <button
+                                    className="bg-gradient-to-r from-blue-600 to-blue-400 text-white px-4 py-2 rounded shadow hover:from-blue-700 hover:to-blue-500 font-semibold flex items-center gap-2"
+                                    onClick={() => setFilterOpen(true)}
+                                    type="button"
+                                >
+                                    <FaFilter />
+                                    Filter
+                                </button>
+                                <div className="flex items-center gap-2">
+                                    <label className="text-gray-600 text-sm">
+                                        Tampil
+                                    </label>
+                                    <select
+                                        className="border rounded px-2 py-1 text-sm focus:outline-none"
+                                        value={rowsPerPage}
+                                        onChange={(e) =>
+                                            setRowsPerPage(
+                                                Number(e.target.value)
+                                            )
+                                        }
+                                    >
+                                        <option value={8}>8</option>
+                                        <option value={16}>16</option>
+                                        <option value={32}>32</option>
+                                    </select>
+                                    <span className="text-gray-500 text-xs">
+                                        / halaman
+                                    </span>
                                 </div>
                             </div>
-                        </div>
-                    </div>
-
-                    {/* DataGrid Table */}
-                    <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-0 md:p-6">
-                        <div className="w-full overflow-x-auto">
-                            {/* <style>{`
-                                .datagrid-header {
-                                    background: #f8fafc;
-                                    color: #64748b;
-                                    font-weight: 600;
-                                    font-size: 0.75rem;
-                                    text-transform: uppercase;
-                                }
-                                .MuiDataGrid-root {
-                                    border-radius: 1rem;
-                                    border: none;
-                                    font-family: inherit;
-                                    background: white;
-                                }
-                                .MuiDataGrid-columnHeaders {
-                                    border-radius: 1rem 1rem 0 0;
-                                }
-                                .MuiDataGrid-cell {
-                                    border-bottom: 1px solid #f1f5f9;
-                                }
-                                .MuiDataGrid-row:hover {
-                                    background: #eff6ff;
-                                }
-                            `}</style> */}
-                            <div style={{ width: '100%', minWidth: 300 }}>
-                                <DataGrid
-                                    autoHeight
-                                    virtualizeColumnsWithAutoRowHeight
-                                    rows={users}
-                                    columns={columns}
-                                    getRowId={(row) => row.id}
-                                    pageSize={8}
-                                    rowsPerPageOptions={[8, 16, 32]}
-                                    disableSelectionOnClick
-                                    slots={{ noRowsOverlay: NoRowsOverlay }}
-                                    sx={{
-                                        fontSize: '0.97rem',
-                                        background: 'white',
-                                        borderRadius: '1rem',
-                                        boxShadow: '0 2px 8px 0 rgba(0,0,0,0.04)',
-                                        width: '100%',
-                                    }}
-                                />
+                            <div className="overflow-x-auto rounded-xl border border-blue-100 bg-white/90 shadow-sm">
+                                <ErrorBoundary>
+                                    <table className="min-w-full divide-y divide-blue-100">
+                                        <thead className="bg-gradient-to-r from-blue-100 to-blue-50">
+                                            <tr>
+                                                <th className="px-4 py-3 text-left text-xs font-bold text-blue-700 uppercase tracking-wider">
+                                                    No
+                                                </th>
+                                                <th className="px-4 py-3 text-left text-xs font-bold text-blue-700 uppercase tracking-wider">
+                                                    Foto
+                                                </th>
+                                                <th className="px-4 py-3 text-left text-xs font-bold text-blue-700 uppercase tracking-wider">
+                                                    Nama
+                                                </th>
+                                                <th className="px-4 py-3 text-left text-xs font-bold text-blue-700 uppercase tracking-wider">
+                                                    email
+                                                </th>
+                                                <th className="px-4 py-3 text-left text-xs font-bold text-blue-700 uppercase tracking-wider">
+                                                    Role
+                                                </th>
+                                                <th className="px-4 py-3 text-left text-xs font-bold text-blue-700 uppercase tracking-wider">
+                                                    Penempatan
+                                                </th>
+                                                <th className="px-4 py-3 text-left text-xs font-bold text-blue-700 uppercase tracking-wider">
+                                                    Tanda Tangan
+                                                </th>
+                                                <th className="px-4 py-3 text-center text-xs font-bold text-blue-700 uppercase tracking-wider">
+                                                    Aksi
+                                                </th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="bg-white divide-y divide-blue-50">
+                                            {paginatedRows.length === 0 ? (
+                                                <tr>
+                                                    <td
+                                                        colSpan={8}
+                                                        className="px-6 py-8 text-center text-gray-400 text-lg font-semibold"
+                                                    >
+                                                        Belum ada data user.
+                                                    </td>
+                                                </tr>
+                                            ) : (
+                                                paginatedRows.map(
+                                                    (row, idx) => (
+                                                        <tr
+                                                            key={row.id}
+                                                            className="hover:bg-blue-50 transition-all duration-150"
+                                                        >
+                                                            <td className=" text-center text-blue-700 font-bold rounded-l-lg">
+                                                                {(page - 1) *
+                                                                    rowsPerPage +
+                                                                    idx +
+                                                                    1}
+                                                            </td>
+                                                            <td className="px-3 py-3">
+                                                                {row.foto_profil ? (
+                                                                    <img
+                                                                        src={
+                                                                            row.foto_profil
+                                                                        }
+                                                                        alt={
+                                                                            row.name
+                                                                        }
+                                                                        className="h-10 w-10 rounded-full object-cover border border-blue-200 shadow-sm"
+                                                                    />
+                                                                ) : (
+                                                                    <div className="h-10 w-10 rounded-full bg-gradient-to-br from-blue-200 to-blue-100 flex items-center justify-center text-blue-700 font-bold text-lg border border-blue-100 shadow-sm">
+                                                                        <span>
+                                                                            {row.name
+                                                                                ?.split(
+                                                                                    " "
+                                                                                )
+                                                                                .map(
+                                                                                    (
+                                                                                        n
+                                                                                    ) =>
+                                                                                        n[0]
+                                                                                )
+                                                                                .join(
+                                                                                    ""
+                                                                                )
+                                                                                .substring(
+                                                                                    0,
+                                                                                    2
+                                                                                )
+                                                                                .toUpperCase()}
+                                                                        </span>
+                                                                    </div>
+                                                                )}
+                                                            </td>
+                                                            <td className="px-3 py-3 font-semibold text-gray-900">
+                                                                <span className="truncate max-w-[120px] block">
+                                                                    {row.name}
+                                                                </span>
+                                                            </td>
+                                                            <td className="px-3 py-3 text-gray-600 text-xs">
+                                                                {row.email}
+                                                            </td>
+                                                            <td className="px-3 py-3 text-center">
+                                                                <span className="inline-block px-2 py-1 rounded-full bg-blue-100 text-blue-700 text-xs font-semibold shadow-sm">
+                                                                    {row.role ||
+                                                                        "-"}
+                                                                </span>
+                                                            </td>
+                                                            <td className="px-3 py-3 text-center">
+                                                                <span className="inline-block px-2 py-1 rounded-full bg-blue-50 text-blue-700 text-xs font-medium">
+                                                                    {row.penempatan ||
+                                                                        "-"}
+                                                                </span>
+                                                            </td>
+                                                            <td className="px-3 py-3 text-center">
+                                                                {row.tanda_tangan ? (
+                                                                    <span className="inline-block px-2 py-1 rounded-full bg-green-100 text-green-700 font-semibold text-xs shadow-sm">
+                                                                        Ada
+                                                                    </span>
+                                                                ) : (
+                                                                    <span className="inline-block px-2 py-1 rounded-full bg-gray-100 text-gray-400 text-xs shadow-sm">
+                                                                        -
+                                                                    </span>
+                                                                )}
+                                                            </td>
+                                                            <td className="px-3 py-3 text-center rounded-r-lg">
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() =>
+                                                                        openRoleModal(
+                                                                            row
+                                                                        )
+                                                                    }
+                                                                    className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-gradient-to-r from-blue-600 to-blue-400 text-white hover:from-blue-700 hover:to-blue-500 transition text-xs font-semibold shadow"
+                                                                    title="Kelola Role"
+                                                                >
+                                                                    <FaKey className="text-white text-base" />
+                                                                    <span>
+                                                                        Role
+                                                                    </span>
+                                                                </button>
+                                                            </td>
+                                                        </tr>
+                                                    )
+                                                )
+                                            )}
+                                        </tbody>
+                                    </table>
+                                </ErrorBoundary>
                             </div>
+                            {/* Pagination */}
+                            {totalPages > 1 && (
+                                <div className="flex flex-col sm:flex-row justify-between items-center mt-4 gap-2">
+                                    <div className="text-gray-600 text-sm">
+                                        Menampilkan{" "}
+                                        <span className="font-semibold">
+                                            {(page - 1) * rowsPerPage + 1}
+                                        </span>{" "}
+                                        -{" "}
+                                        <span className="font-semibold">
+                                            {Math.min(
+                                                page * rowsPerPage,
+                                                totalRows
+                                            )}
+                                        </span>{" "}
+                                        dari{" "}
+                                        <span className="font-semibold">
+                                            {totalRows}
+                                        </span>{" "}
+                                        data
+                                    </div>
+                                    <div className="flex items-center gap-1">
+                                        <button
+                                            className="px-3 py-1 rounded border text-gray-600 bg-white hover:bg-blue-50 disabled:opacity-50"
+                                            onClick={() => setPage(page - 1)}
+                                            disabled={page === 1}
+                                        >
+                                            &lt;
+                                        </button>
+                                        {[...Array(totalPages)].map(
+                                            (_, idx) => (
+                                                <button
+                                                    key={idx}
+                                                    className={`px-3 py-1 rounded border ${
+                                                        page === idx + 1
+                                                            ? "bg-blue-600 text-white border-blue-600"
+                                                            : "bg-white text-gray-700 hover:bg-blue-50"
+                                                    }`}
+                                                    onClick={() =>
+                                                        setPage(idx + 1)
+                                                    }
+                                                >
+                                                    {idx + 1}
+                                                </button>
+                                            )
+                                        )}
+                                        <button
+                                            className="px-3 py-1 rounded border text-gray-600 bg-white hover:bg-blue-50 disabled:opacity-50"
+                                            onClick={() => setPage(page + 1)}
+                                            disabled={page === totalPages}
+                                        >
+                                            &gt;
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>
+                {/* Filter Dialog */}
+                <Dialog
+                    open={filterOpen}
+                    onClose={() => setFilterOpen(false)}
+                    maxWidth="xs"
+                    fullWidth
+                >
+                    <DialogTitle className="font-bold text-lg text-gray-800 border-b">
+                        Filter Data
+                    </DialogTitle>
+                    <DialogContent className="py-4">
+                        <div className="mb-4">
+                            <label className="block text-gray-700 font-semibold mb-2">
+                                Nama User
+                            </label>
+                            <input
+                                type="text"
+                                className="border rounded px-3 py-2 w-full"
+                                value={filterName}
+                                onChange={(e) => setFilterName(e.target.value)}
+                                placeholder="Cari nama user..."
+                            />
+                        </div>
+                    </DialogContent>
+                    <DialogActions className="border-t px-4 py-3 flex justify-between">
+                        <MuiButton
+                            onClick={() => {
+                                setFilterName("");
+                                setFilterOpen(false);
+                            }}
+                            color="inherit"
+                            variant="outlined"
+                        >
+                            Reset
+                        </MuiButton>
+                        <MuiButton
+                            onClick={() => setFilterOpen(false)}
+                            color="primary"
+                            variant="contained"
+                        >
+                            Terapkan
+                        </MuiButton>
+                    </DialogActions>
+                </Dialog>
             </DashboardLayout>
-            <Dialog open={roleModalOpen} onClose={() => setRoleModalOpen(false)} maxWidth="xs" fullWidth>
-                <DialogTitle className="font-bold text-lg text-gray-800 border-b">Kelola Role User</DialogTitle>
+            <Dialog
+                open={roleModalOpen}
+                onClose={() => setRoleModalOpen(false)}
+                maxWidth="xs"
+                fullWidth
+            >
+                <DialogTitle className="font-bold text-lg text-gray-800 border-b">
+                    Kelola Role User
+                </DialogTitle>
                 <DialogContent className="py-6 bg-gradient-to-br from-slate-50 to-white">
                     {roleModalLoading ? (
                         <div className="flex justify-center items-center h-24">
                             <CircularProgress size={32} />
                         </div>
                     ) : (
-                        <form onSubmit={e => { e.preventDefault(); handleRoleModalSave(); }}>
+                        <form
+                            onSubmit={(e) => {
+                                e.preventDefault();
+                                handleRoleModalSave();
+                            }}
+                        >
                             <div className="mb-6 mt-6">
                                 <div className="flex items-center gap-2 mb-4">
                                     <span className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-blue-100 text-blue-700 font-bold text-lg shadow-sm">
-                                        {roleModalUser?.name?.[0]?.toUpperCase() || "U"}
+                                        {roleModalUser?.name?.[0]?.toUpperCase() ||
+                                            "U"}
                                     </span>
                                     <div>
-                                        <div className="text-xs text-gray-500 font-medium">User</div>
-                                        <div className="text-base font-semibold text-gray-800">{roleModalUser?.name}</div>
+                                        <div className="text-xs text-gray-500 font-medium">
+                                            User
+                                        </div>
+                                        <div className="text-base font-semibold text-gray-800">
+                                            {roleModalUser?.name}
+                                        </div>
                                     </div>
                                 </div>
-                                <label className="block text-gray-700 font-semibold mb-2 mt-2">Role</label>
+                                <label className="block text-gray-700 font-semibold mb-2 mt-2">
+                                    Role
+                                </label>
                                 <div className="relative">
                                     <select
                                         className="border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 rounded-lg px-4 py-2 w-full bg-white transition-all shadow-sm text-gray-800"
                                         value={roleModalCurrent}
-                                        onChange={e => setRoleModalCurrent(e.target.value)}
+                                        onChange={(e) =>
+                                            setRoleModalCurrent(e.target.value)
+                                        }
                                         required
                                     >
                                         <option value="">Pilih Role</option>
                                         {roleModalRoles.map((r) => (
-                                            <option key={r.id} value={r.name}>{r.name}</option>
+                                            <option key={r.id} value={r.name}>
+                                                {r.name}
+                                            </option>
                                         ))}
                                     </select>
                                     <span className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
-                                        <svg width="20" height="20" fill="none" viewBox="0 0 20 20">
-                                            <path d="M6 8l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                                        <svg
+                                            width="20"
+                                            height="20"
+                                            fill="none"
+                                            viewBox="0 0 20 20"
+                                        >
+                                            <path
+                                                d="M6 8l4 4 4-4"
+                                                stroke="currentColor"
+                                                strokeWidth="1.5"
+                                                strokeLinecap="round"
+                                                strokeLinejoin="round"
+                                            />
                                         </svg>
                                     </span>
                                 </div>
                                 {roleModalError && (
-                                    <div className="text-red-500 mt-2 text-sm">{roleModalError}</div>
+                                    <div className="text-red-500 mt-2 text-sm">
+                                        {roleModalError}
+                                    </div>
                                 )}
                             </div>
                         </form>
                     )}
                 </DialogContent>
                 <DialogActions className="border-t px-4 py-3 flex justify-between">
-                    <MuiButton onClick={() => setRoleModalOpen(false)} color="inherit" variant="outlined" disabled={roleModalSaving}>
+                    <MuiButton
+                        onClick={() => setRoleModalOpen(false)}
+                        color="inherit"
+                        variant="outlined"
+                        disabled={roleModalSaving}
+                    >
                         Batal
                     </MuiButton>
-                    <MuiButton onClick={handleRoleModalSave} color="primary" variant="contained" disabled={roleModalSaving || roleModalLoading || !roleModalCurrent}>
-                        {roleModalSaving ? <CircularProgress size={20} color="inherit" /> : 'Simpan'}
+                    <MuiButton
+                        onClick={handleRoleModalSave}
+                        color="primary"
+                        variant="contained"
+                        disabled={
+                            roleModalSaving ||
+                            roleModalLoading ||
+                            !roleModalCurrent
+                        }
+                    >
+                        {roleModalSaving ? (
+                            <CircularProgress size={20} color="inherit" />
+                        ) : (
+                            "Simpan"
+                        )}
                     </MuiButton>
                 </DialogActions>
             </Dialog>
-            <Dialog open={createModalOpen} onClose={() => setCreateModalOpen(false)} maxWidth="xs" fullWidth>
-                <DialogTitle className="font-bold text-lg text-gray-800 border-b">Tambah User</DialogTitle>
+            <Dialog
+                open={createModalOpen}
+                onClose={() => setCreateModalOpen(false)}
+                maxWidth="xs"
+                fullWidth
+            >
+                <DialogTitle className="font-bold text-lg text-gray-800 border-b">
+                    Tambah User
+                </DialogTitle>
                 <DialogContent className="py-4">
-                    <form onSubmit={e => { e.preventDefault(); handleCreateUser(); }}>
+                    <form
+                        onSubmit={(e) => {
+                            e.preventDefault();
+                            handleCreateUser();
+                        }}
+                    >
                         <div className="mb-4">
-                            <label className="block text-gray-700 font-semibold mb-2">Nama</label>
+                            <label className="block text-gray-700 font-semibold mb-2">
+                                Nama
+                            </label>
                             <input
                                 type="text"
                                 className="border rounded px-3 py-2 w-full"
                                 value={createName}
-                                onChange={e => setCreateName(e.target.value)}
+                                onChange={(e) => setCreateName(e.target.value)}
                                 required
                             />
-                            {createError.name && <div className="text-red-500 mt-1 text-sm">{createError.name}</div>}
+                            {createError.name && (
+                                <div className="text-red-500 mt-1 text-sm">
+                                    {createError.name}
+                                </div>
+                            )}
                         </div>
                         <div className="mb-4">
-                            <label className="block text-gray-700 font-semibold mb-2">Email</label>
+                            <label className="block text-gray-700 font-semibold mb-2">
+                                Email
+                            </label>
                             <input
                                 type="email"
                                 className="border rounded px-3 py-2 w-full"
                                 value={createEmail}
-                                onChange={e => setCreateEmail(e.target.value)}
+                                onChange={(e) => setCreateEmail(e.target.value)}
                                 required
                             />
-                            {createError.email && <div className="text-red-500 mt-1 text-sm">{createError.email}</div>}
+                            {createError.email && (
+                                <div className="text-red-500 mt-1 text-sm">
+                                    {createError.email}
+                                </div>
+                            )}
                         </div>
                         <div className="mb-4">
-                            <label className="block text-gray-700 font-semibold mb-2">Password</label>
+                            <label className="block text-gray-700 font-semibold mb-2">
+                                Password
+                            </label>
                             <input
                                 type="password"
                                 className="border rounded px-3 py-2 w-full"
                                 value={createPassword}
-                                onChange={e => setCreatePassword(e.target.value)}
+                                onChange={(e) =>
+                                    setCreatePassword(e.target.value)
+                                }
                                 required
                             />
-                            {createError.password && <div className="text-red-500 mt-1 text-sm">{createError.password}</div>}
+                            {createError.password && (
+                                <div className="text-red-500 mt-1 text-sm">
+                                    {createError.password}
+                                </div>
+                            )}
                         </div>
                         <div className="mb-4">
-                            <label className="block text-gray-700 font-semibold mb-2">Role</label>
+                            <label className="block text-gray-700 font-semibold mb-2">
+                                Role
+                            </label>
                             <select
                                 className="border rounded px-3 py-2 w-full"
                                 value={createRole}
-                                onChange={e => setCreateRole(e.target.value)}
+                                onChange={(e) => setCreateRole(e.target.value)}
                                 required
                             >
                                 <option value="">Pilih Role</option>
                                 {allRoles.map((r) => (
-                                    <option key={r.id} value={r.name}>{r.name}</option>
+                                    <option key={r.id} value={r.name}>
+                                        {r.name}
+                                    </option>
                                 ))}
                             </select>
-                            {createError.role && <div className="text-red-500 mt-1 text-sm">{createError.role}</div>}
+                            {createError.role && (
+                                <div className="text-red-500 mt-1 text-sm">
+                                    {createError.role}
+                                </div>
+                            )}
                         </div>
                     </form>
                 </DialogContent>
                 <DialogActions className="border-t px-4 py-3 flex justify-between">
-                    <MuiButton onClick={() => setCreateModalOpen(false)} color="inherit" variant="outlined" disabled={createLoading}>
+                    <MuiButton
+                        onClick={() => setCreateModalOpen(false)}
+                        color="inherit"
+                        variant="outlined"
+                        disabled={createLoading}
+                    >
                         Batal
                     </MuiButton>
-                    <MuiButton onClick={handleCreateUser} color="primary" variant="contained" disabled={createLoading || !createName || !createEmail || !createPassword || !createRole}>
-                        {createLoading ? <CircularProgress size={20} color="inherit" /> : 'Simpan'}
+                    <MuiButton
+                        onClick={handleCreateUser}
+                        color="primary"
+                        variant="contained"
+                        disabled={
+                            createLoading ||
+                            !createName ||
+                            !createEmail ||
+                            !createPassword ||
+                            !createRole
+                        }
+                    >
+                        {createLoading ? (
+                            <CircularProgress size={20} color="inherit" />
+                        ) : (
+                            "Simpan"
+                        )}
                     </MuiButton>
                 </DialogActions>
             </Dialog>
         </>
-    )
+    );
 }

@@ -14,7 +14,7 @@ class UserController extends Controller
      */
     public function index()
     {
-        $users = \App\Models\User::with('roles')->get(['id', 'name', 'email', 'jabatan', 'kedudukan', 'foto_profil']);
+        $users = \App\Models\User::with('roles')->get();
         $users = $users->map(function ($user) {
             return [
                 'id' => $user->id,

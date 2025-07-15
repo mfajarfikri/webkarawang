@@ -11,9 +11,6 @@ class PermissionController extends Controller
 {
     public function index()
     {
-        if (!Auth::user()->hasPermissionTo('Kelola Izin')) {
-            abort(403);
-        }
         $permissions = Permission::all(['id', 'name']);
         return Inertia::render('Dashboard/Permission/Permission', [
             'permissions' => $permissions,

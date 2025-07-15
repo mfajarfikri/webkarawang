@@ -31,7 +31,7 @@ Route::middleware('auth')->group(function () {
 
 Route::middleware(['auth'])->prefix('dashboard')->group(function () {
 
-    
+
     Route::get('profile', [ProfileController::class, 'edit'])->name('dashboard.profile.edit');
     Route::patch('profile', [ProfileController::class, 'update'])->name('dashboard.profile.update');
     Route::delete('profile', [ProfileController::class, 'destroy'])->name('dashboard.profile.destroy');
