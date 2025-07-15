@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Anomali;
 use Illuminate\Http\Request;
+use Inertia\Inertia;
 
 class AnomaliController extends Controller
 {
@@ -12,7 +13,7 @@ class AnomaliController extends Controller
      */
     public function index()
     {
-        //
+        return Inertia::render("Dashboard/Anomali/Anomali");
     }
 
     /**

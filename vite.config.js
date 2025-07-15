@@ -12,6 +12,8 @@ export default defineConfig({
     ],
     optimizeDeps: {
         include: [
+            "react",
+            "react-dom",
             "@tiptap/react",
             "@tiptap/starter-kit",
             "@tiptap/extension-image",
@@ -21,6 +23,16 @@ export default defineConfig({
             "@tiptap/extension-table-row",
         ],
         exclude: [],
+    },
+    build: {
+        rollupOptions: {
+            output: {
+                manualChunks: {
+                    react: ['react', 'react-dom'],
+                    inertia: ['@inertiajs/react'],
+                },
+            },
+        },
     },
     server: {
         hmr: {

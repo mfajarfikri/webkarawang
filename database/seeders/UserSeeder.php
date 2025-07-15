@@ -28,23 +28,15 @@ class UserSeeder extends Seeder
                 'updated_at' => now(),
             ),
         ));
-
-        // Relasikan user dengan role dan permission
         $user = User::first();
 
-        // Pastikan permissions ada
-        $permissions = ['manage role', 'edit berita'];
+        
+        $permissions = ['Kelola User', 'Kelola Role', 'Kelola Izin', 'Kelola Berita'];
         foreach ($permissions as $perm) {
             Permission::firstOrCreate(['name' => $perm]);
         }
-
-        // Buat role Super Admin jika belum ada
         $superAdminRole = Role::firstOrCreate(['name' => 'Super Admin']);
-
-        // Relasikan permission ke role
         $superAdminRole->syncPermissions($permissions);
-
-        // Relasikan user ke role
         $user->assignRole($superAdminRole);
     }
 }

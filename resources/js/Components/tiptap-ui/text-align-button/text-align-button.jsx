@@ -1,4 +1,4 @@
-import * as React from "react"
+import React from "react"
 
 // --- Hooks ---
 import { useTiptapEditor } from "@/hooks/use-tiptap-editor"

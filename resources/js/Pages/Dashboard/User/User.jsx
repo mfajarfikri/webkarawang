@@ -29,9 +29,7 @@ export default function User() {
             filterable: false,
             renderCell: (params) => (
                 <div className="flex h-full justify-center items-center">
-                    {params.api.getRowIndexRelativeToVisibleRows(
-                        params.row.id
-                    ) + 1}
+                    {params.api.getRowIndexRelativeToVisibleRows(params.row.id) + 1}
                 </div>
             ),
             headerClassName: 'datagrid-header',
@@ -52,7 +50,7 @@ export default function User() {
                 ) : (
                     <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-lg border border-gray-200 shadow-sm">
                         <span className="w-full text-center flex items-center justify-center">
-                            {params.row.name.split(' ').map(n => n[0]).join('').substring(0,2)}
+                            {params.row.name?.split(' ').map(n => n[0]).join('').substring(0,2)}
                         </span>
                     </div>
                 ),
@@ -87,20 +85,37 @@ export default function User() {
             headerName: "Role",
             flex: 1,
             minWidth: 100,
+            renderCell: (params) => (
+                <span className="text-gray-800">
+                    {params.row.role || "-"}
+                </span>
+            ),
             headerClassName: 'datagrid-header',
         },
         {
-            field: "jabatan",
-            headerName: "Jabatan",
+            field: "penempatan",
+            headerName: "Penempatan",
             flex: 1,
-            minWidth: 120,
+            minWidth: 160,
+            renderCell: (params) => (
+                <span className="text-gray-800">
+                    {params.row.penempatan || "-"}
+                </span>
+            ),
             headerClassName: 'datagrid-header',
         },
         {
-            field: "kedudukan",
-            headerName: "Kedudukan",
+            field: "tanda_tangan",
+            headerName: "Tanda Tangan",
             flex: 1,
             minWidth: 120,
+            renderCell: (params) => (
+                params.row.tanda_tangan ? (
+                    <span className="text-green-600 font-semibold">Ada</span>
+                ) : (
+                    <span className="text-gray-400">-</span>
+                )
+            ),
             headerClassName: 'datagrid-header',
         },
         {
@@ -257,7 +272,7 @@ export default function User() {
                     {/* DataGrid Table */}
                     <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-0 md:p-6">
                         <div className="w-full overflow-x-auto">
-                            <style>{`
+                            {/* <style>{`
                                 .datagrid-header {
                                     background: #f8fafc;
                                     color: #64748b;
@@ -280,52 +295,71 @@ export default function User() {
                                 .MuiDataGrid-row:hover {
                                     background: #eff6ff;
                                 }
-                            `}</style>
-                            <DataGrid
-                                autoHeight
-                                rows={users}
-                                columns={columns}
-                                getRowId={(row) => row.id}
-                                pageSize={8}
-                                rowsPerPageOptions={[8, 16, 32]}
-                                disableSelectionOnClick
-                                slots={{ noRowsOverlay: NoRowsOverlay }}
-                                sx={{
-                                    fontSize: '0.97rem',
-                                    background: 'white',
-                                    borderRadius: '1rem',
-                                    boxShadow: '0 2px 8px 0 rgba(0,0,0,0.04)',
-                                }}
-                            />
+                            `}</style> */}
+                            <div style={{ width: '100%', minWidth: 300 }}>
+                                <DataGrid
+                                    autoHeight
+                                    virtualizeColumnsWithAutoRowHeight
+                                    rows={users}
+                                    columns={columns}
+                                    getRowId={(row) => row.id}
+                                    pageSize={8}
+                                    rowsPerPageOptions={[8, 16, 32]}
+                                    disableSelectionOnClick
+                                    slots={{ noRowsOverlay: NoRowsOverlay }}
+                                    sx={{
+                                        fontSize: '0.97rem',
+                                        background: 'white',
+                                        borderRadius: '1rem',
+                                        boxShadow: '0 2px 8px 0 rgba(0,0,0,0.04)',
+                                        width: '100%',
+                                    }}
+                                />
+                            </div>
                         </div>
                     </div>
                 </div>
             </DashboardLayout>
             <Dialog open={roleModalOpen} onClose={() => setRoleModalOpen(false)} maxWidth="xs" fullWidth>
                 <DialogTitle className="font-bold text-lg text-gray-800 border-b">Kelola Role User</DialogTitle>
-                <DialogContent className="py-4">
+                <DialogContent className="py-6 bg-gradient-to-br from-slate-50 to-white">
                     {roleModalLoading ? (
                         <div className="flex justify-center items-center h-24">
                             <CircularProgress size={32} />
                         </div>
                     ) : (
                         <form onSubmit={e => { e.preventDefault(); handleRoleModalSave(); }}>
-                            <div className="mb-4">
-                                <div className="text-gray-700 font-semibold mb-2">User: <span className="text-blue-700">{roleModalUser?.name}</span></div>
-                                <label className="block text-gray-700 font-semibold mb-2 mt-4">Role</label>
-                                <select
-                                    className="border rounded px-3 py-2 w-full"
-                                    value={roleModalCurrent}
-                                    onChange={e => setRoleModalCurrent(e.target.value)}
-                                    required
-                                >
-                                    <option value="">Pilih Role</option>
-                                    {roleModalRoles.map((r) => (
-                                        <option key={r.id} value={r.name}>{r.name}</option>
-                                    ))}
-                                </select>
+                            <div className="mb-6 mt-6">
+                                <div className="flex items-center gap-2 mb-4">
+                                    <span className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-blue-100 text-blue-700 font-bold text-lg shadow-sm">
+                                        {roleModalUser?.name?.[0]?.toUpperCase() || "U"}
+                                    </span>
+                                    <div>
+                                        <div className="text-xs text-gray-500 font-medium">User</div>
+                                        <div className="text-base font-semibold text-gray-800">{roleModalUser?.name}</div>
+                                    </div>
+                                </div>
+                                <label className="block text-gray-700 font-semibold mb-2 mt-2">Role</label>
+                                <div className="relative">
+                                    <select
+                                        className="border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 rounded-lg px-4 py-2 w-full bg-white transition-all shadow-sm text-gray-800"
+                                        value={roleModalCurrent}
+                                        onChange={e => setRoleModalCurrent(e.target.value)}
+                                        required
+                                    >
+                                        <option value="">Pilih Role</option>
+                                        {roleModalRoles.map((r) => (
+                                            <option key={r.id} value={r.name}>{r.name}</option>
+                                        ))}
+                                    </select>
+                                    <span className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
+                                        <svg width="20" height="20" fill="none" viewBox="0 0 20 20">
+                                            <path d="M6 8l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                                        </svg>
+                                    </span>
+                                </div>
                                 {roleModalError && (
-                                    <div className="text-red-500 mt-1 text-sm">{roleModalError}</div>
+                                    <div className="text-red-500 mt-2 text-sm">{roleModalError}</div>
                                 )}
                             </div>
                         </form>

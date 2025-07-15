@@ -50,7 +50,7 @@ export default function Ktt({ ktts }) {
         e.preventDefault();
 
         axios
-            .post(route("ktt.store"), data, {
+            .post(route("dashboard.ktt.store"), data, {
                 headers: {
                     "Content-Type": "application/json",
                     "X-Requested-With": "XMLHttpRequest",
@@ -67,7 +67,7 @@ export default function Ktt({ ktts }) {
 
                 // Fetch updated data
                 axios
-                    .get(route("ktt.index"))
+                    .get(route("dashboard.ktt.index"))
                     .then((response) => {
                         const formattedData = response.data.map(
                             (ktt, index) => ({

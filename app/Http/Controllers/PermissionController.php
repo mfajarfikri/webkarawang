@@ -5,11 +5,15 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Spatie\Permission\Models\Permission;
 use Inertia\Inertia;
+use Illuminate\Support\Facades\Auth;
 
 class PermissionController extends Controller
 {
     public function index()
     {
+        if (!Auth::user()->hasPermissionTo('Kelola Izin')) {
+            abort(403);
+        }
         $permissions = Permission::all(['id', 'name']);
         return Inertia::render('Dashboard/Permission/Permission', [
             'permissions' => $permissions,

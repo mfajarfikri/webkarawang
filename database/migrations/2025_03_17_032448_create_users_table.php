@@ -16,10 +16,9 @@ return new class extends Migration
             $table->string('name');
             $table->string('email')->unique();
             $table->timestamp('email_verified_at')->nullable();
+            $table->enum('penempatan', ['UPT Karawang, ULTG Karawang, ULTG Purwakarta'])->nullable();
+            $table->longText('tanda_tangan');
             $table->string('password');
-            $table->string('jabatan')->nullable();
-            $table->string('kedudukan')->nullable();
-            $table->string('foto_profil')->nullable();
             $table->rememberToken();
             $table->softDeletes();
             $table->timestamps();

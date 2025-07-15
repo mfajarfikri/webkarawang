@@ -6,6 +6,7 @@ import axios from "axios";
 import { useEffect, useState } from "react";
 import { FaMapMarkerAlt } from "react-icons/fa";
 
+
 export default function Ktt() {
     const [ktts, setKtts] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -45,13 +46,14 @@ export default function Ktt() {
 
     useEffect(() => {
         axios
-            .get(route("ktt.index"))
+            .get(route("dashboard.ktt.index"))
             .then((response) => {
-                setKtts(response.data);
+                setKtts(Array.isArray(response.data) ? response.data : []);
                 setLoading(false);
             })
             .catch((error) => {
                 console.error("Error fetching KTT data:", error);
+                setKtts([]); // fallback ke array kosong jika error
                 setLoading(false);
             });
     }, []);
@@ -103,70 +105,76 @@ export default function Ktt() {
                                     </Popup>
                                 </Marker>
                             )}
-                            {ktts.map((ktt) => (
-                                <Marker
-                                    key={ktt.id}
-                                    position={[ktt.latitude, ktt.longitude]}
-                                >
-                                    <Tooltip
-                                        permanent
-                                        direction="top"
-                                        offset={[0, -10]}
+                            {Array.isArray(ktts) && ktts.length > 0 ? (
+                                ktts.map((ktt) => (
+                                    <Marker
+                                        key={ktt.id}
+                                        position={[ktt.latitude, ktt.longitude]}
                                     >
-                                        {ktt.name}
-                                    </Tooltip>
-                                    <Popup>
-                                        <div className="min-w-[250px] rounded-lg ">
-                                            <div className="border-b border-gray-200 pb-3 mb-3">
-                                                <h3 className="text-lg font-bold text-gray-800">
-                                                    {ktt.name}
-                                                </h3>
-                                                <div className="flex items-center mt-1 text-sm text-gray-600">
-                                                    <FaMapMarkerAlt className="mr-1" />
-                                                    {ktt.lokasi}
+                                        <Tooltip
+                                            permanent
+                                            direction="top"
+                                            offset={[0, -10]}
+                                        >
+                                            {ktt.name}
+                                        </Tooltip>
+                                        <Popup>
+                                            <div className="min-w-[250px] rounded-lg ">
+                                                <div className="border-b border-gray-200 pb-3 mb-3">
+                                                    <h3 className="text-lg font-bold text-gray-800">
+                                                        {ktt.name}
+                                                    </h3>
+                                                    <div className="flex items-center mt-1 text-sm text-gray-600">
+                                                        <FaMapMarkerAlt className="mr-1" />
+                                                        {ktt.lokasi}
+                                                    </div>
                                                 </div>
-                                            </div>
-                                            <div className="space-y-2">
-                                                <div className="flex justify-between items-center">
-                                                    <span className="text-sm font-medium text-gray-600">
-                                                        Tipe
-                                                    </span>
-                                                    <div className="flex items-center gap-2">
-                                                        <span
-                                                            className={`rounded-full w-4 h-4 animate-pulse ${
-                                                                ktt.tipe ===
-                                                                "Khusus"
-                                                                    ? "bg-black"
-                                                                    : ktt.tipe ===
-                                                                      "Gold"
-                                                                    ? "bg-[#FFD700]"
-                                                                    : ktt.tipe ===
-                                                                      "Silver"
-                                                                    ? "bg-[#c0c0c0]"
-                                                                    : ktt.tipe ===
-                                                                      "Bronze"
-                                                                    ? "bg-[#CD7F32]"
-                                                                    : "bg-blue-700"
-                                                            }`}
-                                                        />
+                                                <div className="space-y-2">
+                                                    <div className="flex justify-between items-center">
+                                                        <span className="text-sm font-medium text-gray-600">
+                                                            Tipe
+                                                        </span>
+                                                        <div className="flex items-center gap-2">
+                                                            <span
+                                                                className={`rounded-full w-4 h-4 animate-pulse ${
+                                                                    ktt.tipe ===
+                                                                    "Khusus"
+                                                                        ? "bg-black"
+                                                                        : ktt.tipe ===
+                                                                          "Gold"
+                                                                        ? "bg-[#FFD700]"
+                                                                        : ktt.tipe ===
+                                                                          "Silver"
+                                                                        ? "bg-[#c0c0c0]"
+                                                                        : ktt.tipe ===
+                                                                          "Bronze"
+                                                                        ? "bg-[#CD7F32]"
+                                                                        : "bg-blue-700"
+                                                                }`}
+                                                            />
+                                                            <span className="text-sm text-gray-800">
+                                                                {ktt.tipe}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                    <div className="flex justify-between items-center">
+                                                        <span className="text-sm font-medium text-gray-600">
+                                                            Kapasitas
+                                                        </span>
                                                         <span className="text-sm text-gray-800">
-                                                            {ktt.tipe}
+                                                            {ktt.kapasitas} MVA
                                                         </span>
                                                     </div>
                                                 </div>
-                                                <div className="flex justify-between items-center">
-                                                    <span className="text-sm font-medium text-gray-600">
-                                                        Kapasitas
-                                                    </span>
-                                                    <span className="text-sm text-gray-800">
-                                                        {ktt.kapasitas} MVA
-                                                    </span>
-                                                </div>
                                             </div>
-                                        </div>
-                                    </Popup>
-                                </Marker>
-                            ))}
+                                        </Popup>
+                                    </Marker>
+                                ))
+                            ) : (
+                                <div className="text-center py-4 text-gray-500">
+                                    Tidak ada data KTT.
+                                </div>
+                            )}
                         </MapContainer>
                     )}
                     <button

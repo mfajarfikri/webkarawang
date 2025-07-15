@@ -71,7 +71,7 @@ class RoleController extends Controller
         ]);
         $role->name = $request->name;
         $role->save();
-        return redirect()->route('role.index')->with('success', 'Role berhasil diupdate.');
+        return redirect()->route('dashboard.role.index')->with('success', 'Role berhasil diupdate.');
     }
 
     /**
@@ -109,6 +109,6 @@ class RoleController extends Controller
             'permissions.*' => 'exists:permissions,id',
         ]);
         $role->syncPermissions($request->permissions ?? []);
-        return redirect()->route('role.index')->with('success', 'Permissions updated.');
+        return redirect()->route('dashboard.role.index')->with('success', 'Permissions updated.');
     }
 }

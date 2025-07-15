@@ -28,9 +28,7 @@ class BeritaController extends Controller
      */
     public function create()
     {
-        return Inertia::render('Dashboard/Berita/Create', [
-            'karyawans' => Karyawan::all()
-        ]);
+        return Inertia::render('Dashboard/Berita/Create');
     }
 
     /**
