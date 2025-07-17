@@ -6,7 +6,7 @@ import ErrorBoundary from "@/Components/ErrorBoundary";
 import { useState } from "react";
 import Modal from "@/Components/Modal";
 
-export default function GarduInduk() {
+export default function GarduInduk({ garduInduks = [] }) {
     const [rowsPerPage, setRowsPerPage] = useState(8)
     const [showTambahGardu, setShowTambahGardu] = useState(true)
     return(
@@ -86,7 +86,20 @@ export default function GarduInduk() {
                                         </tr>
                                     </thead>
                                     <tbody className="bg-white divide-y divide-blue-50">
-                                        
+                                        {garduInduks.length === 0 ? (
+                                            <tr>
+                                                <td colSpan={4} className="text-center py-4 text-gray-400">Tidak ada data</td>
+                                            </tr>
+                                        ) : (
+                                            garduInduks.slice(0, rowsPerPage).map((gardu, idx) => (
+                                                <tr key={gardu.id}>
+                                                    <td className="px-4 py-2 text-center">{idx + 1}</td>
+                                                    <td className="px-4 py-2 text-center">{gardu.name_ultg}</td>
+                                                    <td className="px-4 py-2">{gardu.name}</td>
+                                                    <td className="px-4 py-2 text-center">-</td>
+                                                </tr>
+                                            ))
+                                        )}
                                     </tbody>
                                 </table>
                             </ErrorBoundary>

@@ -21,7 +21,7 @@ class SocialiteController extends Controller
         $user = User::where('email', $socialUser->getEmail())->first();
         if (!$user) {
             // Email tidak terdaftar, tolak login
-            return redirect('/login')->withErrors(['email' => 'Email Anda belum terdaftar di sistem. Silakan hubungi admin.']);
+            return redirect('/login')->withErrors(['email' => 'Email Anda belum terdaftar di sistem. Silakan daftar akun terlebih dahulu atau hubungi admin.']);
         }
 
         // Email sudah terdaftar, login

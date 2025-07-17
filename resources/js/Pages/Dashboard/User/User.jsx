@@ -2,10 +2,10 @@ import { Head, usePage } from "@inertiajs/react";
 import DashboardLayout from "../../../Layouts/DashboardLayout";
 import {
     FaUsers,
-    FaKey,
     FaPlus,
     FaFilter,
     FaUserShield,
+    FaCheck
 } from "react-icons/fa";
 import {
     Dialog,
@@ -19,6 +19,7 @@ import { useState } from "react";
 import { router } from "@inertiajs/react";
 import React from "react";
 import ErrorBoundary from "@/Components/ErrorBoundary";
+import { Listbox } from "@headlessui/react";
 
 export default function User() {
     const { users = [] } = usePage().props;
@@ -430,15 +431,36 @@ export default function User() {
             <Dialog
                 open={roleModalOpen}
                 onClose={() => setRoleModalOpen(false)}
-                maxWidth="xs"
+                maxWidth="sm"
                 fullWidth
+                PaperProps={{
+                    style: {
+                        borderRadius: 18,
+                        minHeight: 380,
+                        maxHeight: 520,
+                        background: "linear-gradient(135deg, #f8fafc 0%, #fff 100%)",
+                        boxShadow: "0 8px 32px 0 rgba(0,0,0,0.10)",
+                        padding: 0,
+                    },
+                }}
             >
-                <DialogTitle className="font-bold text-lg text-gray-800 border-b">
+                <DialogTitle
+                    className="font-bold text-lg text-gray-800 border-b px-6 py-4"
+                    style={{ background: "linear-gradient(90deg, #e0e7ff 0%, #f8fafc 100%)" }}
+                >
                     Kelola Role User
                 </DialogTitle>
-                <DialogContent className="py-6 bg-gradient-to-br from-slate-50 to-white">
+                <DialogContent
+                    className="py-6 px-6"
+                    style={{
+                        minHeight: 220,
+                        maxHeight: 340,
+                        overflowY: "auto",
+                        background: "linear-gradient(135deg, #f8fafc 0%, #fff 100%)",
+                    }}
+                >
                     {roleModalLoading ? (
-                        <div className="flex justify-center items-center h-24">
+                        <div className="flex justify-center items-center h-32">
                             <CircularProgress size={32} />
                         </div>
                     ) : (
@@ -448,17 +470,16 @@ export default function User() {
                                 handleRoleModalSave();
                             }}
                         >
-                            <div className="mb-6 mt-6">
-                                <div className="flex items-center gap-2 mb-4">
-                                    <span className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-blue-100 text-blue-700 font-bold text-lg shadow-sm">
-                                        {roleModalUser?.name?.[0]?.toUpperCase() ||
-                                            "U"}
+                            <div className="mb-6 mt-2">
+                                <div className="flex items-center gap-3 mb-5">
+                                    <span className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-blue-100 text-blue-700 font-bold text-xl shadow">
+                                        {roleModalUser?.name?.[0]?.toUpperCase() || "U"}
                                     </span>
                                     <div>
-                                        <div className="text-xs text-gray-500 font-medium">
+                                        <div className="text-xs text-gray-500 font-medium mb-0.5">
                                             User
                                         </div>
-                                        <div className="text-base font-semibold text-gray-800">
+                                        <div className="text-base font-semibold text-gray-800 leading-tight">
                                             {roleModalUser?.name}
                                         </div>
                                     </div>
@@ -467,37 +488,74 @@ export default function User() {
                                     Role
                                 </label>
                                 <div className="relative">
-                                    <select
-                                        className="border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 rounded-lg px-4 py-2 w-full bg-white transition-all shadow-sm text-gray-800"
-                                        value={roleModalCurrent}
-                                        onChange={(e) =>
-                                            setRoleModalCurrent(e.target.value)
-                                        }
-                                        required
-                                    >
-                                        <option value="">Pilih Role</option>
-                                        {roleModalRoles.map((r) => (
-                                            <option key={r.id} value={r.name}>
-                                                {r.name}
-                                            </option>
-                                        ))}
-                                    </select>
-                                    <span className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
-                                        <svg
-                                            width="20"
-                                            height="20"
-                                            fill="none"
-                                            viewBox="0 0 20 20"
-                                        >
-                                            <path
-                                                d="M6 8l4 4 4-4"
-                                                stroke="currentColor"
-                                                strokeWidth="1.5"
-                                                strokeLinecap="round"
-                                                strokeLinejoin="round"
-                                            />
-                                        </svg>
-                                    </span>
+                                    <Listbox value={roleModalCurrent} onChange={setRoleModalCurrent}>
+                                        <div className="relative">
+                                            <Listbox.Button className="border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 rounded-lg px-4 py-2 w-full bg-white transition-all shadow text-gray-800 flex justify-between items-center">
+                                                <span>
+                                                    {roleModalCurrent
+                                                        ? roleModalRoles.find((r) => r.name === roleModalCurrent)?.name
+                                                        : "Pilih Role"}
+                                                </span>
+                                                <span className="pointer-events-none text-gray-400 ml-2">
+                                                    <svg
+                                                        width="20"
+                                                        height="20"
+                                                        fill="none"
+                                                        viewBox="0 0 20 20"
+                                                    >
+                                                        <path
+                                                            d="M6 8l4 4 4-4"
+                                                            stroke="currentColor"
+                                                            strokeWidth="1.5"
+                                                            strokeLinecap="round"
+                                                            strokeLinejoin="round"
+                                                        />
+                                                    </svg>
+                                                </span>
+                                            </Listbox.Button>
+                                            <Listbox.Options className="absolute z-20 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-52 overflow-auto focus:outline-none">
+                                                <Listbox.Option
+                                                    key=""
+                                                    value=""
+                                                    className={({ active }) =>
+                                                        `cursor-pointer select-none relative px-4 py-2 ${
+                                                            active ? "bg-blue-50 text-blue-700" : "text-gray-800"
+                                                        }`
+                                                    }
+                                                >
+                                                    Pilih Role
+                                                </Listbox.Option>
+                                                {roleModalRoles.map((r) => (
+                                                    <Listbox.Option
+                                                        key={r.id}
+                                                        value={r.name}
+                                                        className={({ active, selected }) =>
+                                                            [
+                                                                "cursor-pointer select-none relative px-4 py-2",
+                                                                active
+                                                                    ? "bg-blue-50 text-blue-700"
+                                                                    : selected
+                                                                    ? "bg-blue-100 text-blue-800"
+                                                                    : "text-gray-800",
+                                                                selected ? "font-semibold" : ""
+                                                            ].join(" ")
+                                                        }
+                                                    >
+                                                        {({ selected }) => (
+                                                            <div className="flex items-center">
+                                                                {selected && (
+                                                                    <span className="mr-2 text-blue-600">
+                                                                        <FaCheck className="h-4 w-4" aria-hidden="true" />
+                                                                    </span>
+                                                                )}
+                                                                <span>{r.name}</span>
+                                                            </div>
+                                                        )}
+                                                    </Listbox.Option>
+                                                ))}
+                                            </Listbox.Options>
+                                        </div>
+                                    </Listbox>
                                 </div>
                                 {roleModalError && (
                                     <div className="text-red-500 mt-2 text-sm">
@@ -508,7 +566,7 @@ export default function User() {
                         </form>
                     )}
                 </DialogContent>
-                <DialogActions className="border-t px-4 py-3 flex justify-between">
+                <DialogActions className="border-t px-6 py-4 flex justify-between bg-slate-50">
                     <button
                         type="button"
                         onClick={() => setRoleModalOpen(false)}
@@ -607,17 +665,37 @@ export default function User() {
                                     </div>
                                     <div className="bg-white rounded-xl shadow p-5 flex flex-col gap-1">
                                         <label className="block text-gray-600 text-sm font-semibold mb-1">Role</label>
-                                        <select
-                                            className="border border-gray-200 rounded-lg px-4 py-2 w-full focus:ring-2 focus:ring-blue-200 focus:border-blue-400 transition text-base"
-                                            value={createRole}
-                                            onChange={(e) => setCreateRole(e.target.value)}
-                                            required
-                                        >
-                                            <option value="">Pilih Role</option>
-                                            {allRoles.map((r) => (
-                                                <option key={r.id} value={r.name}>{r.name}</option>
-                                            ))}
-                                        </select>
+                                        {/* Headless UI Listbox for Role Selection */}
+                                        <Listbox value={createRole} onChange={setCreateRole}>
+                                            <div className="relative">
+                                                <Listbox.Button className="border border-gray-200 rounded-lg px-4 py-2 w-full focus:ring-2 focus:ring-blue-200 focus:border-blue-400 transition text-base bg-white text-left">
+                                                    {createRole ? allRoles.find(r => r.name === createRole)?.name : "Pilih Role"}
+                                                </Listbox.Button>
+                                                <Listbox.Options className="absolute z-10 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-auto focus:outline-none">
+                                                    {allRoles.map((r) => (
+                                                        <Listbox.Option
+                                                            key={r.id}
+                                                            value={r.name}
+                                                            className={({ active }) => `cursor-pointer select-none relative px-4 py-2 ${
+                                                                    active ? "bg-blue-100 text-blue-900" : "text-gray-900"
+                                                                }}`}>
+                                                                    {({selected}) => (
+                                                                        <>
+                                                                            <span className={`block truncate ${selected ? 'font-semibold' : 'font-normal'}`}>
+                                                                                {r.name}
+                                                                            </span>
+                                                                        {selected ? (
+                                                                            <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-blue-600">
+                                                                                <FaCheck className="h-4 w-4" aria-hidden="true" />
+                                                                            </span>
+                                                                        ): null }
+                                                                        </>
+                                                                    )}
+                                                        </Listbox.Option>
+                                                    ))}
+                                                </Listbox.Options>
+                                            </div>
+                                        </Listbox>
                                         {createError.role && (
                                             <div className="text-red-500 mt-1 text-xs">{createError.role}</div>
                                         )}
@@ -638,7 +716,7 @@ export default function User() {
                                 type="button"
                                 onClick={handleCreateUser}
                                 className="px-5 py-2 rounded-lg bg-blue-600 text-white font-semibold shadow hover:bg-blue-700 transition disabled:opacity-50"
-                                disabled={createLoading || !createName || !createEmail || !createPassword || !createRole}
+                                disabled={createLoading || !createName || !createEmail || !createRole}
                             >
                                 {createLoading ? (
                                     <CircularProgress size={20} color="inherit" />

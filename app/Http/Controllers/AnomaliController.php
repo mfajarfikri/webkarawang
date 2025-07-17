@@ -26,14 +26,14 @@ class AnomaliController extends Controller
      */
     public function create()
     {
-        // $gardus = GarduInduk::all(['id', 'name']);
+        $gardus = GarduInduk::all(['id', 'name']);
         // $kategoris = Kategori::all(['id', 'name']);
         // $bays = Bay::all(['id', 'name']);
         $users = User::all(['id', 'name']);
         // $peralatans = Peralatan::all(['id', 'name']);
         return Inertia::render("Dashboard/Anomali/Create", 
         compact(
-            // 'gardus', 
+            'gardus', 
             // 'kategoris', 
             // 'bays', 
             'users', 

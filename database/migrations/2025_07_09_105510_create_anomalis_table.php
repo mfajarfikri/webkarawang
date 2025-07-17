@@ -18,6 +18,7 @@ return new class extends Migration
             $table->unsignedBigInteger('gardu_id');
             $table->enum('bagian', ['Banghal', 'Hargi', 'Harjar', 'Harpro', 'K3L']);
             $table->enum('tipe', ['Major', 'Minor']);
+            $table->unsignedBigInteger('kategori_id');
             $table->string('peralatan');
             $table->string('merek')->nullable();
             $table->string('tipe_alat')->nullable();
@@ -28,7 +29,6 @@ return new class extends Migration
             $table->string('tahun_buat')->nullable();
             $table->string('penempatan_alat');
             $table->date('tanggal_kejadian');
-            $table->unsignedBigInteger('kategori_id');
             $table->text('penyebab');
             $table->text('akibat');
             $table->text('usul_saran')->nullable(); 

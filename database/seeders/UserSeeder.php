@@ -27,6 +27,14 @@ class UserSeeder extends Seeder
                 'created_at' => now(),
                 'updated_at' => now(),
             ),
+            1 => array(
+                'id' => 2,
+                'name' => '',
+                'email' => 'muhammadfajarfikrifadilah@gmail.com',
+                'password' => '',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ),
         ));
         $user = User::first();
 

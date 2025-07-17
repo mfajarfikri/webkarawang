@@ -15,6 +15,11 @@ class RoleController extends Controller
     public function index()
     {
         $roles = Role::with('permissions')->get(['id', 'name']);
+        if (request()->has('modal')) {
+            return response()->json([
+                'roles' => $roles
+            ]);
+        }
         return Inertia::render('Dashboard/Role/Role', [
             'roles' => $roles,
             'errors' => session('errors') ? session('errors')->getBag('default')->toArray() : (object)[],

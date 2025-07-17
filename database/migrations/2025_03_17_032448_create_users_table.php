@@ -13,15 +13,19 @@ return new class extends Migration
     {
         Schema::create('users', function (Blueprint $table) {
             $table->id();
-            $table->string('name');
+            $table->string('name')->nullable();
             $table->string('email')->unique();
             $table->timestamp('email_verified_at')->nullable();
             $table->enum('penempatan', ['UPT Karawang', 'ULTG Karawang', 'ULTG Purwakarta'])->nullable();
+            $table->unsignedBigInteger('gardu_id')->nullable();
+            $table->json('foto_profil')->nullable();
             $table->longText('tanda_tangan')->nullable();
             $table->string('password');
             $table->rememberToken();
             $table->softDeletes();
             $table->timestamps();
+
+            $table->foreign('gardu_id')->references('id')->on('gardu_induks')->onDelete('set null');
         });
 
         Schema::create('password_reset_tokens', function (Blueprint $table) {

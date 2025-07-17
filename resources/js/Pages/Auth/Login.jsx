@@ -220,6 +220,14 @@ export default function Login({ status, canResetPassword }) {
                         <FcGoogle className="h-5 w-5 shadow-xl"/>
                         <span>Login dengan Google</span>
                     </a>
+
+                    {/* Register Link */}
+                    {/*
+                    <div className="mt-6 text-center">
+                        <span className="text-gray-500 text-sm">Belum punya akun?</span>{' '}
+                        <Link href={route('register')} className="text-blue-600 font-semibold hover:underline ml-1">Daftar Akun</Link>
+                    </div>
+                    */}
                 </div>
             </div>
 
