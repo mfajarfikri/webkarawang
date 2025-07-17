@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AnomaliController;
+use App\Http\Controllers\BayController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\KttController;
 use App\Http\Controllers\HomeController;
@@ -9,8 +10,10 @@ use App\Http\Controllers\UserController;
 use App\Http\Controllers\BeritaController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\GarduIndukController;
 use App\Http\Controllers\PermissionController;
 use App\Http\Middleware\AutoPermission;
+use App\Http\Controllers\Auth\SocialiteController;
 
 Route::controller(HomeController::class)->group(function () {
     Route::get('/', 'index')->name('home');
@@ -46,13 +49,17 @@ Route::middleware(['auth'])->prefix('dashboard')->group(function () {
 
     Route::get('/anomali', [AnomaliController::class, 'index'])->middleware(AutoPermission::class . ':View Anomali')->name('dashboard.anomali.index');
     Route::get('/anomali/create', [AnomaliController::class, 'create'])->middleware(AutoPermission::class . ':View Anomali Create')->name('dashboard.anomali.create');
+    Route::post('/anomali', [AnomaliController::class, 'store'])->name('dashboard.anomali.store');
+
+
+    Route::get('garduinduk', [GarduIndukController::class, 'index'])->name('dashboard.gardu.index');
 
     Route::get('user', [UserController::class, 'index'])->name('dashboard.user.index');
     Route::post('user', [UserController::class, 'store'])->name('dashboard.user.store');
     Route::get('user/{id}/role', [UserController::class, 'showAssignRoleForm'])->name('dashboard.user.role.edit');
     Route::post('user/{id}/role', [UserController::class, 'updateRole'])->name('dashboard.user.role.update');
 
-    Route::get('role', [RoleController::class, 'index'])->name('dashboard.role.index');
+    Route::get('role', [RoleController::class, 'index'])->name('dashboard.role.index')->middleware(AutoPermission::class . ':View Anomali');
     Route::post('roles', [RoleController::class, 'store']);
     Route::resource('roles', RoleController::class)->only(['edit', 'update']);
     Route::delete('roles/{role}', [RoleController::class, 'destroy']);
@@ -65,5 +72,8 @@ Route::middleware(['auth'])->prefix('dashboard')->group(function () {
     Route::get('role/{id}/permissions', [RoleController::class, 'editPermissions'])->name('role.permissions.edit');
     Route::post('role/{id}/permissions', [RoleController::class, 'updatePermissions'])->name('role.permissions.update');
 });
+
+Route::get('auth/{provider}', [SocialiteController::class, 'redirect'])->name('socialite.redirect');
+Route::get('auth/{provider}/callback', [SocialiteController::class, 'callback'])->name('socialite.callback');
 
 require __DIR__ . '/auth.php';

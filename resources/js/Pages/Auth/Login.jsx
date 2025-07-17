@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Head, Link, useForm } from "@inertiajs/react";
 import { FaEnvelope, FaLock, FaEye, FaEyeSlash } from "react-icons/fa";
 import ApplicationLogo from "@/Components/ApplicationLogo";
+import { FcGoogle } from "react-icons/fc";
 
 export default function Login({ status, canResetPassword }) {
     const [showPassword, setShowPassword] = useState(false);
@@ -168,7 +169,7 @@ export default function Login({ status, canResetPassword }) {
                             <button
                                 type="submit"
                                 disabled={processing}
-                                className="w-full flex justify-center py-2.5 px-4 rounded-lg shadow-sm text-sm font-medium text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200 ease-in-out transform hover:scale-[1.02]"
+                                className="w-full flex justify-center items-center gap-2 py-3 px-4 rounded-xl shadow-lg text-base font-bold text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200 ease-in-out transform hover:scale-95 active:scale-100"
                             >
                                 {processing ? (
                                     <div className="flex items-center">
@@ -195,33 +196,30 @@ export default function Login({ status, canResetPassword }) {
                                         Logging in...
                                     </div>
                                 ) : (
-                                    "Login"
+                                    <>
+                                        <svg className="w-5 h-5 mr-1" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M5 12h14M12 5l7 7-7 7" /></svg>
+                                        Login
+                                    </>
                                 )}
                             </button>
                         </div>
                     </form>
 
-                    <div className="mt-6">
-                        <div className="relative">
-                            <div className="absolute inset-0 flex items-center">
-                                <div className="w-full border-t border-gray-300" />
-                            </div>
-                            <div className="relative flex justify-center text-sm">
-                                <span className="px-2 bg-white text-gray-500">
-                                    Belum punya akun?
-                                </span>
-                            </div>
-                        </div>
-
-                        <div className="mt-6">
-                            <Link
-                                href={route("register")}
-                                className="w-full flex justify-center py-2.5 px-4 border border-gray-300 rounded-lg shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200 ease-in-out transform hover:scale-[1.02]"
-                            >
-                                Daftar Sekarang
-                            </Link>
-                        </div>
+                    {/* Divider */}
+                    <div className="my-6 flex items-center">
+                        <div className="flex-grow border-t border-gray-200"></div>
+                        <span className="mx-4 text-gray-400 text-xs font-semibold uppercase">atau</span>
+                        <div className="flex-grow border-t border-gray-200"></div>
                     </div>
+
+                    {/* Google Login Button */}
+                    <a
+                        href="/auth/google"
+                        className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl shadow-lg text-base font-bold text-gray-700 bg-white border border-gray-300 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200 ease-in-out transform hover:scale-95 active:scale-100 mt-4"
+                    >
+                        <FcGoogle className="h-5 w-5 shadow-xl"/>
+                        <span>Login dengan Google</span>
+                    </a>
                 </div>
             </div>
 

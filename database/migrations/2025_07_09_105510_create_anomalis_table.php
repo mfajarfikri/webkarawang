@@ -12,7 +12,43 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('anomalis', function (Blueprint $table) {
-            $table->id();
+            $table->bigIncrements('id');
+            $table->string('judul');
+            $table->enum('ultg', ['ULTG Karawang', 'ULTG Purwakarta']);
+            $table->unsignedBigInteger('gardu_id');
+            $table->enum('bagian', ['Banghal', 'Hargi', 'Harjar', 'Harpro', 'K3L']);
+            $table->enum('tipe', ['Major', 'Minor']);
+            $table->string('peralatan');
+            $table->string('merek')->nullable();
+            $table->string('tipe_alat')->nullable();
+            $table->string('no_seri')->nullable();
+            $table->string('harga')->nullable();
+            $table->string('kode_asset')->nullable();
+            $table->string('tahun_operasi')->nullable();
+            $table->string('tahun_buat')->nullable();
+            $table->string('penempatan_alat');
+            $table->date('tanggal_kejadian');
+            $table->unsignedBigInteger('kategori_id');
+            $table->text('penyebab');
+            $table->text('akibat');
+            $table->text('usul_saran')->nullable(); 
+            $table->json('lampiran_foto')->nullable();
+            
+            $table->unsignedBigInteger('assign_to')->nullable();
+            $table->date('tanggal_approve')->nullable();
+            $table->unsignedBigInteger('user_id');
+            $table->unsignedBigInteger('approve_by')->nullable();
+
+            // diisi ketika approve
+            $table->date('tanggal_mulai')->nullable();
+            $table->date('tanggal_selesai')->nullable();
+
+
+            $table->foreign('gardu_id')->references('id')->on('gardu_induks')->onDelete('cascade');
+            $table->foreign('kategori_id')->references('id')->on('kategoris')->onDelete('cascade');
+            $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
+            $table->foreign('assign_to')->references('id')->on('users')->onDelete('set null');
+            $table->foreign('approve_by')->references('id')->on('users')->onDelete('set null');
             $table->timestamps();
         });
     }

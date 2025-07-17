@@ -1,13 +1,11 @@
 import { Head, usePage } from "@inertiajs/react";
 import DashboardLayout from "../../../Layouts/DashboardLayout";
 import {
-    FaUser,
     FaUsers,
-    FaEnvelope,
-    FaUserTie,
     FaKey,
     FaPlus,
     FaFilter,
+    FaUserShield,
 } from "react-icons/fa";
 import {
     Dialog,
@@ -204,10 +202,10 @@ export default function User() {
                                     <table className="min-w-full divide-y divide-blue-100">
                                         <thead className="bg-gradient-to-r from-blue-100 to-blue-50">
                                             <tr>
-                                                <th className="px-4 py-3 text-left text-xs font-bold text-blue-700 uppercase tracking-wider">
+                                                <th className="px-4 py-3 text-center text-xs font-bold text-blue-700 uppercase tracking-wider">
                                                     No
                                                 </th>
-                                                <th className="px-4 py-3 text-left text-xs font-bold text-blue-700 uppercase tracking-wider">
+                                                <th className="px-4 py-3 text-center text-xs font-bold text-blue-700 uppercase tracking-wider">
                                                     Foto
                                                 </th>
                                                 <th className="px-4 py-3 text-left text-xs font-bold text-blue-700 uppercase tracking-wider">
@@ -216,13 +214,13 @@ export default function User() {
                                                 <th className="px-4 py-3 text-left text-xs font-bold text-blue-700 uppercase tracking-wider">
                                                     email
                                                 </th>
-                                                <th className="px-4 py-3 text-left text-xs font-bold text-blue-700 uppercase tracking-wider">
+                                                <th className="px-4 py-3 text-center text-xs font-bold text-blue-700 uppercase tracking-wider">
                                                     Role
                                                 </th>
-                                                <th className="px-4 py-3 text-left text-xs font-bold text-blue-700 uppercase tracking-wider">
-                                                    Penempatan
+                                                <th className="px-4 py-3 text-center text-xs font-bold text-blue-700 uppercase tracking-wider">
+                                                    Wilayah
                                                 </th>
-                                                <th className="px-4 py-3 text-left text-xs font-bold text-blue-700 uppercase tracking-wider">
+                                                <th className="px-4 py-3 text-center text-xs font-bold text-blue-700 uppercase tracking-wider">
                                                     Tanda Tangan
                                                 </th>
                                                 <th className="px-4 py-3 text-center text-xs font-bold text-blue-700 uppercase tracking-wider">
@@ -247,43 +245,27 @@ export default function User() {
                                                             key={row.id}
                                                             className="hover:bg-blue-50 transition-all duration-150"
                                                         >
-                                                            <td className=" text-center text-blue-700 font-bold rounded-l-lg">
+                                                            <td className="px-6 py-3 text-center text-blue-700 font-bold rounded-l-lg">
                                                                 {(page - 1) *
                                                                     rowsPerPage +
                                                                     idx +
                                                                     1}
                                                             </td>
-                                                            <td className="px-3 py-3">
+                                                            <td className="px-3 py-3 text-center">
                                                                 {row.foto_profil ? (
                                                                     <img
-                                                                        src={
-                                                                            row.foto_profil
-                                                                        }
-                                                                        alt={
-                                                                            row.name
-                                                                        }
-                                                                        className="h-10 w-10 rounded-full object-cover border border-blue-200 shadow-sm"
+                                                                        src={row.foto_profil}
+                                                                        alt={row.name}
+                                                                        className="h-10 w-10 rounded-full object-cover border border-blue-200 shadow-sm mx-auto"
                                                                     />
                                                                 ) : (
-                                                                    <div className="h-10 w-10 rounded-full bg-gradient-to-br from-blue-200 to-blue-100 flex items-center justify-center text-blue-700 font-bold text-lg border border-blue-100 shadow-sm">
+                                                                    <div className="h-10 w-10 rounded-full bg-gradient-to-br from-blue-200 to-blue-100 flex items-center justify-center text-blue-700 font-bold text-lg border border-blue-100 shadow-sm mx-auto">
                                                                         <span>
                                                                             {row.name
-                                                                                ?.split(
-                                                                                    " "
-                                                                                )
-                                                                                .map(
-                                                                                    (
-                                                                                        n
-                                                                                    ) =>
-                                                                                        n[0]
-                                                                                )
-                                                                                .join(
-                                                                                    ""
-                                                                                )
-                                                                                .substring(
-                                                                                    0,
-                                                                                    2
-                                                                                )
+                                                                                ?.split(" ")
+                                                                                .map((n) => n[0])
+                                                                                .join("")
+                                                                                .substring(0, 2)
                                                                                 .toUpperCase()}
                                                                         </span>
                                                                     </div>
@@ -323,17 +305,13 @@ export default function User() {
                                                             <td className="px-3 py-3 text-center rounded-r-lg">
                                                                 <button
                                                                     type="button"
-                                                                    onClick={() =>
-                                                                        openRoleModal(
-                                                                            row
-                                                                        )
-                                                                    }
-                                                                    className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-gradient-to-r from-blue-600 to-blue-400 text-white hover:from-blue-700 hover:to-blue-500 transition text-xs font-semibold shadow"
+                                                                    onClick={() => openRoleModal(row)}
+                                                                    className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-gradient-to-r from-blue-500 via-blue-400 to-blue-300 text-white hover:from-blue-700 hover:via-blue-600 hover:to-blue-500 transition-all ease-in-out duration-500 text-xs font-bold shadow-lg border border-blue-200 group relative overflow-hidden"
                                                                     title="Kelola Role"
                                                                 >
-                                                                    <FaKey className="text-white text-base" />
-                                                                    <span>
-                                                                        Role
+                                                                    <FaUserShield className="text-white text-lg drop-shadow-sm group-hover:scale-110 transition-transform duration-200" />
+                                                                    <span className="ml-1 tracking-wide drop-shadow-sm">
+                                                                        Kelola Role
                                                                     </span>
                                                                 </button>
                                                             </td>
@@ -429,23 +407,23 @@ export default function User() {
                         </div>
                     </DialogContent>
                     <DialogActions className="border-t px-4 py-3 flex justify-between">
-                        <MuiButton
+                        <button
+                            type="button"
                             onClick={() => {
                                 setFilterName("");
                                 setFilterOpen(false);
                             }}
-                            color="inherit"
-                            variant="outlined"
+                            className="px-4 py-2 rounded border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 font-semibold transition"
                         >
                             Reset
-                        </MuiButton>
-                        <MuiButton
+                        </button>
+                        <button
+                            type="button"
                             onClick={() => setFilterOpen(false)}
-                            color="primary"
-                            variant="contained"
+                            className="px-4 py-2 rounded bg-blue-600 text-white font-semibold shadow hover:bg-blue-700 transition"
                         >
                             Terapkan
-                        </MuiButton>
+                        </button>
                     </DialogActions>
                 </Dialog>
             </DashboardLayout>
@@ -531,155 +509,160 @@ export default function User() {
                     )}
                 </DialogContent>
                 <DialogActions className="border-t px-4 py-3 flex justify-between">
-                    <MuiButton
+                    <button
+                        type="button"
                         onClick={() => setRoleModalOpen(false)}
-                        color="inherit"
-                        variant="outlined"
+                        className="px-4 py-2 rounded border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 font-semibold transition disabled:opacity-50"
                         disabled={roleModalSaving}
                     >
                         Batal
-                    </MuiButton>
-                    <MuiButton
+                    </button>
+                    <button
+                        type="button"
                         onClick={handleRoleModalSave}
-                        color="primary"
-                        variant="contained"
-                        disabled={
-                            roleModalSaving ||
-                            roleModalLoading ||
-                            !roleModalCurrent
-                        }
+                        className="px-4 py-2 rounded bg-blue-600 text-white font-semibold shadow hover:bg-blue-700 transition disabled:opacity-50"
+                        disabled={roleModalSaving || roleModalLoading || !roleModalCurrent}
                     >
                         {roleModalSaving ? (
                             <CircularProgress size={20} color="inherit" />
                         ) : (
                             "Simpan"
                         )}
-                    </MuiButton>
+                    </button>
                 </DialogActions>
             </Dialog>
-            <Dialog
-                open={createModalOpen}
-                onClose={() => setCreateModalOpen(false)}
-                maxWidth="xs"
-                fullWidth
-            >
-                <DialogTitle className="font-bold text-lg text-gray-800 border-b">
-                    Tambah User
-                </DialogTitle>
-                <DialogContent className="py-4">
-                    <form
-                        onSubmit={(e) => {
-                            e.preventDefault();
-                            handleCreateUser();
-                        }}
+            {/* Modal Tambah User - custom slide-in from right */}
+            {createModalOpen && (
+                <>
+                    {/* Overlay */}
+                    <div
+                        className="fixed inset-0 bg-black/40 z-40 transition-opacity duration-300 animate-fadein"
+                        onClick={() => !createLoading && setCreateModalOpen(false)}
+                    />
+                    {/* Panel */}
+                    <div
+                        className="fixed top-0 right-0 h-full w-full max-w-xl bg-white shadow-2xl z-50 flex flex-col transition-transform duration-300 animate-slidein rounded-l-2xl"
+                        style={{ boxShadow: '0 0 40px 0 rgba(0,0,0,0.15)' }}
                     >
-                        <div className="mb-4">
-                            <label className="block text-gray-700 font-semibold mb-2">
-                                Nama
-                            </label>
-                            <input
-                                type="text"
-                                className="border rounded px-3 py-2 w-full"
-                                value={createName}
-                                onChange={(e) => setCreateName(e.target.value)}
-                                required
-                            />
-                            {createError.name && (
-                                <div className="text-red-500 mt-1 text-sm">
-                                    {createError.name}
-                                </div>
-                            )}
-                        </div>
-                        <div className="mb-4">
-                            <label className="block text-gray-700 font-semibold mb-2">
-                                Email
-                            </label>
-                            <input
-                                type="email"
-                                className="border rounded px-3 py-2 w-full"
-                                value={createEmail}
-                                onChange={(e) => setCreateEmail(e.target.value)}
-                                required
-                            />
-                            {createError.email && (
-                                <div className="text-red-500 mt-1 text-sm">
-                                    {createError.email}
-                                </div>
-                            )}
-                        </div>
-                        <div className="mb-4">
-                            <label className="block text-gray-700 font-semibold mb-2">
-                                Password
-                            </label>
-                            <input
-                                type="password"
-                                className="border rounded px-3 py-2 w-full"
-                                value={createPassword}
-                                onChange={(e) =>
-                                    setCreatePassword(e.target.value)
-                                }
-                                required
-                            />
-                            {createError.password && (
-                                <div className="text-red-500 mt-1 text-sm">
-                                    {createError.password}
-                                </div>
-                            )}
-                        </div>
-                        <div className="mb-4">
-                            <label className="block text-gray-700 font-semibold mb-2">
-                                Role
-                            </label>
-                            <select
-                                className="border rounded px-3 py-2 w-full"
-                                value={createRole}
-                                onChange={(e) => setCreateRole(e.target.value)}
-                                required
+                        <div className="flex items-center justify-between px-8 py-6 border-b">
+                            <div className="font-bold text-2xl text-gray-800">Tambah User</div>
+                            <button
+                                onClick={() => !createLoading && setCreateModalOpen(false)}
+                                className="text-gray-400 hover:text-blue-600 text-3xl font-bold px-2"
+                                disabled={createLoading}
+                                aria-label="Tutup"
                             >
-                                <option value="">Pilih Role</option>
-                                {allRoles.map((r) => (
-                                    <option key={r.id} value={r.name}>
-                                        {r.name}
-                                    </option>
-                                ))}
-                            </select>
-                            {createError.role && (
-                                <div className="text-red-500 mt-1 text-sm">
-                                    {createError.role}
-                                </div>
-                            )}
+                                &times;
+                            </button>
                         </div>
-                    </form>
-                </DialogContent>
-                <DialogActions className="border-t px-4 py-3 flex justify-between">
-                    <MuiButton
-                        onClick={() => setCreateModalOpen(false)}
-                        color="inherit"
-                        variant="outlined"
-                        disabled={createLoading}
-                    >
-                        Batal
-                    </MuiButton>
-                    <MuiButton
-                        onClick={handleCreateUser}
-                        color="primary"
-                        variant="contained"
-                        disabled={
-                            createLoading ||
-                            !createName ||
-                            !createEmail ||
-                            !createPassword ||
-                            !createRole
+                        <div className="flex-1 overflow-y-auto px-8 py-8 bg-gradient-to-br from-slate-50 to-white">
+                            <form
+                                onSubmit={(e) => {
+                                    e.preventDefault();
+                                    handleCreateUser();
+                                }}
+                            >
+                                <div className="space-y-5">
+                                    <div className="bg-white rounded-xl shadow p-5 flex flex-col gap-1">
+                                        <label className="block text-gray-600 text-sm font-semibold mb-1">Nama</label>
+                                        <input
+                                            type="text"
+                                            className="border border-gray-200 rounded-lg px-4 py-2 w-full focus:ring-2 focus:ring-blue-200 focus:border-blue-400 transition text-base"
+                                            value={createName}
+                                            onChange={(e) => setCreateName(e.target.value)}
+                                            required
+                                            placeholder="Nama lengkap user"
+                                        />
+                                        {createError.name && (
+                                            <div className="text-red-500 mt-1 text-xs">{createError.name}</div>
+                                        )}
+                                    </div>
+                                    <div className="bg-white rounded-xl shadow p-5 flex flex-col gap-1">
+                                        <label className="block text-gray-600 text-sm font-semibold mb-1">Email</label>
+                                        <input
+                                            type="email"
+                                            className="border border-gray-200 rounded-lg px-4 py-2 w-full focus:ring-2 focus:ring-blue-200 focus:border-blue-400 transition text-base"
+                                            value={createEmail}
+                                            onChange={(e) => setCreateEmail(e.target.value)}
+                                            required
+                                            placeholder="Alamat email user"
+                                        />
+                                        {createError.email && (
+                                            <div className="text-red-500 mt-1 text-xs">{createError.email}</div>
+                                        )}
+                                    </div>
+                                    <div className="bg-white rounded-xl shadow p-5 flex flex-col gap-1">
+                                        <label className="block text-gray-600 text-sm font-semibold mb-1">Password</label>
+                                        <input
+                                            type="password"
+                                            className="border border-gray-200 rounded-lg px-4 py-2 w-full focus:ring-2 focus:ring-blue-200 focus:border-blue-400 transition text-base"
+                                            value={createPassword}
+                                            onChange={(e) => setCreatePassword(e.target.value)}
+                                            required
+                                            placeholder="Password user"
+                                        />
+                                        {createError.password && (
+                                            <div className="text-red-500 mt-1 text-xs">{createError.password}</div>
+                                        )}
+                                    </div>
+                                    <div className="bg-white rounded-xl shadow p-5 flex flex-col gap-1">
+                                        <label className="block text-gray-600 text-sm font-semibold mb-1">Role</label>
+                                        <select
+                                            className="border border-gray-200 rounded-lg px-4 py-2 w-full focus:ring-2 focus:ring-blue-200 focus:border-blue-400 transition text-base"
+                                            value={createRole}
+                                            onChange={(e) => setCreateRole(e.target.value)}
+                                            required
+                                        >
+                                            <option value="">Pilih Role</option>
+                                            {allRoles.map((r) => (
+                                                <option key={r.id} value={r.name}>{r.name}</option>
+                                            ))}
+                                        </select>
+                                        {createError.role && (
+                                            <div className="text-red-500 mt-1 text-xs">{createError.role}</div>
+                                        )}
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                        <div className="border-t px-8 py-6 flex justify-end gap-3 bg-white rounded-b-2xl">
+                            <button
+                                type="button"
+                                onClick={() => setCreateModalOpen(false)}
+                                className="px-5 py-2 rounded-lg border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 font-semibold transition disabled:opacity-50"
+                                disabled={createLoading}
+                            >
+                                Batal
+                            </button>
+                            <button
+                                type="button"
+                                onClick={handleCreateUser}
+                                className="px-5 py-2 rounded-lg bg-blue-600 text-white font-semibold shadow hover:bg-blue-700 transition disabled:opacity-50"
+                                disabled={createLoading || !createName || !createEmail || !createPassword || !createRole}
+                            >
+                                {createLoading ? (
+                                    <CircularProgress size={20} color="inherit" />
+                                ) : (
+                                    "Simpan"
+                                )}
+                            </button>
+                        </div>
+                    </div>
+                    {/* Animations */}
+                    <style>{`
+                        @keyframes slidein {
+                            from { transform: translateX(100%); }
+                            to { transform: translateX(0); }
                         }
-                    >
-                        {createLoading ? (
-                            <CircularProgress size={20} color="inherit" />
-                        ) : (
-                            "Simpan"
-                        )}
-                    </MuiButton>
-                </DialogActions>
-            </Dialog>
+                        .animate-slidein { animation: slidein 0.3s cubic-bezier(.4,0,.2,1); }
+                        @keyframes fadein {
+                            from { opacity: 0; }
+                            to { opacity: 1; }
+                        }
+                        .animate-fadein { animation: fadein 0.2s cubic-bezier(.4,0,.2,1); }
+                    `}</style>
+                </>
+            )}
         </>
     );
 }

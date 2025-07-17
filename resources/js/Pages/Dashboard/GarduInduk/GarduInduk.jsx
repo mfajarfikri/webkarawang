@@ -1,35 +1,37 @@
 import DashboardLayout from "@/Layouts/DashboardLayout";
-import { Head, Link } from "@inertiajs/react";
+import { Head } from "@inertiajs/react";
+import { GiElectric } from "react-icons/gi";
 import { FaPlus, FaFilter } from "react-icons/fa";
 import ErrorBoundary from "@/Components/ErrorBoundary";
 import { useState } from "react";
-import { MdOutlineReportProblem } from "react-icons/md";
+import Modal from "@/Components/Modal";
 
-export default function Anomali() {
+export default function GarduInduk() {
     const [rowsPerPage, setRowsPerPage] = useState(8)
-    return (
+    const [showTambahGardu, setShowTambahGardu] = useState(true)
+    return(
         <>
-            <Head title="Anomali"/>
-            <DashboardLayout>
+        <Head title="Gardu Induk"/>
+        <DashboardLayout>
             <div className="py-6 w-full mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="bg-gradient-to-br from-blue-50 via-white to-blue-100 rounded-2xl shadow-xl border border-blue-100 p-0 md:p-0 overflow-hidden">
                     <div className="px-4 sm:px-6 pt-6 pb-2 border-b border-blue-100 bg-white/80 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                         <div className="w-full md:w-2/3">
                             <h2 className="text-lg sm:text-xl font-bold text-blue-800 mb-1 flex items-center gap-2">
-                                <MdOutlineReportProblem className="text-blue-400 text-2xl" />
-                                <span>Manajemen Anomali</span>
+                                <GiElectric className="text-blue-400 text-2xl" />
+                                <span>Manajemen Gardu Induk</span>
                             </h2>
                             <p className="text-blue-700/80 text-xs sm:text-sm mb-2">
-                            Sistem manajemen Anomali memungkinkan Anda untuk mencatat, memantau, dan mengelola berbagai anomali atau gangguan yang terjadi pada sistem kelistrikan. Dengan fitur ini, Anda dapat mendeteksi anomali lebih cepat, melakukan analisis penyebab, serta mengambil tindakan korektif secara efisien untuk menjaga keandalan dan keamanan operasional.
+                                Sistem manajemen Gardu Induk memungkinkan Anda untuk mengelola data gardu induk secara efisien, mulai dari penambahan, pengeditan, hingga penghapusan data. Dengan tampilan yang modern dan fitur yang mudah digunakan, Anda dapat memantau dan memperbarui informasi gardu induk untuk mendukung operasional kelistrikan secara optimal.
                             </p>
                         </div>
                         <div className="w-full md:w-auto flex justify-start md:justify-end">
-                            <Link href={route('dashboard.anomali.create')}
+                            <button onClick=""
                                 className="w-full md:w-auto bg-gradient-to-r from-blue-600 to-blue-400 text-white px-4 sm:px-5 py-2 rounded-lg shadow hover:from-blue-700 hover:to-blue-500 font-semibold flex items-center justify-center gap-2 transition text-sm sm:text-base"
                             >
                                 <FaPlus className="text-base sm:text-lg" /> 
-                                <span>Tambah Anomali</span>
-                            </Link>
+                                <span>Tambah Gardu Induk</span>
+                            </button>
                         </div>
                     </div>
                     <div className="px-2 md:px-6 pb-6 pt-4 bg-white/70">
@@ -73,22 +75,10 @@ export default function Anomali() {
                                                 No
                                             </th>
                                             <th className="px-4 py-3 text-center text-xs font-bold text-blue-700 uppercase tracking-wider">
-                                                Foto
+                                                Wilayah
                                             </th>
                                             <th className="px-4 py-3 text-left text-xs font-bold text-blue-700 uppercase tracking-wider">
                                                 Nama
-                                            </th>
-                                            <th className="px-4 py-3 text-left text-xs font-bold text-blue-700 uppercase tracking-wider">
-                                                email
-                                            </th>
-                                            <th className="px-4 py-3 text-center text-xs font-bold text-blue-700 uppercase tracking-wider">
-                                                Role
-                                            </th>
-                                            <th className="px-4 py-3 text-center text-xs font-bold text-blue-700 uppercase tracking-wider">
-                                                Wilayah
-                                            </th>
-                                            <th className="px-4 py-3 text-center text-xs font-bold text-blue-700 uppercase tracking-wider">
-                                                Tanda Tangan
                                             </th>
                                             <th className="px-4 py-3 text-center text-xs font-bold text-blue-700 uppercase tracking-wider">
                                                 Aksi
@@ -104,7 +94,13 @@ export default function Anomali() {
                     </div>
                 </div>
             </div>
-            </DashboardLayout>
+
+            <Modal show={showTambahGardu} onClose={()=> setShowTambahGardu(false)} title="Tambah Gardu Induk" maxWidth="xl">
+                <div className="max-h-screen w-1/3 bg-white">
+                Lorem ipsum, dolor sit amet consectetur adipisicing elit. Autem, dolore.
+                </div>
+            </Modal>
+        </DashboardLayout>
         </>
     )
 }

@@ -3,6 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Models\Anomali;
+use App\Models\GarduInduk;
+use App\Models\Kategori;
+use App\Models\Bay;
+use App\Models\User;
+use App\Models\Peralatan;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -21,7 +26,20 @@ class AnomaliController extends Controller
      */
     public function create()
     {
-        //
+        // $gardus = GarduInduk::all(['id', 'name']);
+        // $kategoris = Kategori::all(['id', 'name']);
+        // $bays = Bay::all(['id', 'name']);
+        $users = User::all(['id', 'name']);
+        // $peralatans = Peralatan::all(['id', 'name']);
+        return Inertia::render("Dashboard/Anomali/Create", 
+        compact(
+            // 'gardus', 
+            // 'kategoris', 
+            // 'bays', 
+            'users', 
+            // 'peralatans'
+            )
+    );
     }
 
     /**

@@ -11,9 +11,8 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('bays', function (Blueprint $table) {
-            $table->id();
-            $table->timestamps();
+        Schema::table('permissions', function (Blueprint $table) {
+            $table->text('description')->nullable()->after('guard_name');
         });
     }
 
@@ -22,6 +21,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('bays');
+        Schema::table('permissions', function (Blueprint $table) {
+            $table->dropColumn('description');
+        });
     }
 };

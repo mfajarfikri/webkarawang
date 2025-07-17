@@ -86,7 +86,7 @@ class RoleController extends Controller
     public function editPermissions($id)
     {
         $role = Role::findOrFail($id);
-        $permissions = Permission::all(['id', 'name']);
+        $permissions = Permission::all(['id', 'name', 'description']);
         $rolePermissions = $role->permissions->pluck('id')->toArray();
         if (request()->has('modal')) {
             return response()->json([

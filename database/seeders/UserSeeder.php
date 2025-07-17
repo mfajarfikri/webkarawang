@@ -31,9 +31,18 @@ class UserSeeder extends Seeder
         $user = User::first();
 
 
-        $permissions = ['View Role', 'View Anomali Create', 'View Ktt',];
-        foreach ($permissions as $perm) {
-            Permission::firstOrCreate(['name' => $perm]);
+        $permissions = ['View Role','View Anomali', 'View Anomali Create', 'View Ktt'];
+        $descriptions = [
+            'Mengakses halaman manajemen role',
+            'Mengakses halaman anomali',
+            'Mengakses halaman pembuatan anomali',
+            'Mengakses halaman utama KTT'
+        ];
+        foreach ($permissions as $i => $perm) {
+            Permission::firstOrCreate(
+                ['name' => $perm],
+                ['description' => $descriptions[$i] ?? null]
+            );
         }
         $superAdminRole = Role::firstOrCreate(['name' => 'Super Admin']);
         $superAdminRole->syncPermissions($permissions);

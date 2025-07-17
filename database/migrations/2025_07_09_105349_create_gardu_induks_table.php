@@ -13,6 +13,11 @@ return new class extends Migration
     {
         Schema::create('gardu_induks', function (Blueprint $table) {
             $table->id();
+            $table->string('name')->unique();
+            $table->decimal('latitude', 10, 7);
+            $table->decimal('longitude', 10, 7);
+            $table->enum('name_ultg', ['ULTG Karawang', 'ULTG Purwakarta']);
+            $table->enum('kondisi', ['Operasi', 'Tidak Operasi']);
             $table->timestamps();
         });
     }

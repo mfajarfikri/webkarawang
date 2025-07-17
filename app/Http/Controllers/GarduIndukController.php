@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\GarduInduk;
 use Illuminate\Http\Request;
+use Inertia\Inertia;
 
 class GarduIndukController extends Controller
 {
@@ -12,7 +13,7 @@ class GarduIndukController extends Controller
      */
     public function index()
     {
-        //
+        return Inertia::render("Dashboard/GarduInduk/GarduInduk");
     }
 
     /**

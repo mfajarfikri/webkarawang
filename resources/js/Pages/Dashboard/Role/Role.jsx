@@ -2,9 +2,8 @@ import DashboardLayout from "@/Layouts/DashboardLayout";
 import { usePage } from "@inertiajs/react";
 import { router as Inertia } from "@inertiajs/react";
 import { useState } from "react";
-import { DataGrid } from "@mui/x-data-grid";
-import { Button, Box } from "@mui/material";
-import { FaEdit, FaEllipsisV, FaFilter } from "react-icons/fa";
+import { Switch } from "@headlessui/react"
+import { FaEdit, FaEllipsisV, FaFilter, FaInfo } from "react-icons/fa";
 import {
     Dialog,
     DialogTitle,
@@ -158,6 +157,7 @@ export default function Role() {
     const handleMenuClose = (id) => {
         setAnchorEls((prev) => ({ ...prev, [id]: null }));
     };
+
 
     return (
         <DashboardLayout title="Manajemen Role">
@@ -597,7 +597,7 @@ export default function Role() {
             <Dialog
                 open={modalOpen}
                 onClose={() => setModalOpen(false)}
-                maxWidth="xs"
+                maxWidth="xl"
                 fullWidth
             >
                 <DialogTitle className="font-bold text-lg text-gray-800 border-b">
@@ -610,7 +610,7 @@ export default function Role() {
                         </div>
                     ) : (
                         <div className="flex flex-col gap-2">
-                            <div className="mb-2 text-gray-700 font-semibold">
+                            <div className="mb-2 mt-4 text-gray-700 font-semibold">
                                 Role:{" "}
                                 <span className="text-blue-700">
                                     {modalRole?.name}
@@ -621,30 +621,60 @@ export default function Role() {
                                     Tidak ada permission.
                                 </div>
                             ) : (
-                                allPermissions.map((perm) => (
-                                    <FormControlLabel
-                                        key={perm.id}
-                                        control={
-                                            <Checkbox
-                                                checked={rolePermissions.includes(
-                                                    perm.id
-                                                )}
-                                                onChange={() =>
-                                                    handlePermissionToggle(
-                                                        perm.id
-                                                    )
-                                                }
-                                                color="primary"
-                                            />
-                                        }
-                                        label={
-                                            <span className="text-gray-800 text-base">
-                                                {perm.name}
-                                            </span>
-                                        }
-                                        className="m-0"
-                                    />
-                                ))
+                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                                    {allPermissions.map((perm) => {
+                                        const isActive = rolePermissions.includes(perm.id);
+                                        return (
+                                            <div
+                                                key={perm.id}
+                                                className={`group transition-all duration-200 rounded-lg border flex items-center px-3 py-2 bg-white/95 hover:shadow cursor-pointer ${
+                                                    isActive
+                                                        ? "border-blue-500 bg-blue-50/80"
+                                                        : "border-gray-200"
+                                                }`}
+                                                onClick={() => handlePermissionToggle(perm.id)}
+                                            >
+                                                <Switch
+                                                    checked={isActive}
+                                                    onChange={() => handlePermissionToggle(perm.id)}
+                                                    className={`${
+                                                        isActive ? 'bg-blue-600' : 'bg-gray-200'
+                                                    } relative inline-flex h-5 w-10 items-center rounded-full transition-colors focus:outline-none`}
+                                                    onClick={e => e.stopPropagation()}
+                                                >
+                                                    <span
+                                                        className={`${
+                                                            isActive ? 'translate-x-5' : 'translate-x-1'
+                                                        } inline-block h-4 w-4 transform rounded-full bg-white transition-transform`}
+                                                    />
+                                                </Switch>
+                                                <div className="ml-2 flex-1 min-w-0">
+                                                    <div className="flex items-center gap-1">
+                                                        <span
+                                                            className={`font-semibold text-sm truncate ${
+                                                                isActive
+                                                                    ? "text-blue-700"
+                                                                    : "text-gray-800 group-hover:text-blue-600"
+                                                            }`}
+                                                        >
+                                                            {perm.name}
+                                                        </span>
+                                                        {isActive && (
+                                                            <span className="ml-1 px-1 py-0.5 rounded text-xs bg-blue-100 text-blue-700 font-semibold">
+                                                                Aktif
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                    <div className="mt-0.5">
+                                                        <span className="text-gray-400 text-xs italic truncate block">
+                                                            {perm.description || "Tidak ada deskripsi."}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
                             )}
                         </div>
                     )}

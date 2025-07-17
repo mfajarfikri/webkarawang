@@ -127,7 +127,8 @@ return [
 
     // 'providers' => [
     //     // Providers lain yang sudah ada...
-    //     RouteServiceProvider::class,
+    //     // RouteServiceProvider::class,
+    //     Laravel\Socialite\SocialiteServiceProvider::class,
     // ],
 
 

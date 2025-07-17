@@ -2,13 +2,12 @@ import React from "react";
 import { Head, Link, usePage } from "@inertiajs/react";
 import { useState, useEffect } from "react";
 import ApplicationLogo from "@/Components/ApplicationLogo";
+import { GiElectric } from "react-icons/gi";
+import { MdOutlineReportProblem } from "react-icons/md";
+import { AiOutlineNodeIndex } from "react-icons/ai";
 import {
     FaHome,
     FaNewspaper,
-    FaUsers,
-    FaImages,
-    FaBell,
-    FaHouseUser,
     FaCog,
     FaGlobe,
     FaBuilding,
@@ -400,6 +399,8 @@ function SidebarMenu({ collapsed = false, onLinkClick }) {
 
     return (
         <>
+        
+        
             <Link href="/dashboard" onClick={handleClick} className={`group flex items-center ${collapsed ? "justify-center" : ""} px-3 py-2.5 text-sm font-medium rounded-lg ${isActive("/dashboard") ? "bg-blue-50 text-blue-700" : "text-gray-700 hover:bg-blue-50 hover:text-blue-700"} transition-colors duration-200 menu-item-hover`}>
                 <FaHome className={`${collapsed ? "" : "mr-3"} h-5 w-5 ${isActive("/dashboard") ? "text-blue-600" : "text-gray-500 group-hover:text-blue-600"}`} aria-label="Dashboard" title="Dashboard" />
                 {!collapsed && <span>Dashboard</span>}
@@ -418,51 +419,36 @@ function SidebarMenu({ collapsed = false, onLinkClick }) {
                 <FaNewspaper className={`${collapsed ? "" : "mr-3"} h-5 w-5 ${isActive("/dashboard/berita") ? "text-blue-600" : "text-gray-500 group-hover:text-blue-600"}`} aria-label="Berita" title="Berita" />
                 {!collapsed && <span>Berita</span>}
             </Link>
+
             <Link href={route("dashboard.ktt.index")} onClick={handleClick} className={`group flex items-center ${collapsed ? "justify-center" : ""} px-3 py-2.5 text-sm font-medium rounded-lg ${isActive("/ktt") ? "bg-blue-50 text-blue-700" : "text-gray-700 hover:bg-blue-50 hover:text-blue-700"} transition-colors duration-200 menu-item-hover`}>
                 <FaBuilding className={`${collapsed ? "" : "mr-3"} h-5 w-5 ${isActive("/ktt") ? "text-blue-600" : "text-gray-500 group-hover:text-blue-600"}`} aria-label="ktt" title="ktt" />
                 {!collapsed && <span>KTT</span>}
             </Link>
 
-            <div className="relative group">
-                <Link href={route("dashboard.anomali.index")} onClick={handleClick} className={`group flex items-center ${collapsed ? "justify-center" : ""} px-3 py-2.5 text-sm font-medium rounded-lg ${isActive("/dashboard/anomali") ? "bg-blue-50 text-blue-700" : "text-gray-700 hover:bg-blue-50 hover:text-blue-700"} transition-colors duration-200 menu-item-hover`}>
-                    <FaHouseUser className={`${collapsed ? "" : "mr-3"} h-5 w-5 ${isActive("/dashboard/anomali") ? "text-blue-600" : "text-gray-500 group-hover:text-blue-600"}`} aria-label="Anomali" title="Anomali" />
-                    {!collapsed && <span>Anomali</span>}
-                    {!collapsed && (
-                        <svg
-                            className="ml-2 h-3 w-3 text-gray-400 group-hover:text-blue-600"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                            viewBox="0 0 24 24"
-                        >
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-                        </svg>
-                    )}
-                </Link>
-                {/* Submenu */}
-                {!collapsed && (
-                    <div className="absolute left-full top-0 mt-0 ml-0 w-48 bg-white border border-gray-200 rounded-lg shadow-lg opacity-0 group-hover:opacity-100 group-hover:pointer-events-auto transition-opacity duration-200 z-20">
-                        <Link
-                            href={route("dashboard.anomali.index")}
-                            onClick={handleClick}
-                            className={`block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700 rounded-t-lg ${isActive("/dashboard/anomali") ? "bg-blue-50 text-blue-700" : ""}`}
-                        >
-                            Daftar Anomali
-                        </Link>
-                        <Link
-                            href={route("dashboard.anomali.create")}
-                            onClick={handleClick}
-                            className={`block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700 rounded-b-lg ${isActive("/dashboard/anomali/create") ? "bg-blue-50 text-blue-700" : ""}`}
-                        >
-                            Tambah Anomali
-                        </Link>
-                    </div>
-                )}
-            </div>
+            <Link href={route("dashboard.anomali.index")} onClick={handleClick} className={`group flex items-center ${collapsed ? "justify-center" : ""} px-3 py-2.5 text-sm font-medium rounded-lg ${isActive("/dashboard/anomali") ? "bg-blue-50 text-blue-700" : "text-gray-700 hover:bg-blue-50 hover:text-blue-700"} transition-colors duration-200 menu-item-hover`}>
+                <MdOutlineReportProblem className={`${collapsed ? "" : "mr-3"} h-5 w-5 ${isActive("/dashboard/anomali") ? "text-blue-600" : "text-gray-500 group-hover:text-blue-600"}`} aria-label="ktt" title="ktt" />
+                {!collapsed && <span>Anomali</span>}
+            </Link>
+
+            {!collapsed && (
+                <div className="pt-2 pb-1">
+                    <p className="px-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                        Data
+                    </p>
+                </div>
+            )}
+
             <Link href={route("dashboard.user.index")} onClick={handleClick} className={`group flex items-center ${collapsed ? "justify-center" : ""} px-3 py-2.5 text-sm font-medium rounded-lg ${isActive("/dashboard/user") ? "bg-blue-50 text-blue-700" : "text-gray-700 hover:bg-blue-50 hover:text-blue-700"} transition-colors duration-200 menu-item-hover`}>
                 <FaUser className={`${collapsed ? "" : "mr-3"} h-5 w-5 ${isActive("/dashboard/user") ? "text-blue-600" : "text-gray-500 group-hover:text-blue-600"}`} aria-label="User" title="User" />
                 {!collapsed && <span>User</span>}
             </Link>
+
+            <Link href={route("dashboard.gardu.index")} onClick={handleClick} className={`group flex items-center ${collapsed ? "justify-center" : ""} px-3 py-2.5 text-sm font-medium rounded-lg ${isActive("/dashboard/garduinduk") ? "bg-blue-50 text-blue-700" : "text-gray-700 hover:bg-blue-50 hover:text-blue-700"} transition-colors duration-200 menu-item-hover`}>
+                <GiElectric className={`${collapsed ? "" : "mr-3"} h-5 w-5 ${isActive("/dashboard/garduinduk") ? "text-blue-600" : "text-gray-500 group-hover:text-blue-600"}`} aria-label="User" title="User" />
+                {!collapsed && <span>Gardu Induk</span>}
+            </Link>
+
+            
 
             {!collapsed && (
                 <div className="pt-2 pb-1">
@@ -498,6 +484,7 @@ function SidebarMenu({ collapsed = false, onLinkClick }) {
                 <FaGlobe className={`${collapsed ? "" : "mr-3"} h-5 w-5 ${isActive("/dashboard.website") ? "text-blue-600" : "text-gray-500 group-hover:text-blue-600"}`} aria-label="Website" title="Website" />
                 {!collapsed && <span>Website</span>}
             </Link>
-        </>
+            </>
+
     );
 }
