@@ -3,6 +3,7 @@ import { Head, Link, useForm } from "@inertiajs/react";
 import { FaEnvelope, FaLock, FaEye, FaEyeSlash } from "react-icons/fa";
 import ApplicationLogo from "@/Components/ApplicationLogo";
 import { FcGoogle } from "react-icons/fc";
+import axios from "axios";
 
 export default function Login({ status, canResetPassword }) {
     const [showPassword, setShowPassword] = useState(false);
@@ -11,10 +12,37 @@ export default function Login({ status, canResetPassword }) {
         password: "",
         remember: false,
     });
+    const [loginError, setLoginError] = useState("");
+    const [loginStatus, setLoginStatus] = useState("");
+    const [loading, setLoading] = useState(false);
 
-    const submit = (e) => {
+    const submit = async (e) => {
         e.preventDefault();
-        post(route("login"));
+        setLoginError("");
+        setLoginStatus("");
+        setLoading(true);
+        try {
+            // Get CSRF cookie
+            await axios.get("/sanctum/csrf-cookie");
+            // Attempt login
+            const response = await axios.post("/login", {
+                email: data.email,
+                password: data.password,
+                remember: data.remember,
+            });
+            setLoginStatus("Login berhasil! Mengalihkan...");
+            // Redirect to dashboard or wherever
+            window.location.href = "/dashboard";
+        } catch (error) {
+            if (error.response && error.response.status === 422) {
+                // Validation error
+                setLoginError("Email atau password salah.");
+            } else {
+                setLoginError("Terjadi kesalahan saat login. Silakan coba lagi.");
+            }
+        } finally {
+            setLoading(false);
+        }
     };
 
     return (
@@ -37,11 +65,14 @@ export default function Login({ status, canResetPassword }) {
 
             <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
                 <div className="bg-white py-8 px-4 shadow-2xl rounded-2xl sm:px-10 border border-gray-100 backdrop-blur-sm bg-opacity-90">
-                    {status && (
+                    {loginError && (
+                        <div className="mb-4 p-4 rounded-xl bg-red-50 border border-red-200">
+                            <p className="text-sm font-medium text-red-800">{loginError}</p>
+                        </div>
+                    )}
+                    {loginStatus && (
                         <div className="mb-4 p-4 rounded-xl bg-green-50 border border-green-200">
-                            <p className="text-sm font-medium text-green-800">
-                                {status}
-                            </p>
+                            <p className="text-sm font-medium text-green-800">{loginStatus}</p>
                         </div>
                     )}
 
@@ -168,10 +199,10 @@ export default function Login({ status, canResetPassword }) {
                         <div>
                             <button
                                 type="submit"
-                                disabled={processing}
+                                disabled={processing || loading}
                                 className="w-full flex justify-center items-center gap-2 py-3 px-4 rounded-xl shadow-lg text-base font-bold text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200 ease-in-out transform hover:scale-95 active:scale-100"
                             >
-                                {processing ? (
+                                {processing || loading ? (
                                     <div className="flex items-center">
                                         <svg
                                             className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"

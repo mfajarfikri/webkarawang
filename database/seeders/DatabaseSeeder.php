@@ -2,8 +2,8 @@
 
 namespace Database\Seeders;
 
+use App\Models\Anomali;
 use App\Models\GarduInduk;
-use App\Models\Karyawan;
 use App\Models\User;
 // use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
@@ -15,7 +15,7 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        GarduInduk::factory(18)->create();
+        
         // User::factory(10)->create();
 
         // User::factory()->create([
@@ -25,7 +25,11 @@ class DatabaseSeeder extends Seeder
 
         $this->call([
             UserSeeder::class,
+            KategoriSeeder::class,
             BeritaSeeder::class,
         ]);
+
+        GarduInduk::factory(18)->create();
+        Anomali::factory(50)->create();
     }
 }

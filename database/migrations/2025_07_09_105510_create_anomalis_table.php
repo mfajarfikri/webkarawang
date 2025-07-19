@@ -33,6 +33,7 @@ return new class extends Migration
             $table->text('akibat');
             $table->text('usul_saran')->nullable(); 
             $table->json('lampiran_foto')->nullable();
+            $table->enum('status', ['New', 'Open', 'Pending']);
             
             $table->unsignedBigInteger('assign_to')->nullable();
             $table->date('tanggal_approve')->nullable();

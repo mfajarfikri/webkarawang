@@ -61,6 +61,7 @@
         "ag-grid-community": "^34.0.1",
         "ag-grid-react": "^34.0.1",
         "date-fns": "^4.1.0",
+        "dateformat": "^5.0.3",
         "embla-carousel-react": "^8.6.0",
         "filepond": "^4.32.8",
         "filepond-plugin-file-validate-type": "^1.2.9",
