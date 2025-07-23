@@ -6,6 +6,7 @@ use Inertia\Inertia;
 use Illuminate\Http\Request;
 use Spatie\Permission\Models\Role;
 use App\Models\User;
+use App\Models\GarduInduk;
 
 class UserController extends Controller
 {
@@ -14,7 +15,7 @@ class UserController extends Controller
      */
     public function index()
     {
-        $users = \App\Models\User::with('roles')->get();
+        $users = User::with('roles')->get();
         $users = $users->map(function ($user) {
             return [
                 'id' => $user->id,
@@ -24,10 +25,15 @@ class UserController extends Controller
                 'kedudukan' => $user->kedudukan,
                 'foto_profil' => $user->foto_profil,
                 'role' => $user->roles->pluck('name')->implode(', '),
+                'wilayah' => $user->wilayah,
+                'gardu_induk_ids' => $user->gardu_induk_ids,
+                'gardu_induks' => $user->gardu_induk_ids ? GarduInduk::whereIn('id', $user->gardu_induk_ids)->get(['id','name','ultg']) : [],
             ];
         });
+        $garduInduks = GarduInduk::select('id', 'name', 'ultg')->get();
         return inertia('Dashboard/User/User', [
             'users' => $users,
+            'garduInduks' => $garduInduks,
         ]);
     }
 
@@ -49,11 +55,16 @@ class UserController extends Controller
             'email' => 'required|email|unique:users,email',
             'password' => 'required|string|min:6',
             'role' => 'required|exists:roles,name',
+            'wilayah' => 'required|in:UPT Karawang,ULTG Karawang,ULTG Purwakarta',
+            'gardu_induk_ids' => 'nullable|array',
+            'gardu_induk_ids.*' => 'exists:gardu_induks,id',
         ]);
-        $user = \App\Models\User::create([
+        $user = User::create([
             'name' => $request->name,
             'email' => $request->email,
             'password' => bcrypt($request->password),
+            'wilayah' => $request->wilayah,
+            'gardu_induk_ids' => $request->gardu_induk_ids,
         ]);
         $user->assignRole($request->role);
         return redirect()->route('dashboard.user.index')->with('success', 'User berhasil ditambahkan.');
@@ -96,10 +107,16 @@ class UserController extends Controller
         $user = User::findOrFail($id);
         $roles = Role::all(['id', 'name']);
         $userRoles = $user->roles->pluck('name')->toArray();
+        $ultg = $user->ultg;
+        $gardu_induk_ids = $user->gardu_induk_ids;
+        $gardu_induks = $gardu_induk_ids ? \App\Models\GarduInduk::whereIn('id', $gardu_induk_ids)->get(['id','name','ultg']) : [];
         if (request()->has('modal')) {
             return response()->json([
                 'roles' => $roles,
                 'userRoles' => $userRoles,
+                'ultg' => $ultg,
+                'gardu_induk_ids' => $gardu_induk_ids,
+                'gardu_induks' => $gardu_induks,
             ]);
         }
         return Inertia::render('Dashboard/User/AssignRole', [
@@ -114,7 +131,13 @@ class UserController extends Controller
         $user = User::findOrFail($id);
         $request->validate([
             'role' => 'required|exists:roles,name',
+            'wilayah' => 'required|in:UPT Karawang,ULTG Karawang,ULTG Purwakarta',
+            'gardu_induk_ids' => 'nullable|array',
+            'gardu_induk_ids.*' => 'exists:gardu_induks,id',
         ]);
+        $user->wilayah = $request->wilayah;
+        $user->gardu_induk_ids = $request->gardu_induk_ids;
+        $user->save();
         $user->syncRoles([$request->role]);
         return redirect()->route('dashboard.user.index')->with('success', 'Role user berhasil diupdate.');
     }

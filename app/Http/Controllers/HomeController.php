@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Berita;
+use App\Models\GarduInduk;
 use Inertia\Inertia;
 
 class HomeController extends Controller
@@ -16,7 +17,10 @@ class HomeController extends Controller
 
     public function garduInduk()
     {
-        return Inertia::render('Home/GarduInduk');
+        $garduInduks = GarduInduk::select('id', 'name', 'latitude', 'longitude', 'ultg', 'kondisi')->get();
+        return Inertia::render('Home/GarduInduk', [
+            'garduInduks' => $garduInduks
+        ]);
     }
 
     public function gallery()

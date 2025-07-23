@@ -13,7 +13,7 @@ class GarduIndukController extends Controller
      */
     public function index()
     {
-        $garduInduks = GarduInduk::all();
+        $garduInduks = GarduInduk::orderBy('name', 'asc')->get();
         return Inertia::render("Dashboard/GarduInduk/GarduInduk", [
             'garduInduks' => $garduInduks
         ]);

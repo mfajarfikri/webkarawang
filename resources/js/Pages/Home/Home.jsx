@@ -21,6 +21,7 @@ export default function Home() {
     const [loading, setLoading] = useState(true);
     const [berita, setBerita] = useState([]);
     const [ktt, setKtt] = useState([]);
+    const [garduInduk, setGarduInduk] = useState(0);
     const BeritaTerbaru = berita.slice(0, 3);
 
     useEffect(() => {
@@ -34,6 +35,22 @@ export default function Home() {
                 console.error("Error Fetching Data Ktt", error);
                 setLoading(false);
             });
+    }, []);
+
+    useEffect(() => {
+        const fetchGardu = async () => {
+            try {
+                const response = await axios.get("/api/gardu");
+                setGarduInduk(response.data.gardu.length || []);
+            } catch (error) {
+                setError(error);
+                console.error("Error Fetching Gardu :", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchGardu();
     }, []);
 
     useEffect(() => {
@@ -223,14 +240,14 @@ export default function Home() {
                             </div>
                             <div className="mb-4">
                                 <div className="text-3xl font-bold text-blue-600 mb-2">
-                                    8
+                                    {garduInduk}
                                 </div>
                                 <p className="text-gray-600">
-                                    Unit Gardu Induk
+                                    Unit Gardu Induk berdasarkan Tegangan
                                 </p>
                             </div>
                             <Link
-                                href="/asset/gardu-induk"
+                                href={route("gardu-induk")}
                                 className="text-blue-600 hover:text-blue-800 font-medium inline-flex items-center"
                             >
                                 Detail <FaArrowRight className="ml-2 h-3 w-3" />
@@ -278,7 +295,7 @@ export default function Home() {
                                 <p className="text-gray-600">Total Pelanggan</p>
                             </div>
                             <Link
-                                href="/asset/pelanggan-ktt"
+                                href={route("ktt.index")}
                                 className="text-blue-600 hover:text-blue-800 font-medium inline-flex items-center"
                             >
                                 Detail <FaArrowRight className="ml-2 h-3 w-3" />

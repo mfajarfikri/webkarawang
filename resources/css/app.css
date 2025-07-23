@@ -486,16 +486,49 @@ blockquote {
 
 /* Animasi corporate card/form */
 @keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
 }
 .animate-fadein {
-    animation: fadeIn 0.7s cubic-bezier(.4,0,.2,1);
+    animation: fadeIn 0.7s cubic-bezier(0.4, 0, 0.2, 1);
 }
 @keyframes cardPop {
-    0% { transform: scale(.97) translateY(30px); opacity: 0; }
-    100% { transform: scale(1) translateY(0); opacity: 1; }
+    0% {
+        transform: scale(0.97) translateY(30px);
+        opacity: 0;
+    }
+    100% {
+        transform: scale(1) translateY(0);
+        opacity: 1;
+    }
 }
 .animate-cardpop {
-    animation: cardPop 0.7s cubic-bezier(.4,0,.2,1);
+    animation: cardPop 0.7s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Custom scrollbar for .custom-scrollbar - corporate & modern style */
+.custom-scrollbar::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+    background: #2563eb; /* corporate blue */
+    border-radius: 8px;
+    border: 2px solid #f3f4f6; /* subtle border for modern look */
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: #1e40af; /* darker blue on hover */
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+    background: #f3f4f6; /* light neutral background */
+    border-radius: 8px;
+}
+/* Firefox */
+.custom-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: #2563eb #f3f4f6;
 }

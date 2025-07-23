@@ -14,7 +14,7 @@ class Anomali extends Model
         'id'
     ];
 
-    public function garduInduk()
+    public function gardu_induk()
     {
         return $this->belongsTo(GarduInduk::class, 'gardu_id');
     }

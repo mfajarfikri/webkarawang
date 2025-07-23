@@ -13,7 +13,7 @@ import {
     FaBuilding,
     FaUser,
     FaUserShield, // Role management
-    FaKey,        // Permission management
+    FaKey, // Permission management
 } from "react-icons/fa";
 import { Transition } from "@headlessui/react";
 
@@ -61,7 +61,7 @@ export default function DashboardLayout({ children, title = "Dashboard" }) {
             <Head title={title} />
             <div className="min-h-screen bg-gray-50">
                 {/* Fixed Header */}
-                <header className="fixed top-0 left-0 right-0 z-30 bg-white shadow-md">
+                <header className="fixed top-0 left-0 right-0 z-30 bg-white shadow-sm border-b border-gray-200">
                     <div
                         className={`transition-all duration-300 ${
                             collapsedSidebar ? "pl-0 md:pl-20" : "pl-0 md:pl-72"
@@ -72,7 +72,7 @@ export default function DashboardLayout({ children, title = "Dashboard" }) {
                                 {/* Mobile menu button */}
                                 <button
                                     onClick={() => setSidebarOpen(true)}
-                                    className="md:hidden p-2 rounded-md text-gray-400 hover:text-blue-600 hover:bg-gray-100 focus:outline-none transition-colors duration-200"
+                                    className="md:hidden p-2 rounded-md text-blue-600 hover:bg-blue-700 focus:outline-none transition-colors duration-200"
                                 >
                                     <svg
                                         className="h-6 w-6"
@@ -93,7 +93,7 @@ export default function DashboardLayout({ children, title = "Dashboard" }) {
                                 {/* Desktop sidebar toggle button */}
                                 <button
                                     onClick={toggleSidebar}
-                                    className="hidden md:flex p-2 rounded-md text-gray-400 hover:text-blue-600 hover:bg-gray-100 focus:outline-none transition-colors duration-200"
+                                    className="hidden md:flex p-2 rounded-md text-blue-600 hover:text-blue-700 hover:bg-blue-50 focus:outline-none transition-colors duration-200"
                                 >
                                     {collapsedSidebar ? (
                                         <svg
@@ -132,7 +132,7 @@ export default function DashboardLayout({ children, title = "Dashboard" }) {
                                 <div className="flex-shrink-0 flex items-center">
                                     <div className="flex items-center">
                                         <ApplicationLogo className="h-8 w-8 mr-2" />
-                                        <h1 className="text-xl font-bold text-gray-800 bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+                                        <h1 className="text-xl font-bold text-blue-800 tracking-wide">
                                             UPT KARAWANG
                                         </h1>
                                     </div>
@@ -164,7 +164,7 @@ export default function DashboardLayout({ children, title = "Dashboard" }) {
                                 </div>
 
                                 {/* Notifications */}
-                                <button className="p-1 rounded-full text-gray-400 hover:text-blue-600 hover:bg-gray-100 focus:outline-none transition-colors duration-200">
+                                <button className="p-1 rounded-full text-blue-600 hover:text-blue-700 hover:bg-blue-50 focus:outline-none transition-colors duration-200">
                                     <span className="sr-only">
                                         View notifications
                                     </span>
@@ -193,10 +193,10 @@ export default function DashboardLayout({ children, title = "Dashboard" }) {
                                         <span className="hidden md:inline-block mr-2 text-sm font-medium text-gray-700">
                                             {userName}
                                         </span>
-                                        <button className="bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full p-0.5 flex items-center justify-center">
+                                        <button className="bg-blue-600 rounded-full p-0.5 flex items-center justify-center border-2 border-blue-100">
                                             <div className="bg-white rounded-full p-0.5">
                                                 <svg
-                                                    className="h-8 w-8 text-gray-700"
+                                                    className="h-8 w-8 text-blue-700"
                                                     fill="currentColor"
                                                     viewBox="0 0 24 24"
                                                 >
@@ -215,24 +215,45 @@ export default function DashboardLayout({ children, title = "Dashboard" }) {
                     {(sidebarOpen || isClosing) && (
                         <div className="md:hidden fixed inset-0 z-40">
                             <div
-                                className={`fixed inset-0 bg-gray-600 bg-opacity-75 backdrop-blur-sm ${isClosing ? "backdrop-fade-out" : "backdrop-fade-in"}`}
+                                className={`fixed inset-0 bg-blue-900 bg-opacity-40 backdrop-blur-sm ${
+                                    isClosing
+                                        ? "backdrop-fade-out"
+                                        : "backdrop-fade-in"
+                                }`}
                                 onClick={closeSidebar}
                             ></div>
                             <div
-                                className={`fixed inset-y-0 left-0 flex flex-col w-72 bg-white shadow-xl rounded-r-xl ${isClosing ? "sidebar-slide-out" : "sidebar-slide-in"}`}
+                                className={`fixed inset-y-0 left-0 flex flex-col w-72 bg-white shadow-xl rounded-r-xl ${
+                                    isClosing
+                                        ? "sidebar-slide-out"
+                                        : "sidebar-slide-in"
+                                }`}
                             >
                                 <div className="h-16 flex items-center justify-between px-6 border-b border-gray-200">
-                                    <h2 className="text-lg font-medium text-gray-900">Menu</h2>
+                                    <h2 className="text-lg font-medium text-blue-800">
+                                        Menu
+                                    </h2>
                                     <button
                                         onClick={closeSidebar}
-                                        className="text-gray-400 hover:text-gray-500 transition-colors duration-200"
+                                        className="text-gray-400 hover:text-blue-600 transition-colors duration-200"
                                     >
-                                        <svg className="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                        <svg
+                                            className="h-6 w-6"
+                                            xmlns="http://www.w3.org/2000/svg"
+                                            fill="none"
+                                            viewBox="0 0 24 24"
+                                            stroke="currentColor"
+                                        >
+                                            <path
+                                                strokeLinecap="round"
+                                                strokeLinejoin="round"
+                                                strokeWidth={2}
+                                                d="M6 18L18 6M6 6l12 12"
+                                            />
                                         </svg>
                                     </button>
                                 </div>
-                                <nav className="flex-1 px-3 py-4 bg-white space-y-1 overflow-y-auto scrollbar-hide">
+                                <nav className="flex-1 px-3 py-4 bg-white space-y-1 overflow-y-auto custom-scrollbar">
                                     <SidebarMenu onLinkClick={closeSidebar} />
                                 </nav>
                             </div>
@@ -246,10 +267,10 @@ export default function DashboardLayout({ children, title = "Dashboard" }) {
                     >
                         <div className="flex flex-col h-full">
                             {/* Logo area in sidebar */}
-                            <div className="h-16 flex items-center px-6 bg-white border-b border-gray-200 shadow-sm overflow-hidden">
+                            <div className="h-16 flex items-center px-6 bg-white border-b border-blue-100 shadow-sm overflow-hidden">
                                 {collapsedSidebar ? (
                                     <div className="flex justify-center w-full">
-                                        <div className="bg-blue-600 text-white p-2 rounded-lg">
+                                        <div className="bg-blue-600 text-white p-2 rounded-lg border-2 border-blue-200">
                                             <svg
                                                 className="h-6 w-6"
                                                 xmlns="http://www.w3.org/2000/svg"
@@ -268,7 +289,7 @@ export default function DashboardLayout({ children, title = "Dashboard" }) {
                                     </div>
                                 ) : (
                                     <div className="flex items-center">
-                                        <div className="bg-blue-600 text-white p-2 rounded-lg mr-2">
+                                        <div className="bg-blue-600 text-white p-2 rounded-lg mr-2 border-2 border-blue-200">
                                             <svg
                                                 className="h-6 w-6"
                                                 xmlns="http://www.w3.org/2000/svg"
@@ -284,7 +305,7 @@ export default function DashboardLayout({ children, title = "Dashboard" }) {
                                                 />
                                             </svg>
                                         </div>
-                                        <h1 className="text-xl font-bold text-gray-800 bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent whitespace-nowrap">
+                                        <h1 className="text-xl font-bold text-blue-800 tracking-wide whitespace-nowrap">
                                             Nama Perusahaan
                                         </h1>
                                     </div>
@@ -292,15 +313,15 @@ export default function DashboardLayout({ children, title = "Dashboard" }) {
                             </div>
 
                             {/* Sidebar content */}
-                            <div className="flex flex-col h-full border-r border-gray-200 bg-white">
-                                <div className="flex-1 flex flex-col pt-5 pb-4 overflow-y-auto scrollbar-hide">
+                            <div className="flex flex-col h-full bg-white">
+                                <div className="flex-1 flex flex-col pt-5 pb-4 overflow-y-auto custom-scrollbar">
                                     {!collapsedSidebar && showWelcomeBanner && (
                                         <div className="px-4 mb-6">
-                                            <div className="bg-amber-50 rounded-lg p-3 flex items-center justify-between relative">
+                                            <div className="bg-yellow-50 rounded-lg p-3 flex items-center justify-between relative border-l-4 border-yellow-400">
                                                 <div className="flex items-center">
-                                                    <div className="flex-shrink-0 bg-amber-100 rounded-md p-2">
+                                                    <div className="flex-shrink-0 bg-yellow-100 rounded-md p-2">
                                                         <svg
-                                                            className="h-6 w-6 text-amber-600"
+                                                            className="h-6 w-6 text-yellow-600"
                                                             xmlns="http://www.w3.org/2000/svg"
                                                             fill="none"
                                                             viewBox="0 0 24 24"
@@ -315,21 +336,21 @@ export default function DashboardLayout({ children, title = "Dashboard" }) {
                                                         </svg>
                                                     </div>
                                                     <div className="ml-3">
-                                                        <p className="text-sm font-medium text-amber-800">
+                                                        <p className="text-sm font-medium text-yellow-800">
                                                             Selamat Datang!
                                                         </p>
-                                                        <p className="text-xs text-amber-600">
+                                                        <p className="text-xs text-yellow-600">
                                                             {auth.user.name}
                                                         </p>
                                                     </div>
                                                 </div>
                                                 <button
                                                     onClick={handleCloseBanner}
-                                                    className="absolute top-1 right-1 p-1 hover:bg-amber-100 rounded-full transition-colors duration-200"
+                                                    className="absolute top-1 right-1 p-1 hover:bg-yellow-100 rounded-full transition-colors duration-200"
                                                     title="Tutup"
                                                 >
                                                     <svg
-                                                        className="h-4 w-4 text-amber-600"
+                                                        className="h-4 w-4 text-yellow-600"
                                                         xmlns="http://www.w3.org/2000/svg"
                                                         fill="none"
                                                         viewBox="0 0 24 24"
@@ -399,14 +420,29 @@ function SidebarMenu({ collapsed = false, onLinkClick }) {
 
     return (
         <>
-        
-        
-            <Link href="/dashboard" onClick={handleClick} className={`group flex items-center ${collapsed ? "justify-center" : ""} px-3 py-2.5 text-sm font-medium rounded-lg ${isActive("/dashboard") ? "bg-blue-50 text-blue-700" : "text-gray-700 hover:bg-blue-50 hover:text-blue-700"} transition-colors duration-200 menu-item-hover`}>
-                <FaHome className={`${collapsed ? "" : "mr-3"} h-5 w-5 ${isActive("/dashboard") ? "text-blue-600" : "text-gray-500 group-hover:text-blue-600"}`} aria-label="Dashboard" title="Dashboard" />
+            <Link
+                href="/dashboard"
+                onClick={handleClick}
+                className={`group flex items-center ${
+                    collapsed ? "justify-center" : ""
+                } px-3 py-2.5 text-sm font-medium rounded-lg ${
+                    isActive("/dashboard")
+                        ? "bg-blue-50 text-blue-700"
+                        : "text-gray-700 hover:bg-blue-50 hover:text-blue-700"
+                } transition-colors duration-200 menu-item-hover`}
+            >
+                <FaHome
+                    className={`${collapsed ? "mx-auto" : "mr-3"} h-5 w-5 ${
+                        isActive("/dashboard")
+                            ? "text-blue-600"
+                            : "text-gray-400 group-hover:text-blue-600"
+                    }`}
+                    aria-label="Dashboard"
+                    title="Dashboard"
+                />
                 {!collapsed && <span>Dashboard</span>}
             </Link>
 
-            
             {!collapsed && (
                 <div className="pt-2 pb-1">
                     <p className="px-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">
@@ -415,18 +451,72 @@ function SidebarMenu({ collapsed = false, onLinkClick }) {
                 </div>
             )}
 
-            <Link href={route("dashboard.berita.index")} onClick={handleClick} className={`group flex items-center ${collapsed ? "justify-center" : ""} px-3 py-2.5 text-sm font-medium rounded-lg ${isActive("/dashboard/berita") ? "bg-blue-50 text-blue-700" : "text-gray-700 hover:bg-blue-50 hover:text-blue-700"} transition-colors duration-200 menu-item-hover`}>
-                <FaNewspaper className={`${collapsed ? "" : "mr-3"} h-5 w-5 ${isActive("/dashboard/berita") ? "text-blue-600" : "text-gray-500 group-hover:text-blue-600"}`} aria-label="Berita" title="Berita" />
+            <Link
+                href={route("dashboard.berita.index")}
+                onClick={handleClick}
+                className={`group flex items-center ${
+                    collapsed ? "justify-center" : ""
+                } px-3 py-2.5 text-sm font-medium rounded-lg ${
+                    isActive("/dashboard/berita")
+                        ? "bg-blue-50 text-blue-700"
+                        : "text-gray-700 hover:bg-blue-50 hover:text-blue-700"
+                } transition-colors duration-200 menu-item-hover`}
+            >
+                <FaNewspaper
+                    className={`${collapsed ? "mx-auto" : "mr-3"} h-5 w-5 ${
+                        isActive("/dashboard/berita")
+                            ? "text-blue-600"
+                            : "text-gray-400 group-hover:text-blue-600"
+                    }`}
+                    aria-label="Berita"
+                    title="Berita"
+                />
                 {!collapsed && <span>Berita</span>}
             </Link>
 
-            <Link href={route("dashboard.ktt.index")} onClick={handleClick} className={`group flex items-center ${collapsed ? "justify-center" : ""} px-3 py-2.5 text-sm font-medium rounded-lg ${isActive("/ktt") ? "bg-blue-50 text-blue-700" : "text-gray-700 hover:bg-blue-50 hover:text-blue-700"} transition-colors duration-200 menu-item-hover`}>
-                <FaBuilding className={`${collapsed ? "" : "mr-3"} h-5 w-5 ${isActive("/ktt") ? "text-blue-600" : "text-gray-500 group-hover:text-blue-600"}`} aria-label="ktt" title="ktt" />
+            <Link
+                href={route("dashboard.ktt.index")}
+                onClick={handleClick}
+                className={`group flex items-center ${
+                    collapsed ? "justify-center" : ""
+                } px-3 py-2.5 text-sm font-medium rounded-lg ${
+                    isActive("/ktt")
+                        ? "bg-blue-50 text-blue-700"
+                        : "text-gray-700 hover:bg-blue-50 hover:text-blue-700"
+                } transition-colors duration-200 menu-item-hover`}
+            >
+                <FaBuilding
+                    className={`${collapsed ? "mx-auto" : "mr-3"} h-5 w-5 ${
+                        isActive("/ktt")
+                            ? "text-blue-600"
+                            : "text-gray-400 group-hover:text-blue-600"
+                    }`}
+                    aria-label="ktt"
+                    title="ktt"
+                />
                 {!collapsed && <span>KTT</span>}
             </Link>
 
-            <Link href={route("dashboard.anomali.index")} onClick={handleClick} className={`group flex items-center ${collapsed ? "justify-center" : ""} px-3 py-2.5 text-sm font-medium rounded-lg ${isActive("/dashboard/anomali") ? "bg-blue-50 text-blue-700" : "text-gray-700 hover:bg-blue-50 hover:text-blue-700"} transition-colors duration-200 menu-item-hover`}>
-                <MdOutlineReportProblem className={`${collapsed ? "" : "mr-3"} h-5 w-5 ${isActive("/dashboard/anomali") ? "text-blue-600" : "text-gray-500 group-hover:text-blue-600"}`} aria-label="ktt" title="ktt" />
+            <Link
+                href={route("dashboard.anomali.index")}
+                onClick={handleClick}
+                className={`group flex items-center ${
+                    collapsed ? "justify-center" : ""
+                } px-3 py-2.5 text-sm font-medium rounded-lg ${
+                    isActive("/dashboard/anomali")
+                        ? "bg-blue-50 text-blue-700"
+                        : "text-gray-700 hover:bg-blue-50 hover:text-blue-700"
+                } transition-colors duration-200 menu-item-hover`}
+            >
+                <MdOutlineReportProblem
+                    className={`${collapsed ? "mx-auto" : "mr-3"} h-5 w-5 ${
+                        isActive("/dashboard/anomali")
+                            ? "text-blue-600"
+                            : "text-gray-400 group-hover:text-blue-600"
+                    }`}
+                    aria-label="ktt"
+                    title="ktt"
+                />
                 {!collapsed && <span>Anomali</span>}
             </Link>
 
@@ -438,17 +528,51 @@ function SidebarMenu({ collapsed = false, onLinkClick }) {
                 </div>
             )}
 
-            <Link href={route("dashboard.user.index")} onClick={handleClick} className={`group flex items-center ${collapsed ? "justify-center" : ""} px-3 py-2.5 text-sm font-medium rounded-lg ${isActive("/dashboard/user") ? "bg-blue-50 text-blue-700" : "text-gray-700 hover:bg-blue-50 hover:text-blue-700"} transition-colors duration-200 menu-item-hover`}>
-                <FaUser className={`${collapsed ? "" : "mr-3"} h-5 w-5 ${isActive("/dashboard/user") ? "text-blue-600" : "text-gray-500 group-hover:text-blue-600"}`} aria-label="User" title="User" />
+            <Link
+                href={route("dashboard.user.index")}
+                onClick={handleClick}
+                className={`group flex items-center ${
+                    collapsed ? "justify-center" : ""
+                } px-3 py-2.5 text-sm font-medium rounded-lg ${
+                    isActive("/dashboard/user")
+                        ? "bg-blue-50 text-blue-700"
+                        : "text-gray-700 hover:bg-blue-50 hover:text-blue-700"
+                } transition-colors duration-200 menu-item-hover`}
+            >
+                <FaUser
+                    className={`${collapsed ? "mx-auto" : "mr-3"} h-5 w-5 ${
+                        isActive("/dashboard/user")
+                            ? "text-blue-600"
+                            : "text-gray-400 group-hover:text-blue-600"
+                    }`}
+                    aria-label="User"
+                    title="User"
+                />
                 {!collapsed && <span>User</span>}
             </Link>
 
-            <Link href={route("dashboard.gardu.index")} onClick={handleClick} className={`group flex items-center ${collapsed ? "justify-center" : ""} px-3 py-2.5 text-sm font-medium rounded-lg ${isActive("/dashboard/garduinduk") ? "bg-blue-50 text-blue-700" : "text-gray-700 hover:bg-blue-50 hover:text-blue-700"} transition-colors duration-200 menu-item-hover`}>
-                <GiElectric className={`${collapsed ? "" : "mr-3"} h-5 w-5 ${isActive("/dashboard/garduinduk") ? "text-blue-600" : "text-gray-500 group-hover:text-blue-600"}`} aria-label="User" title="User" />
+            <Link
+                href={route("dashboard.gardu.index")}
+                onClick={handleClick}
+                className={`group flex items-center ${
+                    collapsed ? "justify-center" : ""
+                } px-3 py-2.5 text-sm font-medium rounded-lg ${
+                    isActive("/dashboard/garduinduk")
+                        ? "bg-blue-50 text-blue-700"
+                        : "text-gray-700 hover:bg-blue-50 hover:text-blue-700"
+                } transition-colors duration-200 menu-item-hover`}
+            >
+                <GiElectric
+                    className={`${collapsed ? "mx-auto" : "mr-3"} h-5 w-5 ${
+                        isActive("/dashboard/garduinduk")
+                            ? "text-blue-600"
+                            : "text-gray-400 group-hover:text-blue-600"
+                    }`}
+                    aria-label="User"
+                    title="User"
+                />
                 {!collapsed && <span>Gardu Induk</span>}
             </Link>
-
-            
 
             {!collapsed && (
                 <div className="pt-2 pb-1">
@@ -458,17 +582,71 @@ function SidebarMenu({ collapsed = false, onLinkClick }) {
                 </div>
             )}
 
-            <Link href={route("dashboard.profile.edit")} onClick={handleClick} className={`group flex items-center ${collapsed ? "justify-center" : ""} px-3 py-2.5 text-sm font-medium rounded-lg ${isActive("/dashboard/profile") ? "bg-blue-50 text-blue-700" : "text-gray-700 hover:bg-blue-50 hover:text-blue-700"} transition-colors duration-200 menu-item-hover`}>
-                <FaCog className={`${collapsed ? "" : "mr-3"} h-5 w-5 ${isActive("/dashboard/profile") ? "text-blue-600" : "text-gray-500 group-hover:text-blue-600"}`} aria-label="Pengaturan" title="Pengaturan" />
+            <Link
+                href={route("dashboard.profile.edit")}
+                onClick={handleClick}
+                className={`group flex items-center ${
+                    collapsed ? "justify-center" : ""
+                } px-3 py-2.5 text-sm font-medium rounded-lg ${
+                    isActive("/dashboard/profile")
+                        ? "bg-blue-50 text-blue-700"
+                        : "text-gray-700 hover:bg-blue-50 hover:text-blue-700"
+                } transition-colors duration-200 menu-item-hover`}
+            >
+                <FaCog
+                    className={`${collapsed ? "mx-auto" : "mr-3"} h-5 w-5 ${
+                        isActive("/dashboard/profile")
+                            ? "text-blue-600"
+                            : "text-gray-400 group-hover:text-blue-600"
+                    }`}
+                    aria-label="Pengaturan"
+                    title="Pengaturan"
+                />
                 {!collapsed && <span>Pengaturan</span>}
             </Link>
 
-            <Link href={route("dashboard.role.index")} onClick={handleClick} className={`group flex items-center ${collapsed ? "justify-center" : ""} px-3 py-2.5 text-sm font-medium rounded-lg ${isActive("/dashboard/role") ? "bg-blue-50 text-blue-700" : "text-gray-700 hover:bg-blue-50 hover:text-blue-700"} transition-colors duration-200 menu-item-hover`}>
-                <FaUserShield className={`${collapsed ? "" : "mr-3"} h-5 w-5 ${isActive("/dashboard/role") ? "text-blue-600" : "text-gray-500 group-hover:text-blue-600"}`} aria-label="Role" title="Role" />
+            <Link
+                href={route("dashboard.role.index")}
+                onClick={handleClick}
+                className={`group flex items-center ${
+                    collapsed ? "justify-center" : ""
+                } px-3 py-2.5 text-sm font-medium rounded-lg ${
+                    isActive("/dashboard/role")
+                        ? "bg-blue-50 text-blue-700"
+                        : "text-gray-700 hover:bg-blue-50 hover:text-blue-700"
+                } transition-colors duration-200 menu-item-hover`}
+            >
+                <FaUserShield
+                    className={`${collapsed ? "mx-auto" : "mr-3"} h-5 w-5 ${
+                        isActive("/dashboard/role")
+                            ? "text-blue-600"
+                            : "text-gray-400 group-hover:text-blue-600"
+                    }`}
+                    aria-label="Role"
+                    title="Role"
+                />
                 {!collapsed && <span>Role</span>}
             </Link>
-            <Link href={"/dashboard/permission"} onClick={handleClick} className={`group flex items-center ${collapsed ? "justify-center" : ""} px-3 py-2.5 text-sm font-medium rounded-lg ${isActive("/dashboard/permission") ? "bg-blue-50 text-blue-700" : "text-gray-700 hover:bg-blue-50 hover:text-blue-700"} transition-colors duration-200 menu-item-hover`}>
-                <FaKey className={`${collapsed ? "" : "mr-3"} h-5 w-5 ${isActive("/dashboard/permission") ? "text-blue-600" : "text-gray-500 group-hover:text-blue-600"}`} aria-label="Permission" title="Permission" />
+            <Link
+                href={"/dashboard/permission"}
+                onClick={handleClick}
+                className={`group flex items-center ${
+                    collapsed ? "justify-center" : ""
+                } px-3 py-2.5 text-sm font-medium rounded-lg ${
+                    isActive("/dashboard/permission")
+                        ? "bg-blue-50 text-blue-700"
+                        : "text-gray-700 hover:bg-blue-50 hover:text-blue-700"
+                } transition-colors duration-200 menu-item-hover`}
+            >
+                <FaKey
+                    className={`${collapsed ? "mx-auto" : "mr-3"} h-5 w-5 ${
+                        isActive("/dashboard/permission")
+                            ? "text-blue-600"
+                            : "text-gray-400 group-hover:text-blue-600"
+                    }`}
+                    aria-label="Permission"
+                    title="Permission"
+                />
                 {!collapsed && <span>Permission</span>}
             </Link>
 
@@ -480,11 +658,28 @@ function SidebarMenu({ collapsed = false, onLinkClick }) {
                 </div>
             )}
 
-            <Link href={route("home")} onClick={handleClick} className={`group flex items-center ${collapsed ? "justify-center" : ""} px-3 py-2.5 text-sm font-medium rounded-lg ${isActive("/website") ? "bg-blue-50 text-blue-700" : "text-gray-700 hover:bg-blue-50 hover:text-blue-700"} transition-colors duration-200 menu-item-hover`}>
-                <FaGlobe className={`${collapsed ? "" : "mr-3"} h-5 w-5 ${isActive("/dashboard.website") ? "text-blue-600" : "text-gray-500 group-hover:text-blue-600"}`} aria-label="Website" title="Website" />
+            <Link
+                href={route("home")}
+                onClick={handleClick}
+                className={`group flex items-center ${
+                    collapsed ? "justify-center" : ""
+                } px-3 py-2.5 text-sm font-medium rounded-lg ${
+                    isActive("/website")
+                        ? "bg-blue-50 text-blue-700"
+                        : "text-gray-700 hover:bg-blue-50 hover:text-blue-700"
+                } transition-colors duration-200 menu-item-hover`}
+            >
+                <FaGlobe
+                    className={`${collapsed ? "mx-auto" : "mr-3"} h-5 w-5 ${
+                        isActive("/dashboard.website")
+                            ? "text-blue-600"
+                            : "text-gray-400 group-hover:text-blue-600"
+                    }`}
+                    aria-label="Website"
+                    title="Website"
+                />
                 {!collapsed && <span>Website</span>}
             </Link>
-            </>
-
+        </>
     );
 }

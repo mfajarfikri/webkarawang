@@ -14,6 +14,10 @@ export default {
         extend: {
             fontFamily: {
                 sans: ["Figtree", ...defaultTheme.fontFamily.sans],
+                inter: ["Inter", ...defaultTheme.fontFamily.sans],
+                merriweather: ["Merriweather", ...defaultTheme.fontFamily.sans],
+                lato: ["Lato", ...defaultTheme.fontFamily.sans],
+                montserrat: ["Montserrat", ...defaultTheme.fontFamily.sans],
             },
             keyframes: {
                 slideDownAndFade: {

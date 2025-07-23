@@ -10,7 +10,7 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Spatie\Permission\Traits\HasRoles;
 
-class User extends Authenticatable 
+class User extends Authenticatable implements MustVerifyEmail
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory, Notifiable, HasRoles;
@@ -27,6 +27,8 @@ class User extends Authenticatable
         'jabatan',
         'kedudukan',
         'foto_profil',
+        'wilayah',
+        'gardu_induk_ids',
     ];
 
     /**
@@ -49,6 +51,7 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'gardu_induk_ids' => 'array',
         ];
     }
 
@@ -60,5 +63,10 @@ class User extends Authenticatable
     public function berita()
     {
         return $this->hasMany(Berita::class);
+    }
+
+    public function garduInduks()
+    {
+        return $this->hasMany(\App\Models\GarduInduk::class, 'id', 'gardu_induk_ids');
     }
 }

@@ -32,7 +32,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard.index');
 });
 
-Route::middleware(['auth'])->prefix('dashboard')->group(function () {
+Route::middleware(['auth', ])->prefix('dashboard')->group(function () {
 
 
     Route::get('profile', [ProfileController::class, 'edit'])->name('dashboard.profile.edit');
@@ -51,6 +51,7 @@ Route::middleware(['auth'])->prefix('dashboard')->group(function () {
     Route::get('/anomali/create', [AnomaliController::class, 'create'])->middleware(AutoPermission::class . ':View Anomali Create')->name('dashboard.anomali.create');
     Route::post('/anomali', [AnomaliController::class, 'store'])->name('dashboard.anomali.store');
 
+    Route::get('/anomali/export', [AnomaliController::class, 'export'])->name('dashboard.anomali.export');
 
     Route::get('garduinduk', [GarduIndukController::class, 'index'])->name('dashboard.gardu.index');
 
@@ -77,3 +78,4 @@ Route::get('auth/{provider}', [SocialiteController::class, 'redirect'])->name('s
 Route::get('auth/{provider}/callback', [SocialiteController::class, 'callback'])->name('socialite.callback');
 
 require __DIR__ . '/auth.php';
+

@@ -2,7 +2,6 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { Link, usePage, router } from "@inertiajs/react";
 import {
-    FaSearch,
     FaPhoneAlt,
     FaEnvelope,
     FaFacebookF,
@@ -13,15 +12,12 @@ import {
     FaBars,
     FaChevronDown,
     FaMapMarkerAlt,
-    FaBolt,
-    FaChevronRight,
     FaSignOutAlt,
 } from "react-icons/fa";
 import ApplicationLogo from "@/Components/ApplicationLogo";
-import { ToastContainer, toast } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
+import { SnackbarProvider, useSnackbar } from "notistack";
 
-export default function HomeLayout({ children }) {
+function HomeLayoutContent({ children }) {
     const { auth } = usePage().props;
     const [isScrolled, setIsScrolled] = useState(false);
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -31,6 +27,7 @@ export default function HomeLayout({ children }) {
     const [berita, setBerita] = useState([]);
     const [error, setError] = useState(null);
     const beritaTerbaru = berita.slice(0, 3);
+    const { enqueueSnackbar } = useSnackbar();
 
     useEffect(() => {
         const fetchBerita = async () => {
@@ -132,27 +129,13 @@ export default function HomeLayout({ children }) {
             {},
             {
                 onSuccess: () => {
-                    toast.success("👋 Anda berhasil logout!", {
-                        position: "top-right",
-                        autoClose: 3000,
-                        hideProgressBar: false,
-                        closeOnClick: true,
-                        pauseOnHover: true,
-                        draggable: true,
-                        progress: undefined,
-                        theme: "colored",
+                    enqueueSnackbar("👋 Anda berhasil logout!", {
+                        variant: "success",
                     });
                 },
                 onError: () => {
-                    toast.error("❌ Gagal melakukan logout!", {
-                        position: "top-right",
-                        autoClose: 3000,
-                        hideProgressBar: false,
-                        closeOnClick: true,
-                        pauseOnHover: true,
-                        draggable: true,
-                        progress: undefined,
-                        theme: "colored",
+                    enqueueSnackbar("❌ Gagal melakukan logout!", {
+                        variant: "error",
                     });
                 },
             }
@@ -278,7 +261,9 @@ export default function HomeLayout({ children }) {
                                             Dashboard
                                         </Link>
                                         <Link
-                                            href={route("dashboard.profile.edit")}
+                                            href={route(
+                                                "dashboard.profile.edit"
+                                            )}
                                             className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                                         >
                                             Profil
@@ -699,19 +684,19 @@ export default function HomeLayout({ children }) {
                 </div>
             )}
 
-            {/* Toast Container */}
-            <ToastContainer
-                position="top-right"
-                autoClose={3000}
-                hideProgressBar={false}
-                newestOnTop
-                closeOnClick
-                rtl={false}
-                pauseOnFocusLoss
-                draggable
-                pauseOnHover
-                theme="colored"
-            />
+            {/* Notistack SnackbarProvider dibungkus di komponen utama */}
         </div>
+    );
+}
+
+export default function HomeLayout({ children }) {
+    return (
+        <SnackbarProvider
+            maxSnack={10}
+            anchorOrigin={{ vertical: "bottom", horizontal: "left" }}
+            autoHideDuration={3000}
+        >
+            <HomeLayoutContent>{children}</HomeLayoutContent>
+        </SnackbarProvider>
     );
 }

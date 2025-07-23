@@ -17,6 +17,8 @@ export default function Berita() {
     const [loading, setLoading] = useState(true);
     const [berita, setBerita] = useState([]);
     const [error, setError] = useState(null);
+    const [modalOpen, setModalOpen] = useState(false);
+    const [selectedNews, setSelectedNews] = useState(null);
 
     useEffect(() => {
         const fetchBerita = async () => {
@@ -59,6 +61,15 @@ export default function Berita() {
         return matchesSearch;
     });
 
+    const openModal = (news) => {
+        setSelectedNews(news);
+        setModalOpen(true);
+    };
+    const closeModal = () => {
+        setModalOpen(false);
+        setSelectedNews(null);
+    };
+
     if (loading) {
         return (
             <HomeLayout>
@@ -78,6 +89,7 @@ export default function Berita() {
             </HomeLayout>
         );
     }
+
     return (
         <>
             <Head title="Berita" />
@@ -90,7 +102,7 @@ export default function Berita() {
                             alt="Hero Background"
                             className="w-full h-full object-cover object-center"
                             loading="eager"
-                            fetchpriority="high"
+                            fetchPriority="high"
                         />
                         <div className="absolute inset-0 bg-gradient-to-b from-black/70 to-black/50"></div>
                     </div>
@@ -176,19 +188,18 @@ export default function Berita() {
                                             </div>{" "}
                                         </div>
                                         <h3 className="text-xl line-clamp-2 font-bold text-gray-900 mb-3 group-hover:text-blue-600 transition-colors duration-200">
-                                            <Link
-                                                href={route(
-                                                    "berita.detail",
-                                                    news.slug
-                                                )}
-                                                onClick={() =>
+                                            <button
+                                                type="button"
+                                                className="text-left w-full hover:underline focus:outline-none"
+                                                onClick={() => {
                                                     incrementReadCount(
                                                         news.slug
-                                                    )
-                                                }
+                                                    );
+                                                    openModal(news);
+                                                }}
                                             >
                                                 {news.judul}
-                                            </Link>
+                                            </button>
                                         </h3>
                                         <p
                                             className="text-gray-600 mb-4 line-clamp-2"
@@ -214,6 +225,48 @@ export default function Berita() {
                                     </div>
                                 </article>
                             ))}
+                        </div>
+                    )}
+                    {/* Modal Preview Berita */}
+                    {modalOpen && selectedNews && (
+                        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+                            <div className="bg-white rounded-lg p-6 max-w-lg w-full relative shadow-lg animate-fadeIn">
+                                <button
+                                    className="absolute top-2 right-2 text-gray-500 hover:text-gray-700 text-2xl font-bold"
+                                    onClick={closeModal}
+                                    aria-label="Tutup"
+                                >
+                                    &times;
+                                </button>
+                                <h2 className="text-2xl font-bold mb-2">
+                                    {selectedNews.judul}
+                                </h2>
+                                <div className="mb-4 text-gray-500 text-sm">
+                                    {selectedNews.user?.name} |{" "}
+                                    {format(
+                                        new Date(selectedNews.created_at),
+                                        "d MMM yyyy",
+                                        { locale: id }
+                                    )}
+                                </div>
+                                <div
+                                    className="mb-4"
+                                    dangerouslySetInnerHTML={{
+                                        __html: selectedNews.excerpt,
+                                    }}
+                                />
+                                <button
+                                    className="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                                    onClick={() => {
+                                        window.location.href = route(
+                                            "berita.detail",
+                                            selectedNews.slug
+                                        );
+                                    }}
+                                >
+                                    Lihat Selengkapnya
+                                </button>
+                            </div>
                         </div>
                     )}
                 </div>

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Berita;
+use App\Models\GarduInduk;
 use Illuminate\Http\Request;
 
 class GuestController extends Controller
@@ -14,6 +15,15 @@ class GuestController extends Controller
 
         return response()->json([
             'berita' => $berita
+        ]);
+    }
+
+    public function gardu()
+    {
+        $gardu = GarduInduk::all();
+
+        return response()->json([
+            'gardu' => $gardu
         ]);
     }
 

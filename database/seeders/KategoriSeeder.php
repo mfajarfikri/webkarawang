@@ -18,7 +18,7 @@ class KategoriSeeder extends Seeder
         DB::table('kategoris')->insert(array(
             0 => array(
                 'id' => 1,
-                'name' => 'Hotsopt'
+                'name' => 'Hotspot'
             ),
             1 => array(
                 'id' => 2,
@@ -30,7 +30,7 @@ class KategoriSeeder extends Seeder
             ),
             3 => array(
                 'id' => 4,
-                'name' => 'Remebesan / Kebocoran'
+                'name' => 'Rembesan / Kebocoran'
             ),
             4 => array(
                 'id' => 5,

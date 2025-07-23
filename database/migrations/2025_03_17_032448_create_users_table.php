@@ -16,8 +16,8 @@ return new class extends Migration
             $table->string('name')->nullable();
             $table->string('email')->unique();
             $table->timestamp('email_verified_at')->nullable();
-            $table->enum('penempatan', ['UPT Karawang', 'ULTG Karawang', 'ULTG Purwakarta'])->nullable();
-            $table->unsignedBigInteger('gardu_id')->nullable();
+            $table->enum('wilayah', ['UPT Karawang','ULTG Karawang', 'ULTG Purwakarta'])->nullable();
+            $table->json('gardu_induk_ids')->nullable();
             $table->json('foto_profil')->nullable();
             $table->longText('tanda_tangan')->nullable();
             $table->string('password');
@@ -25,7 +25,6 @@ return new class extends Migration
             $table->softDeletes();
             $table->timestamps();
 
-            $table->foreign('gardu_id')->references('id')->on('gardu_induks')->onDelete('set null');
         });
 
         Schema::create('password_reset_tokens', function (Blueprint $table) {

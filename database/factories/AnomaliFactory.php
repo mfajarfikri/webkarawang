@@ -16,7 +16,7 @@ class AnomaliFactory extends Factory
     {
         return [
             'judul' => $this->faker->sentence(3),
-            'ultg' => $this->faker->randomElement(['ULTG Karawang', 'ULTG Purwakarta']),
+            'ultg' => $this->faker->randomElement([ 'ULTG Purwakarta']),
             'gardu_id' => GarduInduk::inRandomOrder()->first()?->id ?? 1,
             'bagian' => $this->faker->randomElement(['Banghal', 'Hargi', 'Harjar', 'Harpro', 'K3L']),
             'tipe' => $this->faker->randomElement(['Major', 'Minor']),
@@ -35,7 +35,8 @@ class AnomaliFactory extends Factory
             'akibat' => $this->faker->sentence(6),
             'usul_saran' => $this->faker->sentence(6),
             'lampiran_foto' => json_encode([]),
-            'status' => $this->faker->randomElement(['New','Open','Pending']),
+            // 'status' => $this->faker->randomElement(['New','Open','Pending', 'Close']),
+            'status' => "New",
             'assign_to' => null,
             'tanggal_approve' => null,
             'user_id' => User::inRandomOrder()->first()?->id ?? 1,

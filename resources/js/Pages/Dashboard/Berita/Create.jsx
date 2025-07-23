@@ -26,8 +26,7 @@ import {
     FaLevelDownAlt,
 } from "react-icons/fa";
 import { useForm } from "@inertiajs/react";
-import { ToastContainer, toast } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
+import { useSnackbar } from "notistack";
 import TextAlign from "@tiptap/extension-text-align";
 import Table from "@tiptap/extension-table";
 import TableRow from "@tiptap/extension-table-row";
@@ -49,6 +48,7 @@ import axios from "axios";
 import Modal from "react-modal";
 
 export default function Create({ karyawans, flash, auth }) {
+    const { enqueueSnackbar, closeSnackbar } = useSnackbar();
     React.useEffect(() => {
         Modal.setAppElement(document.body);
     }, []);
@@ -78,21 +78,6 @@ export default function Create({ karyawans, flash, auth }) {
         photos: [],
     });
 
-    const isDirty = () => {
-        const initialData = initialDataRef.current;
-        const formChanged =
-            data.judul !== initialData.judul ||
-            data.excerpt !== initialData.excerpt ||
-            data.slug !== initialData.slug ||
-            data.isi !== initialData.isi;
-
-        const photosChanged =
-            photos.length !== initialData.photos.length ||
-            photos.some((photo, index) => photo !== initialData.photos[index]);
-
-        return formChanged || photosChanged;
-    };
-
     useEffect(() => {
         if (data.judul) {
             setData("slug", generateSlug(data.judul));
@@ -102,7 +87,6 @@ export default function Create({ karyawans, flash, auth }) {
     const [photos, setPhotos] = useState([]); // will store File objects
     const [previewPhotos, setPreviewPhotos] = useState([]); // will store preview URLs
     const fileInputRef = useRef(null);
-    const [isDirtyState, setIsDirtyState] = useState(false);
     const [showLeaveModal, setShowLeaveModal] = useState(false);
     const [pendingNavigation, setPendingNavigation] = useState(null);
 
@@ -116,63 +100,6 @@ export default function Create({ karyawans, flash, auth }) {
             photos: photos,
         };
     }, []);
-
-    useEffect(() => {
-        const dirty = isDirty();
-        setIsDirtyState(dirty);
-        console.log("isDirty:", dirty);
-    }, [data, photos]);
-
-    // Handle browser refresh or close
-    useEffect(() => {
-        const handleBeforeUnload = (e) => {
-            if (isDirty()) {
-                e.preventDefault();
-                e.returnValue = "";
-                return "";
-            }
-        };
-        window.addEventListener("beforeunload", handleBeforeUnload);
-        return () => {
-            window.removeEventListener("beforeunload", handleBeforeUnload);
-        };
-    }, [data, photos]);
-
-    // Handle Inertia navigation using router.before
-    useEffect(() => {
-        const handleBefore = (event) => {
-            if (isDirty()) {
-                event.preventDefault();
-                setPendingNavigation(event.detail.visit);
-                setShowLeaveModal(true);
-                console.log("Navigation prevented, showing modal");
-            }
-        };
-        const unsubscribe = router.on("before", handleBefore);
-        return () => {
-            if (typeof unsubscribe === "function") {
-                unsubscribe();
-            }
-        };
-    }, [data, photos]);
-
-    const confirmLeave = () => {
-        setShowLeaveModal(false);
-        if (pendingNavigation) {
-            console.log("Confirm leave pendingNavigation:", pendingNavigation);
-            if (typeof pendingNavigation.retry === "function") {
-                pendingNavigation.retry();
-            } else if (pendingNavigation.url) {
-                router.visit(pendingNavigation.url);
-            }
-            setPendingNavigation(null);
-        }
-    };
-
-    const cancelLeave = () => {
-        setShowLeaveModal(false);
-        setPendingNavigation(null);
-    };
 
     useEffect(() => {
         console.log("Modal showLeaveModal state:", showLeaveModal);
@@ -260,10 +187,12 @@ export default function Create({ karyawans, flash, auth }) {
         if (files.length === 0) return;
 
         if (photos.length + files.length > 5) {
-            toast.error("Maksimal 5 Foto yang dapat diupload", toastConfig);
+            enqueueSnackbar("Maksimal 5 Foto yang dapat diupload", {
+                variant: "error",
+            });
             return;
         }
-        const loadingToastId = toast.loading("Memproses Foto...", toastConfig);
+        enqueueSnackbar("Memproses Foto...", { variant: "info" });
 
         try {
             const processedFiles = [];
@@ -273,18 +202,15 @@ export default function Create({ karyawans, flash, auth }) {
                     processedFiles.push(processedFile);
                 } catch (error) {
                     console.error("Error processing file:", error);
-                    toast.error(
+                    enqueueSnackbar(
                         `Gagal Memproses gambar "${file.name}": ${error.message}`,
-                        toastConfig
+                        { variant: "error" }
                     );
                 }
             }
             if (processedFiles.length === 0) {
-                toast.update(loadingToastId, {
-                    render: "Tidak ada gambar valid untuk diunggah",
-                    type: "error",
-                    isLoading: false,
-                    autoClose: 3000,
+                enqueueSnackbar("Tidak ada gambar valid untuk diunggah", {
+                    variant: "error",
                 });
                 return;
             }
@@ -308,19 +234,14 @@ export default function Create({ karyawans, flash, auth }) {
             }
 
             // Update loading toast
-            toast.update(loadingToastId, {
-                render: `${processedFiles.length} foto berhasil diproses!`,
-                type: "success",
-                isLoading: false,
-                autoClose: 3000,
-            });
+            enqueueSnackbar(
+                `${processedFiles.length} foto berhasil diproses!`,
+                { variant: "success" }
+            );
         } catch (error) {
             console.error("Error in handleFileUpload:", error);
-            toast.update(loadingToastId, {
-                render: "Terjadi kesalahan saat memproses foto",
-                type: "error",
-                isLoading: false,
-                autoClose: 3000,
+            enqueueSnackbar("Terjadi kesalahan saat memproses foto", {
+                variant: "error",
             });
         }
     };
@@ -334,10 +255,10 @@ export default function Create({ karyawans, flash, auth }) {
 
     useEffect(() => {
         if (flash?.success) {
-            toast.success(flash.success, toastConfig);
+            enqueueSnackbar(flash.success, { variant: "success" });
         }
         if (flash?.error) {
-            toast.error(flash.error, toastConfig);
+            enqueueSnackbar(flash.error, { variant: "error" });
         }
     }, [flash]);
 
@@ -349,7 +270,9 @@ export default function Create({ karyawans, flash, auth }) {
         setIsSubmitting(true);
 
         if (photos.length === 0) {
-            toast.error("Harap Tambahkan minimal 1 foto", toastConfig);
+            enqueueSnackbar("Harap Tambahkan minimal 1 foto", {
+                variant: "error",
+            });
             setIsSubmitting(false);
             return;
         }
@@ -362,36 +285,49 @@ export default function Create({ karyawans, flash, auth }) {
             .replace(/<p><br><\/p>/g, '<p class="mb-4"></p>')
             .replace(/<p>/g, '<p class="mb-4">');
         formData.append("isi", processedContent);
-        formData.append("karyawan_id", data.karyawan_id);
         photos.forEach((file) => {
             formData.append("gambar[]", file);
         });
 
         try {
-            const response = await axios.post(route("berita.store"), formData, {
-                headers: {
-                    "Content-Type": "multipart/form-data",
-                    "X-Requested-With": "XMLHttpRequest",
-                    Accept: "application/json",
-                },
-            });
+            const response = await axios.post(
+                route("dashboard.berita.store"),
+                formData,
+                {
+                    headers: {
+                        "Content-Type": "multipart/form-data",
+                        "X-Requested-With": "XMLHttpRequest",
+                        Accept: "application/json",
+                    },
+                }
+            );
 
-            toast.success(`Berita ${data.judul} berhasil dibuat`, toastConfig);
+            enqueueSnackbar(`Berita ${data.judul} berhasil dibuat`, {
+                variant: "success",
+            });
             reset();
             setPhotos([]);
             setPreviewPhotos([]);
 
             setTimeout(() => {
-                router.visit(route("berita.index"));
+                router.visit(route("dashboard.berita.index"));
             }, 2000);
         } catch (error) {
-            console.error("Error details:", error.response?.data);
-            toast.error(
-                error.response?.data?.message ||
-                    "Gagal Membuat Berita: " +
-                        (error.response?.data?.gambar || "Terjadi Kesalahan"),
-                toastConfig
+            console.error(
+                "Error details:",
+                error.response?.data || error.message || error
             );
+            let errorMsg = "Gagal Membuat Berita: ";
+            if (error.response?.data?.message) {
+                errorMsg += error.response.data.message;
+            } else if (error.response?.data) {
+                errorMsg += JSON.stringify(error.response.data);
+            } else if (error.message) {
+                errorMsg += error.message;
+            } else {
+                errorMsg += "Terjadi Kesalahan";
+            }
+            enqueueSnackbar(errorMsg, { variant: "error" });
         } finally {
             setIsSubmitting(false);
         }
@@ -815,7 +751,6 @@ export default function Create({ karyawans, flash, auth }) {
         <>
             <Head title="Create Berita" />
             <DashboardLayout>
-                <ToastContainer />
                 <div className="w-full mx-auto p-6">
                     <h1 className="text-2xl font-bold mb-6">Create Berita</h1>
                     <form onSubmit={handleSubmit} className="space-y-6">
@@ -832,9 +767,6 @@ export default function Create({ karyawans, flash, auth }) {
                                 value={data.judul}
                                 onChange={(e) => {
                                     setData("judul", e.target.value);
-                                }}
-                                onInput={() => {
-                                    if (!isDirtyState) setIsDirtyState(true);
                                 }}
                                 className="mt-1 block w-full rounded-md uppercase border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                                 required

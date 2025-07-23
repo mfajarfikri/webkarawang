@@ -27,9 +27,10 @@ class DatabaseSeeder extends Seeder
             UserSeeder::class,
             KategoriSeeder::class,
             BeritaSeeder::class,
+            GarduIndukSeeder::class
         ]);
 
-        GarduInduk::factory(18)->create();
+        // GarduInduk::factory(18)->create();
         Anomali::factory(50)->create();
     }
 }

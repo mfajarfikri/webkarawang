@@ -9,4 +9,8 @@ class GarduInduk extends Model
 {
     /** @use HasFactory<\Database\Factories\GarduIndukFactory> */
     use HasFactory;
+
+    protected $guarded = [
+        'id'
+    ];
 }

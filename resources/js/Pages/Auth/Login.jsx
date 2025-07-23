@@ -1,11 +1,13 @@
 import { useState } from "react";
-import { Head, Link, useForm } from "@inertiajs/react";
+import { Head, Link, useForm, router } from "@inertiajs/react";
 import { FaEnvelope, FaLock, FaEye, FaEyeSlash } from "react-icons/fa";
 import ApplicationLogo from "@/Components/ApplicationLogo";
 import { FcGoogle } from "react-icons/fc";
 import axios from "axios";
+import { useSnackbar } from "notistack";
 
 export default function Login({ status, canResetPassword }) {
+    const { enqueueSnackbar } = useSnackbar();
     const [showPassword, setShowPassword] = useState(false);
     const { data, setData, post, processing, errors, reset } = useForm({
         email: "",
@@ -30,15 +32,24 @@ export default function Login({ status, canResetPassword }) {
                 password: data.password,
                 remember: data.remember,
             });
-            setLoginStatus("Login berhasil! Mengalihkan...");
+            enqueueSnackbar("Login berhasil! Mengalihkan...", {
+                variant: "success",
+            });
             // Redirect to dashboard or wherever
-            window.location.href = "/dashboard";
+            router.visit(route("dashboard.index"));
         } catch (error) {
             if (error.response && error.response.status === 422) {
                 // Validation error
-                setLoginError("Email atau password salah.");
+                enqueueSnackbar("Email atau password salah.", {
+                    variant: "error",
+                });
             } else {
-                setLoginError("Terjadi kesalahan saat login. Silakan coba lagi.");
+                enqueueSnackbar(
+                    "Terjadi kesalahan saat login. Silakan coba lagi.",
+                    {
+                        variant: "error",
+                    }
+                );
             }
         } finally {
             setLoading(false);
@@ -67,12 +78,16 @@ export default function Login({ status, canResetPassword }) {
                 <div className="bg-white py-8 px-4 shadow-2xl rounded-2xl sm:px-10 border border-gray-100 backdrop-blur-sm bg-opacity-90">
                     {loginError && (
                         <div className="mb-4 p-4 rounded-xl bg-red-50 border border-red-200">
-                            <p className="text-sm font-medium text-red-800">{loginError}</p>
+                            <p className="text-sm font-medium text-red-800">
+                                {loginError}
+                            </p>
                         </div>
                     )}
                     {loginStatus && (
                         <div className="mb-4 p-4 rounded-xl bg-green-50 border border-green-200">
-                            <p className="text-sm font-medium text-green-800">{loginStatus}</p>
+                            <p className="text-sm font-medium text-green-800">
+                                {loginStatus}
+                            </p>
                         </div>
                     )}
 
@@ -228,7 +243,19 @@ export default function Login({ status, canResetPassword }) {
                                     </div>
                                 ) : (
                                     <>
-                                        <svg className="w-5 h-5 mr-1" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M5 12h14M12 5l7 7-7 7" /></svg>
+                                        <svg
+                                            className="w-5 h-5 mr-1"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            strokeWidth="2"
+                                            viewBox="0 0 24 24"
+                                        >
+                                            <path
+                                                strokeLinecap="round"
+                                                strokeLinejoin="round"
+                                                d="M5 12h14M12 5l7 7-7 7"
+                                            />
+                                        </svg>
                                         Login
                                     </>
                                 )}
@@ -239,7 +266,9 @@ export default function Login({ status, canResetPassword }) {
                     {/* Divider */}
                     <div className="my-6 flex items-center">
                         <div className="flex-grow border-t border-gray-200"></div>
-                        <span className="mx-4 text-gray-400 text-xs font-semibold uppercase">atau</span>
+                        <span className="mx-4 text-gray-400 text-xs font-semibold uppercase">
+                            atau
+                        </span>
                         <div className="flex-grow border-t border-gray-200"></div>
                     </div>
 
@@ -248,7 +277,7 @@ export default function Login({ status, canResetPassword }) {
                         href="/auth/google"
                         className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl shadow-lg text-base font-bold text-gray-700 bg-white border border-gray-300 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200 ease-in-out transform hover:scale-95 active:scale-100 mt-4"
                     >
-                        <FcGoogle className="h-5 w-5 shadow-xl"/>
+                        <FcGoogle className="h-5 w-5 shadow-xl" />
                         <span>Login dengan Google</span>
                     </a>
 

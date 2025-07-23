@@ -13,6 +13,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
+use Maatwebsite\Excel\Facades\Excel;
+use App\Exports\AnomaliExport;
 
 class AnomaliController extends Controller
 {
@@ -21,7 +23,7 @@ class AnomaliController extends Controller
      */
     public function index()
     {
-        $anomalis = Anomali::with(['garduInduk', 'kategori', 'user'])->get();
+        $anomalis = Anomali::with(['gardu_induk', 'kategori', 'user'])->get();
         return Inertia::render("Dashboard/Anomali/Anomali", [
             'anomalis' => $anomalis
         ]);
@@ -32,20 +34,24 @@ class AnomaliController extends Controller
      */
     public function create()
     {
-        $gardus = GarduInduk::all(['id', 'name']);
+        $user = Auth::user();
+        if ($user && is_array($user->gardu_induk_ids) && count($user->gardu_induk_ids) > 0) {
+            $gardus = GarduInduk::whereIn('id', $user->gardu_induk_ids)->get(['id', 'name']);
+            $defaultGarduId = $user->gardu_induk_ids[0];
+        } else {
+            $gardus = GarduInduk::all(['id', 'name']);
+            $defaultGarduId = null;
+        }
         $kategoris = Kategori::all(['id', 'name']);
-        // $bays = Bay::all(['id', 'name']);
         $users = User::all(['id', 'name']);
-        // $peralatans = Peralatan::all(['id', 'name']);
-        return Inertia::render("Dashboard/Anomali/Create", 
-        compact(
-            'gardus', 
-            'kategoris', 
-            // 'bays', 
-            'users', 
-            // 'peralatans'
-            )
-    );
+        $userWilayah = $user ? $user->wilayah : null;
+        return Inertia::render("Dashboard/Anomali/Create", [
+            'gardus' => $gardus,
+            'kategoris' => $kategoris,
+            'users' => $users,
+            'defaultGarduId' => $defaultGarduId,
+            'userWilayah' => $userWilayah,
+        ]);
     }
 
     /**
@@ -165,5 +171,16 @@ class AnomaliController extends Controller
     public function destroy(Anomali $anomali)
     {
         //
+    }
+
+    public function export(Request $request)
+    {
+        $month = $request->get('month', 'all');
+        $ultg = $request->get('ultg', 'all');
+        $gardu = $request->get('gardu', 'all');
+        return Excel::download(
+            new AnomaliExport($month, $ultg, $gardu),
+            'anomali_' . $ultg . '_' . $month . '_' . $gardu . '.xlsx'
+        );
     }
 }

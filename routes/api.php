@@ -11,6 +11,7 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 });
 
 Route::get('/berita', [GuestController::class, 'berita']);
+Route::get('/gardu', [GuestController::class, 'gardu']);
 Route::post('/berita/{slug}/increment-read', [GuestController::class, 'incrementReadCount']);
 
 Route::get('/anomali', [DataController::class, 'ShowAnomali']);

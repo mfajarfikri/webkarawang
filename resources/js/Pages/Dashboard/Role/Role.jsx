@@ -2,7 +2,7 @@ import DashboardLayout from "@/Layouts/DashboardLayout";
 import { usePage } from "@inertiajs/react";
 import { router as Inertia } from "@inertiajs/react";
 import { useState } from "react";
-import { Switch } from "@headlessui/react"
+import { Switch, Listbox } from "@headlessui/react";
 import { FaEdit, FaEllipsisV, FaFilter, FaInfo } from "react-icons/fa";
 import {
     Dialog,
@@ -158,15 +158,14 @@ export default function Role() {
         setAnchorEls((prev) => ({ ...prev, [id]: null }));
     };
 
-
     return (
         <DashboardLayout title="Manajemen Role">
-            <div className="p-4 sm:p-6 md:p-8">
+            <div className="py-6 w-full mx-auto px-4 sm:px-6 lg:px-8 bg-gray-50 min-h-screen">
                 <h1 className="text-2xl md:text-3xl font-bold mb-6 text-gray-800">
                     Manajemen Role
                 </h1>
-                <div className="bg-gradient-to-br from-blue-50 via-white to-blue-100 rounded-2xl shadow-xl border border-blue-100 p-0 md:p-0 overflow-hidden">
-                    <div className="px-6 pt-6 pb-2 border-b border-blue-100 bg-white/80">
+                <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-0 overflow-hidden">
+                    <div className="px-6 pt-6 pb-2 border-b border-gray-200 bg-white">
                         <h2 className="text-xl font-bold text-blue-800 mb-2">
                             Tambah Role Baru
                         </h2>
@@ -177,7 +176,7 @@ export default function Role() {
                             <div className="flex-1 w-full">
                                 <input
                                     type="text"
-                                    className="border border-blue-200 rounded-lg px-4 py-2 w-full focus:ring-2 focus:ring-blue-300 focus:border-blue-400 transition"
+                                    className="border border-gray-300 rounded px-4 py-2 w-full focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
                                     placeholder="Nama Role"
                                     value={name}
                                     onChange={(e) => setName(e.target.value)}
@@ -191,69 +190,92 @@ export default function Role() {
                             </div>
                             <button
                                 type="submit"
-                                className="bg-gradient-to-r from-blue-600 to-blue-400 text-white px-6 py-2 rounded-lg shadow hover:from-blue-700 hover:to-blue-500 font-semibold disabled:opacity-50 w-full sm:w-auto transition"
+                                className="bg-blue-600 text-white px-6 py-2 rounded-md shadow-sm hover:bg-blue-700 font-semibold disabled:opacity-50 w-full sm:w-auto transition-colors"
                                 disabled={loading}
                             >
                                 Tambah
                             </button>
                         </form>
                     </div>
-                    <div className="px-2 md:px-6 pb-6 pt-4 bg-white/70">
+                    <div className="px-2 md:px-6 pb-6 pt-4">
                         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-2">
                             <button
-                                className="bg-gradient-to-r from-blue-600 to-blue-400 text-white px-4 py-2 rounded shadow hover:from-blue-700 hover:to-blue-500 font-semibold flex items-center gap-2"
+                                className="bg-blue-600 text-white px-4 py-2 rounded-md shadow-sm hover:bg-blue-700 font-semibold flex items-center gap-2 transition-colors"
                                 onClick={() => setFilterOpen(true)}
                                 type="button"
                             >
                                 <FaFilter />
                                 Filter
                             </button>
-                            <div className="flex items-center gap-2">
-                                <label className="text-gray-600 text-sm">
+                            <div className="flex items-center gap-2 bg-white border border-gray-200 rounded-md px-3 py-2 shadow-sm">
+                                <label className="text-gray-600 text-sm font-medium">
                                     Tampil
                                 </label>
-                                <select
-                                    className="border rounded px-2 py-1 text-sm focus:outline-none"
+                                <Listbox
                                     value={rowsPerPage}
-                                    onChange={(e) =>
-                                        setRowsPerPage(Number(e.target.value))
-                                    }
+                                    onChange={setRowsPerPage}
                                 >
-                                    <option value={10}>10</option>
-                                    <option value={25}>25</option>
-                                    <option value={50}>50</option>
-                                </select>
+                                    <div className="relative">
+                                        <Listbox.Button className="border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-20 text-left">
+                                            {rowsPerPage}
+                                        </Listbox.Button>
+                                        <Listbox.Options className="absolute z-10 mt-1 w-full bg-white border border-gray-200 rounded shadow-lg text-sm">
+                                            {[10, 25, 50].map((option) => (
+                                                <Listbox.Option
+                                                    key={option}
+                                                    value={option}
+                                                    className={({
+                                                        active,
+                                                        selected,
+                                                    }) =>
+                                                        `cursor-pointer select-none px-3 py-2 ${
+                                                            active
+                                                                ? "bg-blue-100 text-blue-900"
+                                                                : "text-gray-900"
+                                                        } ${
+                                                            selected
+                                                                ? "font-semibold"
+                                                                : ""
+                                                        }`
+                                                    }
+                                                >
+                                                    {option}
+                                                </Listbox.Option>
+                                            ))}
+                                        </Listbox.Options>
+                                    </div>
+                                </Listbox>
                                 <span className="text-gray-500 text-xs">
                                     / halaman
                                 </span>
                             </div>
                         </div>
-                        <div className="overflow-x-auto rounded-xl border border-blue-100 bg-white/90 shadow-sm">
+                        <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white">
                             <ErrorBoundary>
-                                <table className="min-w-full divide-y divide-blue-100">
-                                    <thead className="bg-gradient-to-r from-blue-100 to-blue-50">
+                                <table className="min-w-full">
+                                    <thead className="bg-gray-100 text-gray-600">
                                         <tr>
                                             <th
                                                 scope="col"
-                                                className="px-6 py-3 text-left text-xs font-bold text-blue-700 uppercase tracking-wider"
+                                                className="px-6 py-3 text-left text-xs font-bold text-blue-800 uppercase tracking-wider"
                                             >
                                                 Nama Role
                                             </th>
                                             <th
                                                 scope="col"
-                                                className="px-6 py-3 text-left text-xs font-bold text-blue-700 uppercase tracking-wider"
+                                                className="px-6 py-3 text-left text-xs font-bold text-blue-800 uppercase tracking-wider"
                                             >
                                                 Permission
                                             </th>
                                             <th
                                                 scope="col"
-                                                className="px-6 py-3 text-center text-xs font-bold text-blue-700 uppercase tracking-wider"
+                                                className="px-6 py-3 text-center text-xs font-bold text-blue-800 uppercase tracking-wider"
                                             >
                                                 Aksi
                                             </th>
                                         </tr>
                                     </thead>
-                                    <tbody className="bg-white divide-y divide-blue-50">
+                                    <tbody className="bg-white divide-y divide-gray-200">
                                         {paginatedRows.length === 0 ? (
                                             <tr>
                                                 <td
@@ -623,7 +645,8 @@ export default function Role() {
                             ) : (
                                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                                     {allPermissions.map((perm) => {
-                                        const isActive = rolePermissions.includes(perm.id);
+                                        const isActive =
+                                            rolePermissions.includes(perm.id);
                                         return (
                                             <div
                                                 key={perm.id}
@@ -632,19 +655,33 @@ export default function Role() {
                                                         ? "border-blue-500 bg-blue-50/80"
                                                         : "border-gray-200"
                                                 }`}
-                                                onClick={() => handlePermissionToggle(perm.id)}
+                                                onClick={() =>
+                                                    handlePermissionToggle(
+                                                        perm.id
+                                                    )
+                                                }
                                             >
                                                 <Switch
                                                     checked={isActive}
-                                                    onChange={() => handlePermissionToggle(perm.id)}
+                                                    onChange={() =>
+                                                        handlePermissionToggle(
+                                                            perm.id
+                                                        )
+                                                    }
                                                     className={`${
-                                                        isActive ? 'bg-blue-600' : 'bg-gray-200'
+                                                        isActive
+                                                            ? "bg-blue-600"
+                                                            : "bg-gray-200"
                                                     } relative inline-flex h-5 w-10 items-center rounded-full transition-colors focus:outline-none`}
-                                                    onClick={e => e.stopPropagation()}
+                                                    onClick={(e) =>
+                                                        e.stopPropagation()
+                                                    }
                                                 >
                                                     <span
                                                         className={`${
-                                                            isActive ? 'translate-x-5' : 'translate-x-1'
+                                                            isActive
+                                                                ? "translate-x-5"
+                                                                : "translate-x-1"
                                                         } inline-block h-4 w-4 transform rounded-full bg-white transition-transform`}
                                                     />
                                                 </Switch>
@@ -667,7 +704,8 @@ export default function Role() {
                                                     </div>
                                                     <div className="mt-0.5">
                                                         <span className="text-gray-400 text-xs italic truncate block">
-                                                            {perm.description || "Tidak ada deskripsi."}
+                                                            {perm.description ||
+                                                                "Tidak ada deskripsi."}
                                                         </span>
                                                     </div>
                                                 </div>

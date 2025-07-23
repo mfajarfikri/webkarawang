@@ -31,19 +31,23 @@ import { Fragment } from "react";
 import { ChevronUpDownIcon } from "@heroicons/react/24/solid";
 import React from "react";
 import axios from "axios";
+import { useSnackbar } from "notistack";
 
 export default function Create({
     gardus = [],
     kategoris = [],
     users = [],
     peralatans = [],
+    defaultGarduId = null,
+    userWilayah = null,
 }) {
+    const { enqueueSnackbar } = useSnackbar();
     const [step, setStep] = useState(1);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const { data, setData, errors, processing, reset } = useForm({
         judul: "",
-        ultg: users.penempatan || "",
-        gardu_id: "",
+        ultg: userWilayah || "",
+        gardu_id: defaultGarduId || "",
         bagian: "",
         tipe: "",
         kategori_id: "",
@@ -64,6 +68,20 @@ export default function Create({
         lampiran_foto: [],
         usul_saran: "",
     });
+
+    // Jika userWilayah berubah, update data.ultg
+    React.useEffect(() => {
+        if (userWilayah) {
+            setData("ultg", userWilayah);
+        }
+    }, [userWilayah]);
+
+    // Jika defaultGarduId berubah (misal user switch), update data.gardu_id
+    React.useEffect(() => {
+        if (defaultGarduId) {
+            setData("gardu_id", defaultGarduId);
+        }
+    }, [defaultGarduId]);
 
     console.log(data);
 
@@ -154,16 +172,26 @@ export default function Create({
                     },
                 }
             );
-            console.log("SUBMIT: Sukses", response); // Tambahkan log ini
+            enqueueSnackbar("Anomali berhasil dibuat!", { variant: "success" });
             reset();
             setPreview([]);
-            router.visit("dashboard.anomali.index");
+            router.get(route("dashboard.anomali.index"));
         } catch (error) {
-            console.error("SUBMIT: Error", error); // Tambahkan log ini
+            let errorMsg = "Error |";
+            if (
+                error.response &&
+                error.response.data &&
+                error.response.data.message
+            ) {
+                errorMsg += " " + error.response.data.message;
+            }
+            enqueueSnackbar(errorMsg, { variant: "error" });
         } finally {
             setIsSubmitting(false);
         }
     };
+
+    const isUltgDisabled = userWilayah && userWilayah !== "UPT Karawang";
 
     return (
         <>
@@ -282,9 +310,16 @@ export default function Create({
                                                         onChange={(val) =>
                                                             setData("ultg", val)
                                                         }
+                                                        disabled={
+                                                            isUltgDisabled
+                                                        }
                                                     >
                                                         <Listbox.Button
-                                                            className="pl-4 pr-10 py-2 w-full rounded-lg border border-blue-200 bg-white text-md text-left shadow-sm focus:outline-none focus:ring-1 focus:ring-blue-400"
+                                                            className={`${
+                                                                isUltgDisabled
+                                                                    ? "bg-gray-200 cursor-not-allowed"
+                                                                    : "bg-white"
+                                                            } pl-4 pr-10 py-2 w-full rounded-lg border border-blue-200 text-md text-left shadow-sm focus:outline-none focus:ring-1 focus:ring-blue-400`}
                                                             placeholder="Pilih ULTG"
                                                         >
                                                             {ultgOptions.find(
