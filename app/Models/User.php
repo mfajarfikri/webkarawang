@@ -29,6 +29,7 @@ class User extends Authenticatable implements MustVerifyEmail
         'foto_profil',
         'wilayah',
         'gardu_induk_ids',
+        'tanda_tangan_path',
     ];
 
     /**

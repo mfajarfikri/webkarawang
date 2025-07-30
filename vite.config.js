@@ -28,8 +28,8 @@ export default defineConfig({
         rollupOptions: {
             output: {
                 manualChunks: {
-                    react: ['react', 'react-dom'],
-                    inertia: ['@inertiajs/react'],
+                    react: ["react", "react-dom"],
+                    inertia: ["@inertiajs/react"],
                 },
             },
         },

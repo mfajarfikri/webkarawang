@@ -4,17 +4,24 @@ import DeleteUserForm from "./Partials/DeleteUserForm";
 import UpdatePasswordForm from "./Partials/UpdatePasswordForm";
 import UpdateProfileInformationForm from "./Partials/UpdateProfileInformationForm";
 import DashboardLayout from "@/Layouts/DashboardLayout";
+import { FaSignature } from "react-icons/fa";
+import TandaTanganForm from "./Partials/TandaTanganForm";
 
-export default function Edit({ mustVerifyEmail, status }) {
+export default function Edit({
+    mustVerifyEmail,
+    status,
+    foto_profil_url,
+    tanda_tangan_url,
+}) {
     return (
         <DashboardLayout>
             <Head title="Profile" />
             <div className="min-h-screen w-full py-12 px-2 sm:px-0 lg:px-8 flex flex-col items-center justify-center">
                 <div className="w-full space-y-12">
                     {/* Card Profile */}
-                    <div className="bg-white/95 rounded-2xl border border-blue-100 shadow-xl p-8 w-full">
+                    <div className="bg-white/95 rounded-lg border border-gray-200 shadow-lg p-8 w-full">
                         <div className="flex items-center gap-3 mb-6">
-                            <div className="border-blue-100 border-2 rounded-full p-3 flex items-center justify-center">
+                            <div className="border-gray-200 border-2 rounded-full p-3 flex items-center justify-center">
                                 <svg
                                     width="28"
                                     height="28"
@@ -28,20 +35,38 @@ export default function Edit({ mustVerifyEmail, status }) {
                                 </svg>
                             </div>
                             <h2 className="text-2xl font-bold text-blue-900 tracking-tight">
-                                Profil
+                                Profile
                             </h2>
                         </div>
                         <UpdateProfileInformationForm
                             mustVerifyEmail={mustVerifyEmail}
                             status={status}
+                            fotoProfilUrl={foto_profil_url}
                             className="w-full"
                         />
                     </div>
-                    <div className="border-t border-blue-100 my-2 w-full" />
-                    {/* Card Password */}
-                    <div className="bg-white/95 rounded-2xl border border-blue-100 shadow-xl p-8 w-full">
+                    <div className="bg-white/95 rounded-lg border border-gray-200 shadow-lg p-8 w-full">
                         <div className="flex items-center gap-3 mb-6">
-                            <div className="border-blue-100 border-2 rounded-full p-3 flex items-center justify-center">
+                            <div className="border-gray-200 border-2 rounded-full p-3 flex items-center justify-center bg-blue-50">
+                                <FaSignature className="text-blue-500 text-2xl" />
+                            </div>
+                            <h2 className="text-2xl font-bold text-blue-900 tracking-tight">
+                                Tanda Tangan Digital
+                            </h2>
+                        </div>
+                        <div className="flex">
+                            <div className="w-full max-w-6xl">
+                                <TandaTanganForm
+                                    existingSignatureUrl={tanda_tangan_url}
+                                />
+                            </div>
+                        </div>
+                    </div>
+                    <div className="border-t border-gray-200 my-2 w-full" />
+                    {/* Card Password */}
+                    <div className="bg-white/95 rounded-lg border border-gray-200 shadow-lg p-8 w-full">
+                        <div className="flex items-center gap-3 mb-6">
+                            <div className="border-gray-200 border-2 rounded-full p-3 flex items-center justify-center">
                                 <svg
                                     width="28"
                                     height="28"
@@ -60,9 +85,9 @@ export default function Edit({ mustVerifyEmail, status }) {
                         </div>
                         <UpdatePasswordForm className="w-full" />
                     </div>
-                    <div className="border-t border-blue-100 my-2 w-full" />
+                    <div className="border-t border-gray-200 my-2 w-full" />
                     {/* Card Hapus Akun */}
-                    <div className="bg-white/95 rounded-2xl border border-blue-100 shadow-xl p-8 w-full">
+                    <div className="bg-white/95 rounded-lg border border-gray-200 shadow-lg p-8 w-full">
                         <div className="flex items-center gap-3 mb-6">
                             <div className="border-red-100 border-2 rounded-full p-3 flex items-center justify-center">
                                 <svg

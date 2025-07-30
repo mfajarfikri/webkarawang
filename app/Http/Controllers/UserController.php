@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Spatie\Permission\Models\Role;
 use App\Models\User;
 use App\Models\GarduInduk;
+use Illuminate\Support\Facades\Storage;
 
 class UserController extends Controller
 {
@@ -22,8 +23,7 @@ class UserController extends Controller
                 'name' => $user->name,
                 'email' => $user->email,
                 'jabatan' => $user->jabatan,
-                'kedudukan' => $user->kedudukan,
-                'foto_profil' => $user->foto_profil,
+                'foto_profil' => $user->foto_profil ? Storage::url($user->foto_profil) : null,
                 'role' => $user->roles->pluck('name')->implode(', '),
                 'wilayah' => $user->wilayah,
                 'gardu_induk_ids' => $user->gardu_induk_ids,
@@ -56,6 +56,7 @@ class UserController extends Controller
             'password' => 'required|string|min:6',
             'role' => 'required|exists:roles,name',
             'wilayah' => 'required|in:UPT Karawang,ULTG Karawang,ULTG Purwakarta',
+            'jabatan' => 'required|in:MULTG,TL Hargi,TL Harjar,TL Harpro,TL K3',
             'gardu_induk_ids' => 'nullable|array',
             'gardu_induk_ids.*' => 'exists:gardu_induks,id',
         ]);
@@ -64,6 +65,7 @@ class UserController extends Controller
             'email' => $request->email,
             'password' => bcrypt($request->password),
             'wilayah' => $request->wilayah,
+            'jabatan' => $request->jabatan,
             'gardu_induk_ids' => $request->gardu_induk_ids,
         ]);
         $user->assignRole($request->role);
@@ -91,7 +93,20 @@ class UserController extends Controller
      */
     public function update(Request $request, string $id)
     {
-        //
+        $user = User::findOrFail($id);
+        $request->validate([
+            'role' => 'required|exists:roles,name',
+            'wilayah' => 'required|in:UPT Karawang,ULTG Karawang,ULTG Purwakarta',
+            'jabatan' => 'required|in:Master,MULTG,TL Hargi,TL Harjar,TL Harpro,TL K3,TL GI',
+            'gardu_induk_ids' => 'nullable|array',
+            'gardu_induk_ids.*' => 'exists:gardu_induks,id',
+        ]);
+        $user->wilayah = $request->wilayah;
+        $user->jabatan = $request->jabatan;
+        $user->gardu_induk_ids = $request->gardu_induk_ids;
+        $user->save();
+        $user->syncRoles([$request->role]);
+        return redirect()->route('dashboard.user.index')->with('success', 'User berhasil diupdate.');
     }
 
     /**
@@ -99,7 +114,22 @@ class UserController extends Controller
      */
     public function destroy(string $id)
     {
-        //
+        $user = User::findOrFail($id);
+        
+        // Hapus foto profil jika ada
+        if ($user->foto_profil) {
+            Storage::delete($user->foto_profil);
+        }
+        
+        // Hapus tanda tangan jika ada
+        if ($user->tanda_tangan_path) {
+            Storage::delete($user->tanda_tangan_path);
+        }
+        
+        // Hapus user
+        $user->delete();
+        
+        return redirect()->route('dashboard.user.index')->with('success', 'User berhasil dihapus.');
     }
 
     public function showAssignRoleForm($id)
@@ -128,17 +158,6 @@ class UserController extends Controller
 
     public function updateRole(Request $request, $id)
     {
-        $user = User::findOrFail($id);
-        $request->validate([
-            'role' => 'required|exists:roles,name',
-            'wilayah' => 'required|in:UPT Karawang,ULTG Karawang,ULTG Purwakarta',
-            'gardu_induk_ids' => 'nullable|array',
-            'gardu_induk_ids.*' => 'exists:gardu_induks,id',
-        ]);
-        $user->wilayah = $request->wilayah;
-        $user->gardu_induk_ids = $request->gardu_induk_ids;
-        $user->save();
-        $user->syncRoles([$request->role]);
-        return redirect()->route('dashboard.user.index')->with('success', 'Role user berhasil diupdate.');
+        
     }
 }

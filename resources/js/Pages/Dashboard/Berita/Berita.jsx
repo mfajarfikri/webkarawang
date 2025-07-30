@@ -40,7 +40,7 @@ export default function Berita({ berita: initialBerita, response }) {
             toast.success("Berita berhasil dihapus");
             setShowDeleteModal(false);
             setBeritaToDelete(null);
-        } catch (error) {   
+        } catch (error) {
             toast.error("Gagal menghapus berita");
         }
     };
@@ -126,7 +126,7 @@ export default function Berita({ berita: initialBerita, response }) {
                                         <FaCalendar className="mr-2" />
                                         {format(
                                             new Date(item.created_at),
-                                            "dd MMM yyyy",
+                                            "EEEE, dd MMMM yyyy",
                                             { locale: id }
                                         )}
                                     </div>
@@ -146,7 +146,10 @@ export default function Berita({ berita: initialBerita, response }) {
 
                                 <div className="flex justify-between items-center pt-4 border-t border-gray-100">
                                     <Link
-                                        href={route("dashboard.berita.show", item.slug)}
+                                        href={route(
+                                            "dashboard.berita.show",
+                                            item.slug
+                                        )}
                                         className="text-blue-600 hover:text-blue-700 text-sm font-medium"
                                     >
                                         Baca selengkapnya
@@ -164,10 +167,7 @@ export default function Berita({ berita: initialBerita, response }) {
                                             <div className="absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-10">
                                                 <div className="py-1">
                                                     <Link
-                                                        href={route(
-                                                            "dashboard.berita.edit",
-                                                            item.id
-                                                        )}
+                                                        href={""}
                                                         className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                                                     >
                                                         <FaEdit className="mr-3 h-4 w-4" />

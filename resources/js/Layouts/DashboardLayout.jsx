@@ -1,33 +1,39 @@
 import React from "react";
-import { Head, Link, usePage } from "@inertiajs/react";
+import { Head, Link, usePage, router } from "@inertiajs/react";
 import { useState, useEffect } from "react";
 import ApplicationLogo from "@/Components/ApplicationLogo";
 import { GiElectric } from "react-icons/gi";
 import { MdOutlineReportProblem } from "react-icons/md";
-import { AiOutlineNodeIndex } from "react-icons/ai";
 import {
     FaHome,
     FaNewspaper,
     FaCog,
     FaGlobe,
     FaBuilding,
-    FaUser,
-    FaUserShield, // Role management
-    FaKey, // Permission management
+    FaUsers,
+    FaUserShield,
+    FaKey,
+    FaSignOutAlt,
 } from "react-icons/fa";
-import { Transition } from "@headlessui/react";
+import { useSnackbar } from "notistack";
 
 export default function DashboardLayout({ children, title = "Dashboard" }) {
     const { auth } = usePage().props;
     const [sidebarOpen, setSidebarOpen] = useState(false);
+    const [activeDropdown, setActiveDropdown] = useState(null);
+    const [showLogoutModal, setShowLogoutModal] = useState(false);
     const [isClosing, setIsClosing] = useState(false);
     const [currentTime, setCurrentTime] = useState(new Date());
-    const [collapsedSidebar, setCollapsedSidebar] = useState(false);
+    const [collapsedSidebar, setCollapsedSidebar] = useState(() => {
+        return localStorage.getItem("collapsedSidebar") === "true";
+    });
     const [showWelcomeBanner, setShowWelcomeBanner] = useState(() => {
         return localStorage.getItem("showWelcomeBanner") !== "false";
     });
     const userName = auth?.user?.name || "Admin";
-    const userRole = auth?.user?.role || "User";
+    const userFotoProfil = auth?.user?.foto_profil || null;
+
+    const { enqueueSnackbar } = useSnackbar();
 
     useEffect(() => {
         const timer = setInterval(() => {
@@ -45,9 +51,11 @@ export default function DashboardLayout({ children, title = "Dashboard" }) {
         }, 280);
     };
 
-    // Toggle collapsed sidebar for desktop
+    // Toggle collapsed sidebar for desktop and save to localStorage
     const toggleSidebar = () => {
-        setCollapsedSidebar(!collapsedSidebar);
+        const newValue = !collapsedSidebar;
+        setCollapsedSidebar(newValue);
+        localStorage.setItem("collapsedSidebar", newValue.toString());
     };
 
     // Handler untuk menutup banner
@@ -56,10 +64,30 @@ export default function DashboardLayout({ children, title = "Dashboard" }) {
         localStorage.setItem("showWelcomeBanner", "false");
     };
 
+    const handleLogout = () => {
+        router.post(
+            route("logout"),
+            {},
+            {
+                onSuccess: () => {
+                    enqueueSnackbar("👋 Anda berhasil logout!", {
+                        variant: "success",
+                    });
+                },
+                onError: () => {
+                    enqueueSnackbar("❌ Gagal melakukan logout!", {
+                        variant: "error",
+                    });
+                },
+            }
+        );
+        setShowLogoutModal(false);
+    };
+
     return (
         <>
             <Head title={title} />
-            <div className="min-h-screen bg-gray-50">
+            <div className="min-h-screen bg-gray-100">
                 {/* Fixed Header */}
                 <header className="fixed top-0 left-0 right-0 z-30 bg-white shadow-sm border-b border-gray-200">
                     <div
@@ -129,14 +157,16 @@ export default function DashboardLayout({ children, title = "Dashboard" }) {
                                 </button>
 
                                 {/* Logo for mobile only */}
-                                <div className="flex-shrink-0 flex items-center">
-                                    <div className="flex items-center">
-                                        <ApplicationLogo className="h-8 w-8 mr-2" />
-                                        <h1 className="text-xl font-bold text-blue-800 tracking-wide">
-                                            UPT KARAWANG
-                                        </h1>
+                                <Link href={route("home")}>
+                                    <div className="flex-shrink-0 flex items-center">
+                                        <div className="flex items-center">
+                                            <ApplicationLogo className="h-8 w-8 mr-2" />
+                                            <h1 className="text-xl font-bold text-blue-800 tracking-wide">
+                                                UPT KARAWANG
+                                            </h1>
+                                        </div>
                                     </div>
-                                </div>
+                                </Link>
                             </div>
 
                             {/* Right side elements */}
@@ -193,17 +223,109 @@ export default function DashboardLayout({ children, title = "Dashboard" }) {
                                         <span className="hidden md:inline-block mr-2 text-sm font-medium text-gray-700">
                                             {userName}
                                         </span>
-                                        <button className="bg-blue-600 rounded-full p-0.5 flex items-center justify-center border-2 border-blue-100">
+                                        <button
+                                            onClick={() =>
+                                                setActiveDropdown(
+                                                    activeDropdown === "profile"
+                                                        ? null
+                                                        : "profile"
+                                                )
+                                            }
+                                            className="bg-blue-600 rounded-full p-0.5 flex items-center justify-center border-2 border-blue-100"
+                                        >
                                             <div className="bg-white rounded-full p-0.5">
-                                                <svg
-                                                    className="h-8 w-8 text-blue-700"
-                                                    fill="currentColor"
-                                                    viewBox="0 0 24 24"
-                                                >
-                                                    <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
-                                                </svg>
+                                                {userFotoProfil ? (
+                                                    <img
+                                                        src={
+                                                            userFotoProfil
+                                                                ? `/storage/${userFotoProfil}`
+                                                                : ""
+                                                        }
+                                                        alt="Foto Profil"
+                                                        className="h-8 w-8 rounded-full object-cover transition-all duration-300 ease-in-out hover:blur-sm"
+                                                    />
+                                                ) : (
+                                                    <svg
+                                                        className="h-8 w-8 text-blue-700"
+                                                        fill="currentColor"
+                                                        viewBox="0 0 24 24"
+                                                    >
+                                                        <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
+                                                    </svg>
+                                                )}
                                             </div>
                                         </button>
+                                        <div
+                                            className={`absolute right-0 mt-2 min-w-[180px] bg-white rounded-xl shadow-2xl py-2 z-50 border border-gray-100 transition-all duration-200 ${
+                                                activeDropdown === "profile"
+                                                    ? "opacity-100 scale-100 pointer-events-auto"
+                                                    : "opacity-0 scale-95 pointer-events-none"
+                                            }`}
+                                            style={{ top: "110%" }}
+                                        >
+                                            <div className="px-4 py-2 border-b border-gray-100 flex items-center gap-2">
+                                                {userFotoProfil ? (
+                                                    <img
+                                                        src={`/storage/${userFotoProfil}`}
+                                                        alt="Foto Profil"
+                                                        className="h-8 w-8 rounded-full object-cover border border-blue-200 aspect-square"
+                                                    />
+                                                ) : (
+                                                    <svg
+                                                        className="h-8 w-8 text-blue-700"
+                                                        fill="currentColor"
+                                                        viewBox="0 0 24 24"
+                                                    >
+                                                        <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
+                                                    </svg>
+                                                )}
+                                                <div>
+                                                    <div className="font-semibold text-gray-800 text-sm">
+                                                        {userName}
+                                                    </div>
+                                                    <div className="text-xs text-gray-500">
+                                                        {auth?.user?.email}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <Link
+                                                href={route("dashboard.index")}
+                                                className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 transition rounded-md"
+                                            >
+                                                <FaHome className="text-blue-500" />{" "}
+                                                Dashboard
+                                            </Link>
+                                            <Link
+                                                href={route(
+                                                    "dashboard.profile.edit"
+                                                )}
+                                                className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 transition rounded-md"
+                                            >
+                                                <FaCog className="text-blue-500" />{" "}
+                                                Profile
+                                            </Link>
+                                            <button
+                                                onClick={() =>
+                                                    setShowLogoutModal(true)
+                                                }
+                                                className="flex items-center gap-2 w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition rounded-md"
+                                            >
+                                                <svg
+                                                    className="h-4 w-4 text-red-500"
+                                                    fill="none"
+                                                    stroke="currentColor"
+                                                    strokeWidth={2}
+                                                    viewBox="0 0 24 24"
+                                                >
+                                                    <path
+                                                        strokeLinecap="round"
+                                                        strokeLinejoin="round"
+                                                        d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a2 2 0 01-2 2H7a2 2 0 01-2-2V7a2 2 0 012-2h4a2 2 0 012 2v1"
+                                                    />
+                                                </svg>
+                                                Logout
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -400,6 +522,78 @@ export default function DashboardLayout({ children, title = "Dashboard" }) {
                         </main>
                     </div>
                 </div>
+
+                {/* Modal Konfirmasi Logout */}
+                {showLogoutModal && (
+                    <div className="fixed inset-0 z-50 overflow-y-auto">
+                        <div className="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+                            <div
+                                className="fixed inset-0 transition-opacity"
+                                aria-hidden="true"
+                                onClick={() => setShowLogoutModal(false)}
+                            >
+                                <div className="absolute inset-0 bg-gray-800 opacity-75 "></div>
+                            </div>
+
+                            <span
+                                className="hidden sm:inline-block sm:align-middle sm:h-screen"
+                                aria-hidden="true"
+                            >
+                                &#8203;
+                            </span>
+
+                            <div
+                                className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full"
+                                onClick={(e) => e.stopPropagation()}
+                            >
+                                <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                                    <div className="sm:flex sm:items-start">
+                                        <div className="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-red-100 sm:mx-0 sm:h-10 sm:w-10">
+                                            <FaSignOutAlt
+                                                className="h-6 w-6 text-red-600"
+                                                aria-hidden="true"
+                                            />
+                                        </div>
+                                        <div className="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
+                                            <h3
+                                                className="text-lg leading-6 font-medium text-gray-900"
+                                                id="modal-title"
+                                            >
+                                                Konfirmasi Logout
+                                            </h3>
+                                            <div className="mt-2">
+                                                <p className="text-sm text-gray-500">
+                                                    Apakah Anda yakin ingin
+                                                    keluar dari sistem? Anda
+                                                    perlu login kembali untuk
+                                                    mengakses dashboard.
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="bg-gray-100 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                                    <button
+                                        type="button"
+                                        className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-red-600 text-base font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 sm:ml-3 sm:w-auto sm:text-sm"
+                                        onClick={handleLogout}
+                                    >
+                                        Logout
+                                    </button>
+                                    <button
+                                        type="button"
+                                        className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
+                                        onClick={() =>
+                                            setShowLogoutModal(false)
+                                        }
+                                    >
+                                        Batal
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
         </>
     );
@@ -427,15 +621,15 @@ function SidebarMenu({ collapsed = false, onLinkClick }) {
                     collapsed ? "justify-center" : ""
                 } px-3 py-2.5 text-sm font-medium rounded-lg ${
                     isActive("/dashboard")
-                        ? "bg-blue-50 text-blue-700"
-                        : "text-gray-700 hover:bg-blue-50 hover:text-blue-700"
+                        ? "bg-gray-100 text-gray-700"
+                        : "text-gray-700 hover:bg-gray-100 hover:text-gray-700"
                 } transition-colors duration-200 menu-item-hover`}
             >
                 <FaHome
                     className={`${collapsed ? "mx-auto" : "mr-3"} h-5 w-5 ${
                         isActive("/dashboard")
                             ? "text-blue-600"
-                            : "text-gray-400 group-hover:text-blue-600"
+                            : "text-gray-400 group-hover:text-gray-600"
                     }`}
                     aria-label="Dashboard"
                     title="Dashboard"
@@ -458,15 +652,15 @@ function SidebarMenu({ collapsed = false, onLinkClick }) {
                     collapsed ? "justify-center" : ""
                 } px-3 py-2.5 text-sm font-medium rounded-lg ${
                     isActive("/dashboard/berita")
-                        ? "bg-blue-50 text-blue-700"
-                        : "text-gray-700 hover:bg-blue-50 hover:text-blue-700"
+                        ? "bg-gray-100 text-gray-700"
+                        : "text-gray-700 hover:bg-gray-100 hover:text-gray-700"
                 } transition-colors duration-200 menu-item-hover`}
             >
                 <FaNewspaper
                     className={`${collapsed ? "mx-auto" : "mr-3"} h-5 w-5 ${
                         isActive("/dashboard/berita")
                             ? "text-blue-600"
-                            : "text-gray-400 group-hover:text-blue-600"
+                            : "text-gray-400 group-hover:text-gray-600"
                     }`}
                     aria-label="Berita"
                     title="Berita"
@@ -480,16 +674,16 @@ function SidebarMenu({ collapsed = false, onLinkClick }) {
                 className={`group flex items-center ${
                     collapsed ? "justify-center" : ""
                 } px-3 py-2.5 text-sm font-medium rounded-lg ${
-                    isActive("/ktt")
-                        ? "bg-blue-50 text-blue-700"
-                        : "text-gray-700 hover:bg-blue-50 hover:text-blue-700"
+                    isActive("/dashboard/ktt")
+                        ? "bg-gray-100 text-gray-700"
+                        : "text-gray-700 hover:bg-gray-100 hover:text-gray-700"
                 } transition-colors duration-200 menu-item-hover`}
             >
                 <FaBuilding
                     className={`${collapsed ? "mx-auto" : "mr-3"} h-5 w-5 ${
-                        isActive("/ktt")
+                        isActive("/dashboard/ktt")
                             ? "text-blue-600"
-                            : "text-gray-400 group-hover:text-blue-600"
+                            : "text-gray-400 group-hover:text-gray-600"
                     }`}
                     aria-label="ktt"
                     title="ktt"
@@ -504,15 +698,15 @@ function SidebarMenu({ collapsed = false, onLinkClick }) {
                     collapsed ? "justify-center" : ""
                 } px-3 py-2.5 text-sm font-medium rounded-lg ${
                     isActive("/dashboard/anomali")
-                        ? "bg-blue-50 text-blue-700"
-                        : "text-gray-700 hover:bg-blue-50 hover:text-blue-700"
+                        ? "bg-gray-100 text-gray-700"
+                        : "text-gray-700 hover:bg-gray-100 hover:text-gray-700"
                 } transition-colors duration-200 menu-item-hover`}
             >
                 <MdOutlineReportProblem
                     className={`${collapsed ? "mx-auto" : "mr-3"} h-5 w-5 ${
                         isActive("/dashboard/anomali")
                             ? "text-blue-600"
-                            : "text-gray-400 group-hover:text-blue-600"
+                            : "text-gray-400 group-hover:text-gray-600"
                     }`}
                     aria-label="ktt"
                     title="ktt"
@@ -535,15 +729,15 @@ function SidebarMenu({ collapsed = false, onLinkClick }) {
                     collapsed ? "justify-center" : ""
                 } px-3 py-2.5 text-sm font-medium rounded-lg ${
                     isActive("/dashboard/user")
-                        ? "bg-blue-50 text-blue-700"
-                        : "text-gray-700 hover:bg-blue-50 hover:text-blue-700"
+                        ? "bg-gray-100 text-gray-700"
+                        : "text-gray-700 hover:bg-gray-100 hover:text-gray-700"
                 } transition-colors duration-200 menu-item-hover`}
             >
-                <FaUser
+                <FaUsers
                     className={`${collapsed ? "mx-auto" : "mr-3"} h-5 w-5 ${
                         isActive("/dashboard/user")
                             ? "text-blue-600"
-                            : "text-gray-400 group-hover:text-blue-600"
+                            : "text-gray-400 group-hover:text-gray-600"
                     }`}
                     aria-label="User"
                     title="User"
@@ -558,15 +752,15 @@ function SidebarMenu({ collapsed = false, onLinkClick }) {
                     collapsed ? "justify-center" : ""
                 } px-3 py-2.5 text-sm font-medium rounded-lg ${
                     isActive("/dashboard/garduinduk")
-                        ? "bg-blue-50 text-blue-700"
-                        : "text-gray-700 hover:bg-blue-50 hover:text-blue-700"
+                        ? "bg-gray-100 text-gray-700"
+                        : "text-gray-700 hover:bg-gray-100 hover:text-gray-700"
                 } transition-colors duration-200 menu-item-hover`}
             >
                 <GiElectric
                     className={`${collapsed ? "mx-auto" : "mr-3"} h-5 w-5 ${
                         isActive("/dashboard/garduinduk")
                             ? "text-blue-600"
-                            : "text-gray-400 group-hover:text-blue-600"
+                            : "text-gray-400 group-hover:text-gray-600"
                     }`}
                     aria-label="User"
                     title="User"
@@ -589,15 +783,15 @@ function SidebarMenu({ collapsed = false, onLinkClick }) {
                     collapsed ? "justify-center" : ""
                 } px-3 py-2.5 text-sm font-medium rounded-lg ${
                     isActive("/dashboard/profile")
-                        ? "bg-blue-50 text-blue-700"
-                        : "text-gray-700 hover:bg-blue-50 hover:text-blue-700"
+                        ? "bg-gray-100 text-gray-700"
+                        : "text-gray-700 hover:bg-gray-100 hover:text-gray-700"
                 } transition-colors duration-200 menu-item-hover`}
             >
                 <FaCog
                     className={`${collapsed ? "mx-auto" : "mr-3"} h-5 w-5 ${
                         isActive("/dashboard/profile")
                             ? "text-blue-600"
-                            : "text-gray-400 group-hover:text-blue-600"
+                            : "text-gray-400 group-hover:text-gray-600"
                     }`}
                     aria-label="Pengaturan"
                     title="Pengaturan"
@@ -612,15 +806,15 @@ function SidebarMenu({ collapsed = false, onLinkClick }) {
                     collapsed ? "justify-center" : ""
                 } px-3 py-2.5 text-sm font-medium rounded-lg ${
                     isActive("/dashboard/role")
-                        ? "bg-blue-50 text-blue-700"
-                        : "text-gray-700 hover:bg-blue-50 hover:text-blue-700"
+                        ? "bg-gray-100 text-gray-700"
+                        : "text-gray-700 hover:bg-gray-100 hover:text-gray-700"
                 } transition-colors duration-200 menu-item-hover`}
             >
                 <FaUserShield
                     className={`${collapsed ? "mx-auto" : "mr-3"} h-5 w-5 ${
                         isActive("/dashboard/role")
                             ? "text-blue-600"
-                            : "text-gray-400 group-hover:text-blue-600"
+                            : "text-gray-400 group-hover:text-gray-600"
                     }`}
                     aria-label="Role"
                     title="Role"
@@ -634,15 +828,15 @@ function SidebarMenu({ collapsed = false, onLinkClick }) {
                     collapsed ? "justify-center" : ""
                 } px-3 py-2.5 text-sm font-medium rounded-lg ${
                     isActive("/dashboard/permission")
-                        ? "bg-blue-50 text-blue-700"
-                        : "text-gray-700 hover:bg-blue-50 hover:text-blue-700"
+                        ? "bg-gray-100 text-gray-700"
+                        : "text-gray-700 hover:bg-gray-100 hover:text-gray-700"
                 } transition-colors duration-200 menu-item-hover`}
             >
                 <FaKey
                     className={`${collapsed ? "mx-auto" : "mr-3"} h-5 w-5 ${
                         isActive("/dashboard/permission")
                             ? "text-blue-600"
-                            : "text-gray-400 group-hover:text-blue-600"
+                            : "text-gray-400 group-hover:text-gray-600"
                     }`}
                     aria-label="Permission"
                     title="Permission"
@@ -665,15 +859,15 @@ function SidebarMenu({ collapsed = false, onLinkClick }) {
                     collapsed ? "justify-center" : ""
                 } px-3 py-2.5 text-sm font-medium rounded-lg ${
                     isActive("/website")
-                        ? "bg-blue-50 text-blue-700"
-                        : "text-gray-700 hover:bg-blue-50 hover:text-blue-700"
+                        ? "bg-gray-100 text-gray-700"
+                        : "text-gray-700 hover:bg-gray-100 hover:text-gray-700"
                 } transition-colors duration-200 menu-item-hover`}
             >
                 <FaGlobe
                     className={`${collapsed ? "mx-auto" : "mr-3"} h-5 w-5 ${
                         isActive("/dashboard.website")
                             ? "text-blue-600"
-                            : "text-gray-400 group-hover:text-blue-600"
+                            : "text-gray-400 group-hover:text-gray-600"
                     }`}
                     aria-label="Website"
                     title="Website"

@@ -6,6 +6,7 @@ import {
     FaFilter,
     FaChevronLeft,
     FaChevronRight,
+    FaSearch,
 } from "react-icons/fa";
 import ErrorBoundary from "@/Components/ErrorBoundary";
 import { useState, useEffect } from "react";
@@ -17,10 +18,15 @@ export default function GarduInduk({ garduInduks = [] }) {
     const [rowsPerPage, setRowsPerPage] = useState(8);
     const [page, setPage] = useState(1);
     const [showTambahGardu, setShowTambahGardu] = useState(false);
+    const [searchTerm, setSearchTerm] = useState("");
 
-    const totalRows = garduInduks.length;
+    // Filter rows based on search term (case-insensitive, by name)
+    const filteredRows = garduInduks.filter((gardu) =>
+        gardu.name.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+    const totalRows = filteredRows.length;
     const totalPages = Math.ceil(totalRows / rowsPerPage);
-    const paginatedRows = garduInduks.slice(
+    const paginatedRows = filteredRows.slice(
         (page - 1) * rowsPerPage,
         page * rowsPerPage
     );
@@ -30,14 +36,14 @@ export default function GarduInduk({ garduInduks = [] }) {
 
     useEffect(() => {
         setPage(1);
-    }, [rowsPerPage]);
+    }, [rowsPerPage, searchTerm]);
 
     return (
         <>
             <Head title="Gardu Induk" />
             <DashboardLayout>
-                <div className="py-6 w-full mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="bg-gradient-to-br from-blue-50 via-white to-blue-100 rounded-2xl shadow-xl border border-blue-100 p-0 md:p-0 overflow-hidden">
+                <div className=" w-full mx-auto">
+                    <div className="bg-gradient-to-br from-blue-50 via-white to-blue-100 rounded-lg shadow-xl border border-blue-100 p-0 md:p-0 overflow-hidden">
                         <div className="px-4 sm:px-6 pt-6 pb-2 border-b border-blue-100 bg-white/80 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                             <div className="w-full md:w-2/3">
                                 <h2 className="text-xl font-bold text-gray-800 mb-1 flex items-center gap-2">
@@ -67,14 +73,29 @@ export default function GarduInduk({ garduInduks = [] }) {
                         </div>
                         <div className="px-2 md:px-6 pb-6 pt-4 bg-white/70">
                             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-2">
-                                <button
-                                    className="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-md shadow-sm hover:bg-gray-50 font-semibold flex items-center gap-2 transition-colors"
-                                    onClick={() => setFilterOpen(true)}
-                                    type="button"
-                                >
-                                    <FaFilter />
-                                    Filter
-                                </button>
+                                <div className="flex items-center gap-2">
+                                    <div className="relative w-full">
+                                        <input
+                                            type="text"
+                                            placeholder="Cari Nama Gardu Induk..."
+                                            className="w-full pl-12 pr-4 py-2 border border-gray-300 rounded-md focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
+                                            value={searchTerm}
+                                            onChange={(e) =>
+                                                setSearchTerm(e.target.value)
+                                            }
+                                        />
+                                        <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-lg" />
+                                    </div>
+                                    <button
+                                        className="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-md shadow-sm hover:bg-gray-50 font-semibold flex items-center gap-2 transition-colors"
+                                        onClick={() => setFilterOpen(true)}
+                                        type="button"
+                                    >
+                                        <FaFilter />
+                                        Filter
+                                    </button>
+                                </div>
+
                                 <div className="flex items-center gap-2">
                                     <label className="text-gray-600 text-sm">
                                         Tampil
@@ -182,38 +203,37 @@ export default function GarduInduk({ garduInduks = [] }) {
                                                                                 6
                                                                             )}
                                                                         </span>
-                                                                        <a
-                                                                            href={`https://www.google.com/maps/search/?api=1&query=${gardu.latitude},${gardu.longitude}`}
-                                                                            target="_blank"
-                                                                            rel="noopener noreferrer"
-                                                                            className="ml-3 inline-flex items-center px-2 py-1 border border-blue-600 rounded-md text-xs font-medium text-blue-700 bg-white hover:bg-blue-50 hover:text-blue-800 transition-colors shadow-sm"
-                                                                            title="Lihat lokasi di Google Maps"
-                                                                        >
-                                                                            <svg
-                                                                                xmlns="http://www.w3.org/2000/svg"
-                                                                                className="h-4 w-4 mr-1 text-blue-600"
-                                                                                fill="none"
-                                                                                viewBox="0 0 24 24"
-                                                                                stroke="currentColor"
-                                                                            >
-                                                                                <path
-                                                                                    strokeLinecap="round"
-                                                                                    strokeLinejoin="round"
-                                                                                    strokeWidth={
-                                                                                        2
-                                                                                    }
-                                                                                    d="M12 11c1.104 0 2-.896 2-2s-.896-2-2-2-2 .896-2 2 .896 2 2 2zm0 0c-3.866 0-7 3.134-7 7 0 1.657 1.343 3 3 3h8c1.657 0 3-1.343 3-3 0-3.866-3.134-7-7-7z"
-                                                                                />
-                                                                            </svg>
-                                                                            <span>
-                                                                                Lihat
-                                                                                Maps
-                                                                            </span>
-                                                                        </a>
                                                                     </span>
                                                                 </td>
                                                                 <td className="px-4 py-2 text-center">
-                                                                    -
+                                                                    <a
+                                                                        href={`https://www.google.com/maps/search/?api=1&query=${gardu.latitude},${gardu.longitude}`}
+                                                                        target="_blank"
+                                                                        rel="noopener noreferrer"
+                                                                        className="ml-3 inline-flex items-center px-2 py-1 border border-blue-600 rounded-md text-xs font-medium text-blue-700 bg-white hover:bg-blue-50 hover:text-blue-800 transition-colors shadow-sm"
+                                                                        title="Lihat lokasi di Google Maps"
+                                                                    >
+                                                                        <svg
+                                                                            xmlns="http://www.w3.org/2000/svg"
+                                                                            className="h-4 w-4 mr-1 text-blue-600"
+                                                                            fill="none"
+                                                                            viewBox="0 0 24 24"
+                                                                            stroke="currentColor"
+                                                                        >
+                                                                            <path
+                                                                                strokeLinecap="round"
+                                                                                strokeLinejoin="round"
+                                                                                strokeWidth={
+                                                                                    2
+                                                                                }
+                                                                                d="M12 11c1.104 0 2-.896 2-2s-.896-2-2-2-2 .896-2 2 .896 2 2 2zm0 0c-3.866 0-7 3.134-7 7 0 1.657 1.343 3 3 3h8c1.657 0 3-1.343 3-3 0-3.866-3.134-7-7-7z"
+                                                                            />
+                                                                        </svg>
+                                                                        <span>
+                                                                            Lihat
+                                                                            Maps
+                                                                        </span>
+                                                                    </a>
                                                                 </td>
                                                             </tr>
                                                         )

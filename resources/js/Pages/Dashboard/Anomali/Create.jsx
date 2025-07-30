@@ -11,16 +11,7 @@ import {
     FaPlus,
     FaTrash,
     FaCalendarAlt,
-    FaBuilding,
-    FaList,
-    FaThLarge,
-    FaLayerGroup,
-    FaMapMarkerAlt,
-    FaMapPin,
     FaTools,
-    FaExclamationTriangle,
-    FaBolt,
-    FaLightbulb,
     FaSearch,
     FaTag,
 } from "react-icons/fa";
@@ -32,12 +23,14 @@ import { ChevronUpDownIcon } from "@heroicons/react/24/solid";
 import React from "react";
 import axios from "axios";
 import { useSnackbar } from "notistack";
+import { formatDate } from "@/Components/Utils/formatDate";
+import { format, isValid, parseISO } from "date-fns";
+import { id } from "date-fns/locale";
 
 export default function Create({
     gardus = [],
     kategoris = [],
     users = [],
-    peralatans = [],
     defaultGarduId = null,
     userWilayah = null,
 }) {
@@ -69,6 +62,13 @@ export default function Create({
         usul_saran: "",
     });
 
+    const filteredGarduOptions = React.useMemo(() => {
+        if (userWilayah === "UPT Karawang") {
+            return gardus;
+        }
+        return gardus.filter((g) => g.ultg === userWilayah);
+    }, [gardus, userWilayah]);
+
     // Jika userWilayah berubah, update data.ultg
     React.useEffect(() => {
         if (userWilayah) {
@@ -82,8 +82,6 @@ export default function Create({
             setData("gardu_id", defaultGarduId);
         }
     }, [defaultGarduId]);
-
-    console.log(data);
 
     function findById(arr, id) {
         return arr.find((item) => String(item.id) === String(id)) || null;
@@ -149,7 +147,6 @@ export default function Create({
     const handleSubmit = async (e) => {
         e.preventDefault();
         setIsSubmitting(true);
-        console.log("SUBMIT: Mulai submit data", data); // Tambahkan log ini
         const formData = new FormData();
         Object.entries(data).forEach(([key, value]) => {
             if (key === "lampiran_foto") {
@@ -192,6 +189,110 @@ export default function Create({
     };
 
     const isUltgDisabled = userWilayah && userWilayah !== "UPT Karawang";
+
+    // Date picker state and functions
+    const [showDatePicker, setShowDatePicker] = useState(false);
+    const [selectedDate, setSelectedDate] = useState(() => {
+        // Initialize with current date if no date is selected
+        return data.tanggal_kejadian
+            ? parseISO(data.tanggal_kejadian)
+            : new Date();
+    });
+
+    // Format date for display
+    const formatDisplayDate = (dateString) => {
+        if (!dateString) return "";
+        try {
+            const date = parseISO(dateString);
+            if (isValid(date)) {
+                return format(date, "dd MMMM yyyy", { locale: id });
+            }
+        } catch (error) {
+            console.error("Error parsing date:", error);
+        }
+        return dateString;
+    };
+
+    // Handle date selection
+    const handleDateSelect = (date) => {
+        const formattedDate = format(date, "yyyy-MM-dd");
+        setData("tanggal_kejadian", formattedDate);
+        setSelectedDate(date);
+        setShowDatePicker(false);
+    };
+
+    // Validate date (cannot be in the future)
+    const isDateValid = (date) => {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        return date <= today;
+    };
+
+    // Generate calendar days
+    const generateCalendarDays = () => {
+        const today = new Date();
+        const currentMonth = selectedDate
+            ? new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1)
+            : new Date(today.getFullYear(), today.getMonth(), 1);
+        const firstDay = new Date(currentMonth);
+        const lastDay = new Date(
+            currentMonth.getFullYear(),
+            currentMonth.getMonth() + 1,
+            0
+        );
+
+        const days = [];
+        const startDate = new Date(firstDay);
+        startDate.setDate(startDate.getDate() - firstDay.getDay());
+
+        for (let i = 0; i < 42; i++) {
+            const date = new Date(startDate);
+            date.setDate(startDate.getDate() + i);
+            days.push(date);
+        }
+
+        return days;
+    };
+
+    // Navigate months
+    const navigateMonth = (direction) => {
+        if (!selectedDate) return;
+        const newDate = new Date(selectedDate);
+        newDate.setMonth(newDate.getMonth() + direction);
+        setSelectedDate(newDate);
+    };
+
+    // Handle click outside to close date picker and keyboard navigation
+    React.useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (
+                showDatePicker &&
+                !event.target.closest(".date-picker-container")
+            ) {
+                setShowDatePicker(false);
+            }
+        };
+
+        const handleKeyDown = (event) => {
+            if (showDatePicker) {
+                if (event.key === "Escape") {
+                    setShowDatePicker(false);
+                } else if (
+                    event.key === "Enter" &&
+                    event.target.closest(".date-picker-container")
+                ) {
+                    event.preventDefault();
+                }
+            }
+        };
+
+        document.addEventListener("mousedown", handleClickOutside);
+        document.addEventListener("keydown", handleKeyDown);
+        return () => {
+            document.removeEventListener("mousedown", handleClickOutside);
+            document.removeEventListener("keydown", handleKeyDown);
+        };
+    }, [showDatePicker]);
 
     return (
         <>
@@ -292,6 +393,7 @@ export default function Create({
                                                         className="pl-10 block w-full rounded-lg border border-blue-200 focus:ring-1 focus:ring-blue-400 focus:border-blue-400 text-md px-4 py-2 shadow-sm transition-all"
                                                         placeholder="Masukkan judul anomali"
                                                         required
+                                                        autoComplete="off"
                                                     />
                                                 </div>
                                                 <InputError
@@ -436,7 +538,7 @@ export default function Create({
                                                             leaveTo="opacity-0"
                                                         >
                                                             <Listbox.Options className="absolute z-10 mt-1 max-h-60 w-full overflow-auto rounded-lg bg-white py-1 text-sm shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
-                                                                {gardus.map(
+                                                                {filteredGarduOptions.map(
                                                                     (opt) => (
                                                                         <Listbox.Option
                                                                             key={
@@ -797,6 +899,7 @@ export default function Create({
                                                         className="pl-10 block w-full rounded-lg border border-blue-200 focus:ring-1 focus:ring-blue-400 focus:border-blue-400 text-md px-4 py-2 shadow-sm transition-all"
                                                         placeholder="Di mana alat ini dipasang?"
                                                         required
+                                                        autoComplete="off"
                                                     />
                                                 </div>
                                                 <InputError
@@ -812,7 +915,7 @@ export default function Create({
 
                             {step === 2 && (
                                 <>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 pt-4 gap-8">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 pt-4 border rounded-lg p-6 bg-white gap-8">
                                         {/* Peralatan */}
                                         <div className="relative flex flex-col justify-end">
                                             <InputLabel
@@ -849,30 +952,254 @@ export default function Create({
                                                 value="Tanggal Kejadian"
                                                 className="text-sm font-bold mb-1 tracking-wide text-gray-700"
                                             />
-                                            <div className="relative">
+                                            <div className="relative date-picker-container">
                                                 <span className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
                                                     <FaCalendarAlt className="text-blue-400 text-lg" />
                                                 </span>
-                                                <TextInput
-                                                    id="tanggal_kejadian"
-                                                    type="date"
-                                                    value={
-                                                        data.tanggal_kejadian
-                                                    }
-                                                    onChange={(e) =>
-                                                        setData(
-                                                            "tanggal_kejadian",
-                                                            e.target.value
+                                                <div
+                                                    onClick={() =>
+                                                        setShowDatePicker(
+                                                            !showDatePicker
                                                         )
                                                     }
-                                                    className={`pl-10 mt-1 block w-full rounded-xl border ${
+                                                    className={`pl-10 mt-1 block w-full rounded-xl border cursor-pointer ${
                                                         errors.tanggal_kejadian
                                                             ? "border-red-400 focus:ring-red-400 focus:border-red-400"
+                                                            : data.tanggal_kejadian
+                                                            ? "border-green-400 focus:ring-green-400 focus:border-green-400"
                                                             : "border-blue-200 focus:ring-blue-400 focus:border-blue-400"
-                                                    } text-md px-4 py-2 shadow-sm transition-all`}
-                                                    placeholder="Pilih tanggal kejadian"
-                                                    required
-                                                />
+                                                    } text-md px-4 py-2 shadow-sm transition-all bg-white hover:bg-gray-50`}
+                                                >
+                                                    {data.tanggal_kejadian ? (
+                                                        <span className="text-gray-900 flex items-center justify-between">
+                                                            <span>
+                                                                {formatDisplayDate(
+                                                                    data.tanggal_kejadian
+                                                                )}
+                                                            </span>
+                                                            <span className="text-green-600 text-xs">
+                                                                ✓
+                                                            </span>
+                                                        </span>
+                                                    ) : (
+                                                        <span className="text-gray-500">
+                                                            Pilih tanggal
+                                                            kejadian *
+                                                        </span>
+                                                    )}
+                                                </div>
+
+                                                {/* Custom Date Picker */}
+                                                {showDatePicker && (
+                                                    <div className="date-picker-container absolute z-50 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg p-4">
+                                                        {/* Calendar Header */}
+                                                        <div className="flex items-center justify-between mb-4">
+                                                            <button
+                                                                type="button"
+                                                                onClick={() =>
+                                                                    navigateMonth(
+                                                                        -1
+                                                                    )
+                                                                }
+                                                                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                                                            >
+                                                                <svg
+                                                                    className="w-4 h-4"
+                                                                    fill="none"
+                                                                    stroke="currentColor"
+                                                                    viewBox="0 0 24 24"
+                                                                >
+                                                                    <path
+                                                                        strokeLinecap="round"
+                                                                        strokeLinejoin="round"
+                                                                        strokeWidth={
+                                                                            2
+                                                                        }
+                                                                        d="M15 19l-7-7 7-7"
+                                                                    />
+                                                                </svg>
+                                                            </button>
+                                                            <h3 className="text-sm font-semibold text-gray-900">
+                                                                {selectedDate
+                                                                    ? format(
+                                                                          selectedDate,
+                                                                          "MMMM yyyy",
+                                                                          {
+                                                                              locale: id,
+                                                                          }
+                                                                      )
+                                                                    : format(
+                                                                          new Date(),
+                                                                          "MMMM yyyy",
+                                                                          {
+                                                                              locale: id,
+                                                                          }
+                                                                      )}
+                                                            </h3>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() =>
+                                                                    navigateMonth(
+                                                                        1
+                                                                    )
+                                                                }
+                                                                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                                                            >
+                                                                <svg
+                                                                    className="w-4 h-4"
+                                                                    fill="none"
+                                                                    stroke="currentColor"
+                                                                    viewBox="0 0 24 24"
+                                                                >
+                                                                    <path
+                                                                        strokeLinecap="round"
+                                                                        strokeLinejoin="round"
+                                                                        strokeWidth={
+                                                                            2
+                                                                        }
+                                                                        d="M9 5l7 7-7 7"
+                                                                    />
+                                                                </svg>
+                                                            </button>
+                                                        </div>
+
+                                                        {/* Calendar Grid */}
+                                                        <div className="grid grid-cols-7 gap-1 mb-2">
+                                                            {[
+                                                                "Min",
+                                                                "Sen",
+                                                                "Sel",
+                                                                "Rab",
+                                                                "Kam",
+                                                                "Jum",
+                                                                "Sab",
+                                                            ].map((day) => (
+                                                                <div
+                                                                    key={day}
+                                                                    className="text-xs font-medium text-gray-500 text-center py-1"
+                                                                >
+                                                                    {day}
+                                                                </div>
+                                                            ))}
+                                                        </div>
+
+                                                        <div className="grid grid-cols-7 gap-1">
+                                                            {generateCalendarDays().map(
+                                                                (
+                                                                    date,
+                                                                    index
+                                                                ) => {
+                                                                    const isCurrentMonth =
+                                                                        date.getMonth() ===
+                                                                        (selectedDate
+                                                                            ? selectedDate.getMonth()
+                                                                            : new Date().getMonth());
+                                                                    const isToday =
+                                                                        format(
+                                                                            date,
+                                                                            "yyyy-MM-dd"
+                                                                        ) ===
+                                                                        format(
+                                                                            new Date(),
+                                                                            "yyyy-MM-dd"
+                                                                        );
+                                                                    const isSelected =
+                                                                        data.tanggal_kejadian &&
+                                                                        format(
+                                                                            date,
+                                                                            "yyyy-MM-dd"
+                                                                        ) ===
+                                                                            data.tanggal_kejadian;
+                                                                    const isValidDate =
+                                                                        isDateValid(
+                                                                            date
+                                                                        );
+
+                                                                    return (
+                                                                        <button
+                                                                            key={
+                                                                                index
+                                                                            }
+                                                                            type="button"
+                                                                            onClick={() =>
+                                                                                isValidDate &&
+                                                                                handleDateSelect(
+                                                                                    date
+                                                                                )
+                                                                            }
+                                                                            disabled={
+                                                                                !isValidDate
+                                                                            }
+                                                                            className={`p-2 text-xs rounded-lg transition-colors ${
+                                                                                isSelected
+                                                                                    ? "bg-blue-600 text-white font-semibold"
+                                                                                    : isToday
+                                                                                    ? "bg-blue-100 text-blue-900 font-semibold"
+                                                                                    : isCurrentMonth &&
+                                                                                      isValidDate
+                                                                                    ? "text-gray-900 hover:bg-gray-100"
+                                                                                    : "text-gray-400"
+                                                                            } ${
+                                                                                !isValidDate
+                                                                                    ? "cursor-not-allowed opacity-50"
+                                                                                    : ""
+                                                                            }`}
+                                                                        >
+                                                                            {date.getDate()}
+                                                                        </button>
+                                                                    );
+                                                                }
+                                                            )}
+                                                        </div>
+
+                                                        {/* Quick Actions */}
+                                                        <div className="flex justify-between mt-4 pt-3 border-t border-gray-200">
+                                                            <div className="flex gap-2">
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => {
+                                                                        const today =
+                                                                            new Date();
+                                                                        handleDateSelect(
+                                                                            today
+                                                                        );
+                                                                    }}
+                                                                    className="text-xs text-blue-600 hover:text-blue-800 font-medium"
+                                                                >
+                                                                    Hari Ini
+                                                                </button>
+                                                                {data.tanggal_kejadian && (
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => {
+                                                                            setData(
+                                                                                "tanggal_kejadian",
+                                                                                ""
+                                                                            );
+                                                                            setSelectedDate(
+                                                                                null
+                                                                            );
+                                                                        }}
+                                                                        className="text-xs text-red-600 hover:text-red-800 font-medium"
+                                                                    >
+                                                                        Hapus
+                                                                    </button>
+                                                                )}
+                                                            </div>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() =>
+                                                                    setShowDatePicker(
+                                                                        false
+                                                                    )
+                                                                }
+                                                                className="text-xs text-gray-500 hover:text-gray-700"
+                                                            >
+                                                                Tutup
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                )}
                                             </div>
                                             <InputError
                                                 message={
@@ -1049,7 +1376,7 @@ export default function Create({
 
                             {step === 3 && (
                                 <>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 pt-4 gap-8">
+                                    <div className="grid grid-cols-1 border rounded-lg p-6 bg-white md:grid-cols-2 pt-4 gap-8">
                                         {/* Penyebab */}
                                         <div className="relative flex flex-col justify-end">
                                             <InputLabel
@@ -1133,70 +1460,96 @@ export default function Create({
 
                             {step === 4 && (
                                 <>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 pt-4 gap-8">
+                                    <div className="flex justify-center pt-4">
                                         {/* Lampiran Foto */}
-                                        <div className="bg-white/90 rounded-2xl shadow-md border border-blue-100 overflow-hidden flex flex-col">
-                                            <div className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-100 to-blue-50 border-b border-blue-100">
-                                                <span className="text-blue-600 font-bold">
-                                                    📎
+                                        <div className="rounded-lg shadow-xl border border-gray-200 overflow-hidden flex flex-col w-full max-w-4xl">
+                                            <div className="flex items-center border-b gap-3 px-6 py-4 justify-center">
+                                                <span className="text-gray-600 text-2xl">
+                                                    <FaFileAlt />
                                                 </span>
-                                                <h2 className="text-md font-bold text-blue-800 tracking-tight">
+                                                <h2 className="text-xl font-bold text-gray-600 tracking-tight">
                                                     Lampiran Foto
                                                 </h2>
                                             </div>
                                             <div className="p-6 flex-1 flex flex-col">
-                                                <InputLabel
-                                                    htmlFor="lampiran_foto"
-                                                    value="Lampiran Foto (max 5 gambar)"
-                                                    className="text-sm font-semibold mb-1"
-                                                />
-                                                <label
-                                                    htmlFor="lampiran_foto"
-                                                    className="flex items-center gap-2 cursor-pointer px-4 py-2 bg-blue-50 border border-blue-200 rounded-xl shadow hover:bg-blue-100 w-fit mb-3"
-                                                >
-                                                    <FaPlus className="text-blue-600" />
-                                                    <span className="font-semibold text-blue-700 text-sm">
-                                                        Tambah Foto
+                                                <div className="flex flex-col items-center justify-center mb-4 gap-1">
+                                                    <span className="text-xs text-blue-500 font-medium">
+                                                        Maksimal {MAX_FILES}{" "}
+                                                        gambar
                                                     </span>
-                                                </label>
-                                                <input
-                                                    id="lampiran_foto"
-                                                    type="file"
-                                                    accept="image/*"
-                                                    multiple
-                                                    onChange={handleFileChange}
-                                                    className="hidden"
-                                                    disabled={
-                                                        preview.length >=
-                                                        MAX_FILES
-                                                    }
-                                                />
-                                                <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mt-2">
+                                                </div>
+                                                <div className="flex flex-wrap gap-3 mb-6 justify-center">
+                                                    <label
+                                                        htmlFor="lampiran_foto"
+                                                        className={`flex items-center gap-2 cursor-pointer px-4 py-2 bg-blue-600 hover:bg-blue-700 transition text-white rounded-lg shadow font-medium text-sm ${
+                                                            preview.length >=
+                                                            MAX_FILES
+                                                                ? "opacity-50 cursor-not-allowed"
+                                                                : ""
+                                                        }`}
+                                                    >
+                                                        <FaPlus className="text-white" />
+                                                        Tambah Foto
+                                                        <input
+                                                            id="lampiran_foto"
+                                                            type="file"
+                                                            accept="image/*"
+                                                            multiple
+                                                            onChange={
+                                                                handleFileChange
+                                                            }
+                                                            className="hidden"
+                                                            disabled={
+                                                                preview.length >=
+                                                                MAX_FILES
+                                                            }
+                                                        />
+                                                    </label>
+                                                    {preview.length >=
+                                                        MAX_FILES && (
+                                                        <span className="text-xs text-red-500 font-semibold ml-2">
+                                                            Maksimal {MAX_FILES}{" "}
+                                                            gambar tercapai
+                                                        </span>
+                                                    )}
+                                                </div>
+                                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-5">
+                                                    {preview.length === 0 && (
+                                                        <div className="col-span-full flex flex-col items-center justify-center py-10 border-2 border-dashed border-blue-200 rounded-xl bg-white/60">
+                                                            <FaFileAlt className="text-blue-300 text-4xl mb-2" />
+                                                            <span className="text-blue-400 text-sm font-medium">
+                                                                Belum ada foto
+                                                                yang diunggah
+                                                            </span>
+                                                        </div>
+                                                    )}
                                                     {preview.map((src, i) => (
                                                         <div
                                                             key={i}
-                                                            className="relative group border rounded-xl overflow-hidden shadow bg-white"
+                                                            className="relative group border border-blue-100 rounded-xl overflow-hidden shadow bg-white hover:shadow-xl transition"
                                                         >
                                                             <img
                                                                 src={src}
-                                                                alt="preview"
-                                                                className="w-full h-32 object-cover"
+                                                                alt={`preview-${i}`}
+                                                                className="w-full h-40 object-cover object-center transition group-hover:scale-105 duration-200"
                                                             />
+                                                            <div className="absolute top-2 right-2 flex flex-col gap-2 z-10">
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() =>
+                                                                        handleRemoveImage(
+                                                                            i
+                                                                        )
+                                                                    }
+                                                                    className="bg-white/90 hover:bg-red-600 text-red-600 hover:text-white rounded-full p-1 shadow transition"
+                                                                    title="Hapus Foto"
+                                                                >
+                                                                    <FaTrash className="h-4 w-4" />
+                                                                </button>
+                                                            </div>
                                                             <button
                                                                 type="button"
-                                                                onClick={() =>
-                                                                    handleRemoveImage(
-                                                                        i
-                                                                    )
-                                                                }
-                                                                className="absolute top-2 right-2 bg-red-600 text-white rounded-full p-1 shadow hover:bg-red-700 transition"
-                                                                title="Hapus Foto"
-                                                            >
-                                                                <FaTrash className="h-4 w-4" />
-                                                            </button>
-                                                            <button
-                                                                type="button"
-                                                                className="absolute inset-0 bg-blue-900/10 opacity-0 group-hover:opacity-100 rounded-xl transition-all duration-200 flex items-center justify-center text-sm text-white font-semibold"
+                                                                className="absolute inset-0 bg-blue-900/30 opacity-0 group-hover:opacity-100 rounded-xl transition-all duration-200 flex items-center justify-center text-base text-white font-semibold tracking-wide backdrop-blur-sm"
                                                                 onClick={(
                                                                     e
                                                                 ) => {
@@ -1209,22 +1562,18 @@ export default function Create({
                                                                     );
                                                                 }}
                                                             >
-                                                                Preview
+                                                                <span className="px-4 py-1 bg-blue-700/80 rounded-lg shadow text-white font-medium">
+                                                                    Preview
+                                                                </span>
                                                             </button>
                                                         </div>
                                                     ))}
                                                 </div>
-                                                {preview.length >=
-                                                    MAX_FILES && (
-                                                    <div className="text-sm text-red-500 mt-2">
-                                                        Maksimal {MAX_FILES}{" "}
-                                                        gambar.
-                                                    </div>
-                                                )}
                                                 <InputError
                                                     message={
                                                         errors.lampiran_foto
                                                     }
+                                                    className="mt-4"
                                                 />
                                             </div>
                                         </div>
@@ -1234,7 +1583,7 @@ export default function Create({
 
                             {step === 5 && (
                                 <div className="border rounded-lg p-6 bg-gray-50">
-                                    <h2 className="text-lg font-bold mb-4 text-blue-700">
+                                    <h2 className="text-lg font-bold mb-4 text-blue-700 text-center flex justify-center items-center">
                                         Review {data.judul}
                                     </h2>
                                     <div className="overflow-x-auto">
@@ -1357,8 +1706,11 @@ export default function Create({
                                                         :
                                                     </td>
                                                     <td>
-                                                        {data.tanggal_kejadian ||
-                                                            "-"}
+                                                        {data.tanggal_kejadian
+                                                            ? formatDate(
+                                                                  data.tanggal_kejadian
+                                                              )
+                                                            : "-"}
                                                     </td>
                                                 </tr>
                                                 {/* 4. JENIS KERUSAKAN */}
@@ -1369,7 +1721,13 @@ export default function Create({
                                                     <td className="text-right pr-2">
                                                         :
                                                     </td>
-                                                    <td>{data.judul || "-"}</td>
+                                                    <td>
+                                                        {kategoris?.find(
+                                                            (k) =>
+                                                                k.id ==
+                                                                data.kategori_id
+                                                        )?.name || "-"}
+                                                    </td>
                                                 </tr>
                                                 {/* 5. PENYEBAB KERUSAKAN */}
                                                 <tr>

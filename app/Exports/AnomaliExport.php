@@ -8,32 +8,43 @@ use Maatwebsite\Excel\Concerns\WithHeadings;
 
 class AnomaliExport implements FromCollection, WithHeadings
 {
-    protected $month;
-    protected $ultg;
-    protected $gardu;
+    protected $months;
+    protected $ultgs;
+    protected $gardus;
 
-    public function __construct($month, $ultg = 'all', $gardu = 'all')
+    public function __construct($months = [], $ultgs = [], $gardus = [])
     {
-        $this->month = $month;
-        $this->ultg = $ultg;
-        $this->gardu = $gardu;
+        $this->months = $months;
+        $this->ultgs = $ultgs;
+        $this->gardus = $gardus;
     }
 
     public function collection()
     {
         $query = Anomali::query();
 
-        if ($this->month && $this->month !== 'all') {
-            [$year, $month] = explode('-', $this->month);
-            $query->whereYear('tanggal_kejadian', $year)
-                  ->whereMonth('tanggal_kejadian', $month);
+        // Filter by months
+        if (!empty($this->months)) {
+            $query->where(function($q) {
+                foreach ($this->months as $month) {
+                    [$year, $monthNum] = explode('-', $month);
+                    $q->orWhere(function($subQ) use ($year, $monthNum) {
+                        $subQ->whereYear('tanggal_kejadian', $year)
+                              ->whereMonth('tanggal_kejadian', $monthNum);
+                    });
+                }
+            });
         }
-        if ($this->ultg && $this->ultg !== 'all') {
-            $query->where('ultg', $this->ultg);
+
+        // Filter by ULTGs
+        if (!empty($this->ultgs)) {
+            $query->whereIn('ultg', $this->ultgs);
         }
-        if ($this->gardu && $this->gardu !== 'all') {
+
+        // Filter by Gardu Induks
+        if (!empty($this->gardus)) {
             $query->whereHas('gardu_induk', function($q) {
-                $q->where('name', $this->gardu);
+                $q->whereIn('name', $this->gardus);
             });
         }
 
@@ -48,10 +59,22 @@ class AnomaliExport implements FromCollection, WithHeadings
                     'Tipe' => $a->tipe,
                     'Kategori' => $a->kategori->name ?? '-',
                     'Peralatan' => $a->peralatan,
+                    'Merek' => $a->merek ?? '-',
+                    'Tipe Alat' => $a->tipe_alat ?? '-',
+                    'No Seri' => $a->no_seri ?? '-',
+                    'Harga' => $a->harga ?? '-',
+                    'Kode Asset' => $a->kode_asset ?? '-',
+                    'Tahun Operasi' => $a->tahun_operasi ?? '-',
+                    'Tahun Buat' => $a->tahun_buat ?? '-',
                     'Penempatan Alat' => $a->penempatan_alat,
                     'Tanggal Kejadian' => $a->tanggal_kejadian,
+                    'Penyebab' => $a->penyebab,
+                    'Akibat' => $a->akibat,
+                    'Usul/Saran' => $a->usul_saran,
                     'Status' => $a->status,
                     'User' => $a->user->name ?? '-',
+                    'Tanggal Dibuat' => $a->created_at,
+                    'Tanggal Diupdate' => $a->updated_at,
                 ];
             });
     }
@@ -66,10 +89,22 @@ class AnomaliExport implements FromCollection, WithHeadings
             'Tipe',
             'Kategori',
             'Peralatan',
+            'Merek',
+            'Tipe Alat',
+            'No Seri',
+            'Harga',
+            'Kode Asset',
+            'Tahun Operasi',
+            'Tahun Buat',
             'Penempatan Alat',
             'Tanggal Kejadian',
+            'Penyebab',
+            'Akibat',
+            'Usul/Saran',
             'Status',
             'User',
+            'Tanggal Dibuat',
+            'Tanggal Diupdate',
         ];
     }
 }

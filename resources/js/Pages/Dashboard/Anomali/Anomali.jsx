@@ -9,13 +9,16 @@ import {
     FaFileExcel,
     FaClipboard,
     FaSearch,
+    FaPlusCircle,
 } from "react-icons/fa";
 import ErrorBoundary from "@/Components/ErrorBoundary";
 import { useState, useMemo, useEffect } from "react";
 import { MdOutlineReportProblem } from "react-icons/md";
 import { Listbox } from "@headlessui/react";
-import dateFormat, { masks } from "dateformat";
 import { Combobox } from "@headlessui/react";
+import { formatDate } from "@/Components/Utils/formatDate";
+import SecondaryButton from "@/Components/SecondaryButton";
+import PrimaryButton from "@/Components/PrimaryButton";
 
 function StatusBadge({ status }) {
     let color = "bg-gray-300 text-gray-700";
@@ -53,14 +56,16 @@ function UltgBadge({ ultg }) {
 }
 
 export default function Anomali({ anomalis = [], auth = [] }) {
-    const [rowsPerPage, setRowsPerPage] = useState(8);
+    const [rowsPerPage, setRowsPerPage] = useState(10);
     const [searchTerm, setSearchTerm] = useState("");
     const [page, setPage] = useState(1);
-    const [exportMonth, setExportMonth] = useState("all");
+    const [exportMonths, setExportMonths] = useState([]);
     const [monthQuery, setMonthQuery] = useState("");
-    const [exportUltg, setExportUltg] = useState("all");
-    const [exportGardu, setExportGardu] = useState("all");
+    const [exportUltgs, setExportUltgs] = useState([]);
+    const [exportGardus, setExportGardus] = useState([]);
     const [activeTab, setActiveTab] = useState("tabel");
+    const [garduQuery, setGarduQuery] = useState("");
+    const [ultgQuery, setUltgQuery] = useState("");
 
     const monthOptions = useMemo(() => {
         const months = new Set();
@@ -101,35 +106,51 @@ export default function Anomali({ anomalis = [], auth = [] }) {
 
     const ultgOptions = useMemo(() => {
         const set = new Set(anomalis.map((a) => a.ultg).filter(Boolean));
-        return ["all", ...Array.from(set)];
+        return Array.from(set).sort();
     }, [anomalis]);
 
+    const filteredUltgOptions =
+        ultgQuery === ""
+            ? ultgOptions
+            : ultgOptions.filter((u) =>
+                  u.toLowerCase().includes(ultgQuery.toLowerCase())
+              );
+
     const garduOptions = useMemo(() => {
-        if (exportUltg === "all") {
-            const set = new Set(
-                anomalis.map((a) => a.gardu_induk?.name).filter(Boolean)
-            );
-            return ["all", ...Array.from(set)];
-        }
         const set = new Set(
-            anomalis
-                .filter((a) => a.ultg === exportUltg)
-                .map((a) => a.gardu_induk?.name)
-                .filter(Boolean)
+            anomalis.map((a) => a.gardu_induk?.name).filter(Boolean)
         );
-        return ["all", ...Array.from(set)];
-    }, [anomalis, exportUltg]);
+        return Array.from(set).sort();
+    }, [anomalis]);
+
+    // Filter garduOptions sesuai query pencarian
+    const filteredGarduOptions = useMemo(() => {
+        if (!garduQuery) return garduOptions;
+        return garduOptions.filter((g) =>
+            g.toLowerCase().includes(garduQuery.toLowerCase())
+        );
+    }, [garduOptions, garduQuery]);
 
     useEffect(() => {
         setMonthQuery("");
-    }, [exportMonth]);
+    }, [exportMonths]);
 
     const handleExport = () => {
-        let url = route("dashboard.anomali.export", {
-            month: exportMonth,
-            ultg: exportUltg,
-            gardu: exportGardu,
-        });
+        const params = new URLSearchParams();
+
+        if (exportMonths.length > 0) {
+            params.append("months", exportMonths.join(","));
+        }
+
+        if (exportUltgs.length > 0) {
+            params.append("ultgs", exportUltgs.join(","));
+        }
+
+        if (exportGardus.length > 0) {
+            params.append("gardus", exportGardus.join(","));
+        }
+
+        let url = route("dashboard.anomali.export") + "?" + params.toString();
         window.location.href = url;
     };
 
@@ -177,12 +198,33 @@ export default function Anomali({ anomalis = [], auth = [] }) {
 
     const totalRows = filteredAnomalis.length;
     const totalPages = Math.max(1, Math.ceil(totalRows / rowsPerPage));
+
     const paginatedData = useMemo(() => {
         const start = (page - 1) * rowsPerPage;
         return filteredAnomalis.slice(start, start + rowsPerPage);
     }, [filteredAnomalis, page, rowsPerPage]);
 
-    console.log(auth);
+    const paginatedDataReview = useMemo(() => {
+        const start = (page - 1) * rowsPerPage;
+        return filteredAnomalis
+            .filter(
+                (a) =>
+                    a.status &&
+                    a.status.toLowerCase() === "new" &&
+                    a.ultg &&
+                    a.ultg.trim().toLowerCase() ===
+                        (auth.user.wilayah || "").trim().toLowerCase()
+            )
+            .slice(start, start + rowsPerPage);
+    }, [filteredAnomalis, page, rowsPerPage]);
+
+    const totalRowsReview = filteredAnomalis.filter(
+        (a) => a.status && a.status.toLowerCase() === "new"
+    ).length;
+    const totalPagesReview = Math.max(
+        1,
+        Math.ceil(totalRowsReview / rowsPerPage)
+    );
 
     const handlePrev = () => setPage((p) => Math.max(1, p - 1));
     const handleNext = () => setPage((p) => Math.min(totalPages, p + 1));
@@ -191,7 +233,7 @@ export default function Anomali({ anomalis = [], auth = [] }) {
         <>
             <Head title="Anomali" />
             <DashboardLayout>
-                <div className="py-6 w-full mx-auto px-4 sm:px-6 lg:px-8 bg-gray-50">
+                <div className="w-full mx-auto">
                     <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-0 overflow-hidden">
                         {/* Tabs */}
                         <div className="flex border-b border-gray-200 bg-gray-50">
@@ -206,17 +248,22 @@ export default function Anomali({ anomalis = [], auth = [] }) {
                             >
                                 Tabel Anomali
                             </button>
-                            <button
-                                className={`px-6 py-3 text-sm font-semibold focus:outline-none transition-colors border-b-2 ${
-                                    activeTab === "approval"
-                                        ? "border-blue-600 text-blue-700 bg-white"
-                                        : "border-transparent text-gray-500 hover:text-blue-600 hover:bg-gray-100"
-                                }`}
-                                onClick={() => setActiveTab("approval")}
-                                type="button"
-                            >
-                                Approval Anomali
-                            </button>
+                            {auth.user.jabatan &&
+                            auth.user.jabatan.toLowerCase() === "multg" ? (
+                                <button
+                                    className={`px-6 py-3 text-sm font-semibold focus:outline-none transition-colors border-b-2 ${
+                                        activeTab === "approval"
+                                            ? "border-blue-600 text-blue-700 bg-white"
+                                            : "border-transparent text-gray-500 hover:text-blue-600 hover:bg-gray-100"
+                                    }`}
+                                    onClick={() => setActiveTab("approval")}
+                                    type="button"
+                                >
+                                    Review Anomali
+                                </button>
+                            ) : (
+                                ""
+                            )}
                         </div>
                         {/* Tab Content */}
                         {activeTab === "tabel" ? (
@@ -246,294 +293,479 @@ export default function Anomali({ anomalis = [], auth = [] }) {
                                             href={route(
                                                 "dashboard.anomali.create"
                                             )}
-                                            className="w-full md:w-auto bg-blue-600 text-white px-4 sm:px-5 py-2 rounded-md shadow-sm hover:bg-blue-700 font-semibold flex items-center justify-center gap-2 transition-colors text-sm sm:text-base"
                                         >
-                                            <FaPlus className="text-base sm:text-lg" />
-                                            <span>Tambah Anomali</span>
+                                            <PrimaryButton className="flex gap-2">
+                                                <FaPlusCircle />
+                                                Buat Anomali
+                                            </PrimaryButton>
                                         </Link>
                                     </div>
                                 </div>
                                 <div className="px-2 md:px-6 pb-6 pt-4">
                                     <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-4">
-                                        <div className="flex flex-col sm:flex-row gap-2 items-stretch sm:items-center">
-                                            <div className="flex items-center bg-white border border-gray-200 rounded-md px-3 py-2 shadow-sm gap-2">
-                                                <span className="text-gray-700 font-medium text-sm hidden sm:inline">
-                                                    Export:
-                                                </span>
-                                                <Combobox
-                                                    value={exportUltg}
-                                                    onChange={(val) => {
-                                                        setExportUltg(val);
-                                                        setExportGardu("all");
-                                                    }}
-                                                >
-                                                    <div className="relative w-40">
-                                                        <Combobox.Input
-                                                            className="border-gray-300 rounded px-2 py-1 text-sm w-full focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                                            displayValue={(
-                                                                val
-                                                            ) => {
-                                                                if (
-                                                                    !val ||
-                                                                    val ===
-                                                                        "all"
-                                                                )
-                                                                    return "Semua ULTG";
-                                                                return val;
-                                                            }}
-                                                            onChange={() => {}}
-                                                            placeholder="Pilih ULTG..."
-                                                        />
-                                                        <Combobox.Options className="absolute z-20 mt-1 max-h-60 w-full overflow-auto rounded bg-white py-1 text-base shadow-lg ring-1 ring-black/5 focus:outline-none sm:text-sm">
-                                                            <Combobox.Option
-                                                                value="all"
-                                                                className={({
-                                                                    active,
-                                                                }) =>
-                                                                    `cursor-pointer select-none py-2 px-4 ${
-                                                                        active
-                                                                            ? "bg-blue-50 text-blue-900"
-                                                                            : "text-gray-900"
-                                                                    }`
-                                                                }
-                                                            >
-                                                                Semua ULTG
-                                                            </Combobox.Option>
-                                                            {ultgOptions
-                                                                .filter(
-                                                                    (u) =>
-                                                                        u !==
-                                                                        "all"
-                                                                )
-                                                                .map((u) => (
-                                                                    <Combobox.Option
-                                                                        key={u}
-                                                                        value={
-                                                                            u
-                                                                        }
-                                                                        className={({
-                                                                            active,
-                                                                        }) =>
-                                                                            `cursor-pointer select-none py-2 px-4 ${
-                                                                                active
-                                                                                    ? "bg-blue-50 text-blue-900"
-                                                                                    : "text-gray-900"
-                                                                            }`
-                                                                        }
-                                                                    >
-                                                                        {u}
-                                                                    </Combobox.Option>
-                                                                ))}
-                                                        </Combobox.Options>
-                                                    </div>
-                                                </Combobox>
-                                                <Combobox
-                                                    value={exportGardu}
-                                                    onChange={setExportGardu}
-                                                >
-                                                    <div className="relative w-48">
-                                                        <Combobox.Input
-                                                            className="border-gray-300 rounded px-2 py-1 text-sm w-full focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                                            displayValue={(
-                                                                val
-                                                            ) => {
-                                                                if (
-                                                                    !val ||
-                                                                    val ===
-                                                                        "all"
-                                                                )
-                                                                    return "Semua Gardu Induk";
-                                                                return val;
-                                                            }}
-                                                            onChange={() => {}}
-                                                            placeholder="Pilih Gardu Induk..."
-                                                        />
-                                                        <Combobox.Options className="absolute z-20 mt-1 max-h-60 w-full overflow-auto rounded bg-white py-1 text-base shadow-lg ring-1 ring-black/5 focus:outline-none sm:text-sm">
-                                                            <Combobox.Option
-                                                                value="all"
-                                                                className={({
-                                                                    active,
-                                                                }) =>
-                                                                    `cursor-pointer select-none py-2 px-4 ${
-                                                                        active
-                                                                            ? "bg-blue-50 text-blue-900"
-                                                                            : "text-gray-900"
-                                                                    }`
-                                                                }
-                                                            >
-                                                                Semua Gardu
-                                                                Induk
-                                                            </Combobox.Option>
-                                                            {garduOptions
-                                                                .filter(
-                                                                    (g) =>
-                                                                        g !==
-                                                                        "all"
-                                                                )
-                                                                .map((g) => (
-                                                                    <Combobox.Option
-                                                                        key={g}
-                                                                        value={
-                                                                            g
-                                                                        }
-                                                                        className={({
-                                                                            active,
-                                                                        }) =>
-                                                                            `cursor-pointer select-none py-2 px-4 ${
-                                                                                active
-                                                                                    ? "bg-blue-50 text-blue-900"
-                                                                                    : "text-gray-900"
-                                                                            }`
-                                                                        }
-                                                                    >
-                                                                        {g}
-                                                                    </Combobox.Option>
-                                                                ))}
-                                                        </Combobox.Options>
-                                                    </div>
-                                                </Combobox>
-                                                <Combobox
-                                                    value={exportMonth}
-                                                    onChange={setExportMonth}
-                                                >
-                                                    <div className="relative w-40">
-                                                        <Combobox.Input
-                                                            className="border-gray-300 rounded px-2 py-1 text-sm w-full focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                                            displayValue={(
-                                                                val
-                                                            ) => {
-                                                                if (
-                                                                    !val ||
-                                                                    val ===
-                                                                        "all"
-                                                                )
-                                                                    return "Semua Data";
-                                                                const [y, m] =
-                                                                    val.split(
-                                                                        "-"
-                                                                    );
-                                                                const bulan = [
-                                                                    "Januari",
-                                                                    "Februari",
-                                                                    "Maret",
-                                                                    "April",
-                                                                    "Mei",
-                                                                    "Juni",
-                                                                    "Juli",
-                                                                    "Agustus",
-                                                                    "September",
-                                                                    "Oktober",
-                                                                    "November",
-                                                                    "Desember",
-                                                                ][
-                                                                    parseInt(
-                                                                        m,
-                                                                        10
-                                                                    ) - 1
-                                                                ];
-                                                                return `${bulan} ${y}`;
-                                                            }}
-                                                            onChange={(e) =>
-                                                                setMonthQuery(
-                                                                    e.target
-                                                                        .value
-                                                                )
+                                        <div className="flex flex-col xl:flex-row gap-6 items-stretch xl:items-start">
+                                            {/* Export Section */}
+                                            <div className="bg-white border border-gray-200 rounded-lg p-5 shadow flex-1">
+                                                {/* Filter Grid */}
+                                                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-2">
+                                                    {/* Multiple ULTG Selection */}
+                                                    <div className="relative w-full">
+                                                        <Combobox
+                                                            value={exportUltgs}
+                                                            onChange={
+                                                                setExportUltgs
                                                             }
-                                                            placeholder="Pilih bulan..."
-                                                        />
-                                                        <Combobox.Options className="absolute z-20 mt-1 max-h-60 w-full overflow-auto rounded bg-white py-1 text-base shadow-lg ring-1 ring-black/5 focus:outline-none sm:text-sm">
-                                                            <Combobox.Option
-                                                                value="all"
-                                                                className={({
-                                                                    active,
-                                                                }) =>
-                                                                    `cursor-pointer select-none py-2 px-4 ${
-                                                                        active
-                                                                            ? "bg-blue-50 text-blue-900"
-                                                                            : "text-gray-900"
-                                                                    }`
-                                                                }
-                                                            >
-                                                                Semua Data
-                                                            </Combobox.Option>
-                                                            {filteredMonthOptions.length ===
-                                                                0 && (
-                                                                <div className="py-2 px-4 text-gray-400">
-                                                                    Tidak ada
-                                                                    data bulan
-                                                                </div>
-                                                            )}
-                                                            {filteredMonthOptions.map(
-                                                                (m) => {
-                                                                    const [
-                                                                        y,
-                                                                        mo,
-                                                                    ] =
-                                                                        m.split(
-                                                                            "-"
-                                                                        );
-                                                                    const bulan =
-                                                                        [
-                                                                            "Januari",
-                                                                            "Februari",
-                                                                            "Maret",
-                                                                            "April",
-                                                                            "Mei",
-                                                                            "Juni",
-                                                                            "Juli",
-                                                                            "Agustus",
-                                                                            "September",
-                                                                            "Oktober",
-                                                                            "November",
-                                                                            "Desember",
-                                                                        ][
-                                                                            parseInt(
-                                                                                mo,
-                                                                                10
-                                                                            ) -
-                                                                                1
-                                                                        ];
-                                                                    return (
-                                                                        <Combobox.Option
+                                                            multiple
+                                                        >
+                                                            <div className="relative">
+                                                                <Combobox.Input
+                                                                    className="border border-gray-300 rounded-md px-3 py-2 w-full focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-sm bg-white"
+                                                                    onChange={(
+                                                                        e
+                                                                    ) =>
+                                                                        setUltgQuery(
+                                                                            e
+                                                                                .target
+                                                                                .value
+                                                                        )
+                                                                    }
+                                                                    displayValue={() =>
+                                                                        ""
+                                                                    }
+                                                                    placeholder="Pilih ULTG..."
+                                                                    autoComplete="off"
+                                                                />
+                                                                <Combobox.Options className="absolute z-10 mt-1 w-full bg-white border border-gray-200 rounded-md shadow max-h-56 overflow-auto">
+                                                                    {filteredUltgOptions.length ===
+                                                                    0 ? (
+                                                                        <div className="px-4 py-2 text-gray-400 text-sm">
+                                                                            Tidak
+                                                                            ada
+                                                                            data
+                                                                        </div>
+                                                                    ) : (
+                                                                        filteredUltgOptions.map(
+                                                                            (
+                                                                                o
+                                                                            ) => (
+                                                                                <Combobox.Option
+                                                                                    key={
+                                                                                        o
+                                                                                    }
+                                                                                    value={
+                                                                                        o
+                                                                                    }
+                                                                                    className={({
+                                                                                        active,
+                                                                                        selected,
+                                                                                    }) =>
+                                                                                        `cursor-pointer text-sm select-none relative px-4 py-2 ${
+                                                                                            active
+                                                                                                ? "bg-blue-50 text-blue-800"
+                                                                                                : "text-gray-900"
+                                                                                        } ${
+                                                                                            selected
+                                                                                                ? "font-semibold bg-blue-100"
+                                                                                                : ""
+                                                                                        }`
+                                                                                    }
+                                                                                >
+                                                                                    {({
+                                                                                        selected,
+                                                                                    }) => (
+                                                                                        <span className="flex items-center">
+                                                                                            {
+                                                                                                o
+                                                                                            }
+                                                                                            {selected && (
+                                                                                                <span className="ml-auto flex items-center text-blue-600">
+                                                                                                    <FaCheck
+                                                                                                        className="h-4 w-4"
+                                                                                                        aria-hidden="true"
+                                                                                                    />
+                                                                                                </span>
+                                                                                            )}
+                                                                                        </span>
+                                                                                    )}
+                                                                                </Combobox.Option>
+                                                                            )
+                                                                        )
+                                                                    )}
+                                                                </Combobox.Options>
+                                                            </div>
+                                                            <div className="flex flex-wrap gap-1 mt-1">
+                                                                {exportUltgs.map(
+                                                                    (id) => (
+                                                                        <span
+                                                                            key={
+                                                                                id
+                                                                            }
+                                                                            className="bg-blue-50 text-blue-700 px-2 py-1 mb-2 rounded-full text-xs font-medium border border-blue-200"
+                                                                        >
+                                                                            {id}
+                                                                        </span>
+                                                                    )
+                                                                )}
+                                                            </div>
+                                                        </Combobox>
+                                                    </div>
+
+                                                    {/* Multiple Gardu Selection */}
+                                                    <div className="relative w-full">
+                                                        <Combobox
+                                                            value={exportGardus}
+                                                            onChange={
+                                                                setExportGardus
+                                                            }
+                                                            multiple
+                                                        >
+                                                            <div className="relative">
+                                                                <Combobox.Input
+                                                                    className="border border-gray-300 rounded-md px-3 py-2 w-full focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-sm bg-white"
+                                                                    onChange={(
+                                                                        e
+                                                                    ) =>
+                                                                        setGarduQuery(
+                                                                            e
+                                                                                .target
+                                                                                .value
+                                                                        )
+                                                                    }
+                                                                    displayValue={() =>
+                                                                        ""
+                                                                    }
+                                                                    placeholder="Pilih Gardu Induk..."
+                                                                    autoComplete="off"
+                                                                />
+                                                                <Combobox.Options className="absolute z-10 mt-1 w-full bg-white border border-gray-200 rounded-md shadow max-h-56 overflow-auto">
+                                                                    {filteredGarduOptions.length ===
+                                                                    0 ? (
+                                                                        <div className="px-4 py-2 text-gray-400 text-sm">
+                                                                            Tidak
+                                                                            ada
+                                                                            data
+                                                                        </div>
+                                                                    ) : (
+                                                                        filteredGarduOptions.map(
+                                                                            (
+                                                                                g
+                                                                            ) => (
+                                                                                <Combobox.Option
+                                                                                    key={
+                                                                                        g
+                                                                                    }
+                                                                                    value={
+                                                                                        g
+                                                                                    }
+                                                                                    className={({
+                                                                                        active,
+                                                                                        selected,
+                                                                                    }) =>
+                                                                                        `cursor-pointer text-sm select-none relative px-4 py-2 ${
+                                                                                            active
+                                                                                                ? "bg-blue-50 text-blue-800"
+                                                                                                : "text-gray-900"
+                                                                                        } ${
+                                                                                            selected
+                                                                                                ? "font-semibold bg-blue-100"
+                                                                                                : ""
+                                                                                        }`
+                                                                                    }
+                                                                                >
+                                                                                    {({
+                                                                                        selected,
+                                                                                    }) => (
+                                                                                        <span className="flex items-center">
+                                                                                            {
+                                                                                                g
+                                                                                            }
+                                                                                            {selected && (
+                                                                                                <span className="ml-auto flex items-center text-blue-600">
+                                                                                                    <FaCheck
+                                                                                                        className="h-4 w-4"
+                                                                                                        aria-hidden="true"
+                                                                                                    />
+                                                                                                </span>
+                                                                                            )}
+                                                                                        </span>
+                                                                                    )}
+                                                                                </Combobox.Option>
+                                                                            )
+                                                                        )
+                                                                    )}
+                                                                </Combobox.Options>
+                                                            </div>
+                                                            <div className="flex flex-wrap gap-1 mt-1">
+                                                                {exportGardus.map(
+                                                                    (g) => (
+                                                                        <span
+                                                                            key={
+                                                                                g
+                                                                            }
+                                                                            className="bg-blue-50 text-blue-700 px-2 py-1 mb-2 rounded-full text-xs font-medium border border-blue-200"
+                                                                        >
+                                                                            {g}
+                                                                        </span>
+                                                                    )
+                                                                )}
+                                                            </div>
+                                                        </Combobox>
+                                                    </div>
+
+                                                    {/* Multiple Month Selection */}
+                                                    <div className="relative w-full">
+                                                        <Combobox
+                                                            value={exportMonths}
+                                                            onChange={
+                                                                setExportMonths
+                                                            }
+                                                            multiple
+                                                        >
+                                                            <div className="relative">
+                                                                <Combobox.Input
+                                                                    className="border border-gray-300 rounded-md px-3 py-2 w-full focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-sm bg-white"
+                                                                    onChange={(
+                                                                        e
+                                                                    ) =>
+                                                                        setMonthQuery(
+                                                                            e
+                                                                                .target
+                                                                                .value
+                                                                        )
+                                                                    }
+                                                                    displayValue={() =>
+                                                                        ""
+                                                                    }
+                                                                    placeholder="Pilih Bulan..."
+                                                                    autoComplete="off"
+                                                                />
+                                                                <Combobox.Options className="absolute z-10 mt-1 w-full bg-white border border-gray-200 rounded-md shadow max-h-56 overflow-auto">
+                                                                    {filteredMonthOptions.length ===
+                                                                    0 ? (
+                                                                        <div className="px-4 py-2 text-gray-400 text-sm">
+                                                                            Tidak
+                                                                            ada
+                                                                            data
+                                                                        </div>
+                                                                    ) : (
+                                                                        filteredMonthOptions.map(
+                                                                            (
+                                                                                m
+                                                                            ) => (
+                                                                                <Combobox.Option
+                                                                                    key={
+                                                                                        m
+                                                                                    }
+                                                                                    value={
+                                                                                        m
+                                                                                    }
+                                                                                    className={({
+                                                                                        active,
+                                                                                        selected,
+                                                                                    }) =>
+                                                                                        `cursor-pointer text-sm select-none relative px-4 py-2 ${
+                                                                                            active
+                                                                                                ? "bg-blue-50 text-blue-800"
+                                                                                                : "text-gray-900"
+                                                                                        } ${
+                                                                                            selected
+                                                                                                ? "font-semibold bg-blue-100"
+                                                                                                : ""
+                                                                                        }`
+                                                                                    }
+                                                                                >
+                                                                                    {({
+                                                                                        selected,
+                                                                                    }) => (
+                                                                                        <span className="flex items-center">
+                                                                                            {(() => {
+                                                                                                if (
+                                                                                                    m ===
+                                                                                                    "all"
+                                                                                                )
+                                                                                                    return "Semua Bulan";
+                                                                                                const [
+                                                                                                    y,
+                                                                                                    mo,
+                                                                                                ] =
+                                                                                                    m.split(
+                                                                                                        "-"
+                                                                                                    );
+                                                                                                const bulan =
+                                                                                                    [
+                                                                                                        "Januari",
+                                                                                                        "Februari",
+                                                                                                        "Maret",
+                                                                                                        "April",
+                                                                                                        "Mei",
+                                                                                                        "Juni",
+                                                                                                        "Juli",
+                                                                                                        "Agustus",
+                                                                                                        "September",
+                                                                                                        "Oktober",
+                                                                                                        "November",
+                                                                                                        "Desember",
+                                                                                                    ][
+                                                                                                        parseInt(
+                                                                                                            mo,
+                                                                                                            10
+                                                                                                        ) -
+                                                                                                            1
+                                                                                                    ];
+                                                                                                return `${bulan} ${y}`;
+                                                                                            })()}
+                                                                                            {selected && (
+                                                                                                <span className="ml-auto flex items-center text-blue-600">
+                                                                                                    <FaCheck
+                                                                                                        className="h-4 w-4"
+                                                                                                        aria-hidden="true"
+                                                                                                    />
+                                                                                                </span>
+                                                                                            )}
+                                                                                        </span>
+                                                                                    )}
+                                                                                </Combobox.Option>
+                                                                            )
+                                                                        )
+                                                                    )}
+                                                                </Combobox.Options>
+                                                            </div>
+                                                            <div className="flex flex-wrap gap-1 mt-1">
+                                                                {exportMonths.map(
+                                                                    (m) => (
+                                                                        <span
                                                                             key={
                                                                                 m
                                                                             }
-                                                                            value={
-                                                                                m
-                                                                            }
-                                                                            className={({
-                                                                                active,
-                                                                            }) =>
-                                                                                `cursor-pointer select-none py-2 px-4 ${
-                                                                                    active
-                                                                                        ? "bg-blue-50 text-blue-900"
-                                                                                        : "text-gray-900"
-                                                                                }`
-                                                                            }
+                                                                            className="bg-green-50 text-green-700 px-2 py-1 mb-2 rounded-full text-xs font-medium border border-green-200"
                                                                         >
-                                                                            {`${bulan} ${y}`}
-                                                                        </Combobox.Option>
-                                                                    );
-                                                                }
-                                                            )}
-                                                        </Combobox.Options>
+                                                                            {(() => {
+                                                                                if (
+                                                                                    m ===
+                                                                                    "all"
+                                                                                )
+                                                                                    return "Semua Bulan";
+                                                                                const [
+                                                                                    y,
+                                                                                    mo,
+                                                                                ] =
+                                                                                    m.split(
+                                                                                        "-"
+                                                                                    );
+                                                                                const bulan =
+                                                                                    [
+                                                                                        "Januari",
+                                                                                        "Februari",
+                                                                                        "Maret",
+                                                                                        "April",
+                                                                                        "Mei",
+                                                                                        "Juni",
+                                                                                        "Juli",
+                                                                                        "Agustus",
+                                                                                        "September",
+                                                                                        "Oktober",
+                                                                                        "November",
+                                                                                        "Desember",
+                                                                                    ][
+                                                                                        parseInt(
+                                                                                            mo,
+                                                                                            10
+                                                                                        ) -
+                                                                                            1
+                                                                                    ];
+                                                                                return `${bulan} ${y}`;
+                                                                            })()}
+                                                                        </span>
+                                                                    )
+                                                                )}
+                                                            </div>
+                                                        </Combobox>
                                                     </div>
-                                                </Combobox>
-                                                <button
-                                                    onClick={handleExport}
-                                                    type="button"
-                                                    className="bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded-md font-semibold text-sm flex items-center gap-2 shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-green-500"
-                                                    title="Export ke Excel"
-                                                >
-                                                    <FaFileExcel className="text-lg" />
-                                                    <span className="sm:inline hidden">
-                                                        Export ke Excel
-                                                    </span>
-                                                    <span className="inline sm:hidden">
-                                                        Export
-                                                    </span>
-                                                </button>
+
+                                                    <div className="flex flex-col gap-2">
+                                                        <button
+                                                            onClick={
+                                                                handleExport
+                                                            }
+                                                            type="button"
+                                                            disabled={
+                                                                exportUltgs.length ===
+                                                                    0 &&
+                                                                exportGardus.length ===
+                                                                    0 &&
+                                                                exportMonths.length ===
+                                                                    0
+                                                            }
+                                                            className={`px-5 py-2 rounded-md font-semibold text-sm flex items-center justify-center gap-2 shadow transition-all duration-150 focus:outline-none focus:ring-2 ${
+                                                                exportUltgs.length ===
+                                                                    0 &&
+                                                                exportGardus.length ===
+                                                                    0 &&
+                                                                exportMonths.length ===
+                                                                    0
+                                                                    ? "bg-gray-100 border border-gray-200 text-gray-400 cursor-not-allowed"
+                                                                    : "bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white focus:ring-green-500"
+                                                            }`}
+                                                            title="Export ke Excel"
+                                                        >
+                                                            <FaFileExcel className="text-lg" />
+                                                            <span className="font-medium">
+                                                                {exportUltgs.length ===
+                                                                    0 &&
+                                                                exportGardus.length ===
+                                                                    0 &&
+                                                                exportMonths.length ===
+                                                                    0
+                                                                    ? "Pilih Filter"
+                                                                    : "Export ke Excel"}
+                                                            </span>
+                                                        </button>
+
+                                                        {(exportUltgs.length >
+                                                            0 ||
+                                                            exportGardus.length >
+                                                                0 ||
+                                                            exportMonths.length >
+                                                                0) && (
+                                                            <div className="flex flex-wrap gap-2 mt-1">
+                                                                {exportUltgs.length >
+                                                                    0 && (
+                                                                    <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200">
+                                                                        <div className="w-2 h-2 bg-blue-500 rounded-full mr-2"></div>
+                                                                        {
+                                                                            exportUltgs.length
+                                                                        }{" "}
+                                                                        ULTG
+                                                                    </span>
+                                                                )}
+                                                                {exportGardus.length >
+                                                                    0 && (
+                                                                    <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-50 text-green-700 border border-green-200">
+                                                                        <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
+                                                                        {
+                                                                            exportGardus.length
+                                                                        }{" "}
+                                                                        Gardu
+                                                                    </span>
+                                                                )}
+                                                                {exportMonths.length >
+                                                                    0 && (
+                                                                    <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-purple-50 text-purple-700 border border-purple-200">
+                                                                        <div className="w-2 h-2 bg-purple-500 rounded-full mr-2"></div>
+                                                                        {
+                                                                            exportMonths.length
+                                                                        }{" "}
+                                                                        Bulan
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </div>
+
+                                                {/* Export Button & Filter Summary */}
                                             </div>
+
                                             <div className="relative">
                                                 <input
                                                     type="text"
@@ -576,8 +808,8 @@ export default function Anomali({ anomalis = [], auth = [] }) {
                                                     <Listbox.Button className="border-gray-300 rounded px-2 py-1 text-sm w-full text-left bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                                                         {rowsPerPage}
                                                     </Listbox.Button>
-                                                    <Listbox.Options className="absolute left-0 mt-1 w-full bg-white border border-gray-200 rounded shadow-lg z-20 overflow-hidden">
-                                                        {[8, 16, 32].map(
+                                                    <Listbox.Options className="absolute left-0 mt-1 w-full bg-white border border-gray-200 rounded shadow-lg z-50 overflow-hidden">
+                                                        {[10, 20, 50].map(
                                                             (option) => (
                                                                 <Listbox.Option
                                                                     key={option}
@@ -633,11 +865,12 @@ export default function Anomali({ anomalis = [], auth = [] }) {
                                             </span>
                                         </div>
                                     </div>
+
                                     <ErrorBoundary>
                                         <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white">
-                                            <div className="h-[470px] overflow-y-auto custom-scrollbar">
+                                            <div className="h-[500px] overflow-y-auto custom-scrollbar">
                                                 <table className="min-w-[900px] w-full">
-                                                    <thead className="bg-gray-100 text-gray-600 sticky top-0 z-10">
+                                                    <thead className="bg-gray-100 text-gray-600 sticky top-0">
                                                         <tr>
                                                             <th className="px-3 py-3 text-left text-xs sm:text-sm font-semibold whitespace-nowrap">
                                                                 No
@@ -668,7 +901,7 @@ export default function Anomali({ anomalis = [], auth = [] }) {
                                                                 Kategori
                                                             </th>
                                                             <th className="px-3 py-3 text-left text-xs sm:text-sm font-semibold">
-                                                                Peralatan
+                                                                Nama Alat
                                                             </th>
                                                             <th className="px-3 py-3 text-left text-xs sm:text-sm font-semibold">
                                                                 Penempatan Alat
@@ -717,7 +950,7 @@ export default function Anomali({ anomalis = [], auth = [] }) {
                                                                                 1}
                                                                         </td>
                                                                         <td
-                                                                            className="px-3 py-3 text-left text-xs sm:text-sm text-gray-800"
+                                                                            className="px-3 py-3 text-left text-xs sm:text-sm text-gray-800 truncate max-w-[8rem] sm:max-w-[12rem]"
                                                                             title={
                                                                                 anomali.judul
                                                                             }
@@ -784,7 +1017,7 @@ export default function Anomali({ anomalis = [], auth = [] }) {
                                                                                 "-"}
                                                                         </td>
                                                                         <td
-                                                                            className="px-3 py-3 text-left text-xs sm:text-sm text-gray-700"
+                                                                            className="px-3 py-3 text-left text-xs sm:text-sm text-gray-700 truncate max-w-[8rem] sm:max-w-[12rem]"
                                                                             title={
                                                                                 anomali.peralatan
                                                                             }
@@ -794,7 +1027,7 @@ export default function Anomali({ anomalis = [], auth = [] }) {
                                                                             }
                                                                         </td>
                                                                         <td
-                                                                            className="px-3 py-3 text-left text-xs sm:text-sm text-gray-700"
+                                                                            className="px-3 py-3 text-left text-xs sm:text-sm text-gray-700 truncate max-w-[8rem] sm:max-w-[12rem]"
                                                                             title={
                                                                                 anomali.penempatan_alat
                                                                             }
@@ -804,9 +1037,8 @@ export default function Anomali({ anomalis = [], auth = [] }) {
                                                                             }
                                                                         </td>
                                                                         <td className="px-3 py-3 text-left text-xs sm:text-sm text-gray-600 whitespace-nowrap">
-                                                                            {dateFormat(
-                                                                                anomali.tanggal_kejadian,
-                                                                                "dd mmm yyyy"
+                                                                            {formatDate(
+                                                                                anomali.tanggal_kejadian
                                                                             )}
                                                                         </td>
                                                                         <td className="px-3 py-3 text-left text-xs sm:text-sm whitespace-nowrap">
@@ -817,9 +1049,16 @@ export default function Anomali({ anomalis = [], auth = [] }) {
                                                                             />
                                                                         </td>
                                                                         <td className="px-3 py-3 text-left text-xs sm:text-sm whitespace-nowrap">
-                                                                            <button className="bg-white border border-gray-300 hover:bg-gray-100 text-gray-700 px-3 py-1 rounded-md shadow-sm text-xs font-bold transition-colors">
-                                                                                Detail
-                                                                            </button>
+                                                                            <Link
+                                                                                href={route(
+                                                                                    "dashboard.anomali.show",
+                                                                                    anomali.judul
+                                                                                )}
+                                                                            >
+                                                                                <SecondaryButton>
+                                                                                    Detail
+                                                                                </SecondaryButton>
+                                                                            </Link>
                                                                         </td>
                                                                     </tr>
                                                                 )
@@ -883,17 +1122,18 @@ export default function Anomali({ anomalis = [], auth = [] }) {
                                     </div>
                                 </div>
                             </>
-                        ) : (
+                        ) : auth.user.jabatan &&
+                          auth.user.jabatan.toLowerCase() === "multg" ? (
                             <>
-                                <div className="px-4 sm:px-6 pt-6 pb-4 border-b border-gray-200 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                                <div className="px-4 sm:px-6 pt-6 pb-4 border-b border-gray-200 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                                     <div className="w-full md:w-2/3">
                                         <h2 className="text-xl font-bold text-gray-800 mb-1 flex items-center gap-2">
-                                            <FaClipboard className="text-amber-500 text-xl" />
+                                            <FaClipboard className="text-amber-500 text-2xl" />
                                             <span>
                                                 Halaman Approval Anomali
                                             </span>
                                         </h2>
-                                        <p className="text-gray-600 text-sm mb-2">
+                                        <p className="text-gray-600 text-sm mb-0">
                                             Halaman ini memungkinkan Anda untuk
                                             melihat dan mengelola data anomali
                                             yang menunggu persetujuan. Anda
@@ -903,11 +1143,77 @@ export default function Anomali({ anomalis = [], auth = [] }) {
                                             secara efisien.
                                         </p>
                                     </div>
+                                    <div className="w-full md:w-auto flex items-center gap-2 bg-white border border-gray-200 rounded-md px-3 py-2 shadow-sm mt-2 md:mt-0">
+                                        <label className="text-gray-600 text-sm font-medium mr-2 whitespace-nowrap">
+                                            Tampil
+                                        </label>
+                                        <Listbox
+                                            value={rowsPerPage}
+                                            onChange={handleRowsPerPageChange}
+                                        >
+                                            <div className="relative w-20">
+                                                <Listbox.Button className="border border-gray-300 rounded px-2 py-1 text-sm w-full text-left bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+                                                    {rowsPerPage}
+                                                </Listbox.Button>
+                                                <Listbox.Options className="absolute left-0 mt-1 w-full bg-white border border-gray-200 rounded shadow-lg z-20 overflow-hidden">
+                                                    {[10, 20, 50].map(
+                                                        (option) => (
+                                                            <Listbox.Option
+                                                                key={option}
+                                                                value={option}
+                                                                className={({
+                                                                    active,
+                                                                    selected,
+                                                                }) =>
+                                                                    `relative cursor-pointer select-none px-2 py-1 text-sm transition-colors ${
+                                                                        active
+                                                                            ? "bg-blue-50 text-blue-800"
+                                                                            : selected
+                                                                            ? "bg-gray-100 text-gray-900"
+                                                                            : "text-gray-700"
+                                                                    }`
+                                                                }
+                                                            >
+                                                                {({
+                                                                    selected,
+                                                                }) => (
+                                                                    <div className="flex items-center">
+                                                                        <span
+                                                                            className={`block truncate ${
+                                                                                selected
+                                                                                    ? "font-semibold"
+                                                                                    : "font-normal"
+                                                                            }`}
+                                                                        >
+                                                                            {
+                                                                                option
+                                                                            }
+                                                                        </span>
+                                                                        {selected && (
+                                                                            <span className="ml-auto flex items-center text-blue-600">
+                                                                                <FaCheck
+                                                                                    className="h-4 w-4"
+                                                                                    aria-hidden="true"
+                                                                                />
+                                                                            </span>
+                                                                        )}
+                                                                    </div>
+                                                                )}
+                                                            </Listbox.Option>
+                                                        )
+                                                    )}
+                                                </Listbox.Options>
+                                            </div>
+                                        </Listbox>
+                                        <span className="text-gray-500 text-xs ml-2 whitespace-nowrap">
+                                            / halaman
+                                        </span>
+                                    </div>
                                 </div>
                                 <div className="px-2 md:px-6 pb-6 pt-4">
                                     <ErrorBoundary>
                                         <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white">
-                                            <div className="max-h-[500px] min-h-[320px] overflow-y-auto custom-scrollbar">
+                                            <div className="max-h-[500px] min-h-[340px] overflow-y-auto custom-scrollbar">
                                                 <table className="min-w-[900px] w-full">
                                                     <thead className="bg-gray-100 text-gray-600 sticky top-0 z-10">
                                                         <tr>
@@ -926,7 +1232,6 @@ export default function Anomali({ anomalis = [], auth = [] }) {
                                                             <th className="px-3 py-3 text-left text-xs sm:text-sm font-semibold whitespace-nowrap">
                                                                 Tipe
                                                             </th>
-
                                                             <th className="px-3 py-3 text-left text-xs sm:text-sm font-semibold">
                                                                 Kategori
                                                             </th>
@@ -945,7 +1250,7 @@ export default function Anomali({ anomalis = [], auth = [] }) {
                                                         </tr>
                                                     </thead>
                                                     <tbody className="bg-white divide-y divide-gray-200">
-                                                        {paginatedData.length ===
+                                                        {paginatedDataReview.length ===
                                                         0 ? (
                                                             <tr>
                                                                 <td
@@ -958,7 +1263,7 @@ export default function Anomali({ anomalis = [], auth = [] }) {
                                                                 </td>
                                                             </tr>
                                                         ) : (
-                                                            paginatedData.map(
+                                                            paginatedDataReview.map(
                                                                 (
                                                                     anomali,
                                                                     idx
@@ -1037,9 +1342,8 @@ export default function Anomali({ anomalis = [], auth = [] }) {
                                                                             }
                                                                         </td>
                                                                         <td className="px-3 py-3 text-left text-xs sm:text-sm text-gray-600 whitespace-nowrap">
-                                                                            {dateFormat(
-                                                                                anomali.tanggal_kejadian,
-                                                                                "dd mmm yyyy"
+                                                                            {formatDate(
+                                                                                anomali.tanggal_kejadian
                                                                             )}
                                                                         </td>
                                                                         <td className="px-3 py-3 text-left text-xs sm:text-sm whitespace-nowrap">
@@ -1050,9 +1354,16 @@ export default function Anomali({ anomalis = [], auth = [] }) {
                                                                             />
                                                                         </td>
                                                                         <td className="px-3 py-3 text-left text-xs sm:text-sm whitespace-nowrap">
-                                                                            <button className="bg-white border border-gray-300 hover:bg-gray-100 text-gray-700 px-3 py-1 rounded-md shadow-sm text-xs font-bold transition-colors">
-                                                                                Detail
-                                                                            </button>
+                                                                            <Link
+                                                                                href={route(
+                                                                                    "dashboard.anomali.review",
+                                                                                    anomali.judul
+                                                                                )}
+                                                                            >
+                                                                                <SecondaryButton>
+                                                                                    Review
+                                                                                </SecondaryButton>
+                                                                            </Link>
                                                                         </td>
                                                                     </tr>
                                                                 )
@@ -1071,12 +1382,12 @@ export default function Anomali({ anomalis = [], auth = [] }) {
                                             </span>{" "}
                                             dari{" "}
                                             <span className="font-semibold text-gray-800">
-                                                {totalPages}
+                                                {totalPagesReview}
                                             </span>
                                             <span className="mx-2">|</span>
                                             Total{" "}
                                             <span className="font-semibold text-gray-800">
-                                                {totalRows}
+                                                {totalRowsReview}
                                             </span>{" "}
                                             data
                                         </div>
@@ -1100,10 +1411,12 @@ export default function Anomali({ anomalis = [], auth = [] }) {
                                             </span>
                                             <button
                                                 onClick={handleNext}
-                                                disabled={page === totalPages}
+                                                disabled={
+                                                    page === totalPagesReview
+                                                }
                                                 className={`px-3 py-2 rounded-r-md border border-l-0 text-sm flex items-center gap-1 font-semibold transition-colors
                                                 ${
-                                                    page === totalPages
+                                                    page === totalPagesReview
                                                         ? "bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed"
                                                         : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
                                                 }
@@ -1116,10 +1429,40 @@ export default function Anomali({ anomalis = [], auth = [] }) {
                                     </div>
                                 </div>
                             </>
+                        ) : (
+                            <></>
                         )}
                     </div>
                 </div>
             </DashboardLayout>
         </>
+    );
+}
+function ComboboxMultiple() {
+    const [query, setQuery] = useState("");
+    const filtered =
+        query === ""
+            ? options
+            : options.filter((o) =>
+                  o.name.toLowerCase().includes(query.toLowerCase())
+              );
+    return (
+        <Combobox value={value} onChange={onChange} multiple>
+            <div className="relative">
+                <div className="flex flex-wrap gap-1 mb-1">
+                    {value.map((id) => {
+                        const opt = options.find((o) => o.id === id);
+                        return (
+                            <span
+                                key={id}
+                                className="bg-blue-100 text-blue-700 px-2 py-1 mb-2 transition-all ease-in-out rounded text-xs font-medium"
+                            >
+                                {opt ? opt.name : id}
+                            </span>
+                        );
+                    })}
+                </div>
+            </div>
+        </Combobox>
     );
 }

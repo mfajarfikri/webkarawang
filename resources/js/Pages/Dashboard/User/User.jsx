@@ -6,6 +6,8 @@ import {
     FaFilter,
     FaUserShield,
     FaCheck,
+    FaTrash,
+    FaSync,
 } from "react-icons/fa";
 import {
     Dialog,
@@ -22,6 +24,21 @@ import ErrorBoundary from "@/Components/ErrorBoundary";
 import { Listbox } from "@headlessui/react";
 import { Combobox } from "@headlessui/react";
 import { useSnackbar } from "notistack";
+import SecondaryButton from "@/Components/SecondaryButton";
+import DangerButton from "@/Components/DangerButton";
+import PrimaryButton from "@/Components/PrimaryButton";
+import axios from "axios";
+
+const JABATAN_OPTIONS = [
+    "Master",
+    "MULTG",
+    "TL Hargi",
+    "TL Harjar",
+    "TL Harpro",
+    "TL K3",
+    "TL GI",
+];
+const WILAYAH_OPTIONS = ["UPT Karawang", "ULTG Karawang", "ULTG Purwakarta"];
 
 export default function User() {
     const { enqueueSnackbar } = useSnackbar();
@@ -29,11 +46,11 @@ export default function User() {
     const [roleModalOpen, setRoleModalOpen] = useState(false);
     const [roleModalUser, setRoleModalUser] = useState(null);
     const [roleModalRoles, setRoleModalRoles] = useState([]);
+    const [roleModalJabatan, setRoleModalJabatan] = useState([]);
     const [roleModalCurrent, setRoleModalCurrent] = useState("");
     const [roleModalLoading, setRoleModalLoading] = useState(false);
     const [roleModalSaving, setRoleModalSaving] = useState(false);
     const [roleModalError, setRoleModalError] = useState("");
-    // Tambahkan state untuk Wilayah dan Gardu Induk pada roleModal
     const [roleModalWilayah, setRoleModalWilayah] = useState("");
     const [roleModalGarduIndukIds, setRoleModalGarduIndukIds] = useState([]);
 
@@ -49,49 +66,83 @@ export default function User() {
             setRoleModalCurrent(data.userRoles[0] || "");
             setRoleModalWilayah(user.wilayah || "");
             setRoleModalGarduIndukIds(user.gardu_induk_ids || []);
+            setRoleModalJabatan(user.jabatan || "");
         } catch (e) {
             setRoleModalRoles([]);
             setRoleModalCurrent("");
             setRoleModalError("Gagal memuat data role.");
             setRoleModalWilayah("");
             setRoleModalGarduIndukIds([]);
+            setRoleModalJabatan("");
+            enqueueSnackbar(
+                <span>
+                    <b>Gagal memuat data!</b> Silakan coba lagi atau hubungi
+                    administrator.
+                </span>,
+                {
+                    variant: "error",
+                    autoHideDuration: 5000,
+                }
+            );
         }
         setRoleModalLoading(false);
     };
 
-    const handleRoleModalSave = () => {
+    const handleRoleModalSave = async () => {
         setRoleModalSaving(true);
         setRoleModalError("");
-        router.post(
-            `/dashboard/user/${roleModalUser.id}/role`,
-            {
+        try {
+            const axios = (await import("axios")).default;
+            await axios.post(`/dashboard/user/${roleModalUser.id}/role`, {
                 role: roleModalCurrent,
                 wilayah: roleModalWilayah,
                 gardu_induk_ids: roleModalGarduIndukIds,
-            },
-            {
-                onError: (errors) => {
-                    setRoleModalError(
-                        errors.role ||
-                            errors.wilayah ||
-                            errors.gardu_induk_ids ||
-                            ""
-                    );
-                },
-                onFinish: () => {
-                    setRoleModalSaving(false);
-                    setRoleModalOpen(false);
-                    enqueueSnackbar(
-                        <span>
-                            <b>{roleModalUser.name}</b> Berhasil diubah !
-                        </span>,
-                        {
-                            variant: "success",
-                        }
-                    );
-                },
+                jabatan: roleModalJabatan,
+            });
+            setRoleModalSaving(false);
+            setRoleModalOpen(false);
+
+            enqueueSnackbar(
+                <span>
+                    <b>{roleModalUser.name} berhasil diubah!</b> Data telah
+                    disimpan ke server.
+                </span>,
+                {
+                    variant: "success",
+                    autoHideDuration: 4000,
+                }
+            );
+            router.reload({ only: ["users"] });
+        } catch (error) {
+            if (
+                error.response &&
+                error.response.data &&
+                error.response.data.errors
+            ) {
+                const errors = error.response.data.errors;
+                setRoleModalError(
+                    errors.role?.[0] ||
+                        errors.wilayah?.[0] ||
+                        errors.gardu_induk_ids?.[0] ||
+                        errors.jabatan?.[0] ||
+                        ""
+                );
+            } else {
+                console.error(error);
+                setRoleModalError("Terjadi kesalahan saat menyimpan data.");
+                enqueueSnackbar(
+                    <span>
+                        <b>Gagal mengubah user!</b> Silakan coba lagi atau
+                        hubungi administrator.
+                    </span>,
+                    {
+                        variant: "error",
+                        autoHideDuration: 5000,
+                    }
+                );
             }
-        );
+            setRoleModalSaving(false);
+        }
     };
 
     const [createModalOpen, setCreateModalOpen] = useState(false);
@@ -104,6 +155,18 @@ export default function User() {
     const [allRoles, setAllRoles] = useState([]);
     const [createWilayah, setCreateWilayah] = useState("");
     const [createGarduIndukIds, setCreateGarduIndukIds] = useState([]);
+    const [createJabatan, setCreateJabatan] = useState("");
+
+    // Delete modal state
+    const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+    const [deleteUser, setDeleteUser] = useState(null);
+    const [deleteLoading, setDeleteLoading] = useState(false);
+
+    // Refresh state
+    const [refreshLoading, setRefreshLoading] = useState(false);
+    const [lastUpdated, setLastUpdated] = useState(new Date());
+    const [dataLoading, setDataLoading] = useState(false);
+    const [dataChangeCount, setDataChangeCount] = useState(0);
 
     const openCreateModal = async () => {
         setCreateModalOpen(true);
@@ -111,6 +174,9 @@ export default function User() {
         setCreateEmail("");
         setCreatePassword("");
         setCreateRole("");
+        setCreateWilayah("");
+        setCreateJabatan("");
+        setCreateGarduIndukIds([]);
         setCreateError({});
         setCreateLoading(false);
         // Fetch all roles for dropdown
@@ -120,37 +186,124 @@ export default function User() {
             setAllRoles(data.roles || []);
         } catch {
             setAllRoles([]);
+            enqueueSnackbar(
+                <span>
+                    <b>Gagal memuat roles!</b> Silakan coba lagi atau hubungi
+                    administrator.
+                </span>,
+                {
+                    variant: "error",
+                    autoHideDuration: 5000,
+                }
+            );
         }
     };
 
-    const handleCreateUser = () => {
+    const openDeleteModal = (user) => {
+        setDeleteUser(user);
+        setDeleteModalOpen(true);
+    };
+
+    const handleDeleteUser = () => {
+        setDeleteLoading(true);
+        router.delete(`/dashboard/user/${deleteUser.id}`, {
+            onSuccess: () => {
+                setDeleteModalOpen(false);
+                setDeleteUser(null);
+                enqueueSnackbar(
+                    <span>
+                        <b>{deleteUser.name} berhasil dihapus!</b> Data telah
+                        dihapus dari server.
+                    </span>,
+                    {
+                        variant: "success",
+                        autoHideDuration: 4000,
+                    }
+                );
+                router.reload({ only: ["user"] });
+            },
+            onError: () => {
+                enqueueSnackbar(
+                    <span>
+                        <b>Gagal menghapus user!</b> Silakan coba lagi atau
+                        hubungi administrator.
+                    </span>,
+                    {
+                        variant: "error",
+                        autoHideDuration: 5000,
+                    }
+                );
+            },
+            onFinish: () => {
+                setDeleteLoading(false);
+            },
+        });
+    };
+
+    const handleCreateUser = async () => {
         setCreateLoading(true);
         setCreateError({});
-        router.post(
-            "/dashboard/user",
-            {
+        try {
+            await axios.post("/dashboard/user", {
                 name: createName,
                 email: createEmail,
                 password: createPassword,
                 role: createRole,
                 wilayah: createWilayah,
+                jabatan: createJabatan,
                 gardu_induk_ids: createGarduIndukIds,
-            },
-            {
-                onError: (errors) => {
-                    setCreateError(errors || {});
-                },
-                onFinish: () => {
-                    setCreateLoading(false);
-                },
-                onSuccess: () => {
-                    setCreateModalOpen(false);
-                    enqueueSnackbar("User berhasil dibuat !", {
-                        variant: "success",
-                    });
-                },
+            });
+            setCreateModalOpen(false);
+            enqueueSnackbar(
+                <span>
+                    <b>User berhasil dibuat!</b> Data telah disimpan ke server.
+                </span>,
+                {
+                    variant: "success",
+                    autoHideDuration: 4000,
+                }
+            );
+            router.reload({ only: ["users"] });
+        } catch (error) {
+            if (
+                error.response &&
+                error.response.data &&
+                error.response.data.errors
+            ) {
+                setCreateError(error.response.data.errors);
+            } else {
+                setCreateError({});
             }
-        );
+            // Tampilkan error detail jika ada, jika tidak tampilkan pesan umum
+            enqueueSnackbar(
+                <span>
+                    <b>Gagal membuat user!</b>{" "}
+                    {error.response &&
+                    error.response.data &&
+                    error.response.data.message
+                        ? error.response.data.message
+                        : "Silakan periksa data yang dimasukkan."}
+                    {error.response &&
+                        error.response.data &&
+                        error.response.data.errors && (
+                            <ul className="mt-1 ml-2 list-disc text-xs text-red-700">
+                                {Object.entries(error.response.data.errors).map(
+                                    ([field, messages]) =>
+                                        messages.map((msg, idx) => (
+                                            <li key={field + idx}>{msg}</li>
+                                        ))
+                                )}
+                            </ul>
+                        )}
+                </span>,
+                {
+                    variant: "error",
+                    autoHideDuration: 5000,
+                }
+            );
+        } finally {
+            setCreateLoading(false);
+        }
     };
 
     // Pagination state
@@ -171,17 +324,13 @@ export default function User() {
         (page - 1) * rowsPerPage,
         page * rowsPerPage
     );
-    // Reset page if filter changes
-    React.useEffect(() => {
-        setPage(1);
-    }, [filterName, rowsPerPage]);
 
     return (
         <>
             <Head title="User" />
             <DashboardLayout>
-                <div className="py-6 w-full mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="rounded-2xl shadow-xl border border-blue-100 p-0 md:p-0 overflow-hidden">
+                <div className="w-full mx-auto">
+                    <div className="rounded-lg shadow-xl border border-gray-200 p-0 md:p-0 overflow-hidden">
                         <div className="px-4 bg-white sm:px-6 pt-6 pb-4 border-b border-gray-200 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                             <div className="w-full md:w-2/3">
                                 <h2 className="text-xl font-bold text-gray-800 mb-1 flex items-center gap-2">
@@ -200,24 +349,26 @@ export default function User() {
                                 </p>
                             </div>
                             <div className="w-full md:w-auto flex justify-start md:justify-end">
-                                <button
+                                <PrimaryButton
                                     onClick={openCreateModal}
-                                    className="bg-gradient-to-r from-blue-600 to-blue-400 text-white px-5 py-2 rounded-lg shadow hover:from-blue-700 hover:to-blue-500 font-semibold flex items-center gap-2 transition"
+                                    className="gap-2"
                                 >
                                     <FaPlus /> Tambah User
-                                </button>
+                                </PrimaryButton>
                             </div>
                         </div>
                         <div className="px-2 md:px-6 pb-6 pt-4 bg-white/70">
                             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-2">
-                                <button
-                                    className=" bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-md shadow-sm hover:bg-gray-50 font-semibold flex items-center gap-2 transition-colors"
-                                    onClick={() => setFilterOpen(true)}
-                                    type="button"
-                                >
-                                    <FaFilter />
-                                    Filter
-                                </button>
+                                <div className="flex items-center gap-2">
+                                    <button
+                                        className=" bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-md shadow-sm hover:bg-gray-50 font-semibold flex items-center gap-2 transition-colors"
+                                        onClick={() => setFilterOpen(true)}
+                                        type="button"
+                                    >
+                                        <FaFilter />
+                                        Filter
+                                    </button>
+                                </div>
                                 <div className="flex items-center gap-2">
                                     <label className="text-gray-600 text-sm">
                                         Tampil
@@ -271,6 +422,16 @@ export default function User() {
                             </div>
                             <ErrorBoundary>
                                 <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white">
+                                    {dataLoading && (
+                                        <div className="absolute inset-0 bg-white/80 flex items-center justify-center z-10">
+                                            <div className="flex items-center gap-2 text-blue-600">
+                                                <CircularProgress size={20} />
+                                                <span className="text-sm font-medium">
+                                                    Memperbarui data...
+                                                </span>
+                                            </div>
+                                        </div>
+                                    )}
                                     <div className="max-h-[500px] min-h-[320px] overflow-y-auto custom-scrollbar">
                                         <table className="min-w-[900px] w-full">
                                             <thead className="bg-gray-100 text-gray-600 sticky top-0 z-10">
@@ -291,6 +452,9 @@ export default function User() {
                                                         Role
                                                     </th>
                                                     <th className="px-3 py-3 text-center text-xs sm:text-sm font-semibold">
+                                                        Jabatan
+                                                    </th>
+                                                    <th className="px-3 py-3 text-center text-xs sm:text-sm font-semibold">
                                                         Wilayah
                                                     </th>
                                                     <th className="px-3 py-3 text-center text-xs sm:text-sm font-semibold">
@@ -305,7 +469,7 @@ export default function User() {
                                                 {paginatedRows.length === 0 ? (
                                                     <tr>
                                                         <td
-                                                            colSpan={8}
+                                                            colSpan={9}
                                                             className="px-6 py-8 text-center text-gray-400 text-lg font-semibold"
                                                         >
                                                             Belum ada data user.
@@ -378,6 +542,23 @@ export default function User() {
                                                                     </span>
                                                                 </td>
                                                                 <td className="px-3 py-3 text-center">
+                                                                    {row.jabatan ? (
+                                                                        <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-blue-100 text-blue-800 text-xs font-bold shadow border border-blue-200">
+                                                                            <FaUsers className="text-blue-400 text-sm" />
+                                                                            <span className="tracking-wide">
+                                                                                {
+                                                                                    row.jabatan
+                                                                                }
+                                                                            </span>
+                                                                        </span>
+                                                                    ) : (
+                                                                        <span className="inline-block px-2 py-1 rounded-full bg-gray-100 text-gray-400 text-xs font-medium shadow">
+                                                                            Tidak
+                                                                            ada
+                                                                        </span>
+                                                                    )}
+                                                                </td>
+                                                                <td className="px-3 py-3 text-center">
                                                                     <span className="inline-block px-2 py-1 rounded-full bg-gray-200 text-gray-700 text-xs font-medium">
                                                                         {row.wilayah ||
                                                                             "-"}
@@ -414,22 +595,32 @@ export default function User() {
                                                                     )}
                                                                 </td>
                                                                 <td className="px-3 py-3 text-center rounded-r-lg">
-                                                                    <button
-                                                                        type="button"
-                                                                        onClick={() =>
-                                                                            openRoleModal(
-                                                                                row
-                                                                            )
-                                                                        }
-                                                                        className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-gradient-to-r from-blue-500 via-blue-400 to-blue-300 text-white hover:from-blue-700 hover:via-blue-600 hover:to-blue-500 transition-all ease-in-out duration-500 text-xs font-bold shadow-lg border border-blue-200 group relative overflow-hidden"
-                                                                        title="Kelola Role"
-                                                                    >
-                                                                        <FaUserShield className="text-white text-lg drop-shadow-sm group-hover:scale-110 transition-transform duration-200" />
-                                                                        <span className="ml-1 tracking-wide drop-shadow-sm">
-                                                                            Kelola
-                                                                            Role
-                                                                        </span>
-                                                                    </button>
+                                                                    <div className="flex items-center justify-center gap-2">
+                                                                        <PrimaryButton
+                                                                            type="button"
+                                                                            onClick={() =>
+                                                                                openRoleModal(
+                                                                                    row
+                                                                                )
+                                                                            }
+                                                                            className="gap-2"
+                                                                            title="Kelola Role"
+                                                                        >
+                                                                            <FaUserShield />
+                                                                        </PrimaryButton>
+                                                                        <DangerButton
+                                                                            type="button"
+                                                                            onClick={() =>
+                                                                                openDeleteModal(
+                                                                                    row
+                                                                                )
+                                                                            }
+                                                                            className="gap-2"
+                                                                            title="Hapus User"
+                                                                        >
+                                                                            <FaTrash />
+                                                                        </DangerButton>
+                                                                    </div>
                                                                 </td>
                                                             </tr>
                                                         )
@@ -552,7 +743,7 @@ export default function User() {
                 PaperProps={{
                     style: {
                         borderRadius: 18,
-                        minHeight: 380,
+                        minHeight: 600,
                         maxHeight: "90vh",
                         background:
                             "linear-gradient(135deg, #f8fafc 0%, #fff 100%)",
@@ -562,19 +753,27 @@ export default function User() {
                 }}
             >
                 <DialogTitle
-                    className="font-bold text-lg text-gray-800 border-b px-6 py-4"
+                    className="font-bold text-xl text-gray-800 border-b px-6 py-4"
                     style={{
                         background:
                             "linear-gradient(90deg, #e0e7ff 0%, #f8fafc 100%)",
                     }}
                 >
-                    Kelola User
+                    <div className="flex items-center justify-between">
+                        <span>Edit User</span>
+                        <button
+                            onClick={() => setRoleModalOpen(false)}
+                            className="text-gray-400 hover:text-gray-600 text-2xl font-bold"
+                        >
+                            ×
+                        </button>
+                    </div>
                 </DialogTitle>
                 <DialogContent
                     className="py-6 px-6"
                     style={{
-                        minHeight: 570,
-                        maxHeight: 940,
+                        minHeight: 600,
+                        maxHeight: 800,
                         overflowY: "auto",
                     }}
                 >
@@ -589,185 +788,397 @@ export default function User() {
                                 handleRoleModalSave();
                             }}
                         >
-                            <div className="mb-6 mt-2">
-                                <div className="flex items-center gap-3 mb-5 border-b py-4">
-                                    <span className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-blue-100 text-blue-700 font-bold text-xl shadow">
-                                        {roleModalUser?.name?.[0]?.toUpperCase() ||
-                                            "U"}
-                                    </span>
-                                    <div>
-                                        <div className="text-xs text-gray-500 font-medium mb-0.5">
-                                            User
+                            <div className="mb-6 pt-4">
+                                {/* User Info Header */}
+                                <div className="flex items-center gap-4 mb-6 p-4 bg-gray-100 rounded-xl border border-gray-200">
+                                    {roleModalUser?.foto_profil ? (
+                                        <img
+                                            src={roleModalUser.foto_profil}
+                                            alt={roleModalUser?.name}
+                                            className="w-16 h-16 rounded-full object-cover border-2 border-blue-200 shadow-lg"
+                                        />
+                                    ) : (
+                                        <div className="w-16 h-16 rounded-full bg-gradient-to-br from-blue-200 to-blue-100 flex items-center justify-center text-blue-700 font-bold text-2xl border-2 border-blue-200 shadow-lg">
+                                            {roleModalUser?.name
+                                                ?.split(" ")
+                                                .map((n) => n[0])
+                                                .join("")
+                                                .substring(0, 2)
+                                                .toUpperCase() || "U"}
                                         </div>
-                                        <div className="text-base font-semibold text-gray-800 leading-tight">
+                                    )}
+                                    <div className="flex-1">
+                                        <h3 className="text-lg font-bold text-gray-800 mb-1">
                                             {roleModalUser?.name}
+                                        </h3>
+                                        <p className="text-gray-600 text-sm mb-1">
+                                            {roleModalUser?.email}
+                                        </p>
+                                        <div className="flex items-center gap-2">
+                                            <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-red-200 text-red-800">
+                                                {roleModalUser?.role ||
+                                                    "No Role"}
+                                            </span>
+                                            {roleModalUser?.wilayah && (
+                                                <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-amber-100 text-amber-800">
+                                                    {roleModalUser.wilayah}
+                                                </span>
+                                            )}
                                         </div>
                                     </div>
                                 </div>
-                                <label className="block text-gray-700 font-semibold mb-2 mt-2">
-                                    Role
-                                </label>
-                                <div className="relative">
-                                    <Listbox
-                                        value={roleModalCurrent}
-                                        onChange={setRoleModalCurrent}
-                                    >
+
+                                {/* Form Fields */}
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    {/* Role Selection */}
+                                    <div className="md:col-span-2">
+                                        <label className="block text-gray-700 font-semibold mb-3 text-sm">
+                                            Role User
+                                        </label>
                                         <div className="relative">
-                                            <Listbox.Button className="border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 rounded-lg px-4 py-2 w-full bg-white transition-all shadow text-gray-800 flex justify-between items-center">
-                                                <span>
-                                                    {roleModalCurrent
-                                                        ? roleModalRoles.find(
-                                                              (r) =>
-                                                                  r.name ===
-                                                                  roleModalCurrent
-                                                          )?.name
-                                                        : "Pilih Role"}
-                                                </span>
-                                                <span className="pointer-events-none text-gray-400 ml-2">
-                                                    <svg
-                                                        width="20"
-                                                        height="20"
-                                                        fill="none"
-                                                        viewBox="0 0 20 20"
-                                                    >
-                                                        <path
-                                                            d="M6 8l4 4 4-4"
-                                                            stroke="currentColor"
-                                                            strokeWidth="1.5"
-                                                            strokeLinecap="round"
-                                                            strokeLinejoin="round"
-                                                        />
-                                                    </svg>
-                                                </span>
-                                            </Listbox.Button>
-                                            <Listbox.Options className="absolute z-20 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-52 overflow-auto focus:outline-none">
-                                                <Listbox.Option
-                                                    key=""
-                                                    value=""
-                                                    className={({ active }) =>
-                                                        `cursor-pointer select-none relative px-4 py-2 ${
-                                                            active
-                                                                ? "bg-blue-50 text-blue-700"
-                                                                : "text-gray-800"
-                                                        }`
-                                                    }
-                                                >
-                                                    Pilih Role
-                                                </Listbox.Option>
-                                                {roleModalRoles.map((r) => (
-                                                    <Listbox.Option
-                                                        key={r.id}
-                                                        value={r.name}
-                                                        className={({
-                                                            active,
-                                                            selected,
-                                                        }) =>
-                                                            [
-                                                                "cursor-pointer select-none relative px-4 py-2",
-                                                                active
-                                                                    ? "bg-blue-50 text-blue-700"
-                                                                    : selected
-                                                                    ? "bg-blue-100 text-blue-800"
-                                                                    : "text-gray-800",
-                                                                selected
-                                                                    ? "font-semibold"
-                                                                    : "",
-                                                            ].join(" ")
-                                                        }
-                                                    >
-                                                        {({ selected }) => (
-                                                            <div className="flex items-center">
-                                                                {selected && (
-                                                                    <span className="mr-2 text-blue-600">
-                                                                        <FaCheck
-                                                                            className="h-4 w-4"
-                                                                            aria-hidden="true"
-                                                                        />
-                                                                    </span>
-                                                                )}
-                                                                <span>
-                                                                    {r.name}
-                                                                </span>
-                                                            </div>
+                                            <Listbox
+                                                value={roleModalCurrent}
+                                                onChange={setRoleModalCurrent}
+                                            >
+                                                <div className="relative">
+                                                    <Listbox.Button className="border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 rounded-lg px-4 py-2 w-full bg-white transition-all shadow text-gray-800 flex justify-between items-center">
+                                                        <span className="flex items-center gap-2">
+                                                            <FaUserShield className="text-blue-500" />
+                                                            {roleModalCurrent
+                                                                ? roleModalRoles.find(
+                                                                      (r) =>
+                                                                          r.name ===
+                                                                          roleModalCurrent
+                                                                  )?.name
+                                                                : "Pilih Role"}
+                                                        </span>
+                                                        <span className="pointer-events-none text-gray-400 ml-2">
+                                                            <svg
+                                                                width="20"
+                                                                height="20"
+                                                                fill="none"
+                                                                viewBox="0 0 20 20"
+                                                            >
+                                                                <path
+                                                                    d="M6 8l4 4 4-4"
+                                                                    stroke="currentColor"
+                                                                    strokeWidth="1.5"
+                                                                    strokeLinecap="round"
+                                                                    strokeLinejoin="round"
+                                                                />
+                                                            </svg>
+                                                        </span>
+                                                    </Listbox.Button>
+                                                    <Listbox.Options className="absolute z-20 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-52 overflow-auto focus:outline-none">
+                                                        <Listbox.Option
+                                                            key=""
+                                                            value=""
+                                                            className={({
+                                                                active,
+                                                            }) =>
+                                                                `cursor-pointer select-none relative px-4 py-2 ${
+                                                                    active
+                                                                        ? "bg-blue-50 text-blue-700"
+                                                                        : "text-gray-800"
+                                                                }`
+                                                            }
+                                                        >
+                                                            Pilih Role
+                                                        </Listbox.Option>
+                                                        {roleModalRoles.map(
+                                                            (r) => (
+                                                                <Listbox.Option
+                                                                    key={r.id}
+                                                                    value={
+                                                                        r.name
+                                                                    }
+                                                                    className={({
+                                                                        active,
+                                                                        selected,
+                                                                    }) =>
+                                                                        [
+                                                                            "cursor-pointer select-none relative px-4 py-2",
+                                                                            active
+                                                                                ? "bg-blue-50 text-blue-700"
+                                                                                : selected
+                                                                                ? "bg-blue-100 text-blue-800"
+                                                                                : "text-gray-800",
+                                                                            selected
+                                                                                ? "font-semibold"
+                                                                                : "",
+                                                                        ].join(
+                                                                            " "
+                                                                        )
+                                                                    }
+                                                                >
+                                                                    {({
+                                                                        selected,
+                                                                    }) => (
+                                                                        <div className="flex items-center">
+                                                                            {selected && (
+                                                                                <span className="mr-2 text-blue-600">
+                                                                                    <FaCheck
+                                                                                        className="h-4 w-4"
+                                                                                        aria-hidden="true"
+                                                                                    />
+                                                                                </span>
+                                                                            )}
+                                                                            <span>
+                                                                                {
+                                                                                    r.name
+                                                                                }
+                                                                            </span>
+                                                                        </div>
+                                                                    )}
+                                                                </Listbox.Option>
+                                                            )
                                                         )}
-                                                    </Listbox.Option>
-                                                ))}
-                                            </Listbox.Options>
+                                                    </Listbox.Options>
+                                                </div>
+                                            </Listbox>
                                         </div>
-                                    </Listbox>
-                                </div>
-                                <div className="mt-4">
-                                    <label className="block text-gray-700 font-semibold mb-2">
-                                        Wilayah
-                                    </label>
-                                    <Listbox
-                                        value={roleModalWilayah}
-                                        onChange={setRoleModalWilayah}
-                                    >
+                                    </div>
+
+                                    {/* Jabatan */}
+                                    <div>
+                                        <label className="block text-gray-700 font-semibold mb-3 text-sm">
+                                            Jabatan
+                                        </label>
                                         <div className="relative">
-                                            <Listbox.Button className="border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 rounded-lg px-4 py-2 w-full bg-white transition-all shadow text-gray-800 flex justify-between items-center">
-                                                <span>
-                                                    {roleModalWilayah ||
-                                                        "Pilih Wilayah"}
-                                                </span>
-                                                <span className="pointer-events-none text-gray-400 ml-2">
-                                                    <svg
-                                                        width="20"
-                                                        height="20"
-                                                        fill="none"
-                                                        viewBox="0 0 20 20"
-                                                    >
-                                                        <path
-                                                            d="M6 8l4 4 4-4"
-                                                            stroke="currentColor"
-                                                            strokeWidth="1.5"
-                                                            strokeLinecap="round"
-                                                            strokeLinejoin="round"
-                                                        />
-                                                    </svg>
-                                                </span>
-                                            </Listbox.Button>
-                                            <Listbox.Options className="absolute z-20 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-52 overflow-auto focus:outline-none">
-                                                {[
-                                                    "UPT Karawang",
-                                                    "ULTG Karawang",
-                                                    "ULTG Purwakarta",
-                                                ].map((ultg) => (
-                                                    <Listbox.Option
-                                                        key={ultg}
-                                                        value={ultg}
-                                                        className={({
-                                                            active,
-                                                        }) =>
-                                                            `cursor-pointer select-none relative px-4 py-2 ${
-                                                                active
-                                                                    ? "bg-blue-50 text-blue-700"
-                                                                    : "text-gray-800"
-                                                            }`
-                                                        }
-                                                    >
-                                                        {ultg}
-                                                    </Listbox.Option>
-                                                ))}
-                                            </Listbox.Options>
+                                            <Listbox
+                                                value={roleModalJabatan}
+                                                onChange={setRoleModalJabatan}
+                                            >
+                                                <div className="relative">
+                                                    <Listbox.Button className="border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 rounded-lg px-4 py-2 w-full bg-white transition-all shadow text-gray-800 flex justify-between items-center">
+                                                        <span>
+                                                            {roleModalJabatan ||
+                                                                "Pilih Jabatan"}
+                                                        </span>
+                                                        <span className="pointer-events-none text-gray-400 ml-2">
+                                                            <svg
+                                                                width="20"
+                                                                height="20"
+                                                                fill="none"
+                                                                viewBox="0 0 20 20"
+                                                            >
+                                                                <path
+                                                                    d="M6 8l4 4 4-4"
+                                                                    stroke="currentColor"
+                                                                    strokeWidth="1.5"
+                                                                    strokeLinecap="round"
+                                                                    strokeLinejoin="round"
+                                                                />
+                                                            </svg>
+                                                        </span>
+                                                    </Listbox.Button>
+                                                    <Listbox.Options className="absolute z-20 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-52 overflow-auto focus:outline-none">
+                                                        <Listbox.Option
+                                                            key=""
+                                                            value=""
+                                                            className={({
+                                                                active,
+                                                            }) =>
+                                                                `cursor-pointer select-none relative px-4 py-2 ${
+                                                                    active
+                                                                        ? "bg-blue-50 text-blue-700"
+                                                                        : "text-gray-800"
+                                                                }`
+                                                            }
+                                                        >
+                                                            Pilih Jabatan
+                                                        </Listbox.Option>
+                                                        {JABATAN_OPTIONS.map(
+                                                            (jabatan) => (
+                                                                <Listbox.Option
+                                                                    key={
+                                                                        jabatan
+                                                                    }
+                                                                    value={
+                                                                        jabatan
+                                                                    }
+                                                                    className={({
+                                                                        active,
+                                                                        selected,
+                                                                    }) =>
+                                                                        [
+                                                                            "cursor-pointer select-none relative px-4 py-2",
+                                                                            active
+                                                                                ? "bg-blue-50 text-blue-700"
+                                                                                : selected
+                                                                                ? "bg-blue-100 text-blue-800"
+                                                                                : "text-gray-800",
+                                                                            selected
+                                                                                ? "font-semibold"
+                                                                                : "",
+                                                                        ].join(
+                                                                            " "
+                                                                        )
+                                                                    }
+                                                                >
+                                                                    {({
+                                                                        selected,
+                                                                    }) => (
+                                                                        <div className="flex items-center">
+                                                                            {selected && (
+                                                                                <span className="mr-2 text-blue-600">
+                                                                                    <FaCheck
+                                                                                        className="h-4 w-4"
+                                                                                        aria-hidden="true"
+                                                                                    />
+                                                                                </span>
+                                                                            )}
+                                                                            <span>
+                                                                                {
+                                                                                    jabatan
+                                                                                }
+                                                                            </span>
+                                                                        </div>
+                                                                    )}
+                                                                </Listbox.Option>
+                                                            )
+                                                        )}
+                                                    </Listbox.Options>
+                                                </div>
+                                            </Listbox>
                                         </div>
-                                    </Listbox>
+                                    </div>
+
+                                    {/* Wilayah */}
+                                    <div>
+                                        <label className="block text-gray-700 font-semibold mb-3 text-sm">
+                                            Wilayah
+                                        </label>
+                                        <div className="relative">
+                                            <Listbox
+                                                value={roleModalWilayah}
+                                                onChange={setRoleModalWilayah}
+                                            >
+                                                <div className="relative">
+                                                    <Listbox.Button className="border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 rounded-lg px-4 py-2 w-full bg-white transition-all shadow text-gray-800 flex justify-between items-center">
+                                                        <span>
+                                                            {roleModalWilayah ||
+                                                                "Pilih Wilayah"}
+                                                        </span>
+                                                        <span className="pointer-events-none text-gray-400 ml-2">
+                                                            <svg
+                                                                width="20"
+                                                                height="20"
+                                                                fill="none"
+                                                                viewBox="0 0 20 20"
+                                                            >
+                                                                <path
+                                                                    d="M6 8l4 4 4-4"
+                                                                    stroke="currentColor"
+                                                                    strokeWidth="1.5"
+                                                                    strokeLinecap="round"
+                                                                    strokeLinejoin="round"
+                                                                />
+                                                            </svg>
+                                                        </span>
+                                                    </Listbox.Button>
+                                                    <Listbox.Options className="absolute z-20 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-52 overflow-auto focus:outline-none">
+                                                        <Listbox.Option
+                                                            key=""
+                                                            value=""
+                                                            className={({
+                                                                active,
+                                                            }) =>
+                                                                `cursor-pointer select-none relative px-4 py-2 ${
+                                                                    active
+                                                                        ? "bg-blue-50 text-blue-700"
+                                                                        : "text-gray-800"
+                                                                }`
+                                                            }
+                                                        >
+                                                            Pilih Wilayah
+                                                        </Listbox.Option>
+                                                        {WILAYAH_OPTIONS.map(
+                                                            (ultg) => (
+                                                                <Listbox.Option
+                                                                    key={ultg}
+                                                                    value={ultg}
+                                                                    className={({
+                                                                        active,
+                                                                        selected,
+                                                                    }) =>
+                                                                        [
+                                                                            "cursor-pointer select-none relative px-4 py-2",
+                                                                            active
+                                                                                ? "bg-blue-50 text-blue-700"
+                                                                                : selected
+                                                                                ? "bg-blue-100 text-blue-800"
+                                                                                : "text-gray-800",
+                                                                            selected
+                                                                                ? "font-semibold"
+                                                                                : "",
+                                                                        ].join(
+                                                                            " "
+                                                                        )
+                                                                    }
+                                                                >
+                                                                    {({
+                                                                        selected,
+                                                                    }) => (
+                                                                        <div className="flex items-center">
+                                                                            {selected && (
+                                                                                <span className="mr-2 text-blue-600">
+                                                                                    <FaCheck
+                                                                                        className="h-4 w-4"
+                                                                                        aria-hidden="true"
+                                                                                    />
+                                                                                </span>
+                                                                            )}
+                                                                            <span>
+                                                                                {
+                                                                                    ultg
+                                                                                }
+                                                                            </span>
+                                                                        </div>
+                                                                    )}
+                                                                </Listbox.Option>
+                                                            )
+                                                        )}
+                                                    </Listbox.Options>
+                                                </div>
+                                            </Listbox>
+                                        </div>
+                                    </div>
+
+                                    {/* Gardu Induk */}
+                                    <div className="md:col-span-2">
+                                        <label className="block text-gray-700 font-semibold mb-3 text-sm">
+                                            Gardu Induk
+                                        </label>
+                                        <ComboboxMultiple
+                                            className="absolute shadow-md"
+                                            options={garduInduks}
+                                            value={roleModalGarduIndukIds}
+                                            onChange={setRoleModalGarduIndukIds}
+                                        />
+                                    </div>
                                 </div>
-                                <div className="mt-4">
-                                    <label className="block text-gray-700 font-semibold mb-2">
-                                        Gardu Induk
-                                    </label>
-                                    <ComboboxMultiple
-                                        className="absolute shadow-md"
-                                        options={garduInduks}
-                                        value={roleModalGarduIndukIds}
-                                        onChange={setRoleModalGarduIndukIds}
-                                    />
-                                </div>
-                                <div className="relative"></div>
+
                                 {roleModalError && (
-                                    <div className="text-red-500 mt-2 text-sm">
-                                        {roleModalError}
+                                    <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                                        <div className="flex items-center gap-2">
+                                            <svg
+                                                className="w-5 h-5 text-red-500"
+                                                fill="none"
+                                                stroke="currentColor"
+                                                viewBox="0 0 24 24"
+                                            >
+                                                <path
+                                                    strokeLinecap="round"
+                                                    strokeLinejoin="round"
+                                                    strokeWidth={2}
+                                                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"
+                                                />
+                                            </svg>
+                                            <span className="text-red-700 text-sm font-medium">
+                                                {roleModalError}
+                                            </span>
+                                        </div>
                                     </div>
                                 )}
                             </div>
@@ -775,30 +1186,27 @@ export default function User() {
                     )}
                 </DialogContent>
                 <DialogActions className="border-t px-6 py-4 flex justify-between bg-slate-50">
-                    <button
-                        type="button"
+                    <SecondaryButton
                         onClick={() => setRoleModalOpen(false)}
-                        className="px-4 py-2 rounded border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 font-semibold transition disabled:opacity-50"
                         disabled={roleModalSaving}
                     >
                         Batal
-                    </button>
-                    <button
-                        type="button"
+                    </SecondaryButton>
+                    <PrimaryButton
                         onClick={handleRoleModalSave}
-                        className="px-4 py-2 rounded bg-blue-600 text-white font-semibold shadow hover:bg-blue-700 transition disabled:opacity-50"
                         disabled={
                             roleModalSaving ||
                             roleModalLoading ||
-                            !roleModalCurrent
+                            !roleModalCurrent ||
+                            !roleModalJabatan
                         }
                     >
                         {roleModalSaving ? (
                             <CircularProgress size={20} color="inherit" />
                         ) : (
-                            "Simpan"
+                            "Simpan Perubahan"
                         )}
-                    </button>
+                    </PrimaryButton>
                 </DialogActions>
             </Dialog>
             {/* Modal Tambah User - custom slide-in from right */}
@@ -813,18 +1221,28 @@ export default function User() {
                     />
                     {/* Panel */}
                     <div
-                        className="fixed top-0 right-0 h-full w-full max-w-xl bg-white shadow-2xl z-50 flex flex-col transition-transform duration-300 animate-slidein rounded-l-2xl"
+                        className="fixed top-0 right-0 h-full w-full max-w-2xl bg-white shadow-2xl z-50 flex flex-col transition-transform duration-300 animate-slidein rounded-l-2xl"
                         style={{ boxShadow: "0 0 40px 0 rgba(0,0,0,0.15)" }}
                     >
-                        <div className="flex items-center justify-between px-8 py-6 border-b">
-                            <div className="font-bold text-2xl text-gray-800">
-                                Tambah User
+                        <div className="flex items-center justify-between px-8 py-6 border-b bg-gradient-to-r from-blue-50 to-indigo-50">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
+                                    <FaPlus className="text-blue-600 text-lg" />
+                                </div>
+                                <div>
+                                    <div className="font-bold text-2xl text-gray-800">
+                                        Tambah User Baru
+                                    </div>
+                                    <div className="text-gray-600 text-sm">
+                                        Isi data user yang akan ditambahkan
+                                    </div>
+                                </div>
                             </div>
                             <button
                                 onClick={() =>
                                     !createLoading && setCreateModalOpen(false)
                                 }
-                                className="text-gray-400 hover:text-blue-600 text-3xl font-bold px-2"
+                                className="text-gray-400 hover:text-blue-600 text-3xl font-bold px-2 transition-colors"
                                 disabled={createLoading}
                                 aria-label="Tutup"
                             >
@@ -838,214 +1256,393 @@ export default function User() {
                                     handleCreateUser();
                                 }}
                             >
-                                <div className="space-y-5">
-                                    <div className="bg-white rounded-xl shadow p-5 flex flex-col gap-1">
-                                        <label className="block text-gray-600 text-sm font-semibold mb-1">
-                                            Nama
-                                        </label>
-                                        <input
-                                            type="text"
-                                            className="border border-gray-200 rounded-lg px-4 py-2 w-full focus:ring-2 focus:ring-blue-200 focus:border-blue-400 transition text-base"
-                                            value={createName}
-                                            onChange={(e) =>
-                                                setCreateName(e.target.value)
-                                            }
-                                            required
-                                            placeholder="Nama lengkap user"
-                                        />
-                                        {createError.name && (
-                                            <div className="text-red-500 mt-1 text-xs">
-                                                {createError.name}
+                                <div className="space-y-6">
+                                    {/* Personal Information */}
+                                    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                                        <div className="flex items-center gap-2 mb-4">
+                                            <div className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center">
+                                                <span className="text-blue-600 text-xs font-bold">
+                                                    1
+                                                </span>
                                             </div>
-                                        )}
-                                    </div>
-                                    <div className="bg-white rounded-xl shadow p-5 flex flex-col gap-1">
-                                        <label className="block text-gray-600 text-sm font-semibold mb-1">
-                                            Email
-                                        </label>
-                                        <input
-                                            type="email"
-                                            className="border border-gray-200 rounded-lg px-4 py-2 w-full focus:ring-2 focus:ring-blue-200 focus:border-blue-400 transition text-base"
-                                            value={createEmail}
-                                            onChange={(e) =>
-                                                setCreateEmail(e.target.value)
-                                            }
-                                            required
-                                            placeholder="Alamat email user"
-                                        />
-                                        {createError.email && (
-                                            <div className="text-red-500 mt-1 text-xs">
-                                                {createError.email}
+                                            <h3 className="text-lg font-semibold text-gray-800">
+                                                Informasi Pribadi
+                                            </h3>
+                                        </div>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <div>
+                                                <label className="block text-gray-700 font-semibold mb-2 text-sm">
+                                                    Nama Lengkap
+                                                </label>
+                                                <input
+                                                    type="text"
+                                                    className="border border-gray-200 rounded-lg px-4 py-3 w-full focus:ring-2 focus:ring-blue-200 focus:border-blue-400 transition text-base"
+                                                    value={createName}
+                                                    onChange={(e) =>
+                                                        setCreateName(
+                                                            e.target.value
+                                                        )
+                                                    }
+                                                    required
+                                                    placeholder="Masukkan nama lengkap"
+                                                />
+                                                {createError.name && (
+                                                    <div className="text-red-500 mt-1 text-xs">
+                                                        {createError.name}
+                                                    </div>
+                                                )}
                                             </div>
-                                        )}
-                                    </div>
-                                    <div className="bg-white rounded-xl shadow p-5 flex flex-col gap-1">
-                                        <label className="block text-gray-600 text-sm font-semibold mb-1">
-                                            Password
-                                        </label>
-                                        <input
-                                            type="password"
-                                            className="border border-gray-200 rounded-lg px-4 py-2 w-full focus:ring-2 focus:ring-blue-200 focus:border-blue-400 transition text-base"
-                                            value={createPassword}
-                                            onChange={(e) =>
-                                                setCreatePassword(
-                                                    e.target.value
-                                                )
-                                            }
-                                            required
-                                            placeholder="Password user"
-                                        />
-                                        {createError.password && (
-                                            <div className="text-red-500 mt-1 text-xs">
-                                                {createError.password}
+                                            <div>
+                                                <label className="block text-gray-700 font-semibold mb-2 text-sm">
+                                                    Email
+                                                </label>
+                                                <input
+                                                    type="email"
+                                                    className="border border-gray-200 rounded-lg px-4 py-3 w-full focus:ring-2 focus:ring-blue-200 focus:border-blue-400 transition text-base"
+                                                    value={createEmail}
+                                                    onChange={(e) =>
+                                                        setCreateEmail(
+                                                            e.target.value
+                                                        )
+                                                    }
+                                                    required
+                                                    placeholder="Masukkan alamat email"
+                                                />
+                                                {createError.email && (
+                                                    <div className="text-red-500 mt-1 text-xs">
+                                                        {createError.email}
+                                                    </div>
+                                                )}
                                             </div>
-                                        )}
+                                        </div>
                                     </div>
-                                    <div className="bg-white rounded-xl shadow p-5 flex flex-col gap-1">
-                                        <label className="block text-gray-600 text-sm font-semibold mb-1">
-                                            Role
-                                        </label>
-                                        {/* Headless UI Listbox for Role Selection */}
-                                        <Listbox
-                                            value={createRole}
-                                            onChange={setCreateRole}
-                                        >
-                                            <div className="relative">
-                                                <Listbox.Button className="border border-gray-200 rounded-lg px-4 py-2 w-full focus:ring-2 focus:ring-blue-200 focus:border-blue-400 transition text-base bg-white text-left">
-                                                    {createRole
-                                                        ? allRoles.find(
-                                                              (r) =>
-                                                                  r.name ===
-                                                                  createRole
-                                                          )?.name
-                                                        : "Pilih Role"}
-                                                </Listbox.Button>
-                                                <Listbox.Options className="absolute z-10 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-auto focus:outline-none">
-                                                    {allRoles.map((r) => (
-                                                        <Listbox.Option
-                                                            key={r.id}
-                                                            value={r.name}
-                                                            className={({
-                                                                active,
-                                                            }) =>
-                                                                `cursor-pointer select-none relative px-4 py-2 ${
-                                                                    active
-                                                                        ? "bg-blue-100 text-blue-900"
-                                                                        : "text-gray-900"
-                                                                }}`
-                                                            }
-                                                        >
-                                                            {({ selected }) => (
-                                                                <>
-                                                                    <span
-                                                                        className={`block pl-10 truncate ${
-                                                                            selected
-                                                                                ? "font-semibold"
-                                                                                : "font-normal"
-                                                                        }`}
+
+                                    {/* Security Information */}
+                                    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                                        <div className="flex items-center gap-2 mb-4">
+                                            <div className="w-6 h-6 rounded-full bg-green-100 flex items-center justify-center">
+                                                <span className="text-green-600 text-xs font-bold">
+                                                    2
+                                                </span>
+                                            </div>
+                                            <h3 className="text-lg font-semibold text-gray-800">
+                                                Keamanan
+                                            </h3>
+                                        </div>
+                                        <div>
+                                            <label className="block text-gray-700 font-semibold mb-2 text-sm">
+                                                Password
+                                            </label>
+                                            <input
+                                                type="password"
+                                                className="border border-gray-200 rounded-lg px-4 py-3 w-full focus:ring-2 focus:ring-blue-200 focus:border-blue-400 transition text-base"
+                                                value={createPassword}
+                                                onChange={(e) =>
+                                                    setCreatePassword(
+                                                        e.target.value
+                                                    )
+                                                }
+                                                required
+                                                placeholder="Masukkan password"
+                                            />
+                                            {createError.password && (
+                                                <div className="text-red-500 mt-1 text-xs">
+                                                    {createError.password}
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    {/* Role and Access */}
+                                    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                                        <div className="flex items-center gap-2 mb-4">
+                                            <div className="w-6 h-6 rounded-full bg-purple-100 flex items-center justify-center">
+                                                <span className="text-purple-600 text-xs font-bold">
+                                                    3
+                                                </span>
+                                            </div>
+                                            <h3 className="text-lg font-semibold text-gray-800">
+                                                Role & Akses
+                                            </h3>
+                                        </div>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <div>
+                                                <label className="block text-gray-700 font-semibold mb-2 text-sm">
+                                                    Role
+                                                </label>
+                                                <Listbox
+                                                    value={createRole}
+                                                    onChange={setCreateRole}
+                                                >
+                                                    <div className="relative">
+                                                        <Listbox.Button className="border border-gray-200 rounded-lg px-4 py-3 w-full focus:ring-2 focus:ring-blue-200 focus:border-blue-400 transition text-base bg-white text-left flex justify-between items-center">
+                                                            <span className="flex items-center gap-2">
+                                                                <FaUserShield className="text-blue-500" />
+                                                                {createRole
+                                                                    ? allRoles.find(
+                                                                          (r) =>
+                                                                              r.name ===
+                                                                              createRole
+                                                                      )?.name
+                                                                    : "Pilih Role"}
+                                                            </span>
+                                                            <span className="pointer-events-none text-gray-400 ml-2">
+                                                                <svg
+                                                                    width="20"
+                                                                    height="20"
+                                                                    fill="none"
+                                                                    viewBox="0 0 20 20"
+                                                                >
+                                                                    <path
+                                                                        d="M6 8l4 4 4-4"
+                                                                        stroke="currentColor"
+                                                                        strokeWidth="1.5"
+                                                                        strokeLinecap="round"
+                                                                        strokeLinejoin="round"
+                                                                    />
+                                                                </svg>
+                                                            </span>
+                                                        </Listbox.Button>
+                                                        <Listbox.Options className="absolute z-10 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-auto focus:outline-none">
+                                                            {allRoles.map(
+                                                                (r) => (
+                                                                    <Listbox.Option
+                                                                        key={
+                                                                            r.id
+                                                                        }
+                                                                        value={
+                                                                            r.name
+                                                                        }
+                                                                        className={({
+                                                                            active,
+                                                                        }) =>
+                                                                            `cursor-pointer select-none relative px-4 py-2 ${
+                                                                                active
+                                                                                    ? "bg-blue-100 text-blue-900"
+                                                                                    : "text-gray-900"
+                                                                            }}`
+                                                                        }
                                                                     >
-                                                                        {r.name}
-                                                                    </span>
-                                                                    {selected ? (
-                                                                        <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-blue-600">
-                                                                            <FaCheck
-                                                                                className="h-4 w-4"
-                                                                                aria-hidden="true"
-                                                                            />
-                                                                        </span>
-                                                                    ) : null}
-                                                                </>
+                                                                        {({
+                                                                            selected,
+                                                                        }) => (
+                                                                            <>
+                                                                                <span
+                                                                                    className={`block pl-10 truncate ${
+                                                                                        selected
+                                                                                            ? "font-semibold"
+                                                                                            : "font-normal"
+                                                                                    }`}
+                                                                                >
+                                                                                    {
+                                                                                        r.name
+                                                                                    }
+                                                                                </span>
+                                                                                {selected ? (
+                                                                                    <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-blue-600">
+                                                                                        <FaCheck
+                                                                                            className="h-4 w-4"
+                                                                                            aria-hidden="true"
+                                                                                        />
+                                                                                    </span>
+                                                                                ) : null}
+                                                                            </>
+                                                                        )}
+                                                                    </Listbox.Option>
+                                                                )
                                                             )}
-                                                        </Listbox.Option>
-                                                    ))}
-                                                </Listbox.Options>
+                                                        </Listbox.Options>
+                                                    </div>
+                                                </Listbox>
+                                                {createError.role && (
+                                                    <div className="text-red-500 mt-1 text-xs">
+                                                        {createError.role}
+                                                    </div>
+                                                )}
                                             </div>
-                                        </Listbox>
-                                        {createError.role && (
-                                            <div className="text-red-500 mt-1 text-xs">
-                                                {createError.role}
+                                            <div>
+                                                <label className="block text-gray-700 font-semibold mb-2 text-sm">
+                                                    Jabatan
+                                                </label>
+                                                <Listbox
+                                                    value={createJabatan}
+                                                    onChange={setCreateJabatan}
+                                                >
+                                                    <div className="relative">
+                                                        <Listbox.Button className="border border-gray-200 rounded-lg px-4 py-3 w-full focus:ring-2 focus:ring-blue-200 focus:border-blue-400 transition text-base bg-white text-left flex justify-between items-center">
+                                                            <span>
+                                                                {createJabatan ||
+                                                                    "Pilih Jabatan"}
+                                                            </span>
+                                                            <span className="pointer-events-none text-gray-400 ml-2">
+                                                                <svg
+                                                                    width="20"
+                                                                    height="20"
+                                                                    fill="none"
+                                                                    viewBox="0 0 20 20"
+                                                                >
+                                                                    <path
+                                                                        d="M6 8l4 4 4-4"
+                                                                        stroke="currentColor"
+                                                                        strokeWidth="1.5"
+                                                                        strokeLinecap="round"
+                                                                        strokeLinejoin="round"
+                                                                    />
+                                                                </svg>
+                                                            </span>
+                                                        </Listbox.Button>
+                                                        <Listbox.Options className="absolute z-10 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-auto focus:outline-none">
+                                                            {JABATAN_OPTIONS.map(
+                                                                (jabatan) => (
+                                                                    <Listbox.Option
+                                                                        key={
+                                                                            jabatan
+                                                                        }
+                                                                        value={
+                                                                            jabatan
+                                                                        }
+                                                                        className={({
+                                                                            active,
+                                                                        }) =>
+                                                                            `cursor-pointer select-none relative px-4 py-2 ${
+                                                                                active
+                                                                                    ? "bg-blue-100 text-blue-900"
+                                                                                    : "text-gray-900"
+                                                                            }`
+                                                                        }
+                                                                    >
+                                                                        {
+                                                                            jabatan
+                                                                        }
+                                                                    </Listbox.Option>
+                                                                )
+                                                            )}
+                                                        </Listbox.Options>
+                                                    </div>
+                                                </Listbox>
+                                                {createError.jabatan && (
+                                                    <div className="text-red-500 mt-1 text-xs">
+                                                        {createError.jabatan}
+                                                    </div>
+                                                )}
                                             </div>
-                                        )}
+                                            <div>
+                                                <label className="block text-gray-700 font-semibold mb-2 text-sm">
+                                                    Wilayah
+                                                </label>
+                                                <Listbox
+                                                    value={createWilayah}
+                                                    onChange={setCreateWilayah}
+                                                >
+                                                    <div className="relative">
+                                                        <Listbox.Button className="border border-gray-200 rounded-lg px-4 py-3 w-full focus:ring-2 focus:ring-blue-200 focus:border-blue-400 transition text-base bg-white text-left flex justify-between items-center">
+                                                            <span>
+                                                                {createWilayah ||
+                                                                    "Pilih Wilayah"}
+                                                            </span>
+                                                            <span className="pointer-events-none text-gray-400 ml-2">
+                                                                <svg
+                                                                    width="20"
+                                                                    height="20"
+                                                                    fill="none"
+                                                                    viewBox="0 0 20 20"
+                                                                >
+                                                                    <path
+                                                                        d="M6 8l4 4 4-4"
+                                                                        stroke="currentColor"
+                                                                        strokeWidth="1.5"
+                                                                        strokeLinecap="round"
+                                                                        strokeLinejoin="round"
+                                                                    />
+                                                                </svg>
+                                                            </span>
+                                                        </Listbox.Button>
+                                                        <Listbox.Options className="absolute z-10 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-auto focus:outline-none">
+                                                            {[
+                                                                "UPT Karawang",
+                                                                "ULTG Karawang",
+                                                                "ULTG Purwakarta",
+                                                            ].map((ultg) => (
+                                                                <Listbox.Option
+                                                                    key={ultg}
+                                                                    value={ultg}
+                                                                    className={({
+                                                                        active,
+                                                                    }) =>
+                                                                        `cursor-pointer select-none relative px-4 py-2 ${
+                                                                            active
+                                                                                ? "bg-blue-100 text-blue-900"
+                                                                                : "text-gray-900"
+                                                                        }`
+                                                                    }
+                                                                >
+                                                                    {ultg}
+                                                                </Listbox.Option>
+                                                            ))}
+                                                        </Listbox.Options>
+                                                    </div>
+                                                </Listbox>
+                                                {createError.ultg && (
+                                                    <div className="text-red-500 mt-1 text-xs">
+                                                        {createError.ultg}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
                                     </div>
-                                    <div className="bg-white rounded-xl shadow p-5 flex flex-col gap-1">
-                                        <label className="block text-gray-600 text-sm font-semibold mb-1">
-                                            Wilayah
-                                        </label>
-                                        <Listbox
-                                            value={createWilayah}
-                                            onChange={setCreateWilayah}
-                                        >
-                                            <div className="relative">
-                                                <Listbox.Button className="border border-gray-200 rounded-lg px-4 py-2 w-full focus:ring-2 focus:ring-blue-200 focus:border-blue-400 transition text-base bg-white text-left">
-                                                    {createWilayah || "Wilayah"}
-                                                </Listbox.Button>
-                                                <Listbox.Options className="absolute z-10 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-auto focus:outline-none">
-                                                    {[
-                                                        "UPT Karawang",
-                                                        "ULTG Karawang",
-                                                        "ULTG Purwakarta",
-                                                    ].map((ultg) => (
-                                                        <Listbox.Option
-                                                            key={ultg}
-                                                            value={ultg}
-                                                            className={({
-                                                                active,
-                                                            }) =>
-                                                                `cursor-pointer select-none relative px-4 py-2 ${
-                                                                    active
-                                                                        ? "bg-blue-100 text-blue-900"
-                                                                        : "text-gray-900"
-                                                                }`
-                                                            }
-                                                        >
-                                                            {ultg}
-                                                        </Listbox.Option>
-                                                    ))}
-                                                </Listbox.Options>
+
+                                    {/* Gardu Induk Assignment */}
+                                    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                                        <div className="flex items-center gap-2 mb-4">
+                                            <div className="w-6 h-6 rounded-full bg-orange-100 flex items-center justify-center">
+                                                <span className="text-orange-600 text-xs font-bold">
+                                                    4
+                                                </span>
                                             </div>
-                                        </Listbox>
-                                        {createError.ultg && (
-                                            <div className="text-red-500 mt-1 text-xs">
-                                                {createError.ultg}
-                                            </div>
-                                        )}
-                                    </div>
-                                    <div className="bg-white rounded-xl shadow p-5 flex flex-col gap-1">
-                                        <label className="block text-gray-600 text-sm font-semibold mb-1">
-                                            Gardu Induk
-                                        </label>
-                                        <ComboboxMultiple
-                                            options={garduInduks}
-                                            value={createGarduIndukIds}
-                                            onChange={setCreateGarduIndukIds}
-                                        />
-                                        {createError.gardu_induk_ids && (
-                                            <div className="text-red-500 mt-1 text-xs">
-                                                {createError.gardu_induk_ids}
-                                            </div>
-                                        )}
+                                            <h3 className="text-lg font-semibold text-gray-800">
+                                                Gardu Induk
+                                            </h3>
+                                        </div>
+                                        <div>
+                                            <label className="block text-gray-700 font-semibold mb-2 text-sm">
+                                                Pilih Gardu Induk
+                                            </label>
+                                            <ComboboxMultiple
+                                                options={garduInduks}
+                                                value={createGarduIndukIds}
+                                                onChange={
+                                                    setCreateGarduIndukIds
+                                                }
+                                            />
+                                            {createError.gardu_induk_ids && (
+                                                <div className="text-red-500 mt-1 text-xs">
+                                                    {
+                                                        createError.gardu_induk_ids
+                                                    }
+                                                </div>
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
                             </form>
                         </div>
                         <div className="border-t px-8 py-6 flex justify-end gap-3 bg-white rounded-b-2xl">
-                            <button
+                            <SecondaryButton
                                 type="button"
                                 onClick={() => setCreateModalOpen(false)}
                                 className="px-5 py-2 rounded-lg border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 font-semibold transition disabled:opacity-50"
                                 disabled={createLoading}
                             >
                                 Batal
-                            </button>
-                            <button
-                                type="button"
+                            </SecondaryButton>
+                            <PrimaryButton
                                 onClick={handleCreateUser}
-                                className="px-5 py-2 rounded-lg bg-blue-600 text-white font-semibold shadow hover:bg-blue-700 transition disabled:opacity-50"
                                 disabled={
                                     createLoading ||
                                     !createName ||
                                     !createEmail ||
-                                    !createRole
+                                    !createRole ||
+                                    !createJabatan
                                 }
                             >
                                 {createLoading ? (
@@ -1054,9 +1651,9 @@ export default function User() {
                                         color="inherit"
                                     />
                                 ) : (
-                                    "Simpan"
+                                    "Buat User"
                                 )}
-                            </button>
+                            </PrimaryButton>
                         </div>
                     </div>
                     {/* Animations */}
@@ -1074,6 +1671,106 @@ export default function User() {
                     `}</style>
                 </>
             )}
+            {/* Delete Confirmation Modal */}
+            <Dialog
+                open={deleteModalOpen}
+                onClose={() => !deleteLoading && setDeleteModalOpen(false)}
+                maxWidth="xs"
+                fullWidth
+            >
+                <DialogTitle className="font-bold text-lg text-gray-800 border-b">
+                    Konfirmasi Hapus User
+                </DialogTitle>
+                <DialogContent className="py-6">
+                    <div className="flex items-center pt-4 gap-4 mb-4">
+                        <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center">
+                            <FaTrash className="text-red-600 text-xl" />
+                        </div>
+                        <div>
+                            <h3 className="text-lg font-semibold text-gray-800">
+                                Hapus User
+                            </h3>
+                            <p className="text-gray-600 text-sm">
+                                Apakah Anda yakin ingin menghapus user ini?
+                            </p>
+                        </div>
+                    </div>
+                    <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                        <div className="flex items-center gap-3">
+                            {deleteUser?.foto_profil ? (
+                                <img
+                                    src={deleteUser.foto_profil}
+                                    alt={deleteUser.name}
+                                    className="h-10 w-10 rounded-full object-cover border border-red-200"
+                                />
+                            ) : (
+                                <div className="h-10 w-10 rounded-full bg-gradient-to-br from-red-200 to-red-100 flex items-center justify-center text-red-700 font-bold text-lg border border-red-100">
+                                    <span>
+                                        {deleteUser?.name
+                                            ?.split(" ")
+                                            .map((n) => n[0])
+                                            .join("")
+                                            .substring(0, 2)
+                                            .toUpperCase()}
+                                    </span>
+                                </div>
+                            )}
+                            <div>
+                                <div className="font-semibold text-gray-800">
+                                    {deleteUser?.name}
+                                </div>
+                                <div className="text-sm text-gray-600">
+                                    {deleteUser?.email}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                        <div className="flex items-start gap-2">
+                            <svg
+                                className="w-5 h-5 text-yellow-600 mt-0.5 flex-shrink-0"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                            >
+                                <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={2}
+                                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"
+                                />
+                            </svg>
+                            <div className="text-sm text-yellow-700">
+                                <p className="font-medium">Peringatan:</p>
+                                <p className="mt-1">
+                                    Tindakan ini tidak dapat dibatalkan. Semua
+                                    data user akan dihapus secara permanen.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </DialogContent>
+                <DialogActions className="border-t px-6 py-4 flex justify-between bg-slate-50">
+                    <SecondaryButton
+                        type="button"
+                        onClick={() => setDeleteModalOpen(false)}
+                        disabled={deleteLoading}
+                    >
+                        Batal
+                    </SecondaryButton>
+                    <DangerButton
+                        type="button"
+                        onClick={handleDeleteUser}
+                        disabled={deleteLoading}
+                    >
+                        {deleteLoading ? (
+                            <CircularProgress size={20} color="inherit" />
+                        ) : (
+                            "Hapus User"
+                        )}
+                    </DangerButton>
+                </DialogActions>
+            </Dialog>
         </>
     );
 }

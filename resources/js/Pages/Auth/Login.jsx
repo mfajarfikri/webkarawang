@@ -24,17 +24,33 @@ export default function Login({ status, canResetPassword }) {
         setLoginStatus("");
         setLoading(true);
         try {
-            // Get CSRF cookie
-            await axios.get("/sanctum/csrf-cookie");
-            // Attempt login
-            const response = await axios.post("/login", {
-                email: data.email,
-                password: data.password,
-                remember: data.remember,
+            // Ambil CSRF cookie
+            await axios.get("/sanctum/csrf-cookie", {
+                withCredentials: true,
             });
-            enqueueSnackbar("Login berhasil! Mengalihkan...", {
-                variant: "success",
+
+            // Lakukan login dengan axios
+            const response = await axios({
+                method: "post",
+                url: "/login",
+                data: {
+                    email: data.email,
+                    password: data.password,
+                    remember: data.remember,
+                },
+                headers: {
+                    "Content-Type": "application/json",
+                    Accept: "application/json",
+                },
+                withCredentials: true,
             });
+
+            enqueueSnackbar(
+                "Berhasil masuk. Selamat datang di Dashboard PLN UPT Karawang.",
+                {
+                    variant: "success",
+                }
+            );
             // Redirect to dashboard or wherever
             router.visit(route("dashboard.index"));
         } catch (error) {
@@ -46,6 +62,7 @@ export default function Login({ status, canResetPassword }) {
             } else {
                 enqueueSnackbar(
                     "Terjadi kesalahan saat login. Silakan coba lagi.",
+                    errors,
                     {
                         variant: "error",
                     }

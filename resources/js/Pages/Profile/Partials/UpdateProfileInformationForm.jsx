@@ -7,56 +7,81 @@ import { Link, useForm, usePage } from "@inertiajs/react";
 import { useEffect, useState, useRef } from "react";
 import { router } from "@inertiajs/react";
 import { FaCamera, FaSignature, FaUndo } from "react-icons/fa";
-import { FilePond, registerPlugin } from "react-filepond";
-import "filepond/dist/filepond.css";
-import FilePondPluginFileValidateType from "filepond-plugin-file-validate-type";
-import FilePondPluginImageExifOrientation from "filepond-plugin-image-exif-orientation";
-import FilePondPluginImagePreview from "filepond-plugin-image-preview";
-import FilePondPluginImageCrop from "filepond-plugin-image-crop";
-import FilePondPluginImageResize from "filepond-plugin-image-resize";
-import FilePondPluginImageTransform from "filepond-plugin-image-transform";
-import FilePondPluginImageEdit from "filepond-plugin-image-edit";
-import "filepond-plugin-image-preview/dist/filepond-plugin-image-preview.css";
-import "filepond-plugin-image-edit/dist/filepond-plugin-image-edit.css";
-
-registerPlugin(
-    FilePondPluginFileValidateType,
-    FilePondPluginImageExifOrientation,
-    FilePondPluginImagePreview,
-    FilePondPluginImageCrop,
-    FilePondPluginImageResize,
-    FilePondPluginImageTransform,
-    FilePondPluginImageEdit
-);
+import { useSnackbar } from "notistack";
+import axios from "axios";
 
 export default function UpdateProfileInformation({
     mustVerifyEmail,
     status,
     className = "",
+    fotoProfilUrl = null,
 }) {
     const user = usePage().props.auth.user;
+    const { enqueueSnackbar } = useSnackbar();
 
     // Foto profil
-    const [fotoProfil, setFotoProfil] = useState([]);
+    const [fotoProfil, setFotoProfil] = useState(null);
+    const [fotoProfilPreview, setFotoProfilPreview] = useState(
+        fotoProfilUrl || user.foto_profil_url || null
+    );
     const [uploadLoading, setUploadLoading] = useState(false);
     const fotoProfilInput = useRef();
 
-    const handleFotoProfilChange = (fileItems) => {
-        setFotoProfil(fileItems);
-        if (fileItems && fileItems[0]) {
-            setFotoProfilPreview(URL.createObjectURL(fileItems[0].file));
+    // Sinkronisasi preview jika props berubah (misal setelah upload)
+    useEffect(() => {
+        setFotoProfilPreview(fotoProfilUrl || user.foto_profil_url || null);
+    }, [fotoProfilUrl, user.foto_profil_url]);
+
+    // Saat file dipilih, update preview
+    const handleFotoProfilChange = (e) => {
+        const file = e.target.files[0];
+        setFotoProfil(file);
+        if (file) {
+            setFotoProfilPreview(URL.createObjectURL(file));
         }
     };
-    const handleUploadFoto = (e) => {
+
+    const handleUploadFoto = async (e) => {
         e.preventDefault();
-        if (!fotoProfil[0]) return;
+        if (!fotoProfil) return;
         setUploadLoading(true);
         const formData = new FormData();
-        formData.append("foto_profil", fotoProfil[0].file);
-        router.post("/profile/upload-media", formData, {
-            forceFormData: true,
-            onFinish: () => setUploadLoading(false),
-        });
+        formData.append("foto_profil", fotoProfil);
+
+        try {
+            const response = await axios.post(
+                route("dashboard.profile.upload-media"),
+                formData,
+                {
+                    headers: {
+                        "Content-Type": "multipart/form-data",
+                    },
+                }
+            );
+            if (response.data?.foto_profil_url) {
+                setFotoProfilPreview(response.data.foto_profil_url);
+                enqueueSnackbar("Foto profil berhasil diunggah!", {
+                    variant: "success",
+                });
+            }
+            setFotoProfil(null);
+            if (fotoProfilInput.current) fotoProfilInput.current.value = "";
+        } catch (error) {
+            let errorMsg = "Gagal mengunggah foto profil!";
+            if (
+                error.response &&
+                error.response.data &&
+                error.response.data.errors &&
+                error.response.data.errors.foto_profil
+            ) {
+                errorMsg += " " + error.response.data.errors.foto_profil;
+            }
+            enqueueSnackbar(errorMsg, {
+                variant: "error",
+            });
+        } finally {
+            setUploadLoading(false);
+        }
     };
     const handleUploadTandaTangan = (e) => {
         e.preventDefault();
@@ -90,7 +115,7 @@ export default function UpdateProfileInformation({
                     {/* Form Profil */}
                     <header className="w-full">
                         <h3 className="text-lg font-semibold text-blue-700 w-full">
-                            Informasi Profil
+                            Informasi Profile
                         </h3>
                         <p className="mt-1 text-sm text-gray-600 w-full">
                             Perbarui informasi profil akun dan alamat email
@@ -186,38 +211,68 @@ export default function UpdateProfileInformation({
                     </form>
                 </div>
                 <div className="col-span-1">
-                    <div className="bg-blue-50 border-2 h-full border-blue-200 rounded-lg shadow-sm flex flex-col items-center justify-center p-4">
-                        <FilePond
-                            files={fotoProfil}
-                            onupdatefiles={setFotoProfil}
-                            allowMultiple={false}
-                            maxFiles={1}
-                            name="foto_profil"
-                            labelIdle='Drag & Drop your picture or <span class="filepond--label-action">Browse</span>'
-                            acceptedFileTypes={[
-                                "image/png",
-                                "image/jpeg",
-                                "image/gif",
-                            ]}
-                            imagePreviewHeight={170}
-                            imageCropAspectRatio="1:1"
-                            imageResizeTargetWidth={200}
-                            imageResizeTargetHeight={200}
-                            stylePanelLayout="compact circle"
-                            styleLoadIndicatorPosition="center bottom"
-                            styleProgressIndicatorPosition="right bottom"
-                            styleButtonRemoveItemPosition="left bottom"
-                            styleButtonProcessItemPosition="right bottom"
+                    <div className="bg-blue-50 border-2 h-full border-blue-200 rounded-lg shadow-sm flex flex-col items-center justify-center p-4 gap-4">
+                        {/* Preview foto profil saat ini */}
+                        <div className="flex flex-col items-center gap-2 w-full">
+                            <div className="w-32 h-32 rounded-full overflow-hidden border-4 border-blue-200 bg-white flex items-center justify-center">
+                                {fotoProfilPreview ? (
+                                    <img
+                                        src={fotoProfilPreview}
+                                        alt="Foto Profil"
+                                        className="object-cover w-full h-full"
+                                    />
+                                ) : (
+                                    <span className="text-gray-400 text-5xl">
+                                        ?
+                                    </span>
+                                )}
+                            </div>
+                            <span className="text-xs text-gray-500 text-center">
+                                Foto Profil Saat Ini
+                            </span>
+                        </div>
+                        <input
+                            type="file"
+                            accept="image/png, image/jpeg, image/gif"
+                            className="block w-full text-sm text-gray-700 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-100 file:text-blue-700 hover:file:bg-blue-200 mt-2"
+                            onChange={handleFotoProfilChange}
+                            ref={fotoProfilInput}
                         />
-                        <button
-                            type="button"
+                        <PrimaryButton
+                            className="items-center justify-center gap-2 w-full"
                             onClick={handleUploadFoto}
-                            className="mt-4 flex items-center justify-center gap-2 px-5 py-2 rounded-xl bg-gradient-to-r from-blue-700 to-blue-500 text-white font-bold shadow-lg hover:from-blue-800 hover:to-blue-600 disabled:opacity-50 w-full text-base transition-all duration-200"
-                            disabled={uploadLoading || !fotoProfil[0]}
+                            disabled={uploadLoading || !fotoProfil}
                         >
-                            <FaCamera className="text-lg" />
-                            {uploadLoading ? "Menyimpan..." : "Simpan Foto"}
-                        </button>
+                            {uploadLoading ? (
+                                <>
+                                    <svg
+                                        className="animate-spin h-5 w-5 mr-2 text-white"
+                                        viewBox="0 0 24 24"
+                                    >
+                                        <circle
+                                            className="opacity-25"
+                                            cx="12"
+                                            cy="12"
+                                            r="10"
+                                            stroke="currentColor"
+                                            strokeWidth="4"
+                                            fill="none"
+                                        />
+                                        <path
+                                            className="opacity-75"
+                                            fill="currentColor"
+                                            d="M4 12a8 8 0 018-8v8z"
+                                        />
+                                    </svg>
+                                    Menyimpan...
+                                </>
+                            ) : (
+                                <>
+                                    <FaCamera className="text-lg" />
+                                    Simpan Foto
+                                </>
+                            )}
+                        </PrimaryButton>
                     </div>
                 </div>
             </div>

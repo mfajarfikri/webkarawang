@@ -2,12 +2,10 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Bay;
 use App\Models\User;
 use Inertia\Inertia;
 use App\Models\Anomali;
 use App\Models\Kategori;
-use App\Models\Peralatan;
 use App\Models\GarduInduk;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -15,6 +13,9 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Exports\AnomaliExport;
+use Barryvdh\DomPDF\Facade\Pdf;
+
+use function PHPUnit\Framework\isEmpty;
 
 class AnomaliController extends Controller
 {
@@ -23,7 +24,7 @@ class AnomaliController extends Controller
      */
     public function index()
     {
-        $anomalis = Anomali::with(['gardu_induk', 'kategori', 'user'])->get();
+        $anomalis = Anomali::with(['gardu_induk', 'kategori', 'user'])->orderBy('created_at', 'desc')->get();
         return Inertia::render("Dashboard/Anomali/Anomali", [
             'anomalis' => $anomalis
         ]);
@@ -36,10 +37,10 @@ class AnomaliController extends Controller
     {
         $user = Auth::user();
         if ($user && is_array($user->gardu_induk_ids) && count($user->gardu_induk_ids) > 0) {
-            $gardus = GarduInduk::whereIn('id', $user->gardu_induk_ids)->get(['id', 'name']);
+            $gardus = GarduInduk::whereIn('id', $user->gardu_induk_ids)->get(['id', 'name', 'ultg']);
             $defaultGarduId = $user->gardu_induk_ids[0];
         } else {
-            $gardus = GarduInduk::all(['id', 'name']);
+            $gardus = GarduInduk::all(['id', 'name', 'ultg']);
             $defaultGarduId = null;
         }
         $kategoris = Kategori::all(['id', 'name']);
@@ -59,7 +60,13 @@ class AnomaliController extends Controller
      */
     public function store(Request $request)
     {
-
+        if (empty(Auth::user()->tanda_tangan_path)) {
+            return response()->json([
+                'type' => 'error',
+                'message' => 'Tanda tangan belum diunggah. Silakan unggah tanda tangan terlebih dahulu pada menu Pengaturan.'
+            ], 400);
+        }
+        
         $validator = Validator::make($request->all(), [
             'judul' => 'required|string',
             'ultg' => 'required|string',
@@ -144,9 +151,12 @@ class AnomaliController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(Anomali $anomali)
+    public function show($judul)
     {
-        //
+        $anomali = Anomali::with(['gardu_induk', 'kategori', 'user'])->where('judul', $judul)->firstOrFail();
+        return Inertia::render('Dashboard/Anomali/Detail', [
+            'anomalis' => $anomali
+        ]);
     }
 
     /**
@@ -175,12 +185,45 @@ class AnomaliController extends Controller
 
     public function export(Request $request)
     {
-        $month = $request->get('month', 'all');
-        $ultg = $request->get('ultg', 'all');
-        $gardu = $request->get('gardu', 'all');
-        return Excel::download(
-            new AnomaliExport($month, $ultg, $gardu),
-            'anomali_' . $ultg . '_' . $month . '_' . $gardu . '.xlsx'
-        );
+        try {
+            $months = $request->get('months', '');
+            $ultgs = $request->get('ultgs', '');
+            $gardus = $request->get('gardus', '');
+            
+            // Convert comma-separated strings to arrays
+            $monthArray = $months ? explode(',', $months) : [];
+            $ultgArray = $ultgs ? explode(',', $ultgs) : [];
+            $garduArray = $gardus ? explode(',', $gardus) : [];
+            
+            // Generate filename
+            $filename = 'anomali_export_' . date('Y-m-d_H-i-s') . '.xlsx';
+            
+            return Excel::download(
+                new AnomaliExport($monthArray, $ultgArray, $garduArray),
+                $filename
+            );
+        } catch (\Exception $e) {
+            Log::error('Export error: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            return response()->json([
+                'error' => 'Export failed: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function exportPdf($judul)
+    {
+        $anomali = Anomali::with(['gardu_induk', 'kategori', 'user'])->where('judul', $judul)->firstOrFail();
+        $pdf = Pdf::loadView('exports.pdf', compact('anomali'));
+        $filename = 'anomali_' . str_replace(' ', '_', $judul) . '.pdf';
+        // return $pdf->download($filename);
+        return view('exports.pdf', compact('anomali'));
+
+    }
+
+    public function review($id) {
+        return Inertia::render("Dashboard/Anomali/Review");
     }
 }
