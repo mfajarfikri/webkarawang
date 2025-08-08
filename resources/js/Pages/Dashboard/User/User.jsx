@@ -29,14 +29,15 @@ import DangerButton from "@/Components/DangerButton";
 import PrimaryButton from "@/Components/PrimaryButton";
 import axios from "axios";
 
-const JABATAN_OPTIONS = [
+const BIDANG_OPTIONS = [
     "Master",
+    "Renev",
     "MULTG",
-    "TL Hargi",
-    "TL Harjar",
-    "TL Harpro",
-    "TL K3",
-    "TL GI",
+    "Hargi",
+    "Harjar",
+    "Harpro",
+    "K3",
+    "GI",
 ];
 const WILAYAH_OPTIONS = ["UPT Karawang", "ULTG Karawang", "ULTG Purwakarta"];
 
@@ -46,7 +47,7 @@ export default function User() {
     const [roleModalOpen, setRoleModalOpen] = useState(false);
     const [roleModalUser, setRoleModalUser] = useState(null);
     const [roleModalRoles, setRoleModalRoles] = useState([]);
-    const [roleModalJabatan, setRoleModalJabatan] = useState([]);
+    const [roleModalBidang, setRoleModalBidang] = useState([]);
     const [roleModalCurrent, setRoleModalCurrent] = useState("");
     const [roleModalLoading, setRoleModalLoading] = useState(false);
     const [roleModalSaving, setRoleModalSaving] = useState(false);
@@ -66,14 +67,14 @@ export default function User() {
             setRoleModalCurrent(data.userRoles[0] || "");
             setRoleModalWilayah(user.wilayah || "");
             setRoleModalGarduIndukIds(user.gardu_induk_ids || []);
-            setRoleModalJabatan(user.jabatan || "");
+            setRoleModalBidang(user.bidang || "");
         } catch (e) {
             setRoleModalRoles([]);
             setRoleModalCurrent("");
             setRoleModalError("Gagal memuat data role.");
             setRoleModalWilayah("");
             setRoleModalGarduIndukIds([]);
-            setRoleModalJabatan("");
+            setRoleModalBidang("");
             enqueueSnackbar(
                 <span>
                     <b>Gagal memuat data!</b> Silakan coba lagi atau hubungi
@@ -97,14 +98,14 @@ export default function User() {
                 role: roleModalCurrent,
                 wilayah: roleModalWilayah,
                 gardu_induk_ids: roleModalGarduIndukIds,
-                jabatan: roleModalJabatan,
+                bidang: roleModalBidang,
             });
             setRoleModalSaving(false);
             setRoleModalOpen(false);
 
             enqueueSnackbar(
                 <span>
-                    <b>{roleModalUser.name} berhasil diubah!</b> Data telah
+                    <b>{roleModalUser.name} berhasil diubah!</b> Data role telah
                     disimpan ke server.
                 </span>,
                 {
@@ -124,7 +125,7 @@ export default function User() {
                     errors.role?.[0] ||
                         errors.wilayah?.[0] ||
                         errors.gardu_induk_ids?.[0] ||
-                        errors.jabatan?.[0] ||
+                        errors.bidang?.[0] ||
                         ""
                 );
             } else {
@@ -155,7 +156,7 @@ export default function User() {
     const [allRoles, setAllRoles] = useState([]);
     const [createWilayah, setCreateWilayah] = useState("");
     const [createGarduIndukIds, setCreateGarduIndukIds] = useState([]);
-    const [createJabatan, setCreateJabatan] = useState("");
+    const [createBidang, setCreateBidang] = useState("");
 
     // Delete modal state
     const [deleteModalOpen, setDeleteModalOpen] = useState(false);
@@ -175,7 +176,7 @@ export default function User() {
         setCreatePassword("");
         setCreateRole("");
         setCreateWilayah("");
-        setCreateJabatan("");
+        setCreateBidang("");
         setCreateGarduIndukIds([]);
         setCreateError({});
         setCreateLoading(false);
@@ -250,7 +251,7 @@ export default function User() {
                 password: createPassword,
                 role: createRole,
                 wilayah: createWilayah,
-                jabatan: createJabatan,
+                bidang: createBidang,
                 gardu_induk_ids: createGarduIndukIds,
             });
             setCreateModalOpen(false);
@@ -452,7 +453,7 @@ export default function User() {
                                                         Role
                                                     </th>
                                                     <th className="px-3 py-3 text-center text-xs sm:text-sm font-semibold">
-                                                        Jabatan
+                                                        Bidang
                                                     </th>
                                                     <th className="px-3 py-3 text-center text-xs sm:text-sm font-semibold">
                                                         Wilayah
@@ -542,12 +543,12 @@ export default function User() {
                                                                     </span>
                                                                 </td>
                                                                 <td className="px-3 py-3 text-center">
-                                                                    {row.jabatan ? (
+                                                                    {row.bidang ? (
                                                                         <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-blue-100 text-blue-800 text-xs font-bold shadow border border-blue-200">
                                                                             <FaUsers className="text-blue-400 text-sm" />
                                                                             <span className="tracking-wide">
                                                                                 {
-                                                                                    row.jabatan
+                                                                                    row.bidang
                                                                                 }
                                                                             </span>
                                                                         </span>
@@ -939,21 +940,21 @@ export default function User() {
                                         </div>
                                     </div>
 
-                                    {/* Jabatan */}
+                                    {/* Bidang */}
                                     <div>
                                         <label className="block text-gray-700 font-semibold mb-3 text-sm">
-                                            Jabatan
+                                            Bidang
                                         </label>
                                         <div className="relative">
                                             <Listbox
-                                                value={roleModalJabatan}
-                                                onChange={setRoleModalJabatan}
+                                                value={roleModalBidang}
+                                                onChange={setRoleModalBidang}
                                             >
                                                 <div className="relative">
                                                     <Listbox.Button className="border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 rounded-lg px-4 py-2 w-full bg-white transition-all shadow text-gray-800 flex justify-between items-center">
                                                         <span>
-                                                            {roleModalJabatan ||
-                                                                "Pilih Jabatan"}
+                                                            {roleModalBidang ||
+                                                                "Pilih Bidang"}
                                                         </span>
                                                         <span className="pointer-events-none text-gray-400 ml-2">
                                                             <svg
@@ -986,16 +987,14 @@ export default function User() {
                                                                 }`
                                                             }
                                                         >
-                                                            Pilih Jabatan
+                                                            Pilih Bidang
                                                         </Listbox.Option>
-                                                        {JABATAN_OPTIONS.map(
-                                                            (jabatan) => (
+                                                        {BIDANG_OPTIONS.map(
+                                                            (bidang) => (
                                                                 <Listbox.Option
-                                                                    key={
-                                                                        jabatan
-                                                                    }
+                                                                    key={bidang}
                                                                     value={
-                                                                        jabatan
+                                                                        bidang
                                                                     }
                                                                     className={({
                                                                         active,
@@ -1030,7 +1029,7 @@ export default function User() {
                                                                             )}
                                                                             <span>
                                                                                 {
-                                                                                    jabatan
+                                                                                    bidang
                                                                                 }
                                                                             </span>
                                                                         </div>
@@ -1198,7 +1197,7 @@ export default function User() {
                             roleModalSaving ||
                             roleModalLoading ||
                             !roleModalCurrent ||
-                            !roleModalJabatan
+                            !roleModalBidang
                         }
                     >
                         {roleModalSaving ? (
@@ -1462,17 +1461,17 @@ export default function User() {
                                             </div>
                                             <div>
                                                 <label className="block text-gray-700 font-semibold mb-2 text-sm">
-                                                    Jabatan
+                                                    Bidang
                                                 </label>
                                                 <Listbox
-                                                    value={createJabatan}
-                                                    onChange={setCreateJabatan}
+                                                    value={createBidang}
+                                                    onChange={setCreateBidang}
                                                 >
                                                     <div className="relative">
                                                         <Listbox.Button className="border border-gray-200 rounded-lg px-4 py-3 w-full focus:ring-2 focus:ring-blue-200 focus:border-blue-400 transition text-base bg-white text-left flex justify-between items-center">
                                                             <span>
-                                                                {createJabatan ||
-                                                                    "Pilih Jabatan"}
+                                                                {createBidang ||
+                                                                    "Pilih Bidang"}
                                                             </span>
                                                             <span className="pointer-events-none text-gray-400 ml-2">
                                                                 <svg
@@ -1492,14 +1491,14 @@ export default function User() {
                                                             </span>
                                                         </Listbox.Button>
                                                         <Listbox.Options className="absolute z-10 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-auto focus:outline-none">
-                                                            {JABATAN_OPTIONS.map(
-                                                                (jabatan) => (
+                                                            {BIDANG_OPTIONS.map(
+                                                                (bidang) => (
                                                                     <Listbox.Option
                                                                         key={
-                                                                            jabatan
+                                                                            bidang
                                                                         }
                                                                         value={
-                                                                            jabatan
+                                                                            bidang
                                                                         }
                                                                         className={({
                                                                             active,
@@ -1511,18 +1510,16 @@ export default function User() {
                                                                             }`
                                                                         }
                                                                     >
-                                                                        {
-                                                                            jabatan
-                                                                        }
+                                                                        {bidang}
                                                                     </Listbox.Option>
                                                                 )
                                                             )}
                                                         </Listbox.Options>
                                                     </div>
                                                 </Listbox>
-                                                {createError.jabatan && (
+                                                {createError.bidang && (
                                                     <div className="text-red-500 mt-1 text-xs">
-                                                        {createError.jabatan}
+                                                        {createError.bidang}
                                                     </div>
                                                 )}
                                             </div>
@@ -1642,7 +1639,7 @@ export default function User() {
                                     !createName ||
                                     !createEmail ||
                                     !createRole ||
-                                    !createJabatan
+                                    !createBidang
                                 }
                             >
                                 {createLoading ? (

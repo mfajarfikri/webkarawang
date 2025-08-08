@@ -22,10 +22,12 @@ import PrimaryButton from "@/Components/PrimaryButton";
 
 function StatusBadge({ status }) {
     let color = "bg-gray-300 text-gray-700";
-    if (status === "New") color = "bg-red-100 text-red-700";
+    if (status === "New") color = "bg-rose-200 text-rose-800";
+    else if (status === "In Progress") color = "bg-yellow-100 text-yellow-800";
     else if (status === "Open") color = "bg-blue-100 text-blue-800";
     else if (status === "Pending") color = "bg-orange-100 text-orange-800";
     else if (status === "Close") color = "bg-emerald-100 text-emerald-700";
+    else if (status === "Rejected") color = "bg-red-100 text-red-800";
     return (
         <span className={`px-2 py-1 rounded text-xs font-semibold ${color}`}>
             {status}
@@ -248,8 +250,8 @@ export default function Anomali({ anomalis = [], auth = [] }) {
                             >
                                 Tabel Anomali
                             </button>
-                            {auth.user.jabatan &&
-                            auth.user.jabatan.toLowerCase() === "multg" ? (
+                            {auth.user.bidang &&
+                            auth.user.bidang.toLowerCase() === "multg" ? (
                                 <button
                                     className={`px-6 py-3 text-sm font-semibold focus:outline-none transition-colors border-b-2 ${
                                         activeTab === "approval"
@@ -716,7 +718,7 @@ export default function Anomali({ anomalis = [], auth = [] }) {
                                                                     0 &&
                                                                 exportMonths.length ===
                                                                     0
-                                                                    ? "Pilih Filter"
+                                                                    ? "Pilih Data"
                                                                     : "Export ke Excel"}
                                                             </span>
                                                         </button>
@@ -765,12 +767,15 @@ export default function Anomali({ anomalis = [], auth = [] }) {
 
                                                 {/* Export Button & Filter Summary */}
                                             </div>
-
+                                        </div>
+                                    </div>
+                                    <div className="mb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between bg-white border border-gray-200 rounded-lg gap-2 w-full">
+                                        <div className="flex flex-row flex-wrap items-center gap-2 px-3 py-4 shadow-sm w-full sm:w-auto justify-center sm:justify-start">
                                             <div className="relative">
                                                 <input
                                                     type="text"
                                                     placeholder="Cari judul..."
-                                                    className="w-full pl-12 pr-4 py-2 border border-gray-300 rounded-md focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
+                                                    className="w-full pl-12 pr-4 py-2 border border-gray-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
                                                     value={searchTerm}
                                                     onChange={(e) =>
                                                         setSearchTerm(
@@ -781,7 +786,7 @@ export default function Anomali({ anomalis = [], auth = [] }) {
                                                 <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-lg" />
                                             </div>
                                             <button
-                                                className="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-md shadow-sm hover:bg-gray-50 font-semibold flex items-center gap-2 transition-colors"
+                                                className="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg shadow-sm hover:bg-gray-50 font-semibold flex items-center gap-2 transition-colors"
                                                 onClick={() =>
                                                     setFilterOpen &&
                                                     setFilterOpen(true)
@@ -793,74 +798,79 @@ export default function Anomali({ anomalis = [], auth = [] }) {
                                                     Filter
                                                 </span>
                                             </button>
+                                            {/* Move paginate to the end */}
                                         </div>
-                                        <div className="flex items-center gap-2 bg-white border border-gray-200 rounded-md px-3 py-2 shadow-sm">
-                                            <label className="text-gray-600 text-sm font-medium">
+                                        <div className="flex items-center gap-2 mx-2 sm:mt-0">
+                                            <label className="text-gray-600 text-sm font-medium mr-1">
                                                 Tampil
                                             </label>
-                                            <Listbox
-                                                value={rowsPerPage}
-                                                onChange={
-                                                    handleRowsPerPageChange
-                                                }
-                                            >
-                                                <div className="relative w-20">
-                                                    <Listbox.Button className="border-gray-300 rounded px-2 py-1 text-sm w-full text-left bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                                                        {rowsPerPage}
-                                                    </Listbox.Button>
-                                                    <Listbox.Options className="absolute left-0 mt-1 w-full bg-white border border-gray-200 rounded shadow-lg z-50 overflow-hidden">
-                                                        {[10, 20, 50].map(
-                                                            (option) => (
-                                                                <Listbox.Option
-                                                                    key={option}
-                                                                    value={
-                                                                        option
-                                                                    }
-                                                                    className={({
-                                                                        active,
-                                                                        selected,
-                                                                    }) =>
-                                                                        `relative cursor-pointer select-none px-2 py-1 text-sm transition-colors ${
-                                                                            active
-                                                                                ? "bg-blue-50 text-blue-800"
-                                                                                : selected
-                                                                                ? "bg-gray-100 text-gray-900"
-                                                                                : "text-gray-700"
-                                                                        }`
-                                                                    }
-                                                                >
-                                                                    {({
-                                                                        selected,
-                                                                    }) => (
-                                                                        <div className="flex items-center">
-                                                                            <span
-                                                                                className={`block truncate ${
-                                                                                    selected
-                                                                                        ? "font-semibold"
-                                                                                        : "font-normal"
-                                                                                }`}
-                                                                            >
-                                                                                {
-                                                                                    option
-                                                                                }
-                                                                            </span>
-                                                                            {selected && (
-                                                                                <span className="ml-auto flex items-center text-blue-600">
-                                                                                    <FaCheck
-                                                                                        className="h-4 w-4"
-                                                                                        aria-hidden="true"
-                                                                                    />
+                                            <div className="min-w-[4.5rem]">
+                                                <Listbox
+                                                    value={rowsPerPage}
+                                                    onChange={
+                                                        handleRowsPerPageChange
+                                                    }
+                                                >
+                                                    <div className="relative">
+                                                        <Listbox.Button className="border border-gray-300 rounded-lg px-2 py-1 text-sm w-full text-left bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+                                                            {rowsPerPage}
+                                                        </Listbox.Button>
+                                                        <Listbox.Options className="absolute left-0 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg z-50 overflow-hidden">
+                                                            {[10, 20, 50].map(
+                                                                (option) => (
+                                                                    <Listbox.Option
+                                                                        key={
+                                                                            option
+                                                                        }
+                                                                        value={
+                                                                            option
+                                                                        }
+                                                                        className={({
+                                                                            active,
+                                                                            selected,
+                                                                        }) =>
+                                                                            `relative cursor-pointer select-none px-2 py-1 text-sm transition-colors ${
+                                                                                active
+                                                                                    ? "bg-blue-50 text-blue-800"
+                                                                                    : selected
+                                                                                    ? "bg-gray-100 text-gray-900"
+                                                                                    : "text-gray-700"
+                                                                            }`
+                                                                        }
+                                                                    >
+                                                                        {({
+                                                                            selected,
+                                                                        }) => (
+                                                                            <div className="flex items-center">
+                                                                                <span
+                                                                                    className={`block truncate ${
+                                                                                        selected
+                                                                                            ? "font-semibold"
+                                                                                            : "font-normal"
+                                                                                    }`}
+                                                                                >
+                                                                                    {
+                                                                                        option
+                                                                                    }
                                                                                 </span>
-                                                                            )}
-                                                                        </div>
-                                                                    )}
-                                                                </Listbox.Option>
-                                                            )
-                                                        )}
-                                                    </Listbox.Options>
-                                                </div>
-                                            </Listbox>
-                                            <span className="text-gray-500 text-xs">
+                                                                                {selected && (
+                                                                                    <span className="ml-auto flex items-center text-blue-600">
+                                                                                        <FaCheck
+                                                                                            className="h-4 w-4"
+                                                                                            aria-hidden="true"
+                                                                                        />
+                                                                                    </span>
+                                                                                )}
+                                                                            </div>
+                                                                        )}
+                                                                    </Listbox.Option>
+                                                                )
+                                                            )}
+                                                        </Listbox.Options>
+                                                    </div>
+                                                </Listbox>
+                                            </div>
+                                            <span className="text-gray-500 text-xs ml-1">
                                                 / halaman
                                             </span>
                                         </div>
@@ -1052,7 +1062,7 @@ export default function Anomali({ anomalis = [], auth = [] }) {
                                                                             <Link
                                                                                 href={route(
                                                                                     "dashboard.anomali.show",
-                                                                                    anomali.judul
+                                                                                    anomali.slug
                                                                                 )}
                                                                             >
                                                                                 <SecondaryButton>
@@ -1069,61 +1079,66 @@ export default function Anomali({ anomalis = [], auth = [] }) {
                                             </div>
                                         </div>
                                     </ErrorBoundary>
-                                    <div className="flex flex-col sm:flex-row items-center justify-between mt-4 px-2 gap-2">
-                                        <div className="text-sm text-gray-600 mb-1 sm:mb-0">
-                                            Halaman{" "}
-                                            <span className="font-semibold text-gray-800">
-                                                {page}
-                                            </span>{" "}
-                                            dari{" "}
-                                            <span className="font-semibold text-gray-800">
-                                                {totalPages}
-                                            </span>
-                                            <span className="mx-2">|</span>
-                                            Total{" "}
-                                            <span className="font-semibold text-gray-800">
-                                                {totalRows}
-                                            </span>{" "}
-                                            data
-                                        </div>
-                                        <div className="flex items-center gap-0.5">
-                                            <button
-                                                onClick={handlePrev}
-                                                disabled={page === 1}
-                                                className={`px-3 py-2 rounded-l-md border border-r-0 text-sm flex items-center gap-1 font-semibold transition-colors
-                                                ${
-                                                    page === 1
-                                                        ? "bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed"
-                                                        : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
-                                                }
-                                            `}
-                                                aria-label="Halaman sebelumnya"
-                                            >
-                                                <FaChevronLeft />
-                                            </button>
-                                            <span className="px-4 py-2 text-sm bg-gray-50 text-gray-800 select-none font-bold tracking-wide border-t border-b border-gray-200">
-                                                {page}
-                                            </span>
-                                            <button
-                                                onClick={handleNext}
-                                                disabled={page === totalPages}
-                                                className={`px-3 py-2 rounded-r-md border border-l-0 text-sm flex items-center gap-1 font-semibold transition-colors
-                                                ${
-                                                    page === totalPages
-                                                        ? "bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed"
-                                                        : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
-                                                }
-                                            `}
-                                                aria-label="Halaman berikutnya"
-                                            >
-                                                <FaChevronRight />
-                                            </button>
+                                    <div className="flex flex-col gap-2 mt-4 px-2 w-full">
+                                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 w-full">
+                                            <div className="text-sm text-gray-600 mb-1 sm:mb-0 text-center sm:text-left">
+                                                Halaman{" "}
+                                                <span className="font-semibold text-gray-800">
+                                                    {page}
+                                                </span>{" "}
+                                                dari{" "}
+                                                <span className="font-semibold text-gray-800">
+                                                    {totalPages}
+                                                </span>
+                                                <span className="mx-2">|</span>
+                                                Total{" "}
+                                                <span className="font-semibold text-gray-800">
+                                                    {totalRows}
+                                                </span>{" "}
+                                                data
+                                            </div>
+
+                                            <div className="flex items-center gap-0.5 justify-center sm:justify-end w-full sm:w-auto">
+                                                <button
+                                                    onClick={handlePrev}
+                                                    disabled={page === 1}
+                                                    className={`px-3 py-2 rounded-l-md border border-r-0 text-sm flex items-center gap-1 font-semibold transition-colors
+                                                    ${
+                                                        page === 1
+                                                            ? "bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed"
+                                                            : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
+                                                    }
+                                                `}
+                                                    aria-label="Halaman sebelumnya"
+                                                >
+                                                    <FaChevronLeft />
+                                                </button>
+                                                <span className="px-4 py-2 text-sm bg-gray-50 text-gray-800 select-none font-bold tracking-wide border-t border-b border-gray-200">
+                                                    {page}
+                                                </span>
+                                                <button
+                                                    onClick={handleNext}
+                                                    disabled={
+                                                        page === totalPages
+                                                    }
+                                                    className={`px-3 py-2 rounded-r-md border border-l-0 text-sm flex items-center gap-1 font-semibold transition-colors
+                                                    ${
+                                                        page === totalPages
+                                                            ? "bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed"
+                                                            : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
+                                                    }
+                                                `}
+                                                    aria-label="Halaman berikutnya"
+                                                >
+                                                    <FaChevronRight />
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
                             </>
-                        ) : auth.user.jabatan &&
-                          auth.user.jabatan.toLowerCase() === "multg" ? (
+                        ) : auth.user.bidang &&
+                          auth.user.bidang.toLowerCase() === "multg" ? (
                             <>
                                 <div className="px-4 sm:px-6 pt-6 pb-4 border-b border-gray-200 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                                     <div className="w-full md:w-2/3">
@@ -1143,68 +1158,74 @@ export default function Anomali({ anomalis = [], auth = [] }) {
                                             secara efisien.
                                         </p>
                                     </div>
-                                    <div className="w-full md:w-auto flex items-center gap-2 bg-white border border-gray-200 rounded-md px-3 py-2 shadow-sm mt-2 md:mt-0">
+                                    <div className="w-full md:w-auto flex items-center gap-2 bg-white border border-gray-200 rounded-lg px-3 py-2 shadow-sm mt-2 md:mt-0">
                                         <label className="text-gray-600 text-sm font-medium mr-2 whitespace-nowrap">
                                             Tampil
                                         </label>
-                                        <Listbox
-                                            value={rowsPerPage}
-                                            onChange={handleRowsPerPageChange}
-                                        >
-                                            <div className="relative w-20">
-                                                <Listbox.Button className="border border-gray-300 rounded px-2 py-1 text-sm w-full text-left bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
-                                                    {rowsPerPage}
-                                                </Listbox.Button>
-                                                <Listbox.Options className="absolute left-0 mt-1 w-full bg-white border border-gray-200 rounded shadow-lg z-20 overflow-hidden">
-                                                    {[10, 20, 50].map(
-                                                        (option) => (
-                                                            <Listbox.Option
-                                                                key={option}
-                                                                value={option}
-                                                                className={({
-                                                                    active,
-                                                                    selected,
-                                                                }) =>
-                                                                    `relative cursor-pointer select-none px-2 py-1 text-sm transition-colors ${
-                                                                        active
-                                                                            ? "bg-blue-50 text-blue-800"
-                                                                            : selected
-                                                                            ? "bg-gray-100 text-gray-900"
-                                                                            : "text-gray-700"
-                                                                    }`
-                                                                }
-                                                            >
-                                                                {({
-                                                                    selected,
-                                                                }) => (
-                                                                    <div className="flex items-center">
-                                                                        <span
-                                                                            className={`block truncate ${
-                                                                                selected
-                                                                                    ? "font-semibold"
-                                                                                    : "font-normal"
-                                                                            }`}
-                                                                        >
-                                                                            {
-                                                                                option
-                                                                            }
-                                                                        </span>
-                                                                        {selected && (
-                                                                            <span className="ml-auto flex items-center text-blue-600">
-                                                                                <FaCheck
-                                                                                    className="h-4 w-4"
-                                                                                    aria-hidden="true"
-                                                                                />
+                                        <div className="z-20 min-w-[90px] w-20 sm:w-24 md:w-28">
+                                            <Listbox
+                                                value={rowsPerPage}
+                                                onChange={
+                                                    handleRowsPerPageChange
+                                                }
+                                            >
+                                                <div className="relative w-full">
+                                                    <Listbox.Button className="border border-gray-300 rounded px-2 py-1 text-sm w-full text-left bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+                                                        {rowsPerPage}
+                                                    </Listbox.Button>
+                                                    <Listbox.Options className="absolute left-0 mt-1 w-full bg-white border border-gray-200 rounded shadow-lg z-50 overflow-hidden">
+                                                        {[10, 20, 50].map(
+                                                            (option) => (
+                                                                <Listbox.Option
+                                                                    key={option}
+                                                                    value={
+                                                                        option
+                                                                    }
+                                                                    className={({
+                                                                        active,
+                                                                        selected,
+                                                                    }) =>
+                                                                        `relative cursor-pointer select-none px-2 py-1 text-sm transition-colors ${
+                                                                            active
+                                                                                ? "bg-blue-50 text-blue-800"
+                                                                                : selected
+                                                                                ? "bg-gray-100 text-gray-900"
+                                                                                : "text-gray-700"
+                                                                        }`
+                                                                    }
+                                                                >
+                                                                    {({
+                                                                        selected,
+                                                                    }) => (
+                                                                        <div className="flex items-center">
+                                                                            <span
+                                                                                className={`block truncate ${
+                                                                                    selected
+                                                                                        ? "font-semibold"
+                                                                                        : "font-normal"
+                                                                                }`}
+                                                                            >
+                                                                                {
+                                                                                    option
+                                                                                }
                                                                             </span>
-                                                                        )}
-                                                                    </div>
-                                                                )}
-                                                            </Listbox.Option>
-                                                        )
-                                                    )}
-                                                </Listbox.Options>
-                                            </div>
-                                        </Listbox>
+                                                                            {selected && (
+                                                                                <span className="ml-auto flex items-center text-blue-600">
+                                                                                    <FaCheck
+                                                                                        className="h-4 w-4"
+                                                                                        aria-hidden="true"
+                                                                                    />
+                                                                                </span>
+                                                                            )}
+                                                                        </div>
+                                                                    )}
+                                                                </Listbox.Option>
+                                                            )
+                                                        )}
+                                                    </Listbox.Options>
+                                                </div>
+                                            </Listbox>
+                                        </div>
                                         <span className="text-gray-500 text-xs ml-2 whitespace-nowrap">
                                             / halaman
                                         </span>
@@ -1357,7 +1378,7 @@ export default function Anomali({ anomalis = [], auth = [] }) {
                                                                             <Link
                                                                                 href={route(
                                                                                     "dashboard.anomali.review",
-                                                                                    anomali.judul
+                                                                                    anomali.slug
                                                                                 )}
                                                                             >
                                                                                 <SecondaryButton>
@@ -1436,33 +1457,5 @@ export default function Anomali({ anomalis = [], auth = [] }) {
                 </div>
             </DashboardLayout>
         </>
-    );
-}
-function ComboboxMultiple() {
-    const [query, setQuery] = useState("");
-    const filtered =
-        query === ""
-            ? options
-            : options.filter((o) =>
-                  o.name.toLowerCase().includes(query.toLowerCase())
-              );
-    return (
-        <Combobox value={value} onChange={onChange} multiple>
-            <div className="relative">
-                <div className="flex flex-wrap gap-1 mb-1">
-                    {value.map((id) => {
-                        const opt = options.find((o) => o.id === id);
-                        return (
-                            <span
-                                key={id}
-                                className="bg-blue-100 text-blue-700 px-2 py-1 mb-2 transition-all ease-in-out rounded text-xs font-medium"
-                            >
-                                {opt ? opt.name : id}
-                            </span>
-                        );
-                    })}
-                </div>
-            </div>
-        </Combobox>
     );
 }

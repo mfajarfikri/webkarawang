@@ -39,12 +39,13 @@ class UserSeeder extends Seeder
         $user = User::first();
 
 
-        $permissions = ['View Role','View Anomali', 'View Anomali Create', 'View Ktt'];
+        $permissions = ['View Role','View Anomali', 'View Anomali Create', 'View Ktt', 'Approve Anomali'];
         $descriptions = [
             'Mengakses halaman manajemen role',
             'Mengakses halaman anomali',
             'Mengakses halaman pembuatan anomali',
-            'Mengakses halaman utama KTT'
+            'Mengakses halaman utama KTT',
+            'Mengakses halaman approval anomali'
         ];
         foreach ($permissions as $i => $perm) {
             Permission::firstOrCreate(

@@ -9,7 +9,9 @@ use Illuminate\Http\Request;
 class DataController extends Controller
 {
     public function ShowAnomali(Request $request) {
-        $anomalis = Anomali::with(['garduInduk', 'kategori', 'user'])->get();
+        $anomalis = Anomali::with(['gardu_induk', 'kategori', 'user'])
+            ->where('status', '!=', 'Rejected')
+            ->get();
         return response()->json([
             'anomalis' => $anomalis
         ]);

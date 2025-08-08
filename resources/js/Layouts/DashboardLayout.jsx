@@ -220,9 +220,14 @@ export default function DashboardLayout({ children, title = "Dashboard" }) {
                                 {/* User profile dropdown */}
                                 <div className="ml-3 relative">
                                     <div className="flex items-center">
-                                        <span className="hidden md:inline-block mr-2 text-sm font-medium text-gray-700">
-                                            {userName}
-                                        </span>
+                                        <div className="flex flex-col mx-2">
+                                            <span className="hidden md:inline-block text-sm font-medium text-gray-700">
+                                                {userName}
+                                            </span>
+                                            <span className="text-xs text-gray-500">
+                                                {auth.user.wilayah}
+                                            </span>
+                                        </div>
                                         <button
                                             onClick={() =>
                                                 setActiveDropdown(

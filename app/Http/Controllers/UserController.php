@@ -22,7 +22,7 @@ class UserController extends Controller
                 'id' => $user->id,
                 'name' => $user->name,
                 'email' => $user->email,
-                'jabatan' => $user->jabatan,
+                'bidang' => $user->bidang,
                 'foto_profil' => $user->foto_profil ? Storage::url($user->foto_profil) : null,
                 'role' => $user->roles->pluck('name')->implode(', '),
                 'wilayah' => $user->wilayah,
@@ -56,7 +56,7 @@ class UserController extends Controller
             'password' => 'required|string|min:6',
             'role' => 'required|exists:roles,name',
             'wilayah' => 'required|in:UPT Karawang,ULTG Karawang,ULTG Purwakarta',
-            'jabatan' => 'required|in:MULTG,TL Hargi,TL Harjar,TL Harpro,TL K3',
+            'bidang' => 'required|in:Master,Renev,MULTG,Hargi,Harjar,Harpro,K3,GI',
             'gardu_induk_ids' => 'nullable|array',
             'gardu_induk_ids.*' => 'exists:gardu_induks,id',
         ]);
@@ -65,7 +65,7 @@ class UserController extends Controller
             'email' => $request->email,
             'password' => bcrypt($request->password),
             'wilayah' => $request->wilayah,
-            'jabatan' => $request->jabatan,
+            'bidang' => $request->bidang,
             'gardu_induk_ids' => $request->gardu_induk_ids,
         ]);
         $user->assignRole($request->role);
@@ -97,12 +97,12 @@ class UserController extends Controller
         $request->validate([
             'role' => 'required|exists:roles,name',
             'wilayah' => 'required|in:UPT Karawang,ULTG Karawang,ULTG Purwakarta',
-            'jabatan' => 'required|in:Master,MULTG,TL Hargi,TL Harjar,TL Harpro,TL K3,TL GI',
+            'bidang' => 'required|in:Master,Renev,MULTG,Hargi,Harjar,Harpro,K3,GI',
             'gardu_induk_ids' => 'nullable|array',
             'gardu_induk_ids.*' => 'exists:gardu_induks,id',
         ]);
         $user->wilayah = $request->wilayah;
-        $user->jabatan = $request->jabatan;
+        $user->bidang = $request->bidang;
         $user->gardu_induk_ids = $request->gardu_induk_ids;
         $user->save();
         $user->syncRoles([$request->role]);
@@ -145,6 +145,7 @@ class UserController extends Controller
                 'roles' => $roles,
                 'userRoles' => $userRoles,
                 'ultg' => $ultg,
+                'bidang' => $user->bidang,
                 'gardu_induk_ids' => $gardu_induk_ids,
                 'gardu_induks' => $gardu_induks,
             ]);

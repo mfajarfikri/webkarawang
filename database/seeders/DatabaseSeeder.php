@@ -31,6 +31,6 @@ class DatabaseSeeder extends Seeder
         ]);
 
         // GarduInduk::factory(18)->create();
-        Anomali::factory(50)->create();
+        // Anomali::factory(50)->create();
     }
 }

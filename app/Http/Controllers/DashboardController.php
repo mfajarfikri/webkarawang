@@ -15,6 +15,7 @@ class DashboardController extends Controller
 
         return Inertia::render('Dashboard/Dashboard', [
             'foto_profil' => $user->foto_profil ? Storage::url($user->foto_profil) : null,
+            'apiUrl' => url('/api/anomali')
         ]);
     }
 }

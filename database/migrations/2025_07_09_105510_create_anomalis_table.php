@@ -33,7 +33,7 @@ return new class extends Migration
             $table->text('akibat');
             $table->text('usul_saran')->nullable(); 
             $table->json('lampiran_foto')->nullable();
-            $table->enum('status', ['New', 'Open', 'Pending', 'Close']);
+            $table->enum('status', ['New', 'Open', 'In Progress', 'Pending', 'Close', 'Rejected']);
             $table->unsignedBigInteger('user_id');
             
             
@@ -44,8 +44,8 @@ return new class extends Migration
             $table->text('reject_reason')->nullable();
             $table->unsignedBigInteger('assign_to')->nullable();
             $table->date('tanggal_approve')->nullable();
-            $table->date('tanggal_selesai')->nullable();
             $table->date('tanggal_mulai')->nullable();
+            $table->date('tanggal_selesai')->nullable();
 
 
             $table->foreign('gardu_id')->references('id')->on('gardu_induks')->onDelete('cascade');

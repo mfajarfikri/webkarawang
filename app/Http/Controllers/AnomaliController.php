@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\Validator;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Exports\AnomaliExport;
 use Barryvdh\DomPDF\Facade\Pdf;
+use App\Http\Controllers\AnomaliTimelineController;
 
 use function PHPUnit\Framework\isEmpty;
 
@@ -134,6 +135,10 @@ class AnomaliController extends Controller
                 'user_id' => Auth::id(),
             ]);
 
+            // Add timeline entry for anomali creation
+            $timelineController = new AnomaliTimelineController();
+            $timelineController->addCreationEntry($anomali->id, 'Anomali baru telah dibuat');
+
             return response()->json([
                 'type' => 'success',
                 'message' => 'Anomali berhasil ditambahkan',
@@ -151,9 +156,9 @@ class AnomaliController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show($judul)
+    public function show(Anomali $anomali)
     {
-        $anomali = Anomali::with(['gardu_induk', 'kategori', 'user'])->where('judul', $judul)->firstOrFail();
+        $anomali->load(['gardu_induk', 'kategori', 'user', 'assignedUser', 'approvedBy', 'timelines.user']);
         return Inertia::render('Dashboard/Anomali/Detail', [
             'anomalis' => $anomali
         ]);
@@ -213,17 +218,101 @@ class AnomaliController extends Controller
         }
     }
 
-    public function exportPdf($judul)
+    public function exportPdf(Anomali $anomali)
     {
-        $anomali = Anomali::with(['gardu_induk', 'kategori', 'user'])->where('judul', $judul)->firstOrFail();
-        $pdf = Pdf::loadView('exports.pdf', compact('anomali'));
-        $filename = 'anomali_' . str_replace(' ', '_', $judul) . '.pdf';
-        // return $pdf->download($filename);
-        return view('exports.pdf', compact('anomali'));
+        try {
+            $anomali->load(['gardu_induk', 'kategori', 'user']);
+
+            $pdf = Pdf::loadView('exports.pdf', ['anomali' => $anomali])
+                ->setPaper('a4', 'portrait');
+
+            $filename = 'anomali_' . preg_replace('/\s+/', '_', $anomali->judul) . '.pdf';
+
+            return $pdf->download($filename);
+            // return view('exports.pdf', compact('anomali'));
+        } catch (\Exception $e) {
+            Log::error('Export PDF error: ' . $e->getMessage(), [
+                'id' => $anomali->id,
+                'trace' => $e->getTraceAsString()
+            ]);
+            return response()->json([
+                'error' => 'Export PDF failed: ' . $e->getMessage()
+            ], 500);
+        }
+        
 
     }
 
-    public function review($id) {
-        return Inertia::render("Dashboard/Anomali/Review");
+    public function review(Anomali $anomali) {
+        $anomali->load(['gardu_induk', 'kategori', 'user', 'assignedUser', 'approvedBy']);
+        
+        // Ambil daftar pengguna untuk dropdown assign
+        $users = User::all(['id', 'name']);
+        
+        return Inertia::render("Dashboard/Anomali/Review", [
+            'anomalis' => $anomali,
+            'users' => $users
+        ]);
     }
+    
+    /**
+     * Approve or reject an anomaly
+     */
+    public function approve(Request $request, Anomali $anomali) {
+        $validator = Validator::make($request->all(), [
+            'approve' => 'required|in:Yes,No,1,0',
+            'reject_reason' => 'required_if:approve,No|required_if:approve,0|nullable|string',
+            'bidang' => 'required_if:approve,Yes|required_if:approve,1|nullable|in:Master,MULTG,Renev,Hargi,Harjar,Harpro,K3,GI',
+        ]);
+
+        if ($validator->fails()) {
+            return redirect()->back()
+                ->withErrors($validator)
+                ->withInput();
+        }
+
+        try {
+            
+            // Update status anomali
+            $anomali->approve = $request->approve;
+            $anomali->approve_by = Auth::user()->id;
+            $anomali->tanggal_approve = now();
+            
+            if ($request->approve == 'Yes' || $request->approve == 1) {
+                $anomali->status = 'Open';
+                $anomali->bidang_assigned = $request->bidang;
+            } else {
+                $anomali->status = 'Rejected';
+                $anomali->reject_reason = $request->reject_reason;
+            }
+            
+            $anomali->save();
+            
+            // Add timeline entry for approval/rejection
+            $timelineController = new AnomaliTimelineController();
+            if ($request->approve == 'Yes' || $request->approve == 1) {
+                $timelineController->addApprovalEntry($anomali->id, true, 'Anomali disetujui dan ditugaskan ke bidang ' . $request->bidang);
+                if ($request->bidang) {
+                    $timelineController->addAssignmentEntry($anomali->id, null, 'Anomali ditugaskan kepada bidang ' . $request->bidang);
+                }
+            } else {
+                $timelineController->addApprovalEntry($anomali->id, false, $request->reject_reason);
+            }
+            
+            $message = ($request->approve == 'Yes' || $request->approve == 1) ? 'Anomali berhasil disetujui' : 'Anomali berhasil ditolak';
+            
+            return response()->json([
+                'success' => true,
+                'message' => $message,
+                'redirect' => route('dashboard.anomali.index')
+            ]);
+        }
+            
+        catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal memproses persetujuan: ' . $e->getMessage()
+            ], 500);
+        }
+        }
 }

@@ -1,7 +1,7 @@
 <?php
 
 use App\Http\Controllers\AnomaliController;
-use App\Http\Controllers\BayController;
+use App\Http\Controllers\AnomaliTimelineController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\KttController;
 use App\Http\Controllers\HomeController;
@@ -52,11 +52,19 @@ Route::middleware(['auth'])->prefix('dashboard')->group(function () {
 
     Route::get('/anomali', [AnomaliController::class, 'index'])->middleware(AutoPermission::class . ':View Anomali')->name('dashboard.anomali.index');
     Route::get('/anomali/create', [AnomaliController::class, 'create'])->middleware(AutoPermission::class . ':View Anomali Create')->name('dashboard.anomali.create');
-    Route::get('/anomali/review/{judul}', [AnomaliController::class, 'review'])->name('dashboard.anomali.review');
+    Route::get('/anomali/review/{anomali:slug}', [AnomaliController::class, 'review'])->name('dashboard.anomali.review');
+    Route::post('/anomali/{anomali:slug}/approve', [AnomaliController::class, 'approve'])->middleware(AutoPermission::class . ':Approve Anomali')->name('dashboard.anomali.approve');
     Route::post('/anomali', [AnomaliController::class, 'store'])->name('dashboard.anomali.store');
     Route::get('/anomali/export', [AnomaliController::class, 'export'])->name('dashboard.anomali.export');
-    Route::get('/anomali/{judul}', [AnomaliController::class, 'show'])->name('dashboard.anomali.show');
-    Route::get('/anomali/{judul}/pdf', [AnomaliController::class, 'exportPdf'])->name('dashboard.anomali.pdf');
+    Route::get('/anomali/{anomali:slug}', [AnomaliController::class, 'show'])->name('dashboard.anomali.show');
+    Route::get('/anomali/{anomali:slug}/pdf', [AnomaliController::class, 'exportPdf'])->name('dashboard.anomali.pdf');
+
+    // Anomali Timeline Routes
+    Route::get('/anomali/{anomaliId}/timeline', [AnomaliTimelineController::class, 'index'])->name('dashboard.anomali.timeline.index');
+    Route::post('/anomali/{anomaliId}/timeline', [AnomaliTimelineController::class, 'store'])->name('dashboard.anomali.timeline.store');
+    Route::put('/anomali/{anomaliId}/timeline/{timelineId}', [AnomaliTimelineController::class, 'update'])->name('dashboard.anomali.timeline.update');
+    Route::delete('/anomali/{anomaliId}/timeline/{timelineId}', [AnomaliTimelineController::class, 'destroy'])->name('dashboard.anomali.timeline.destroy');
+    Route::get('/anomali/{anomaliId}/timeline/statistics', [AnomaliTimelineController::class, 'statistics'])->name('dashboard.anomali.timeline.statistics');
 
 
     Route::get('garduinduk', [GarduIndukController::class, 'index'])->name('dashboard.gardu.index');

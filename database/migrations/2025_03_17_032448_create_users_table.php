@@ -17,7 +17,7 @@ return new class extends Migration
             $table->string('email')->unique();
             $table->timestamp('email_verified_at')->nullable();
             $table->enum('wilayah', ['UPT Karawang','ULTG Karawang', 'ULTG Purwakarta'])->nullable();
-            $table->enum('jabatan', ['Master','MULTG', 'TL Hargi', 'TL Harjar', 'TL Harpro', 'TL K3', 'TL GI'])->nullable();
+            $table->enum('bidang', ['Master','MULTG','Renev', 'Hargi', 'Harjar', 'Harpro', 'K3', 'GI'])->nullable();
             $table->json('gardu_induk_ids')->nullable();
             $table->string('foto_profil')->nullable();
             $table->string('tanda_tangan_path')->nullable();
