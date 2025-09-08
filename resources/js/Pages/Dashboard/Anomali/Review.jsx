@@ -133,12 +133,8 @@ function ReviewContent({ anomalis, users }) {
 
     // Mapping bidang berdasarkan wilayah
     const getBidangByWilayah = (ultg) => {
-        const bidangMapping = {
-            "UPT Karawang": ["Renev"],
-            "ULTG Karawang": ["Hargi", "Harjar", "Harpro", "K3"],
-            "ULTG Purwakarta": ["Hargi", "Harjar", "Harpro", "K3"],
-        };
-        return bidangMapping[ultg] || [];
+        // Daftar bidang yang tersedia untuk semua wilayah
+        return ["Renev", "Hargi", "Harjar", "Harpro", "K3"];
     };
 
     const availableBidang = getBidangByWilayah(anomalis.ultg);

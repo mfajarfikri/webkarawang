@@ -9,12 +9,21 @@ use Illuminate\Http\Request;
 
 class GuestController extends Controller
 {
-    public function berita()
+    public function berita(Request $request)
     {
-        $berita = Berita::with('user')->latest()->get();
+        $perPage = $request->query('per_page', 9); // Default 9 items per page
+        $berita = Berita::with('user')->latest()->paginate($perPage);
 
         return response()->json([
-            'berita' => $berita
+            'berita' => $berita->items(),
+            'pagination' => [
+                'total' => $berita->total(),
+                'per_page' => $berita->perPage(),
+                'current_page' => $berita->currentPage(),
+                'last_page' => $berita->lastPage(),
+                'from' => $berita->firstItem(),
+                'to' => $berita->lastItem()
+            ]
         ]);
     }
 

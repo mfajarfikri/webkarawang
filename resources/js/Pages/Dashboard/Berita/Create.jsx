@@ -24,6 +24,9 @@ import {
     FaSave,
     FaSpinner,
     FaLevelDownAlt,
+    FaNewspaper,
+    FaImage,
+    FaEdit,
 } from "react-icons/fa";
 import { useForm } from "@inertiajs/react";
 import { useSnackbar } from "notistack";
@@ -46,6 +49,11 @@ import {
 } from "react-icons/tb";
 import axios from "axios";
 import Modal from "react-modal";
+import ApplicationLogo from "@/Components/ApplicationLogo";
+import TextInput from "@/Components/TextInput";
+import InputLabel from "@/Components/InputLabel";
+import InputError from "@/Components/InputError";
+import PrimaryButton from "@/Components/PrimaryButton";
 
 export default function Create({ karyawans, flash, auth }) {
     const { enqueueSnackbar, closeSnackbar } = useSnackbar();
@@ -749,258 +757,279 @@ export default function Create({ karyawans, flash, auth }) {
 
     return (
         <>
-            <Head title="Create Berita" />
+            <Head title="Buat Berita" />
             <DashboardLayout>
-                <div className="w-full mx-auto p-6">
-                    <h1 className="text-2xl font-bold mb-6">Create Berita</h1>
-                    <form onSubmit={handleSubmit} className="space-y-6">
-                        <div>
-                            <label
-                                htmlFor="judul"
-                                className="block text-sm font-medium text-gray-700"
-                            >
-                                Judul
-                            </label>
-                            <input
-                                type="text"
-                                id="judul"
-                                value={data.judul}
-                                onChange={(e) => {
-                                    setData("judul", e.target.value);
-                                }}
-                                className="mt-1 block w-full rounded-md uppercase border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                                required
-                                autoComplete="off"
-                            />
-                            {errors.judul && (
-                                <p className="mt-1 text-sm text-red-600">
-                                    {errors.judul}
-                                </p>
-                            )}
+                <div className="max-w-full bg-white mx-auto border rounded-lg shadow-md">
+                    <div className="flex items-center gap-3 px-8 py-4 bg-gradient-to-r from-blue-700 via-blue-500 to-indigo-500 rounded-t-lg">
+                        <div className="flex items-center gap-2">
+                            <ApplicationLogo className="h-8 w-8" />
+                            <span className="text-white font-bold text-lg tracking-wide uppercase">
+                                UPT Karawang
+                            </span>
                         </div>
-                        <div>
-                            <label
-                                htmlFor="slug"
-                                className="block text-sm font-medium text-gray-700"
-                            >
-                                Slug
-                            </label>
-                            <input
-                                type="text"
-                                id="slug"
-                                value={data.slug}
-                                onChange={(e) =>
-                                    setData("slug", e.target.value)
-                                }
-                                className="mt-1 block w-full rounded-md disabled:cursor-not-allowed bg-gray-200 border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                                required
-                                disabled
-                            />
-                            {errors.slug && (
-                                <p className="mt-1 text-sm text-red-600">
-                                    {errors.slug}
-                                </p>
-                            )}
+                        <div className="flex items-center gap-2 ml-4">
+                            <FaNewspaper className="text-white h-6 w-6" />
+                            <span className="text-white font-semibold text-lg">
+                                Buat Berita Baru
+                            </span>
                         </div>
-                        {showLeaveModal && (
-                            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                                <div className="bg-white rounded-lg p-6 max-w-md mx-auto">
-                                    <h2 className="text-lg font-semibold mb-4">
-                                        Perubahan belum disimpan
-                                    </h2>
-                                    <p className="mb-6">
-                                        Anda memiliki perubahan yang belum
-                                        disimpan. Apakah Anda yakin ingin
-                                        meninggalkan halaman ini?
-                                    </p>
-                                    <p className="text-red-600 font-bold">
-                                        Modal is visible
-                                    </p>
-                                    <div className="flex justify-end space-x-4">
-                                        <button
-                                            onClick={cancelLeave}
-                                            className="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400"
-                                        >
-                                            Batal
-                                        </button>
+                    </div>
+
+                    <form onSubmit={handleSubmit} className="p-6">
+                        <div className="border rounded-lg p-6 bg-white space-y-6">
+                            <div className="flex flex-col gap-1">
+                                <InputLabel
+                                    htmlFor="judul"
+                                    value="Judul Berita"
+                                    className="text-sm font-bold tracking-wide text-gray-700"
+                                />
+                                <div className="relative">
+                                    <span className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
+                                        <FaNewspaper className="text-blue-400 h-4 w-4" />
+                                    </span>
+                                    <TextInput
+                                        id="judul"
+                                        value={data.judul}
+                                        onChange={(e) =>
+                                            setData("judul", e.target.value)
+                                        }
+                                        className="pl-10 block w-full rounded-lg border border-blue-200 focus:ring-1 focus:ring-blue-400 focus:border-blue-400 text-md px-4 py-2 shadow-sm transition-all uppercase"
+                                        placeholder="Masukkan judul berita"
+                                        required
+                                        autoComplete="off"
+                                    />
+                                </div>
+                                <InputError message={errors.judul} />
+                            </div>
+                            <div className="flex flex-col gap-1">
+                                <InputLabel
+                                    htmlFor="slug"
+                                    value="Slug (URL)"
+                                    className="text-sm font-bold tracking-wide text-gray-700"
+                                />
+                                <div className="relative">
+                                    <span className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
+                                        <FaEdit className="text-gray-400 h-4 w-4" />
+                                    </span>
+                                    <TextInput
+                                        id="slug"
+                                        value={data.slug}
+                                        onChange={(e) =>
+                                            setData("slug", e.target.value)
+                                        }
+                                        className="pl-10 block w-full rounded-lg border border-gray-200 bg-gray-100 text-md px-4 py-2 shadow-sm cursor-not-allowed"
+                                        placeholder="Slug otomatis dari judul"
+                                        required
+                                        disabled
+                                    />
+                                </div>
+                                <InputError message={errors.slug} />
+                            </div>
+                            {showLeaveModal && (
+                                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                                    <div className="bg-white rounded-lg p-6 max-w-md mx-auto">
+                                        <h2 className="text-lg font-semibold mb-4">
+                                            Perubahan belum disimpan
+                                        </h2>
+                                        <p className="mb-6">
+                                            Anda memiliki perubahan yang belum
+                                            disimpan. Apakah Anda yakin ingin
+                                            meninggalkan halaman ini?
+                                        </p>
+                                        <p className="text-red-600 font-bold">
+                                            Modal is visible
+                                        </p>
+                                        <div className="flex justify-end space-x-4">
+                                            <button
+                                                onClick={cancelLeave}
+                                                className="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400"
+                                            >
+                                                Batal
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={confirmLeave}
+                                                className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+                                            >
+                                                Tinggalkan
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+                            <div className="flex flex-col gap-1">
+                                <InputLabel
+                                    htmlFor="excerpt"
+                                    value="Ringkasan Berita"
+                                    className="text-sm font-bold tracking-wide text-gray-700"
+                                />
+                                <textarea
+                                    id="excerpt"
+                                    name="excerpt"
+                                    rows={3}
+                                    className="block w-full rounded-lg border border-blue-200 focus:ring-1 focus:ring-blue-400 focus:border-blue-400 text-sm px-4 py-2 shadow-sm transition-all italic"
+                                    placeholder="Masukkan ringkasan singkat berita..."
+                                    value={data.excerpt}
+                                    onChange={(e) =>
+                                        setData("excerpt", e.target.value)
+                                    }
+                                />
+                                <InputError message={errors.excerpt} />
+                            </div>
+
+                            <div className="flex flex-col gap-1">
+                                <InputLabel
+                                    htmlFor="foto_berita"
+                                    value="Foto Berita"
+                                    className="text-sm font-bold tracking-wide text-gray-700"
+                                />
+                                <div className="border-2 border-dashed border-blue-200 rounded-lg p-4 bg-blue-50/30 hover:border-blue-300 transition-colors">
+                                    {previewPhotos.length === 0 ? (
+                                        <div className="flex flex-col items-center justify-center space-y-4 py-8">
+                                            <div className="p-4 bg-blue-100 rounded-full">
+                                                <FaImage className="h-8 w-8 text-blue-500" />
+                                            </div>
+                                            <div className="text-center">
+                                                <label
+                                                    htmlFor="file-upload"
+                                                    className="cursor-pointer inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                                                >
+                                                    <FaPlus className="h-4 w-4" />
+                                                    <span>Pilih Foto</span>
+                                                    <input
+                                                        id="file-upload"
+                                                        name="gambar[]"
+                                                        type="file"
+                                                        className="sr-only"
+                                                        accept="image/*"
+                                                        multiple
+                                                        onChange={
+                                                            handleFileUpload
+                                                        }
+                                                        ref={fileInputRef}
+                                                    />
+                                                </label>
+                                            </div>
+                                            <p className="text-sm text-gray-600 text-center">
+                                                Pilih hingga 5 foto (maksimal
+                                                5MB per foto)
+                                                <br />
+                                                <span className="text-xs text-gray-500">
+                                                    Format: JPG, PNG, GIF
+                                                </span>
+                                            </p>
+                                        </div>
+                                    ) : (
+                                        <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                                            {previewPhotos.map(
+                                                (preview, index) => (
+                                                    <div
+                                                        key={index}
+                                                        className="relative group"
+                                                    >
+                                                        <img
+                                                            src={preview}
+                                                            alt={`Preview ${
+                                                                index + 1
+                                                            }`}
+                                                            className="w-full h-auto object-cover rounded-lg hover:shadow-lg hover:border border-solid transition hover:scale-105 duration-300 border-gray-300"
+                                                        />
+                                                        <button
+                                                            type="button"
+                                                            onClick={() =>
+                                                                removePhoto(
+                                                                    index
+                                                                )
+                                                            }
+                                                            className="absolute top-2 right-2 p-1 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+                                                        >
+                                                            <FaTimes className="w-4 h-4" />
+                                                        </button>
+                                                    </div>
+                                                )
+                                            )}
+                                            {previewPhotos.length < 5 && (
+                                                <label className="flex flex-col items-center justify-center h-32 border-2 border-dashed border-blue-300 rounded-lg cursor-pointer hover:border-blue-500 hover:bg-blue-50 transition-colors bg-blue-50/50">
+                                                    <input
+                                                        type="file"
+                                                        className="hidden"
+                                                        accept="image/*"
+                                                        multiple
+                                                        onChange={
+                                                            handleFileUpload
+                                                        }
+                                                        ref={fileInputRef}
+                                                    />
+                                                    <div className="p-2 bg-blue-100 rounded-full mb-2">
+                                                        <FaPlus className="w-4 h-4 text-blue-600" />
+                                                    </div>
+                                                    <span className="text-sm font-medium text-blue-700">
+                                                        Tambah Foto
+                                                    </span>
+                                                </label>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
+                                {photos.length > 0 && (
+                                    <div className="mt-2 flex items-center justify-between">
+                                        <p className="text-sm text-gray-600">
+                                            {photos.length} foto terpilih (
+                                            {photos.length}/5)
+                                        </p>
                                         <button
                                             type="button"
-                                            onClick={confirmLeave}
-                                            className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+                                            onClick={() => {
+                                                setPhotos([]);
+                                                setPreviewPhotos([]);
+                                                if (fileInputRef.current) {
+                                                    fileInputRef.current.value =
+                                                        "";
+                                                }
+                                            }}
+                                            className="text-sm text-red-600 hover:text-red-800 "
                                         >
-                                            Tinggalkan
+                                            Hapus Semua
                                         </button>
                                     </div>
-                                </div>
-                            </div>
-                        )}
-                        <div className="">
-                            <label
-                                htmlFor="excerpt"
-                                className="block text-sm font-medium text-gray-700"
-                            >
-                                Excerpt
-                            </label>
-                            <textarea
-                                name="excerpt"
-                                className="block mt-1 shadow-sm italic text-xs rounded-md border-gray-300 w-full"
-                                value={data.excerpt}
-                                onChange={(e) =>
-                                    setData("excerpt", e.target.value)
-                                }
-                            ></textarea>
-                        </div>
-
-                        <div>
-                            <label
-                                htmlFor="foto_berita"
-                                className="block text-sm font-medium text-gray-700"
-                            >
-                                Foto Berita
-                            </label>
-                            <div className="mt-1 border-2 border-gray-300 border-solid rounded-lg p-4 bg-white">
-                                {previewPhotos.length === 0 ? (
-                                    <div className="flex flex-col items-center justify-center space-y-3 py-5">
-                                        <svg
-                                            className="mx-auto h-12 w-12 text-gray-400"
-                                            stroke="currentColor"
-                                            fill="none"
-                                            viewBox="0 0 48 48"
-                                            aria-hidden="true"
-                                        >
-                                            <path
-                                                d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02"
-                                                strokeWidth={2}
-                                                strokeLinecap="round"
-                                                strokeLinejoin="round"
-                                            />
-                                        </svg>
-                                        <div className="flex text-sm text-gray-600">
-                                            <label
-                                                htmlFor="file-upload"
-                                                className="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500"
-                                            >
-                                                <span className="px-2">
-                                                    Upload file
-                                                </span>
-                                                <input
-                                                    id="file-upload"
-                                                    name="gambar[]"
-                                                    type="file"
-                                                    className="sr-only"
-                                                    accept="image/*"
-                                                    multiple
-                                                    onChange={handleFileUpload}
-                                                    ref={fileInputRef}
-                                                />
-                                            </label>
-                                        </div>
-                                        <p className="text-xs text-gray-500">
-                                            Image hingga 5MB (Maksimal 5 foto)
-                                        </p>
-                                    </div>
-                                ) : (
-                                    <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                                        {previewPhotos.map((preview, index) => (
-                                            <div
-                                                key={index}
-                                                className="relative group"
-                                            >
-                                                <img
-                                                    src={preview}
-                                                    alt={`Preview ${index + 1}`}
-                                                    className="w-full h-auto object-cover rounded-lg hover:shadow-lg hover:border border-solid transition hover:scale-105 duration-300 border-gray-300"
-                                                />
-                                                <button
-                                                    type="button"
-                                                    onClick={() =>
-                                                        removePhoto(index)
-                                                    }
-                                                    className="absolute top-2 right-2 p-1 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"
-                                                >
-                                                    <FaTimes className="w-4 h-4" />
-                                                </button>
-                                            </div>
-                                        ))}
-                                        {previewPhotos.length < 5 && (
-                                            <label className="flex flex-col items-center justify-center h-32 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-blue-500  transition-colors bg-gray-50">
-                                                <input
-                                                    type="file"
-                                                    className="hidden"
-                                                    accept="image/*"
-                                                    multiple
-                                                    onChange={handleFileUpload}
-                                                    ref={fileInputRef}
-                                                />
-                                                <FaPlus className="w-6 h-6 text-gray-400" />
-                                                <span className="mt-2 text-sm text-gray-500">
-                                                    Tambah Foto
-                                                </span>
-                                            </label>
-                                        )}
-                                    </div>
                                 )}
                             </div>
-                            {photos.length > 0 && (
-                                <div className="mt-2 flex items-center justify-between">
-                                    <p className="text-sm text-gray-600">
-                                        {photos.length} foto terpilih (
-                                        {photos.length}/5)
-                                    </p>
-                                    <button
-                                        type="button"
-                                        onClick={() => {
-                                            setPhotos([]);
-                                            setPreviewPhotos([]);
-                                            if (fileInputRef.current) {
-                                                fileInputRef.current.value = "";
-                                            }
-                                        }}
-                                        className="text-sm text-red-600 hover:text-red-800 "
-                                    >
-                                        Hapus Semua
-                                    </button>
-                                </div>
-                            )}
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700">
-                                Isi Berita
-                            </label>
-                            <div className="mt-1">
-                                <EditorProvider
-                                    slotBefore={<MenuBar />}
-                                    extensions={extensions}
-                                    content={data.isi}
-                                    onUpdate={({ editor }) => {
-                                        setData("isi", editor.getHTML());
-                                    }}
+                            <div className="flex flex-col gap-1">
+                                <InputLabel
+                                    value="Isi Berita"
+                                    className="text-sm font-bold tracking-wide text-gray-700"
                                 />
+                                <div className="border border-blue-200 rounded-lg overflow-hidden">
+                                    <EditorProvider
+                                        slotBefore={<MenuBar />}
+                                        extensions={extensions}
+                                        content={data.isi}
+                                        onUpdate={({ editor }) => {
+                                            setData("isi", editor.getHTML());
+                                        }}
+                                    />
+                                </div>
+                                <InputError message={errors.isi} />
                             </div>
-                            {errors.isi && (
-                                <p className="mt-1 text-sm text-red-600">
-                                    {errors.isi}
-                                </p>
-                            )}
-                        </div>
-                        <div className="flex justify-end">
-                            <button
-                                type="submit"
-                                disabled={processing || isSubmitting}
-                                className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
-                            >
-                                {processing || isSubmitting ? (
-                                    <>
-                                        <FaSpinner className="animate-spin w-4 h-4" />
-                                        <span>Menyimpan...</span>
-                                    </>
-                                ) : (
-                                    <>
-                                        <FaSave className="w-4 h-4 mr-1" />
-                                        <span>Simpan</span>
-                                    </>
-                                )}
-                            </button>
+                            <div className="flex justify-end pt-4">
+                                <PrimaryButton
+                                    type="submit"
+                                    disabled={processing || isSubmitting}
+                                    className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 focus:bg-blue-700 active:bg-blue-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition ease-in-out duration-150 disabled:opacity-50"
+                                >
+                                    {processing || isSubmitting ? (
+                                        <>
+                                            <FaSpinner className="animate-spin w-4 h-4" />
+                                            <span>Menyimpan...</span>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <FaSave className="w-4 h-4" />
+                                            <span>Simpan Berita</span>
+                                        </>
+                                    )}
+                                </PrimaryButton>
+                            </div>
                         </div>
                     </form>
                 </div>

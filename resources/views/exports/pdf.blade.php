@@ -155,91 +155,111 @@
 
     <!-- Content -->
     <div class="pt-8">
-      <ol class="ml-5 mt-2 list-decimal list-inside border" style="font-size:12px;">
-        <li class="mb-2 leading-relaxed flex items-start">
-          <span class="inline-block font-normal min-w-[220px]">DATA PERALATAN YANG RUSAK</span>
-          <table class="content-table w-full ml-4">
+      <ol class="ml-5 mt-2 list-decimal list-inside" style="font-size:12px;">
+        <li class="mb-2 leading-relaxed">
+          <span class="inline-block font-normal justify-center">DATA PERALATAN YANG RUSAK</span>
+          <table class="no-border content-table" style="width: 100%; border-collapse: collapse; margin-left: 16px; margin-top: 8px;">
             <tr>
-              <td class="w-3"><span class="inline-block">a.</span></td>
-              <td><span>Nama Peralatan</span></td>
-              <td>: {{ $anomali->nama_peralatan }}</td>
+              <td style="width: 20px; padding: 3px 0; vertical-align: top;">a.</td>
+              <td style="width: 120px; padding: 3px 0; vertical-align: top;">Nama Peralatan</td>
+              <td style="width: 20px; padding: 3px 0; vertical-align: top;">:</td>
+              <td style="padding: 3px 0; vertical-align: top;">{{ $anomali->peralatan ?? '-' }}</td>
             </tr>
             <tr>
-              <td><span class="inline-block">b.</span></td>
-              <td><span>Merk</span></td>
-              <td>: {{ $anomali->merk }}</td>
+              <td style="width: 20px; padding: 3px 0; vertical-align: top;">b.</td>
+              <td style="width: 120px; padding: 3px 0; vertical-align: top;">Merk</td>
+              <td style="width: 20px; padding: 3px 0; vertical-align: top;">:</td>
+              <td style="padding: 3px 0; vertical-align: top;">{{ $anomali->merek ?? '-' }}</td>
             </tr>
             <tr>
-              <td><span class="inline-block">c.</span></td>
-              <td><span>Tipe</span></td>
-              <td>: {{ $anomali->tipe_alat }}</td>
+              <td style="width: 20px; padding: 3px 0; vertical-align: top;">c.</td>
+              <td style="width: 120px; padding: 3px 0; vertical-align: top;">Tipe</td>
+              <td style="width: 20px; padding: 3px 0; vertical-align: top;">:</td>
+              <td style="padding: 3px 0; vertical-align: top;">{{ $anomali->tipe_alat ?? '-' }}</td>
             </tr>
             <tr>
-              <td><span class="inline-block">d.</span></td>
-              <td><span>No Seri</span></td>
-              <td>: {{ $anomali->no_seri }}</td>
+              <td style="width: 20px; padding: 3px 0; vertical-align: top;">d.</td>
+              <td style="width: 120px; padding: 3px 0; vertical-align: top;">No Seri</td>
+              <td style="width: 20px; padding: 3px 0; vertical-align: top;">:</td>
+              <td style="padding: 3px 0; vertical-align: top;">{{ $anomali->no_seri ?? '-' }}</td>
             </tr>
             <tr>
-              <td><span class="inline-block">e.</span></td>
-              <td><span>Harga</span></td>
-              <td>: {{ $anomali->harga }}</td>
+              <td style="width: 20px; padding: 3px 0; vertical-align: top;">e.</td>
+              <td style="width: 120px; padding: 3px 0; vertical-align: top;">Harga</td>
+              <td style="width: 20px; padding: 3px 0; vertical-align: top;">:</td>
+              <td style="padding: 3px 0; vertical-align: top;">{{ $anomali->harga ?? '-' }}</td>
             </tr>
             <tr>
-              <td><span class="inline-block">f.</span></td>
-              <td><span>Kode Asset</span></td>
-              <td>: {{ $anomali->kode_asset }}</td>
+              <td style="width: 20px; padding: 3px 0; vertical-align: top;">f.</td>
+              <td style="width: 120px; padding: 3px 0; vertical-align: top;">Kode Asset</td>
+              <td style="width: 20px; padding: 3px 0; vertical-align: top;">:</td>
+              <td style="padding: 3px 0; vertical-align: top;">{{ $anomali->kode_asset ?? '-' }}</td>
             </tr>
             <tr>
-              <td><span class="inline-block">g.</span></td>
-              <td><span>Tahun Operasi</span></td>
-              <td>: {{ $anomali->tahun_operasi }}</td>
+              <td style="width: 20px; padding: 3px 0; vertical-align: top;">g.</td>
+              <td style="width: 120px; padding: 3px 0; vertical-align: top;">Tahun Operasi</td>
+              <td style="width: 20px; padding: 3px 0; vertical-align: top;">:</td>
+              <td style="padding: 3px 0; vertical-align: top;">{{ $anomali->tahun_operasi ?? '-' }}</td>
             </tr>
             <tr>
-              <td><span class="inline-block">h.</span></td>
-              <td><span>Tahun Buat</span></td>
-              <td>: {{ $anomali->tahun_buat }}</td>
+              <td style="width: 20px; padding: 3px 0; vertical-align: top;">h.</td>
+              <td style="width: 120px; padding: 3px 0; vertical-align: top;">Tahun Buat</td>
+              <td style="width: 20px; padding: 3px 0; vertical-align: top;">:</td>
+              <td style="padding: 3px 0; vertical-align: top;">{{ $anomali->tahun_buat ?? '-' }}</td>
             </tr>
           </table>
         </li>
-        <li class="mb-2 leading-relaxed">
-            <span class="inline-block font-normal">PENEMPATAN PERALATAN</span>
-        </li>
       </ol>
-      <table class="content-table w-full mt-2 ml-0">
-        <tr>
-          <td>{{ $anomali->penempatan_alat }}</td>
-        </tr>
-        <tr>
-          <td><span class="inline-block">TANGGAL KEJADIAN</span></td>
-          <td>{{ $anomali->tanggal_kejadian }}</td>
-        </tr>
-        <tr>
-          <td><span class="inline-block">JENIS KERUSAKAN</span></td>
-          <td>{{ $anomali->jenis_kerusakan }}</td>
-        </tr>
-        <tr>
-          <td><span class="inline-block">PENYEBAB KERUSAKAN</span></td>
-          <td>{{ $anomali->penyebab }}</td>
-        </tr>
-        <tr>
-          <td><span class="inline-block">AKIBAT KERUSAKAN</span></td>
-          <td>{{ $anomali->akibat }}</td>
-        </tr>
-        <tr>
-          <td><span class="inline-block">USUL DAN SARAN</span></td>
-          <td>{{ $anomali->usul_saran }}</td>
-        </tr>
-        <tr>
-          <td><span class="inline-block">LAMPIRAN</span></td>
-          <td>{{ $anomali->lampiran }}</td>
-        </tr>
-      </table>
+      <table class="no-border content-table" style="width: 90%; border-collapse: collapse; margin-bottom: 10px; margin-left: 50px;">
+
+          <tr>
+            <td style="width: 30%; padding: 3px 0; vertical-align: top; font-weight: normal;">2. PENEMPATAN PERALATAN</td>
+            <td style="width: 5%; padding: 3px 0; vertical-align: top;">:</td>
+            <td style="width: 65%; padding: 3px 0; vertical-align: top;">{{ $anomali->penempatan_alat ?? '-' }}</td>
+          </tr>
+          <tr>
+            <td style="width: 30%; padding: 3px 0; vertical-align: top; font-weight: normal;">3. TANGGAL KEJADIAN</td>
+            <td style="width: 5%; padding: 3px 0; vertical-align: top;">:</td>
+            <td style="width: 65%; padding: 3px 0; vertical-align: top;">{{ \Carbon\Carbon::parse($anomali->tanggal_kejadian)->format('d F Y') ?? '-' }}</td>
+          </tr>
+          <tr>
+            <td style="width: 30%; padding: 3px 0; vertical-align: top; font-weight: normal;">4. JENIS KERUSAKAN</td>
+            <td style="width: 5%; padding: 3px 0; vertical-align: top;">:</td>
+            <td style="width: 65%; padding: 3px 0; vertical-align: top;">{{ $anomali->kategori->name ?? '-' }}</td>
+          </tr>
+          <tr>
+            <td style="width: 30%; padding: 3px 0; vertical-align: top; font-weight: normal;">5. PENYEBAB KERUSAKAN</td>
+            <td style="width: 5%; padding: 3px 0; vertical-align: top;">:</td>
+            <td style="width: 65%; padding: 3px 0; vertical-align: top;">{{ $anomali->penyebab ?? '-' }}</td>
+          </tr>
+          <tr>
+            <td style="width: 30%; padding: 3px 0; vertical-align: top; font-weight: normal;">6. AKIBAT KERUSAKAN</td>
+            <td style="width: 5%; padding: 3px 0; vertical-align: top;">:</td>
+            <td style="width: 65%; padding: 3px 0; vertical-align: top;">{{ $anomali->akibat ?? '-' }}</td>
+          </tr>
+          <tr>
+            <td style="width: 30%; padding: 3px 0; vertical-align: top; font-weight: normal;">7. USUL DAN SARAN</td>
+            <td style="width: 5%; padding: 3px 0; vertical-align: top;">:</td>
+            <td style="width: 65%; padding: 3px 0; vertical-align: top;">{{ $anomali->usul_saran ?? '-' }}</td>
+          </tr>
+          <tr>
+            <td style="width: 30%; padding: 3px 0; vertical-align: top; font-weight: normal;">8. LAMPIRAN</td>
+            <td style="width: 5%; padding: 3px 0; vertical-align: top;">:</td>
+            <td style="width: 65%; padding: 3px 0; vertical-align: top;">
+              @if($anomali->lampiran_foto && json_decode($anomali->lampiran_foto))
+                Terlampir Foto Hotpot Dan Nameplate
+              @else
+                -
+              @endif
+            </td>
+          </tr>
+        </table>
     </div>
 
     <!-- Footer -->
     <div class="mt-12 text-center">
-      <p>Karawang, {{ $anomali->tanggal_kejadian }}</p>
-      <div class="flex justify-around mt-8 text-center">
+      <p>Karawang, {{ \Carbon\Carbon::parse($anomali->tanggal_kejadian)->format('d M Y') }}</p>
+      <div class="flex justify-between mt-8 text-center">
         <div>
           <p>Mengetahui,</p>
           <p>Manager ULTG Karawang</p>
@@ -248,13 +268,17 @@
         </div>
         <div>
           <p>TL JARGI GI Telukjambe</p>
-          <img
-            src="https://storage.googleapis.com/workspace-0f70711f-8b4e-4d94-86f1-2a93ccde5887/image/2099226c-19b6-477e-bfd4-ef7fd16ce45b.png"
-            alt="Signature of Moch. Roni Ramdani"
-            class="mt-4 max-h-24 mx-auto"
-            style="margin-top:16px;max-height:96px;display:block;margin-left:auto;margin-right:auto;"
-          />
-          <p><span>Moch. Roni Ramdani</span></p>
+          @if($anomali->user && $anomali->user->tanda_tangan_path)
+            <img
+              src="{{ asset('storage/' . $anomali->user->tanda_tangan_path) }}"
+              alt="Signature of {{ $anomali->user->name }}"
+              class="mt-4 max-h-24 mx-auto"
+              style="margin-top:16px;max-height:96px;display:block;margin-left:auto;margin-right:auto;"
+            />
+          @else
+            <div class="h-20"></div>
+          @endif
+          <p><span>{{ $anomali->user->name ?? 'Moch. Roni Ramdani' }}</span></p>
         </div>
       </div>
     </div>

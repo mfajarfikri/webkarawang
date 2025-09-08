@@ -34,6 +34,9 @@ return new class extends Migration
             $table->text('usul_saran')->nullable(); 
             $table->json('lampiran_foto')->nullable();
             $table->enum('status', ['New', 'Open', 'In Progress', 'Pending', 'Close', 'Rejected']);
+            
+            $table->string('tanda_tangan_pemilik')->nullable();
+            $table->string('tanda_tangan_approve')->nullable();
             $table->unsignedBigInteger('user_id');
             
             

@@ -72,6 +72,7 @@
         "filepond-plugin-image-preview": "^4.6.12",
         "filepond-plugin-image-resize": "^2.0.10",
         "filepond-plugin-image-transform": "^3.8.7",
+        "framer-motion": "^12.23.12",
         "lexical": "^0.31.2",
         "lodash": "^4.17.21",
         "notistack": "^3.0.2",

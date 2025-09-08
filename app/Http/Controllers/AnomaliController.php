@@ -26,8 +26,10 @@ class AnomaliController extends Controller
     public function index()
     {
         $anomalis = Anomali::with(['gardu_induk', 'kategori', 'user'])->orderBy('created_at', 'desc')->get();
+        $kategoris = Kategori::all();
         return Inertia::render("Dashboard/Anomali/Anomali", [
-            'anomalis' => $anomalis
+            'anomalis' => $anomalis,
+            'kategoris' => $kategoris
         ]);
     }
 
@@ -133,6 +135,7 @@ class AnomaliController extends Controller
                 'lampiran_foto' => json_encode($photos),
                 'status' => 'New',
                 'user_id' => Auth::id(),
+                'tanda_tangan_pemilik' => Auth::user()->tanda_tangan_path,
             ]);
 
             // Add timeline entry for anomali creation
@@ -259,6 +262,14 @@ class AnomaliController extends Controller
      * Approve or reject an anomaly
      */
     public function approve(Request $request, Anomali $anomali) {
+
+        if (empty(Auth::user()->tanda_tangan_path)) {   
+            return response()->json([
+                'type' => 'error',
+                'message' => 'Tanda tangan belum diunggah. Silakan unggah tanda tangan terlebih dahulu pada menu Pengaturan.'
+            ], 400);
+        }
+
         $validator = Validator::make($request->all(), [
             'approve' => 'required|in:Yes,No,1,0',
             'reject_reason' => 'required_if:approve,No|required_if:approve,0|nullable|string',
@@ -276,6 +287,7 @@ class AnomaliController extends Controller
             // Update status anomali
             $anomali->approve = $request->approve;
             $anomali->approve_by = Auth::user()->id;
+            $anomali->tanda_tangan_approve = Auth::user()->tanda_tangan_path;
             $anomali->tanggal_approve = now();
             
             if ($request->approve == 'Yes' || $request->approve == 1) {

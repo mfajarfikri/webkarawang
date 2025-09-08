@@ -2,7 +2,6 @@
 
 namespace Database\Factories;
 
-use App\Models\Karyawan;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Str;
@@ -76,14 +75,27 @@ class BeritaFactory extends Factory
             'kunjungan.jpg',
             'monitoring.jpg'
         ];
+        
+        // Buat excerpt dari isi berita
+        $excerpt = Str::limit(strip_tags($isiBerita), 200);
+        
+        // Buat array gambar untuk menyimpan dalam format JSON
+        $gambarArray = [$this->faker->randomElement($namaGambar)];
 
+        // Tambahkan unique ID untuk memastikan keunikan slug
+        $uniqueId = uniqid();
+        
         return [
             'judul' => $judul,
-            'slug' => Str::slug($judul),
+            'slug' => Str::slug($judul) . '-' . $uniqueId,
+            'excerpt' => $excerpt,
             'isi' => $isiBerita,
-            'gambar' => 'berita/' . $this->faker->randomElement($namaGambar),
-            'karyawan_id' => Karyawan::factory(),
-            'created_by' => User::factory(),
+            'gambar' => $gambarArray,
+            'user_id' => User::factory(),
+            'created_by' => function (array $attributes) {
+                return $attributes['user_id'];
+            },
+            'read_count' => $this->faker->numberBetween(0, 1000),
             'created_at' => $this->faker->dateTimeBetween('-3 months', 'now'),
             'updated_at' => function (array $attributes) {
                 return $attributes['created_at'];
@@ -110,19 +122,44 @@ class BeritaFactory extends Factory
     {
         return $this->state(function (array $attributes) use ($imageName) {
             return [
-                'gambar' => 'berita/' . $imageName,
+                'gambar' => [$imageName],
             ];
         });
     }
 
     /**
-     * State untuk berita dari karyawan spesifik.
+     * State untuk berita dengan multiple gambar.
      */
-    public function fromKaryawan(Karyawan $karyawan)
+    public function withImages(array $imageNames)
     {
-        return $this->state(function (array $attributes) use ($karyawan) {
+        return $this->state(function (array $attributes) use ($imageNames) {
             return [
-                'karyawan_id' => $karyawan->id,
+                'gambar' => $imageNames,
+            ];
+        });
+    }
+
+    /**
+     * State untuk berita dari user spesifik.
+     */
+    public function fromUser(User $user)
+    {
+        return $this->state(function (array $attributes) use ($user) {
+            return [
+                'user_id' => $user->id,
+                'created_by' => $user->id,
+            ];
+        });
+    }
+    
+    /**
+     * State untuk berita dengan jumlah pembaca tertentu.
+     */
+    public function withReadCount(int $count)
+    {
+        return $this->state(function (array $attributes) use ($count) {
+            return [
+                'read_count' => $count,
             ];
         });
     }

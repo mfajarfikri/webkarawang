@@ -6,7 +6,6 @@ import axios from "axios";
 import { useEffect, useState } from "react";
 import { FaMapMarkerAlt } from "react-icons/fa";
 
-
 export default function Ktt() {
     const [ktts, setKtts] = useState([]);
     const [loading, setLoading] = useState(true);

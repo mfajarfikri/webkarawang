@@ -14,6 +14,13 @@ Route::get('/berita', [GuestController::class, 'berita']);
 Route::get('/gardu', [GuestController::class, 'gardu']);
 Route::post('/berita/{slug}/increment-read', [GuestController::class, 'incrementReadCount']);
 
+// Rute untuk menghapus berita
+Route::delete('/berita/{berita}', [BeritaController::class, 'destroy']);
+
 Route::get('/anomali', [DataController::class, 'ShowAnomali']);
 Route::middleware('auth:sanctum')->group(function() {
 });
+
+Route::get('/berita-paginated', function() {
+    return response()->json(['data' => App\Models\Berita::with('user')->latest()->paginate(6)]);
+})->name('api.berita.index');

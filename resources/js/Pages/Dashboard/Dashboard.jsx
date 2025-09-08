@@ -170,23 +170,23 @@ export default function Dashboard({ apiUrl }) {
         // Define colorful palette for each status
         const statusColors = {
             New: {
-                background: "#DC2626",
+                background: "rgba(239, 68, 68, 0.7)",
                 border: "#DC2626",
             },
             Open: {
-                background: "#2563EB",
+                background: "rgba(59, 130, 246, 0.7)",
                 border: "#2563EB",
             },
             "In Progress": {
-                background: "#CA8A04",
+                background: "rgba(254, 240, 138, 0.7)",
                 border: "#CA8A04",
             },
             Pending: {
-                background: "#EA580C",
+                background: "rgba(254, 215, 170, 0.7)",
                 border: "#EA580C",
             },
             Close: {
-                background: "#059669",
+                background: "rgba(16, 185, 129, 0.7)",
                 border: "#059669",
             },
         };

@@ -45,7 +45,8 @@ Route::middleware(['auth'])->prefix('dashboard')->group(function () {
     Route::get('berita/create', [BeritaController::class, 'create'])->name('dashboard.berita.create');
     Route::post('berita/create', [BeritaController::class, 'store'])->name('dashboard.berita.store');
     Route::get('berita/{slug}', [BeritaController::class, 'show'])->name('dashboard.berita.show');
-    // Route::get('berita/', [BeritaController::class, 'edit'])->name('dashboard.berita.edit');
+    Route::get('berita/{slug}/edit', [BeritaController::class, 'edit'])->name('dashboard.berita.edit');
+    Route::delete('berita/{berita}', [BeritaController::class, 'destroy'])->name('dashboard.berita.destroy');
 
     Route::get('ktt', [KttController::class, 'index'])->middleware(AutoPermission::class . ':View Ktt')->name('dashboard.ktt.index');
     Route::post('ktt', [KttController::class, 'store'])->name('dashboard.ktt.store');

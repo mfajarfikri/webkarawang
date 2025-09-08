@@ -2,13 +2,13 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Berita;
-use App\Models\Karyawan;
-use Illuminate\Http\Request;
+use Exception;
 use Inertia\Inertia;
+use App\Models\Berita;
 use Illuminate\Support\Str;
-use Illuminate\Support\Facades\Storage;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 
 class BeritaController extends Controller
@@ -161,14 +161,48 @@ class BeritaController extends Controller
      */
     public function destroy(Berita $berita)
     {
-        if ($berita->gambar) {
-            Storage::delete('public/berita/' . $berita->gambar);
+        try {
+            // Hapus semua gambar terkait
+            if ($berita->gambar) {
+                try {
+                    // Cek apakah gambar sudah dalam bentuk array (karena model memiliki cast array)
+                    if (is_array($berita->gambar) && !empty($berita->gambar)) {
+                        foreach ($berita->gambar as $gambar) {
+                            if (!empty($gambar) && is_string($gambar)) {
+                                Storage::delete('public/berita/' . $gambar);
+                            }
+                        }
+                    } else if (is_string($berita->gambar) && !empty($berita->gambar)) {
+                        // Jika masih dalam bentuk string JSON, decode terlebih dahulu
+                        $gambarArray = json_decode($berita->gambar, true);
+                        if (is_array($gambarArray) && !empty($gambarArray)) {
+                            foreach ($gambarArray as $gambar) {
+                                if (!empty($gambar) && is_string($gambar)) {
+                                    Storage::delete('public/berita/' . $gambar);
+                                }
+                            }
+                        } else if (is_string($berita->gambar)) {
+                            // Jika bukan array, mungkin hanya satu gambar dalam bentuk string
+                            Storage::delete('public/berita/' . $berita->gambar);
+                        }
+                    }
+                } catch (Exception $ex) {
+                    // Lanjutkan proses meskipun ada error saat menghapus gambar
+                }
+            }
+
+            $berita->delete();
+
+            return response()->json([
+                'type' => 'success',
+                'message' => 'Berita berhasil dihapus'
+            ], 200);
+        } catch (Exception $e) {            
+            return response()->json([
+                'type' => 'error',
+                'message' => 'Gagal menghapus berita: ' . $e->getMessage()
+            ], 500);
         }
-
-        $berita->delete();
-
-        return redirect()->route('berita.index')
-            ->with('success', 'Berita berhasil dihapus');
     }
 
 
