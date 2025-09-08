@@ -21,9 +21,9 @@ class UserSeeder extends Seeder
         DB::table('users')->insert(array(
             0 => array(
                 'id' => 1,
-                'name' => 'Muhammad Fajar Fikri Fadilah',
-                'email' => 'fajarfikri31@gmail.com',
-                'password' => bcrypt('Tjbt4pp04'),
+                'name' => 'Admin',
+                'email' => 'admin@gmail.com',
+                'password' => bcrypt('12345678'),
                 'created_at' => now(),
                 'updated_at' => now(),
             ),
@@ -35,11 +35,19 @@ class UserSeeder extends Seeder
                 'created_at' => now(),
                 'updated_at' => now(),
             ),
+            2 => array(
+                'id' => 3,
+                'name' => 'Muhammad Fajar Fikri Fadilah',
+                'email' => 'fajarfikri31@gmail.com',
+                'password' => bcrypt('Tjbt4pp04'),
+                'created_at' => now(),
+                'updated_at' => now(),
+            ),
         ));
         $user = User::first();
 
 
-        $permissions = ['View Role','View Anomali', 'View Anomali Create', 'View Ktt', 'Approve Anomali'];
+        $permissions = ['View Role', 'View Anomali', 'View Anomali Create', 'View Ktt', 'Approve Anomali'];
         $descriptions = [
             'Mengakses halaman manajemen role',
             'Mengakses halaman anomali',
