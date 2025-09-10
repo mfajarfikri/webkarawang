@@ -1,14 +1,36 @@
 import DashboardLayout from "@/Layouts/DashboardLayout";
 import { Head, Link, useForm } from "@inertiajs/react";
-import { useEffect, useState } from "react";
-import { FaBuilding, FaPlus, FaMapMarkerAlt } from "react-icons/fa";
-import { DataGrid } from "@mui/x-data-grid";
+import { useEffect, useState, useMemo } from "react";
+import { FaBuilding, FaPlus, FaMapMarkerAlt, FaChevronLeft, FaChevronRight, FaSearch, FaCheck } from "react-icons/fa";
+import { Listbox } from "@headlessui/react";
+import Modal from "@/Components/Modal";
+import SecondaryButton from "@/Components/SecondaryButton";
+import PrimaryButton from "@/Components/PrimaryButton";
 import { Dialog, DialogTitle, DialogContent, IconButton } from "@mui/material";
 import { toast, ToastContainer } from "react-toastify";
 import axios from "axios";
 
+// Fungsi untuk membuat badge tipe, sama seperti di file Anomali.jsx
+function TipeBadge({ tipe }) {
+    let color = "bg-gray-200 text-gray-700";
+    if (tipe === "Gold") color = "bg-yellow-100 text-yellow-800";
+    else if (tipe === "Silver") color = "bg-gray-200 text-gray-700";
+    else if (tipe === "Bronze") color = "bg-amber-100 text-amber-800";
+    else if (tipe === "Khusus") color = "bg-gray-800 text-white";
+    else if (tipe === "Reguler") color = "bg-blue-100 text-blue-800";
+    return (
+        <span className={`px-2 py-1 rounded text-xs font-semibold ${color}`}>
+            {tipe}
+        </span>
+    );
+}
+
 export default function Ktt({ ktts }) {
     const [open, setOpen] = useState(false);
+    const [rowsPerPage, setRowsPerPage] = useState(10);
+    const [page, setPage] = useState(1);
+    const [searchTerm, setSearchTerm] = useState("");
+    
     const { data, setData, reset, errors, processing } = useForm({
         name: "",
         lokasi: "",
@@ -21,11 +43,7 @@ export default function Ktt({ ktts }) {
 
     useEffect(() => {
         if (ktts) {
-            const formattedData = ktts.map((ktt, index) => ({
-                id: ktt.id || index + 1,
-                ...ktt,
-            }));
-            setRows(formattedData);
+            setRows(ktts);
         }
     }, [ktts]);
 
@@ -69,13 +87,7 @@ export default function Ktt({ ktts }) {
                 axios
                     .get(route("dashboard.ktt.index"))
                     .then((response) => {
-                        const formattedData = response.data.map(
-                            (ktt, index) => ({
-                                id: ktt.id || index + 1,
-                                ...ktt,
-                            })
-                        );
-                        setRows(formattedData);
+                        setRows(response.data);
                     })
                     .catch((error) => {
                         console.error("Error refreshing data:", error);
@@ -93,7 +105,6 @@ export default function Ktt({ ktts }) {
                             );
                         });
                     } else {
-                        // If there's no specific validation errors object
                         toast.error(
                             error.response.data.message ||
                                 "Validation error occurred",
@@ -110,89 +121,48 @@ export default function Ktt({ ktts }) {
                 }
             });
     };
+    
+    const handleRowsPerPageChange = (val) => {
+        setRowsPerPage(val);
+        setPage(1);
+    };
 
-    const columns = [
-        {
-            field: "no",
-            headerName: "No",
-            flex: 0.2,
-            renderCell: (params) => (
-                <div className="flex h-full justify-center items-center">
-                    {params.api.getRowIndexRelativeToVisibleRows(
-                        params.row.id
-                    ) + 1}
-                </div>
-            ),
-        },
-        {
-            field: "name",
-            headerName: "Nama KTT",
-            flex: 1,
-            renderCell: (params) => (
-                <div className="flex items-center h-full">
-                    <div className="text-sm font-medium text-gray-900">
-                        {params.row.name}
-                    </div>
-                </div>
-            ),
-        },
-        {
-            field: "lokasi",
-            headerName: "Lokasi",
-            flex: 1,
-            // renderCell: (params) => <div className="">{params.lokasi}</div>,
-        },
-        {
-            field: "tipe",
-            headerName: "tipe",
-            flex: 1,
-            renderCell: (params) => (
-                <div className="flex h-full items-center">
-                    <div
-                        className={`rounded-full w-4 h-4 mr-2 animate-pulse ${
-                            params.row.tipe === "Khusus"
-                                ? "bg-black"
-                                : params.row.tipe === "Gold"
-                                ? "bg-[#FFD700]"
-                                : params.row.tipe === "Silver"
-                                ? "bg-[#c0c0c0]"
-                                : params.row.tipe === "Bronze"
-                                ? "bg-[#CD7F32]"
-                                : "bg-blue-700"
-                        }`}
-                    />
-                    <span className="text-sm font-medium">
-                        {params.row?.tipe || "-"}
-                    </span>
-                </div>
-            ),
-        },
-        {
-            field: "kapasitas",
-            headerName: "Kapasitas",
-            flex: 1,
-            renderCell: (params) => (
-                <div className="flex items-center h-full">
-                    <span className="text-sm font-medium">
-                        {params.row?.kapasitas || "-"} MVA
-                    </span>
-                </div>
-            ),
-        },
-        {
-            field: "coordinates",
-            headerName: "Koordinat",
-            flex: 2,
-            renderCell: (params) => (
-                <div className="flex items-center h-full text-sm text-gray-500">
-                    <FaMapMarkerAlt className="mr-2 text-red-500" />
-                    {`${params.row?.latitude || "-"}, ${
-                        params.row?.longitude || "-"
-                    }`}
-                </div>
-            ),
-        },
-    ];
+    const handleSearch = (val) => {
+        setSearchTerm(val);
+        setPage(1);
+    };
+    
+    const filteredKtts = useMemo(() => {
+        if (!Array.isArray(rows)) return [];
+    
+        let filtered = rows;
+    
+        if (searchTerm && searchTerm.trim() !== "") {
+            const searchLower = searchTerm.toLowerCase().trim();
+            filtered = filtered.filter((ktt) => {
+                return (
+                    (ktt.name || "").toLowerCase().includes(searchLower) ||
+                    (ktt.lokasi || "").toLowerCase().includes(searchLower) ||
+                    (ktt.tipe || "").toLowerCase().includes(searchLower) ||
+                    (ktt.kapasitas.toString() || "").toLowerCase().includes(searchLower)
+                );
+            });
+        }
+    
+        return filtered;
+    }, [rows, searchTerm]);
+    
+    const totalRows = filteredKtts.length;
+    const totalPages = Math.max(1, Math.ceil(totalRows / rowsPerPage));
+    
+    const paginatedData = useMemo(() => {
+        const start = (page - 1) * rowsPerPage;
+        return filteredKtts.slice(start, start + rowsPerPage);
+    }, [filteredKtts, page, rowsPerPage]);
+    
+    const handlePrev = () => setPage((p) => Math.max(1, p - 1));
+    const handleNext = () => setPage((p) => Math.min(totalPages, p + 1));
+
 
     return (
         <>
@@ -211,8 +181,7 @@ export default function Ktt({ ktts }) {
                                         Konsumen Tegangan Tinggi
                                     </h1>
                                     <p className="mt-2 text-blue-100 max-w-2xl">
-                                        Data konsumen tegangan tinggi (KTT) yang
-                                        terdaftar pada sistem
+                                        Data konsumen tegangan tinggi (KTT) yang terdaftar pada sistem
                                     </p>
                                 </div>
                                 <button
@@ -225,6 +194,7 @@ export default function Ktt({ ktts }) {
                             </div>
                         </div>
                     </div>
+                    {/* Bagian card data KTT Karawang dan Purwakarta tetap sama */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="group relative overflow-hidden rounded-xl bg-white hover:shadow-xl transition-all duration-300 border">
                             <div className="p-8">
@@ -330,11 +300,11 @@ export default function Ktt({ ktts }) {
                         </div>
                     </div>
 
-                    {/* KTT DataGrid */}
+                    {/* Mengganti DataGrid dengan tabel HTML manual */}
                     <div className="bg-white rounded-xl mt-6 shadow-sm border overflow-hidden">
                         <div className="p-6">
-                            <div className="flex items-center justify-between">
-                                <div>
+                            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                                <div className="w-full">
                                     <h2 className="text-2xl font-bold text-gray-800">
                                         Data KTT UPT Karawang
                                     </h2>
@@ -342,64 +312,196 @@ export default function Ktt({ ktts }) {
                                         Kelola data KTT di wilayah Karawang
                                     </p>
                                 </div>
+                                <div className="flex flex-row flex-wrap items-center gap-2">
+                                    <div className="relative">
+                                        <input
+                                            type="text"
+                                            placeholder="Cari nama KTT..."
+                                            className="w-full pl-12 pr-4 py-2 border border-gray-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
+                                            value={searchTerm}
+                                            onChange={(e) => handleSearch(e.target.value)}
+                                        />
+                                        <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-lg" />
+                                    </div>
+                                </div>
                             </div>
                         </div>
-                        <div className="h-[25vh] w-full">
-                            {rows.length === 0 ? (
-                                <div className="flex flex-col items-center justify-center h-full p-8 text-center">
-                                    <div className="w-16 h-16 mb-4 text-gray-400">
-                                        <FaBuilding className="w-full h-full" />
-                                    </div>
-                                    <h3 className="text-lg font-medium text-gray-900 mb-1">
-                                        Tidak ada data KTT
-                                    </h3>
-                                    <p className="text-sm text-gray-500 mb-4">
-                                        Belum ada data KTT yang tersedia.
-                                        Silakan tambahkan data baru.
-                                    </p>
-                                    <button
-                                        onClick={handleOpen}
-                                        className="inline-flex items-center px-4 py-2 bg-blue-600 text-white hover:bg-blue-700 rounded-lg transition-all duration-200 shadow-sm font-medium"
-                                    >
-                                        <FaPlus className="mr-2" />
-                                        Tambah KTT
-                                    </button>
+                        <div className="px-2 md:px-6 pb-6 pt-4">
+                            <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white">
+                                <div className="overflow-y-auto custom-scrollbar">
+                                    <table className="min-w-full w-full table-auto">
+                                        <thead className="bg-gray-100 text-gray-600 sticky top-0">
+                                            <tr>
+                                                <th className="w-[5%] px-3 py-3 text-left text-xs sm:text-sm font-semibold whitespace-nowrap">
+                                                    No
+                                                </th>
+                                                <th className="w-[20%] px-3 py-3 text-left text-xs sm:text-sm font-semibold">
+                                                    Nama KTT
+                                                </th>
+                                                <th className="w-[15%] px-3 py-3 text-left text-xs sm:text-sm font-semibold">
+                                                    Lokasi
+                                                </th>
+                                                <th className="w-[15%] px-3 py-3 text-left text-xs sm:text-sm font-semibold whitespace-nowrap">
+                                                    Tipe
+                                                </th>
+                                                <th className="w-[15%] px-3 py-3 text-left text-xs sm:text-sm font-semibold">
+                                                    Kapasitas
+                                                </th>
+                                                <th className="w-[20%] px-3 py-3 text-left text-xs sm:text-sm font-semibold">
+                                                    Koordinat
+                                                </th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="bg-white divide-y divide-gray-200">
+                                            {paginatedData.length === 0 ? (
+                                                <tr>
+                                                    <td colSpan={6} className="text-center py-10 text-gray-400 font-semibold text-base">
+                                                        Tidak ada data KTT.
+                                                    </td>
+                                                </tr>
+                                            ) : (
+                                                paginatedData.map((ktt, idx) => (
+                                                    <tr className="hover:bg-gray-50" key={ktt.id}>
+                                                        <td className="px-3 py-3 text-left text-xs sm:text-sm text-gray-600 whitespace-nowrap">
+                                                            {(page - 1) * rowsPerPage + idx + 1}
+                                                        </td>
+                                                        <td className="px-3 py-3 text-left text-xs sm:text-sm text-gray-800 truncate max-w-[8rem] sm:max-w-[12rem]" title={ktt.name}>
+                                                            {ktt.name}
+                                                        </td>
+                                                        <td className="px-3 py-3 text-left text-xs sm:text-sm text-gray-700">
+                                                            {ktt.lokasi}
+                                                        </td>
+                                                        <td className="px-3 py-3 text-left text-xs sm:text-sm whitespace-nowrap">
+                                                            <TipeBadge tipe={ktt.tipe} />
+                                                        </td>
+                                                        <td className="px-3 py-3 text-left text-xs sm:text-sm text-gray-700">
+                                                            {ktt.kapasitas} MVA
+                                                        </td>
+                                                        <td className="px-3 py-3 text-left text-xs sm:text-sm text-gray-600 whitespace-nowrap">
+                                                            <div className="flex items-center gap-1">
+                                                                <FaMapMarkerAlt className="text-red-500" />
+                                                                <span>{ktt.latitude}, {ktt.longitude}</span>
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                ))
+                                            )}
+                                        </tbody>
+                                    </table>
                                 </div>
-                            ) : (
-                                <DataGrid
-                                    rows={rows}
-                                    columns={columns}
-                                    pageSize={5}
-                                    rowsPerPageOptions={[5, 10, 20]}
-                                    disableSelectionOnClick
-                                    className="border-0"
-                                    sx={{
-                                        "& .MuiDataGrid-cell:focus": {
-                                            outline: "none",
-                                        },
-                                        "& .MuiDataGrid-columnHeaders": {
-                                            backgroundColor: "#f8fafc",
-                                            borderBottom: "1px solid #e2e8f0",
-                                            color: "#1e293b",
-                                            fontWeight: 600,
-                                        },
-                                        "& .MuiDataGrid-cell": {
-                                            borderBottom: "1px solid #e2e8f0",
-                                            color: "#475569",
-                                        },
-                                        "& .MuiDataGrid-footerContainer": {
-                                            borderTop: "1px solid #e2e8f0",
-                                            backgroundColor: "#f8fafc",
-                                        },
-                                        "& .MuiTablePagination-root": {
-                                            color: "#475569",
-                                        },
-                                        "& .MuiDataGrid-row:hover": {
-                                            backgroundColor: "#f1f5f9",
-                                        },
-                                    }}
-                                />
-                            )}
+                            </div>
+                            <div className="flex flex-col gap-2 mt-4 px-2 w-full">
+                                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 w-full">
+                                    <div className="flex items-center gap-2">
+                                        <label className="text-gray-600 text-sm font-medium mr-1">
+                                            Tampil
+                                        </label>
+                                        <div className="min-w-[4.5rem]">
+                                            <Listbox
+                                                value={rowsPerPage}
+                                                onChange={handleRowsPerPageChange}
+                                            >
+                                                <div className="relative">
+                                                    <Listbox.Button className="border border-gray-300 rounded-lg px-2 py-1 text-sm w-full text-left bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+                                                        {rowsPerPage}
+                                                    </Listbox.Button>
+                                                    <Listbox.Options className="absolute left-0 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg z-50 overflow-hidden">
+                                                        {[10, 20, 50].map((option) => (
+                                                            <Listbox.Option
+                                                                key={option}
+                                                                value={option}
+                                                                className={({ active, selected }) =>
+                                                                    `relative cursor-pointer select-none px-2 py-1 text-sm transition-colors ${
+                                                                        active
+                                                                            ? "bg-blue-50 text-blue-800"
+                                                                            : selected
+                                                                            ? "bg-gray-100 text-gray-900"
+                                                                            : "text-gray-700"
+                                                                    }`
+                                                                }
+                                                            >
+                                                                {({ selected }) => (
+                                                                    <div className="flex items-center">
+                                                                        <span
+                                                                            className={`block truncate ${
+                                                                                selected
+                                                                                    ? "font-semibold"
+                                                                                    : "font-normal"
+                                                                            }`}
+                                                                        >
+                                                                            {option}
+                                                                        </span>
+                                                                        {selected && (
+                                                                            <span className="ml-auto flex items-center text-blue-600">
+                                                                                <FaCheck
+                                                                                    className="h-4 w-4"
+                                                                                    aria-hidden="true"
+                                                                                />
+                                                                            </span>
+                                                                        )}
+                                                                    </div>
+                                                                )}
+                                                            </Listbox.Option>
+                                                        ))}
+                                                    </Listbox.Options>
+                                                </div>
+                                            </Listbox>
+                                        </div>
+                                        <span className="text-gray-500 text-xs ml-1">
+                                            / halaman
+                                        </span>
+                                    </div>
+                                    <div className="text-sm text-gray-600 mb-1 sm:mb-0 text-center sm:text-left">
+                                        Halaman{" "}
+                                        <span className="font-semibold text-gray-800">
+                                            {page}
+                                        </span>{" "}
+                                        dari{" "}
+                                        <span className="font-semibold text-gray-800">
+                                            {totalPages}
+                                        </span>
+                                        <span className="mx-2">|</span>
+                                        Total{" "}
+                                        <span className="font-semibold text-gray-800">
+                                            {totalRows}
+                                        </span>{" "}
+                                        data
+                                    </div>
+                                    <div className="flex items-center gap-0.5 justify-center sm:justify-end w-full sm:w-auto">
+                                        <button
+                                            onClick={handlePrev}
+                                            disabled={page === 1}
+                                            className={`px-3 py-2 rounded-l-md border border-r-0 text-sm flex items-center gap-1 font-semibold transition-colors
+                                            ${
+                                                page === 1
+                                                    ? "bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed"
+                                                    : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
+                                            }
+                                            `}
+                                            aria-label="Halaman sebelumnya"
+                                        >
+                                            <FaChevronLeft />
+                                        </button>
+                                        <span className="px-4 py-2 text-sm bg-gray-50 text-gray-800 select-none font-bold tracking-wide border-t border-b border-gray-200">
+                                            {page}
+                                        </span>
+                                        <button
+                                            onClick={handleNext}
+                                            disabled={page === totalPages}
+                                            className={`px-3 py-2 rounded-r-md border border-l-0 text-sm flex items-center gap-1 font-semibold transition-colors
+                                            ${
+                                                page === totalPages
+                                                    ? "bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed"
+                                                    : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
+                                            }
+                                            `}
+                                            aria-label="Halaman berikutnya"
+                                        >
+                                            <FaChevronRight />
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
