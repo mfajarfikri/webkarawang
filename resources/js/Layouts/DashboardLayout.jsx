@@ -225,7 +225,8 @@ export default function DashboardLayout({ children, title = "Dashboard" }) {
                                                 {userName}
                                             </span>
                                             <span className="text-xs text-gray-500">
-                                                {auth.user.wilayah}
+                                                {auth.user.wilayah} -{" "}
+                                                {auth.user.role}
                                             </span>
                                         </div>
                                         <button

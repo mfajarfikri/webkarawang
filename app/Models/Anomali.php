@@ -99,4 +99,43 @@ class Anomali extends Model
 
         return $slug;
     }
+
+    /**
+     * Update overdue anomalies to pending status
+     * This method checks for anomalies where tanggal_selesai has passed
+     * and status is not 'Close' or 'Pending', then updates them to 'Pending'
+     * 
+     * @return int Number of updated records
+     */
+    public static function updateOverdueAnomaliesToPending()
+    {
+        $today = now()->format('Y-m-d');
+        
+        $updatedCount = static::where('tanggal_selesai', '<', $today)
+            ->whereNotIn('status', ['Close', 'Pending'])
+            ->whereNotNull('tanggal_selesai')
+            ->update([
+                'status' => 'Pending',
+                'updated_at' => now()
+            ]);
+
+        return $updatedCount;
+    }
+
+    /**
+     * Get overdue anomalies that should be marked as pending
+     * This method returns anomalies where tanggal_selesai has passed
+     * 
+     * @return \Illuminate\Database\Eloquent\Collection
+     */
+    public static function getOverdueAnomalies()
+    {
+        $today = now()->format('Y-m-d');
+        
+        return static::where('tanggal_selesai', '<', $today)
+            ->whereNotIn('status', ['Close', 'Pending'])
+            ->whereNotNull('tanggal_selesai')
+            ->with(['kategori', 'gardu_induk', 'user', 'assignedUser'])
+            ->get();
+    }
 }

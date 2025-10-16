@@ -257,6 +257,8 @@ class AnomaliController extends Controller
             'users' => $users
         ]);
     }
+
+
     
     /**
      * Approve or reject an anomaly
@@ -318,13 +320,75 @@ class AnomaliController extends Controller
                 'message' => $message,
                 'redirect' => route('dashboard.anomali.index')
             ]);
-        }
-            
-        catch (\Exception $e) {
+        } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Gagal memproses persetujuan: ' . $e->getMessage()
             ], 500);
         }
+    }
+
+    /**
+     * Show the form for editing schedule of the specified resource.
+     */
+    public function schedule(Anomali $anomali)
+    {
+        $anomali->load(['gardu_induk', 'kategori', 'user', 'assignedUser', 'approvedBy', 'timelines']);
+        return Inertia::render('Dashboard/Anomali/Schedule', [
+            'anomalis' => $anomali
+        ]);
+    }
+
+    /**
+     * Update the schedule of the specified resource.
+     */
+    public function updateSchedule(Request $request, Anomali $anomali)
+    {
+        $validator = Validator::make($request->all(), [
+            'tanggal_mulai' => 'required|date',
+            'tanggal_selesai' => 'required|date|after_or_equal:tanggal_mulai',
+        ], [
+            'tanggal_mulai.required' => 'Tanggal mulai harus diisi',
+            'tanggal_mulai.date' => 'Format tanggal mulai tidak valid',
+            'tanggal_selesai.required' => 'Tanggal selesai harus diisi',
+            'tanggal_selesai.date' => 'Format tanggal selesai tidak valid',
+            'tanggal_selesai.after_or_equal' => 'Tanggal selesai harus sama atau setelah tanggal mulai',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validasi gagal',
+                'errors' => $validator->errors()
+            ], 422);
         }
+
+        try {
+            $anomali->update([
+                'tanggal_mulai' => $request->tanggal_mulai,
+                'tanggal_selesai' => $request->tanggal_selesai,
+            ]);
+
+            // Membuat timeline entry untuk penjadwalan
+            $anomali->timelines()->create([
+                'event_type' => 'scheduled',
+                'description' => 'Anomali telah dijadwalkan untuk dikerjakan',
+                'old_value' => $anomali->tanggal_mulai ? $anomali->tanggal_mulai . ' - ' . $anomali->tanggal_selesai : null,
+                'new_value' => $request->tanggal_mulai . ' - ' . $request->tanggal_selesai,
+                'comment' => 'Penjadwalan pekerjaan anomali dari tanggal ' . date('d mmmm Y', strtotime($request->tanggal_mulai)) . ' sampai ' . date('d MMM YYYY', strtotime($request->tanggal_selesai)),
+                'user_id' => Auth::user()->id,
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Schedule anomali berhasil diperbarui',
+                'redirect' => route('dashboard.anomali.show', $anomali->slug)
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal memperbarui schedule: ' . $e->getMessage()
+            ], 500);
+        }
+    }
 }

@@ -18,6 +18,8 @@ Route::post('/berita/{slug}/increment-read', [GuestController::class, 'increment
 Route::delete('/berita/{berita}', [BeritaController::class, 'destroy']);
 
 Route::get('/anomali', [DataController::class, 'ShowAnomali']);
+Route::get('/anomali/overdue', [DataController::class, 'getOverdueAnomalies']);
+Route::post('/anomali/update-overdue', [DataController::class, 'updateOverdueAnomalies']);
 Route::middleware('auth:sanctum')->group(function() {
 });
 

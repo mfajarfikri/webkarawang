@@ -59,6 +59,8 @@ Route::middleware(['auth'])->prefix('dashboard')->group(function () {
     Route::get('/anomali/export', [AnomaliController::class, 'export'])->name('dashboard.anomali.export');
     Route::get('/anomali/{anomali:slug}', [AnomaliController::class, 'show'])->name('dashboard.anomali.show');
     Route::get('/anomali/{anomali:slug}/pdf', [AnomaliController::class, 'exportPdf'])->name('dashboard.anomali.pdf');
+    Route::get('/anomali/{anomali:slug}/schedule', [AnomaliController::class, 'schedule'])->name('dashboard.anomali.schedule');
+    Route::post('/anomali/{anomali:slug}/schedule', [AnomaliController::class, 'updateSchedule'])->name('dashboard.anomali.schedule.update');
 
     // Anomali Timeline Routes
     Route::get('/anomali/{anomaliId}/timeline', [AnomaliTimelineController::class, 'index'])->name('dashboard.anomali.timeline.index');

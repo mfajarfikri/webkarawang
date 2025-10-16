@@ -11,7 +11,8 @@ class PermissionController extends Controller
 {
     public function index()
     {
-        $permissions = Permission::all(['id', 'name']);
+        $permissions = Permission::all(['id', 'name', 'description']);
+        
         return Inertia::render('Dashboard/Permission/Permission', [
             'permissions' => $permissions,
             'errors' => session('errors') ? session('errors')->getBag('default')->toArray() : (object)[],

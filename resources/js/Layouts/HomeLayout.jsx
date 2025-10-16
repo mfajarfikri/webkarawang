@@ -148,7 +148,7 @@ function HomeLayoutContent({ children }) {
 
     return (
         <div className="min-h-screen flex flex-col bg-gray-50">
-            {/* Main Navbar - Lebih modern dan minimalis */}
+            {/* Main Navbar */}
             <header
                 className={`sticky top-0 z-50 transition-all duration-300 ${
                     isScrolled
@@ -158,7 +158,7 @@ function HomeLayoutContent({ children }) {
             >
                 <div className="container mx-auto px-4 sm:px-6">
                     <div className="flex justify-between items-center h-16 md:h-20">
-                        {/* Logo - Lebih simpel dan modern */}
+                        {/* Logo */}
                         <div className="flex-shrink-0">
                             <Link href="/">
                                 <div className="flex items-center">
@@ -175,7 +175,7 @@ function HomeLayoutContent({ children }) {
                             </Link>
                         </div>
 
-                        {/* Desktop Navigation - Lebih bersih dan modern */}
+                        {/* Desktop Navigation */}
                         <nav className="hidden lg:flex items-center space-x-1">
                             {navMenus.map((menu, index) => (
                                 <div key={index} className="relative group">
@@ -218,7 +218,7 @@ function HomeLayoutContent({ children }) {
                             ))}
                         </nav>
 
-                        {/* Right Side Actions - Lebih modern */}
+                        {/* Right Side Actions */}
                         <div className="flex items-center">
                             {auth?.user ? (
                                 <div className="relative">
@@ -365,7 +365,7 @@ function HomeLayoutContent({ children }) {
                     </div>
                 </div>
 
-                {/* Mobile Navigation - Lebih modern dan smooth */}
+                {/* Mobile Navigation */}
                 <div
                     className={`lg:hidden fixed inset-0 z-40 bg-black bg-opacity-50 transition-opacity duration-300 ${
                         mobileMenuOpen
@@ -488,7 +488,7 @@ function HomeLayoutContent({ children }) {
             {/* Main Content */}
             <main className="flex-grow">{children}</main>
 
-            {/* Footer - Lebih modern dan simpel */}
+            {/* Footer */}
             <footer className="bg-gray-900 text-white">
                 <div className="container mx-auto px-4 py-6">
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">

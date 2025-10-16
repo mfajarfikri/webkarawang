@@ -13,6 +13,7 @@ import {
     FaTable,
     FaChevronDown,
     FaTimes,
+    FaCalendarAlt,
 } from "react-icons/fa";
 import ErrorBoundary from "@/Components/ErrorBoundary";
 import { useState, useMemo, useEffect, useCallback, Fragment } from "react";
@@ -22,6 +23,10 @@ import { formatDate } from "@/Components/Utils/formatDate";
 import SecondaryButton from "@/Components/SecondaryButton";
 import PrimaryButton from "@/Components/PrimaryButton";
 import Modal from "@/Components/Modal";
+import FullCalendar from "@fullcalendar/react";
+import dayGridPlugin from "@fullcalendar/daygrid";
+import timeGridPlugin from "@fullcalendar/timegrid";
+import interactionPlugin from "@fullcalendar/interaction";
 
 function StatusBadge({ status }) {
     let color = "bg-gray-300 text-gray-700";
@@ -60,6 +65,192 @@ function UltgBadge({ ultg }) {
     );
 }
 
+// Status color mapping for better organization
+const STATUS_COLORS = {
+    Open: { bg: "#3b82f6", border: "#2563eb", name: "Open" },
+    Close: { bg: "#10b981", border: "#059669", name: "Close" },
+    "In Progress": { bg: "#f59e0b", border: "#d97706", name: "In Progress" },
+    Pending: { bg: "#ef4444", border: "#dc2626", name: "Pending" },
+};
+
+// AnomaliCalendar Component
+function AnomaliCalendar({ filteredAnomalis, onEventClick }) {
+    const [windowWidth, setWindowWidth] = useState(
+        typeof window !== "undefined" ? window.innerWidth : 1024
+    );
+
+    useEffect(() => {
+        const handleResize = () => setWindowWidth(window.innerWidth);
+        window.addEventListener("resize", handleResize);
+        return () => window.removeEventListener("resize", handleResize);
+    }, []);
+
+    const getStatusColor = (status) => {
+        return (
+            STATUS_COLORS[status] || {
+                bg: "#6b7280",
+                border: "#4b5563",
+                name: status,
+            }
+        );
+    };
+
+    const formatEventTitle = (anomali, isMobile) => {
+        if (isMobile) {
+            return anomali.kategori?.name || "Anomali";
+        }
+        return `${anomali.ultg || "UPT Karawang"} - ${anomali.judul || "N/A"}`;
+    };
+
+    const processEvents = () => {
+        return filteredAnomalis.map((anomali) => {
+            const startDate = anomali.tanggal_mulai;
+            const endDate = anomali.tanggal_selesai || anomali.tanggal_mulai;
+            const statusColor = getStatusColor(anomali.status);
+            const isMobile = windowWidth < 768;
+
+            return {
+                id: anomali.id,
+                title: formatEventTitle(anomali, isMobile),
+                start: startDate,
+                end:
+                    endDate !== startDate
+                        ? new Date(
+                              new Date(endDate).getTime() + 24 * 60 * 60 * 1000
+                          )
+                              .toISOString()
+                              .split("T")[0]
+                        : undefined,
+                backgroundColor: statusColor.bg,
+                borderColor: statusColor.border,
+                textColor: "#ffffff",
+                extendedProps: { anomali },
+            };
+        });
+    };
+
+    const handleEventClick = (info) => {
+        const anomali = info.event.extendedProps.anomali;
+        if (onEventClick) {
+            onEventClick(anomali);
+        } else {
+            // Default alert behavior
+            const message =
+                `📋 Detail Anomali\n\n` +
+                `🏷️ Kategori: ${anomali.kategori?.nama || "N/A"}\n` +
+                `🏢 ULTG: ${anomali.ultg?.nama || "N/A"}\n` +
+                `📊 Status: ${anomali.status}\n` +
+                `📅 Tanggal Mulai: ${anomali.tanggal_mulai}\n` +
+                `📅 Tanggal Selesai: ${
+                    anomali.tanggal_selesai || "Belum selesai"
+                }`;
+            alert(message);
+        }
+    };
+
+    return (
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+            {/* Header */}
+            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-gray-100">
+                <div className="px-6 py-4">
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-3">
+                            <div className="flex-shrink-0">
+                                <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                                    <FaCalendarAlt className="w-5 h-5 text-blue-600" />
+                                </div>
+                            </div>
+                            <div>
+                                <h2 className="text-lg font-semibold text-gray-900">
+                                    Kalender Anomali
+                                </h2>
+                                <p className="text-sm text-gray-600 mt-0.5">
+                                    Tampilan kalender untuk monitoring anomali
+                                </p>
+                            </div>
+                        </div>
+                        <div className="hidden sm:flex items-center">
+                            <div className="bg-white/60 backdrop-blur-sm rounded-lg px-3 py-2 border border-white/20">
+                                <span className="text-sm font-medium text-gray-700">
+                                    Dashboard
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* Calendar Container */}
+            <div className="p-6">
+                <div className="calendar-container bg-gray-50/50 rounded-xl p-4 border border-gray-100">
+                    <FullCalendar
+                        plugins={[
+                            dayGridPlugin,
+                            timeGridPlugin,
+                            interactionPlugin,
+                        ]}
+                        initialView="dayGridMonth"
+                        headerToolbar={{
+                            left: "prev,next today",
+                            center: "title",
+                            right:
+                                windowWidth > 768
+                                    ? "dayGridMonth,timeGridWeek,timeGridDay"
+                                    : "dayGridMonth",
+                        }}
+                        events={processEvents()}
+                        eventClick={handleEventClick}
+                        height="auto"
+                        locale="id"
+                        dayMaxEvents={windowWidth < 768 ? 2 : 3}
+                        moreLinkClick="popover"
+                        eventDisplay="block"
+                        displayEventTime={false}
+                        aspectRatio={windowWidth < 768 ? 1.0 : 1.35}
+                        eventClassNames="cursor-pointer hover:opacity-90 transition-all duration-200 hover:scale-[1.02]"
+                        dayHeaderClassNames="bg-gray-100/80 text-gray-700 font-semibold text-sm"
+                        viewClassNames="bg-white rounded-lg shadow-sm"
+                        buttonText={{
+                            today: "Hari Ini",
+                            month: "Bulan",
+                            week: "Minggu",
+                            day: "Hari",
+                        }}
+                    />
+                </div>
+
+                {/* Enhanced Status Legend */}
+                <div className="mt-6 border-t border-gray-100 pt-6">
+                    <div className="flex items-center mb-4">
+                        <h4 className="text-sm font-semibold text-gray-700">
+                            Status Indikator
+                        </h4>
+                        <div className="h-px bg-gradient-to-r from-gray-200 to-transparent flex-1 ml-4"></div>
+                    </div>
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                        {Object.entries(STATUS_COLORS).map(
+                            ([status, colors]) => (
+                                <div
+                                    key={status}
+                                    className="flex items-center gap-3 px-4 py-3 bg-white border border-gray-200 rounded-lg hover:shadow-sm transition-all duration-200 hover:border-gray-300"
+                                >
+                                    <div
+                                        className="w-3 h-3 rounded-full shadow-sm"
+                                        style={{ backgroundColor: colors.bg }}
+                                    ></div>
+                                    <span className="text-sm font-medium text-gray-700">
+                                        {colors.name}
+                                    </span>
+                                </div>
+                            )
+                        )}
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+}
+
 export default function Anomali({ anomalis = [], auth = [], kategoris = [] }) {
     const [rowsPerPage, setRowsPerPage] = useState(10);
     const [searchTerm, setSearchTerm] = useState("");
@@ -73,6 +264,11 @@ export default function Anomali({ anomalis = [], auth = [], kategoris = [] }) {
         const savedTab = localStorage.getItem("anomaliActiveTab");
         return savedTab || "tabel";
     });
+
+    // Update localStorage when activeTab changes
+    useEffect(() => {
+        localStorage.setItem("anomaliActiveTab", activeTab);
+    }, [activeTab]);
     const [garduQuery, setGarduQuery] = useState("");
     const [ultgQuery, setUltgQuery] = useState("");
     const [forceUpdate, setForceUpdate] = useState(0);
@@ -462,7 +658,20 @@ export default function Anomali({ anomalis = [], auth = [], kategoris = [] }) {
 
     return (
         <>
-            <Head title="Anomali" />
+            <Head title="Anomali">
+                <link
+                    href="https://cdn.jsdelivr.net/npm/@fullcalendar/core@6.1.10/main.min.css"
+                    rel="stylesheet"
+                />
+                <link
+                    href="https://cdn.jsdelivr.net/npm/@fullcalendar/daygrid@6.1.10/main.min.css"
+                    rel="stylesheet"
+                />
+                <link
+                    href="https://cdn.jsdelivr.net/npm/@fullcalendar/timegrid@6.1.10/main.min.css"
+                    rel="stylesheet"
+                />
+            </Head>
             <DashboardLayout>
                 <div className="w-full mx-auto">
                     <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-0 overflow-hidden">
@@ -470,109 +679,144 @@ export default function Anomali({ anomalis = [], auth = [], kategoris = [] }) {
                         <div className="flex border-b border-gray-200 bg-gray-50">
                             <button
                                 className={`
-        px-6 py-3
-        text-sm font-semibold
-        focus:outline-none
-        transition-colors duration-200
-        border-b-2
-        flex items-center gap-2
-        ${
-            activeTab === "tabel"
-                ? "border-blue-600 text-blue-700 bg-white shadow-sm"
-                : "border-transparent text-gray-500 hover:text-blue-600 hover:bg-gray-50"
-        }
-    `}
+                                            px-6 py-3
+                                            text-sm font-semibold
+                                            focus:outline-none
+                                            transition-colors duration-200
+                                            border-b-2
+                                            flex items-center gap-2
+                                            ${
+                                                activeTab === "tabel"
+                                                    ? "border-blue-600 text-blue-700 bg-white shadow-sm"
+                                                    : "border-transparent text-gray-500 hover:text-blue-600 hover:bg-gray-50"
+                                            }
+                                        `}
                                 onClick={() => setActiveTab("tabel")}
                                 type="button"
                             >
                                 <FaTable className="text-lg" />
                                 <span>Anomali</span>
                             </button>
+                            <button
+                                className={`
+                                            px-6 py-3
+                                            text-sm font-semibold
+                                            focus:outline-none
+                                            transition-colors duration-200
+                                            border-b-2
+                                            flex items-center gap-2
+                                            ${
+                                                activeTab === "kalender"
+                                                    ? "border-blue-600 text-blue-700 bg-white shadow-sm"
+                                                    : "border-transparent text-gray-500 hover:text-blue-600 hover:bg-gray-50"
+                                            }
+                                        `}
+                                onClick={() => setActiveTab("kalender")}
+                                type="button"
+                            >
+                                <FaCalendarAlt className="text-lg" />
+                                <span>Jadwal Anomali</span>
+                            </button>
+
                             {auth.user.bidang &&
                             auth.user.bidang.toLowerCase() === "multg" ? (
                                 <button
                                     className={`
-        px-6 py-3
-        text-sm font-semibold 
-        focus:outline-none
-        transition-colors duration-200
-        border-b-2
-        flex items-center gap-2
-        ${
-            activeTab === "approval"
-                ? "border-blue-600 text-blue-700 bg-white shadow-sm"
-                : "border-transparent text-gray-500 hover:text-blue-600 hover:bg-gray-50"
-        }
-    `}
+                                            px-6 py-3
+                                            text-sm font-semibold 
+                                            focus:outline-none
+                                            transition-colors duration-200
+                                            border-b-2
+                                            flex items-center gap-2
+                                            relative
+                                            ${
+                                                activeTab === "approval"
+                                                    ? "border-blue-600 text-blue-700 bg-white shadow-sm"
+                                                    : "border-transparent text-gray-500 hover:text-blue-600 hover:bg-gray-50"
+                                            }
+                                        `}
                                     onClick={() => setActiveTab("approval")}
                                     type="button"
                                 >
                                     <VscPreview className="text-lg" />
                                     <span>Review Anomali</span>
+                                    {totalRowsReview > 0 && (
+                                        <span className="absolute top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center min-w-[20px] px-1">
+                                            {totalRowsReview > 99
+                                                ? "99+"
+                                                : totalRowsReview}
+                                        </span>
+                                    )}
                                 </button>
                             ) : auth.user.bidang &&
-                              auth.user.bidang.toLowerCase() === "hargi" &&
-                              auth.user.bidang.toLowerCase() === "harjar" &&
-                              auth.user.bidang.toLowerCase() === "harpro" &&
-                              auth.user.bidang.toLowerCase() === "K3" ? (
+                              (auth.user.bidang.toLowerCase() === "hargi" ||
+                                  auth.user.bidang.toLowerCase() === "harjar" ||
+                                  auth.user.bidang.toLowerCase() === "harpro" ||
+                                  auth.user.bidang.toLowerCase() === "K3") ? (
                                 <button
-                                    className={`px-6 py-3 text-sm font-semibold focus:outline-none transition-colors border-b-2 ${
-                                        activeTab === "assign"
-                                            ? "border-blue-600 text-blue-700 bg-white"
-                                            : "border-transparent text-gray-500 hover:text-blue-600 hover:bg-gray-100"
-                                    }`}
+                                    className={`
+                                            px-6 py-3
+                                            text-sm font-semibold
+                                            focus:outline-none
+                                            transition-colors duration-200
+                                            border-b-2
+                                            flex items-center gap-2
+                                            ${
+                                                activeTab === "assign"
+                                                    ? "border-blue-600 text-blue-700 bg-white shadow-sm"
+                                                    : "border-transparent text-gray-500 hover:text-blue-600 hover:bg-gray-50"
+                                            }
+                                        `}
                                     onClick={() => setActiveTab("assign")}
                                     type="button"
                                 >
-                                    Assign Anomali
+                                    <MdOutlineReportProblem className="text-lg" />
+                                    <span>Assign Anomali</span>
                                 </button>
                             ) : auth.user.bidang &&
                               auth.user.bidang.toLowerCase() === "renev" ? (
                                 <button
                                     className={`
-                                        px-6 py-3 
-                                        text-sm font-semibold
-                                        focus:outline-none 
-                                        transition-colors
-                                        border-b-2
-                                        flex items-center gap-2
-                                        ${
-                                            activeTab === "renev"
-                                                ? "border-blue-600 text-blue-700 bg-white"
-                                                : "border-transparent text-gray-500 hover:text-blue-600 hover:bg-gray-100"
-                                        }
-                                    `}
+                                            px-6 py-3
+                                            text-sm font-semibold
+                                            focus:outline-none
+                                            transition-colors duration-200
+                                            border-b-2
+                                            flex items-center gap-2
+                                            ${
+                                                activeTab === "renev"
+                                                    ? "border-blue-600 text-blue-700 bg-white shadow-sm"
+                                                    : "border-transparent text-gray-500 hover:text-blue-600 hover:bg-gray-50"
+                                            }
+                                        `}
                                     onClick={() => setActiveTab("renev")}
                                     type="button"
                                 >
-                                    <FaClipboard className="text-base" />
+                                    <FaClipboard className="text-lg" />
                                     <span>Assign ke Renev</span>
                                 </button>
                             ) : (
                                 ""
                             )}
                         </div>
+
                         {/* Tab Content */}
+
                         {activeTab === "tabel" ? (
                             <>
-                                <div className="px-4 sm:px-6 pt-6 pb-4 border-b border-gray-200 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                                <div className="px-4 sm:px-6 pt-8 pb-6 border-b border-gray-100 flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
                                     <div className="w-full md:w-2/3">
-                                        <h2 className="text-xl font-bold text-gray-800 mb-1 flex items-center gap-2">
-                                            <MdOutlineReportProblem className="text-blue-500 text-2xl" />
-                                            <span>Manajemen Anomali</span>
-                                        </h2>
-                                        <p className="text-gray-600 text-sm mb-2">
-                                            Sistem manajemen Anomali
-                                            memungkinkan Anda untuk mencatat,
-                                            memantau, dan mengelola berbagai
-                                            anomali atau gangguan yang terjadi
-                                            pada sistem kelistrikan. Dengan
-                                            fitur ini, Anda dapat mendeteksi
-                                            anomali lebih cepat, melakukan
-                                            analisis penyebab, serta mengambil
-                                            tindakan korektif secara efisien
-                                            untuk menjaga keandalan dan keamanan
-                                            operasional.
+                                        <div className="flex items-center gap-3 mb-3">
+                                            <div className="w-1 h-8 bg-gradient-to-b from-blue-500 to-blue-600 rounded-full"></div>
+                                            <h1 className="text-2xl font-semibold text-gray-900 tracking-tight">
+                                                Manajemen Anomali
+                                            </h1>
+                                        </div>
+                                        <p className="text-gray-600 text-base leading-relaxed max-w-2xl">
+                                            Kelola dan pantau anomali sistem
+                                            kelistrikan dengan efisien. Deteksi
+                                            dini, analisis mendalam, dan
+                                            tindakan korektif terintegrasi.
                                         </p>
                                     </div>
                                     <div className="w-full md:w-auto flex justify-start md:justify-end">
@@ -590,146 +834,150 @@ export default function Anomali({ anomalis = [], auth = [], kategoris = [] }) {
                                 </div>
                                 <div className="px-2 md:px-6 pb-6 pt-4">
                                     <div className="flex flex-col gap-4 mb-6">
-                                        <div className="flex flex-col xl:grid xl:grid-cols-3 gap-4 items-stretch">
-                                            {/* Filter Data Section */}
-
-                                            {/* Export to Excel Section */}
-                                            <div className="w-full xl:col-span-1 bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
-                                                <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
-                                                    <FaFileExcel className="text-green-600 text-base" />
-                                                    Export ke Excel
-                                                </h3>
-                                                <div className="space-y-4">
-                                                    <button
-                                                        onClick={() =>
-                                                            setShowExportModal(
-                                                                true
-                                                            )
-                                                        }
-                                                        type="button"
-                                                        className="w-full px-4 py-3 bg-green-600 hover:bg-green-700 text-white rounded-md font-medium text-sm flex items-center justify-center gap-2 focus:outline-none focus:ring-2 focus:ring-green-500 transition-colors"
-                                                    >
-                                                        <FaFileExcel className="text-sm" />
-                                                        <span>
-                                                            Export ke Excel
-                                                        </span>
-                                                    </button>
-                                                    <p className="text-sm text-gray-600 text-center">
-                                                        Klik tombol di atas
-                                                        untuk memilih data yang
-                                                        akan diekspor
-                                                    </p>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div className="mb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between bg-white border border-gray-200 rounded-lg gap-2 w-full">
-                                            <div className="flex flex-row flex-wrap items-center gap-2 px-3 py-4 shadow-sm w-full sm:w-auto justify-center sm:justify-start">
-                                                <div className="relative">
-                                                    <input
-                                                        type="text"
-                                                        placeholder="Cari judul..."
-                                                        className="w-full pl-12 pr-4 py-2 border border-gray-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
-                                                        value={searchTerm}
-                                                        onChange={(e) =>
-                                                            handleSearch(
-                                                                e.target.value
-                                                            )
-                                                        }
-                                                    />
-                                                    <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-lg" />
-                                                </div>
-                                                <button
-                                                    className="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg shadow-sm hover:bg-gray-50 font-semibold flex items-center gap-2 transition-colors"
-                                                    onClick={() =>
-                                                        setFilterOpen &&
-                                                        setFilterOpen(true)
-                                                    }
-                                                    type="button"
-                                                >
-                                                    <FaFilter className="text-gray-400" />
-                                                    <span className="inline">
-                                                        Filter
-                                                    </span>
-                                                </button>
-                                                {/* Move paginate to the end */}
-                                            </div>
-                                            <div className="flex items-center gap-2 mx-2 sm:mt-0">
-                                                <label className="text-gray-600 text-sm font-medium mr-1">
-                                                    Tampil
-                                                </label>
-                                                <div className="min-w-[4.5rem]">
-                                                    <Listbox
-                                                        value={rowsPerPage}
-                                                        onChange={
-                                                            handleRowsPerPageChange
-                                                        }
-                                                    >
-                                                        <div className="relative">
-                                                            <Listbox.Button className="border border-gray-300 rounded-lg px-2 py-1 text-sm w-full text-left bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
-                                                                {rowsPerPage}
-                                                            </Listbox.Button>
-                                                            <Listbox.Options className="absolute left-0 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg z-50 overflow-hidden">
-                                                                {[
-                                                                    10, 20, 50,
-                                                                ].map(
-                                                                    (
-                                                                        option
-                                                                    ) => (
-                                                                        <Listbox.Option
-                                                                            key={
-                                                                                option
-                                                                            }
-                                                                            value={
-                                                                                option
-                                                                            }
-                                                                            className={({
-                                                                                active,
-                                                                                selected,
-                                                                            }) =>
-                                                                                `relative cursor-pointer select-none px-2 py-1 text-sm transition-colors ${
-                                                                                    active
-                                                                                        ? "bg-blue-50 text-blue-800"
-                                                                                        : selected
-                                                                                        ? "bg-gray-100 text-gray-900"
-                                                                                        : "text-gray-700"
-                                                                                }`
-                                                                            }
-                                                                        >
-                                                                            {({
-                                                                                selected,
-                                                                            }) => (
-                                                                                <div className="flex items-center">
-                                                                                    <span
-                                                                                        className={`block truncate ${
-                                                                                            selected
-                                                                                                ? "font-semibold"
-                                                                                                : "font-normal"
-                                                                                        }`}
-                                                                                    >
-                                                                                        {
-                                                                                            option
-                                                                                        }
-                                                                                    </span>
-                                                                                    {selected && (
-                                                                                        <span className="ml-auto flex items-center text-blue-600">
-                                                                                            <FaCheck
-                                                                                                className="h-4 w-4"
-                                                                                                aria-hidden="true"
-                                                                                            />
-                                                                                        </span>
-                                                                                    )}
-                                                                                </div>
-                                                                            )}
-                                                                        </Listbox.Option>
+                                        {/* Toolbar Container */}
+                                        <div className="mb-6 bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
+                                            {/* Main Toolbar Section */}
+                                            <div className="p-4 border-b border-gray-100">
+                                                <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                                                    {/* Left Section - Search and Actions */}
+                                                    <div className="flex flex-col sm:flex-row sm:items-center gap-3 flex-1">
+                                                        {/* Search Input */}
+                                                        <div className="relative flex-shrink-0 w-full sm:w-80">
+                                                            <input
+                                                                type="text"
+                                                                placeholder="Cari judul anomali..."
+                                                                className="w-full h-11 pl-12 pr-4 py-3 border border-gray-300 rounded-lg bg-gray-50 focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all duration-200 text-sm"
+                                                                value={
+                                                                    searchTerm
+                                                                }
+                                                                onChange={(e) =>
+                                                                    handleSearch(
+                                                                        e.target
+                                                                            .value
                                                                     )
-                                                                )}
-                                                            </Listbox.Options>
+                                                                }
+                                                            />
+                                                            <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-base" />
                                                         </div>
-                                                    </Listbox>
+
+                                                        {/* Action Buttons */}
+                                                        <div className="flex items-center gap-2 flex-shrink-0">
+                                                            <button
+                                                                className="bg-white border border-gray-300 text-gray-700 px-4 py-2.5 h-11 rounded-lg shadow-sm hover:bg-gray-50 hover:border-gray-400 font-medium flex items-center gap-2 transition-all duration-200 whitespace-nowrap"
+                                                                onClick={() =>
+                                                                    setFilterOpen &&
+                                                                    setFilterOpen(
+                                                                        true
+                                                                    )
+                                                                }
+                                                                type="button"
+                                                            >
+                                                                <FaFilter className="text-gray-500 text-sm" />
+                                                                <span>
+                                                                    Filter
+                                                                </span>
+                                                            </button>
+                                                            <button
+                                                                onClick={() =>
+                                                                    setShowExportModal(
+                                                                        true
+                                                                    )
+                                                                }
+                                                                type="button"
+                                                                className="px-4 py-2.5 h-11 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium text-sm flex items-center gap-2 focus:outline-none focus:ring-2 focus:ring-green-500/20 transition-all duration-200 whitespace-nowrap shadow-sm"
+                                                            >
+                                                                <FaFileExcel className="text-sm" />
+                                                                <span>
+                                                                    Export Excel
+                                                                </span>
+                                                            </button>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Right Section - Pagination Controls */}
+                                                    <div className="flex items-center gap-3 flex-shrink-0">
+                                                        <label className="text-gray-600 text-sm font-medium">
+                                                            Tampil
+                                                        </label>
+                                                        <div className="min-w-[4.5rem]">
+                                                            <Listbox
+                                                                value={
+                                                                    rowsPerPage
+                                                                }
+                                                                onChange={
+                                                                    handleRowsPerPageChange
+                                                                }
+                                                            >
+                                                                <div className="relative">
+                                                                    <Listbox.Button className="border border-gray-300 rounded-lg px-3 py-2 text-sm w-full text-left bg-white hover:bg-gray-50 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-200 h-9">
+                                                                        {
+                                                                            rowsPerPage
+                                                                        }
+                                                                    </Listbox.Button>
+                                                                    <Listbox.Options className="absolute right-0 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg z-50 overflow-hidden">
+                                                                        {[
+                                                                            10,
+                                                                            20,
+                                                                            50,
+                                                                        ].map(
+                                                                            (
+                                                                                option
+                                                                            ) => (
+                                                                                <Listbox.Option
+                                                                                    key={
+                                                                                        option
+                                                                                    }
+                                                                                    value={
+                                                                                        option
+                                                                                    }
+                                                                                    className={({
+                                                                                        active,
+                                                                                        selected,
+                                                                                    }) =>
+                                                                                        `relative cursor-pointer select-none px-3 py-2 text-sm transition-colors ${
+                                                                                            active
+                                                                                                ? "bg-blue-50 text-blue-800"
+                                                                                                : selected
+                                                                                                ? "bg-gray-100 text-gray-900"
+                                                                                                : "text-gray-700 hover:bg-gray-50"
+                                                                                        }`
+                                                                                    }
+                                                                                >
+                                                                                    {({
+                                                                                        selected,
+                                                                                    }) => (
+                                                                                        <div className="flex items-center justify-between">
+                                                                                            <span
+                                                                                                className={`block truncate ${
+                                                                                                    selected
+                                                                                                        ? "font-semibold"
+                                                                                                        : "font-normal"
+                                                                                                }`}
+                                                                                            >
+                                                                                                {
+                                                                                                    option
+                                                                                                }
+                                                                                            </span>
+                                                                                            {selected && (
+                                                                                                <FaCheck
+                                                                                                    className="h-3 w-3 text-blue-600"
+                                                                                                    aria-hidden="true"
+                                                                                                />
+                                                                                            )}
+                                                                                        </div>
+                                                                                    )}
+                                                                                </Listbox.Option>
+                                                                            )
+                                                                        )}
+                                                                    </Listbox.Options>
+                                                                </div>
+                                                            </Listbox>
+                                                        </div>
+                                                        <span className="text-gray-500 text-sm">
+                                                            / halaman
+                                                        </span>
+                                                    </div>
                                                 </div>
-                                                <span className="text-gray-500 text-xs ml-1">
-                                                    / halaman
-                                                </span>
                                             </div>
                                         </div>
 
@@ -963,7 +1211,7 @@ export default function Anomali({ anomalis = [], auth = [], kategoris = [] }) {
                                                                         <Combobox.Button className="absolute inset-y-0 right-0 flex items-center pr-2">
                                                                             <FaChevronDown className="h-4 w-4 text-gray-400" />
                                                                         </Combobox.Button>
-                                                                        <Combobox.Options className="absolute z-10 mt-1 max-h-48 w-full overflow-auto rounded-md bg-white py-1 text-sm shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
+                                                                        <Combobox.Options className="absolute  z-10 mt-1 max-h-48 w-full overflow-auto rounded-md bg-white py-1 text-sm shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
                                                                             <Combobox.Option
                                                                                 value=""
                                                                                 className={({
@@ -1099,7 +1347,7 @@ export default function Anomali({ anomalis = [], auth = [], kategoris = [] }) {
                                                                         <Combobox.Button className="absolute inset-y-0 right-0 flex items-center pr-2">
                                                                             <FaChevronDown className="h-4 w-4 text-gray-400" />
                                                                         </Combobox.Button>
-                                                                        <Combobox.Options className="absolute z-10 mt-1 max-h-48 w-full overflow-auto rounded-md bg-white py-1 text-sm shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
+                                                                        <Combobox.Options className="absolute z-10 mt-1 max-h-48 w-full overflow-y-visible rounded-md bg-white py-1 text-sm shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
                                                                             <Combobox.Option
                                                                                 value=""
                                                                                 className={({
@@ -1235,7 +1483,7 @@ export default function Anomali({ anomalis = [], auth = [], kategoris = [] }) {
                                                                         <Combobox.Button className="absolute inset-y-0 right-0 flex items-center pr-2">
                                                                             <FaChevronDown className="h-4 w-4 text-gray-400" />
                                                                         </Combobox.Button>
-                                                                        <Combobox.Options className="absolute z-10 mt-1 max-h-48 w-full overflow-auto rounded-md bg-white py-1 text-sm shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
+                                                                        <Combobox.Options className="absolute z-[999] mt-1 max-h-48 w-full overflow-visible rounded-md bg-white py-1 text-sm shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
                                                                             <Combobox.Option
                                                                                 value=""
                                                                                 className={({
@@ -1704,7 +1952,8 @@ export default function Anomali({ anomalis = [], auth = [], kategoris = [] }) {
                                     </div>
                                 </div>
                             </>
-                        ) : auth.user.bidang &&
+                        ) : activeTab === "approval" &&
+                          auth.user.bidang &&
                           auth.user.bidang.toLowerCase() === "multg" ? (
                             <>
                                 <div className="px-4 sm:px-6 pt-6 pb-4 border-b border-gray-200 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
@@ -2017,11 +2266,12 @@ export default function Anomali({ anomalis = [], auth = [], kategoris = [] }) {
                                     </div>
                                 </div>
                             </>
-                        ) : auth.user.bidang &&
-                          auth.user.bidang.toLowerCase() === "hargi" &&
-                          auth.user.bidang.toLowerCase() === "harjar" &&
-                          auth.user.bidang.toLowerCase() === "harpro" &&
-                          auth.user.bidang.toLowerCase() === "K3" ? (
+                        ) : activeTab === "assign" &&
+                          auth.user.bidang &&
+                          (auth.user.bidang.toLowerCase() === "hargi" ||
+                              auth.user.bidang.toLowerCase() === "harjar" ||
+                              auth.user.bidang.toLowerCase() === "harpro" ||
+                              auth.user.bidang.toLowerCase() === "K3") ? (
                             <>
                                 <div className="px-4 sm:px-6 pt-6 pb-4 border-b border-gray-200 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                                     <div className="w-full md:w-2/3">
@@ -2257,16 +2507,33 @@ export default function Anomali({ anomalis = [], auth = [], kategoris = [] }) {
                                                                             />
                                                                         </td>
                                                                         <td className="px-3 py-3 text-left text-xs sm:text-sm whitespace-nowrap">
-                                                                            <Link
-                                                                                href={route(
-                                                                                    "dashboard.anomali.review",
-                                                                                    anomali.slug
+                                                                            <div className="flex gap-2">
+                                                                                {!anomali.tanggal_mulai &&
+                                                                                !anomali.tanggal_selesai ? (
+                                                                                    <Link
+                                                                                        href={route(
+                                                                                            "dashboard.anomali.schedule",
+                                                                                            anomali.slug
+                                                                                        )}
+                                                                                    >
+                                                                                        <SecondaryButton>
+                                                                                            Review
+                                                                                        </SecondaryButton>
+                                                                                    </Link>
+                                                                                ) : (
+                                                                                    // Sudah selesai atau kondisi lain - tampilkan tombol Edit
+                                                                                    <Link
+                                                                                        href={route(
+                                                                                            "dashboard.anomali.schedule",
+                                                                                            anomali.slug
+                                                                                        )}
+                                                                                    >
+                                                                                        <SecondaryButton>
+                                                                                            Review
+                                                                                        </SecondaryButton>
+                                                                                    </Link>
                                                                                 )}
-                                                                            >
-                                                                                <SecondaryButton>
-                                                                                    Review
-                                                                                </SecondaryButton>
-                                                                            </Link>
+                                                                            </div>
                                                                         </td>
                                                                     </tr>
                                                                 )
@@ -2332,7 +2599,9 @@ export default function Anomali({ anomalis = [], auth = [], kategoris = [] }) {
                                     </div>
                                 </div>
                             </>
-                        ) : auth.user.bidang.toLowerCase() === "renev" ? (
+                        ) : activeTab === "renev" &&
+                          auth.user.bidang &&
+                          auth.user.bidang.toLowerCase() === "renev" ? (
                             <>
                                 <div className="px-4 sm:px-6 pt-6 pb-4 border-b border-gray-200 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                                     <div className="w-full md:w-2/3">
@@ -2643,6 +2912,12 @@ export default function Anomali({ anomalis = [], auth = [], kategoris = [] }) {
                                     </div>
                                 </div>
                             </>
+                        ) : activeTab === "kalender" ? (
+                            <div className="px-2 pb-6 pt-4">
+                                <AnomaliCalendar
+                                    filteredAnomalis={filteredAnomalis}
+                                />
+                            </div>
                         ) : (
                             <></>
                         )}
@@ -2856,7 +3131,11 @@ export default function Anomali({ anomalis = [], auth = [], kategoris = [] }) {
                                                     : "Ketik untuk mencari bulan..."
                                             }
                                             placeholder="Ketik untuk mencari bulan..."
-                                            onChange={(event) => setMonthQuery(event.target.value)}
+                                            onChange={(event) =>
+                                                setMonthQuery(
+                                                    event.target.value
+                                                )
+                                            }
                                             value={monthQuery}
                                         />
                                         <Combobox.Button className="absolute inset-y-0 right-0 flex items-center pr-2">
@@ -2873,59 +3152,92 @@ export default function Anomali({ anomalis = [], auth = [], kategoris = [] }) {
                                         leaveTo="opacity-0"
                                     >
                                         <Combobox.Options className="absolute z-50 mt-1 max-h-60 w-full overflow-auto rounded-md bg-white py-1 text-base shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm">
-                                            {filteredMonthOptions.length === 0 && monthQuery !== '' ? (
+                                            {filteredMonthOptions.length ===
+                                                0 && monthQuery !== "" ? (
                                                 <div className="relative cursor-default select-none py-2 px-4 text-gray-700">
-                                                    Tidak ada bulan yang ditemukan.
+                                                    Tidak ada bulan yang
+                                                    ditemukan.
                                                 </div>
                                             ) : (
-                                                filteredMonthOptions.map((month) => (
-                                                <Combobox.Option
-                                                    key={month}
-                                                    className={({ active }) =>
-                                                        `relative cursor-default select-none py-2 pl-10 pr-4 ${
-                                                            active
-                                                                ? "bg-purple-600 text-white"
-                                                                : "text-gray-900"
-                                                        }`
-                                                    }
-                                                    value={month}
-                                                >
-                                                    {({ selected, active }) => (
-                                                        <>
-                                                            <span
-                                                                className={`block truncate ${
-                                                                    selected
-                                                                        ? "font-medium"
-                                                                        : "font-normal"
-                                                                }`}
-                                                            >
-                                                                {(() => {
-                                                                    const [year, monthNum] = month.split('-');
-                                                                    const monthNames = [
-                                                                        'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
-                                                                        'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
-                                                                    ];
-                                                                    return `${monthNames[parseInt(monthNum) - 1]} ${year}`;
-                                                                })()}
-                                                            </span>
-                                                            {selected ? (
-                                                                <span
-                                                                    className={`absolute inset-y-0 left-0 flex items-center pl-3 ${
-                                                                        active
-                                                                            ? "text-white"
-                                                                            : "text-purple-600"
-                                                                    }`}
-                                                                >
-                                                                    <FaCheck
-                                                                        className="h-5 w-5"
-                                                                        aria-hidden="true"
-                                                                    />
-                                                                </span>
-                                                            ) : null}
-                                                        </>
-                                                    )}
-                                                </Combobox.Option>
-                                                ))
+                                                filteredMonthOptions.map(
+                                                    (month) => (
+                                                        <Combobox.Option
+                                                            key={month}
+                                                            className={({
+                                                                active,
+                                                            }) =>
+                                                                `relative cursor-default select-none py-2 pl-10 pr-4 ${
+                                                                    active
+                                                                        ? "bg-purple-600 text-white"
+                                                                        : "text-gray-900"
+                                                                }`
+                                                            }
+                                                            value={month}
+                                                        >
+                                                            {({
+                                                                selected,
+                                                                active,
+                                                            }) => (
+                                                                <>
+                                                                    <span
+                                                                        className={`block truncate ${
+                                                                            selected
+                                                                                ? "font-medium"
+                                                                                : "font-normal"
+                                                                        }`}
+                                                                    >
+                                                                        {(() => {
+                                                                            const [
+                                                                                year,
+                                                                                monthNum,
+                                                                            ] =
+                                                                                month.split(
+                                                                                    "-"
+                                                                                );
+                                                                            const monthNames =
+                                                                                [
+                                                                                    "Januari",
+                                                                                    "Februari",
+                                                                                    "Maret",
+                                                                                    "April",
+                                                                                    "Mei",
+                                                                                    "Juni",
+                                                                                    "Juli",
+                                                                                    "Agustus",
+                                                                                    "September",
+                                                                                    "Oktober",
+                                                                                    "November",
+                                                                                    "Desember",
+                                                                                ];
+                                                                            return `${
+                                                                                monthNames[
+                                                                                    parseInt(
+                                                                                        monthNum
+                                                                                    ) -
+                                                                                        1
+                                                                                ]
+                                                                            } ${year}`;
+                                                                        })()}
+                                                                    </span>
+                                                                    {selected ? (
+                                                                        <span
+                                                                            className={`absolute inset-y-0 left-0 flex items-center pl-3 ${
+                                                                                active
+                                                                                    ? "text-white"
+                                                                                    : "text-purple-600"
+                                                                            }`}
+                                                                        >
+                                                                            <FaCheck
+                                                                                className="h-5 w-5"
+                                                                                aria-hidden="true"
+                                                                            />
+                                                                        </span>
+                                                                    ) : null}
+                                                                </>
+                                                            )}
+                                                        </Combobox.Option>
+                                                    )
+                                                )
                                             )}
                                         </Combobox.Options>
                                     </Transition>
@@ -3025,19 +3337,43 @@ export default function Anomali({ anomalis = [], auth = [], kategoris = [] }) {
                                                 <div className="flex flex-wrap gap-1 mt-1">
                                                     {exportMonths.map(
                                                         (month) => {
-                                                            const [year, monthNum] = month.split('-');
+                                                            const [
+                                                                year,
+                                                                monthNum,
+                                                            ] =
+                                                                month.split(
+                                                                    "-"
+                                                                );
                                                             const monthNames = [
-                                                                'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
-                                                                'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+                                                                "Januari",
+                                                                "Februari",
+                                                                "Maret",
+                                                                "April",
+                                                                "Mei",
+                                                                "Juni",
+                                                                "Juli",
+                                                                "Agustus",
+                                                                "September",
+                                                                "Oktober",
+                                                                "November",
+                                                                "Desember",
                                                             ];
-                                                            const displayMonth = `${monthNames[parseInt(monthNum) - 1]} ${year}`;
-                                                            
+                                                            const displayMonth = `${
+                                                                monthNames[
+                                                                    parseInt(
+                                                                        monthNum
+                                                                    ) - 1
+                                                                ]
+                                                            } ${year}`;
+
                                                             return (
                                                                 <span
                                                                     key={month}
                                                                     className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800"
                                                                 >
-                                                                    {displayMonth}
+                                                                    {
+                                                                        displayMonth
+                                                                    }
                                                                     <button
                                                                         type="button"
                                                                         className="ml-1 text-purple-600 hover:text-purple-800"
