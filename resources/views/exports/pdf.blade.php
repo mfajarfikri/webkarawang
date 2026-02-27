@@ -245,9 +245,9 @@
           <tr>
             <td style="width: 30%; padding: 3px 0; vertical-align: top; font-weight: normal;">8. LAMPIRAN</td>
             <td style="width: 5%; padding: 3px 0; vertical-align: top;">:</td>
-            <td style="width: 65%; padding: 3px 0; vertical-align: top;">
+            <td style="width: 65%; padding: 3px 0; vertical-align: top; font-weight: bold;">
               @if($anomali->lampiran_foto && json_decode($anomali->lampiran_foto))
-                Terlampir Foto Hotpot Dan Nameplate
+                Terlampir Foto Pendukung
               @else
                 -
               @endif
@@ -257,31 +257,80 @@
     </div>
 
     <!-- Footer -->
-    <div class="mt-12 text-center">
-      <p>Karawang, {{ \Carbon\Carbon::parse($anomali->tanggal_kejadian)->format('d M Y') }}</p>
-      <div class="flex justify-between mt-8 text-center">
-        <div>
-          <p>Mengetahui,</p>
-          <p>Manager ULTG Karawang</p>
-          <div class="h-20"></div>
-          <p><span>Adi Kusmiyanto</span></p>
-        </div>
-        <div>
-          <p>TL JARGI GI Telukjambe</p>
-          @if($anomali->user && $anomali->user->tanda_tangan_path)
-            <img
-              src="{{ asset('storage/' . $anomali->user->tanda_tangan_path) }}"
-              alt="Signature of {{ $anomali->user->name }}"
-              class="mt-4 max-h-24 mx-auto"
-              style="margin-top:16px;max-height:96px;display:block;margin-left:auto;margin-right:auto;"
-            />
-          @else
-            <div class="h-20"></div>
-          @endif
-          <p><span>{{ $anomali->user->name ?? 'Moch. Roni Ramdani' }}</span></p>
-        </div>
-      </div>
+    <div class="mt-12">
+      <p style="text-align: center; margin-bottom: 20px;">Karawang, {{ \Carbon\Carbon::parse($anomali->tanggal_kejadian)->locale('id')->translatedFormat('d F Y') }}</p>
+      <table style="width: 100%; border: none;">
+        <tr>
+          <td style="width: 50%; text-align: center; vertical-align: top; border: none;">
+            <p>Mengetahui,</p>
+            <p>Manager {{ $anomali->ultg ?? 'ULTG Karawang' }}</p>
+            @if($anomali->tanda_tangan_approve)
+              <img
+                src="{{ public_path('storage/' . $anomali->tanda_tangan_approve) }}"
+                alt="Signature of Manager"
+                class="mt-4 max-h-24 mx-auto"
+                style="margin-top:16px;max-height:96px;display:block;margin-left:auto;margin-right:auto;"
+              />
+            @else
+              <div class="h-20"></div>
+            @endif
+            <p><span style="font-weight: bold; text-decoration: underline;">{{ $anomali->approvedBy->name ?? 'Adi Kusmiyanto' }}</span></p>
+          </td>
+          <td style="width: 50%; text-align: center; vertical-align: top; border: none;">
+            <p>TL JARGI {{$anomali->gardu_induk->name.replace(
+                                                                            /^(GI|GITET|GIS|GISTET)\s+(\d+KV\s+)?/i,
+                                                                            "",
+                                                                        ) ?? '...'}}</p>
+            @if($anomali->user && $anomali->user->tanda_tangan_path)
+              <img
+                src="{{ public_path('storage/' . $anomali->tanda_tangan_pemilik) }}"
+                alt="Signature of {{ $anomali->user->name }}"
+                class="mt-4 max-h-24 mx-auto"
+                style="margin-top:16px;max-height:96px;display:block;margin-left:auto;margin-right:auto;"
+              />
+            @else
+              <div class="h-20"></div>
+            @endif
+            <p><span style="font-weight: bold; text-decoration: underline;">{{ $anomali->user->name ?? 'Nama Tidak Tersedia' }}</span></p>
+          </td>
+        </tr>
+      </table>
     </div>
   </div>
+
+  @if($anomali->lampiran_foto && count(json_decode($anomali->lampiran_foto)) > 0)
+    <div style="page-break-before: always;"></div>
+    <div class="container">
+      <table class="header-table">
+      <tr>
+        <td rowspan="3" class="header-title">LEVEL<br>4</td>
+        <td>No. Informasi Terdokumentasi</td>
+        <td colspan="1">0004.FML/SMT/HAR/UITJBT/2022</td>
+        <td>Berlaku Efektif</td>
+        <td>Januari 2024</td>
+      </tr>
+      <tr>
+        <td>Status</td>
+        <td>Edisi : 01 / Revisi : 02</td>
+        <td>Halaman</td>
+        <td>2 dari 2</td>
+      </tr>
+      <tr>
+        <td colspan="4" class="header-subtitle">
+          FORMULIR LAPORAN KETIDAKSESUAIAN/KERUSAKAN PERALATAN (LKP)<br>
+          PT PLN (PERSERO) UNIT INDUK TRANSMISI JAWA BAGIAN TENGAH
+        </td>
+      </tr>
+    </table>
+      <div style="padding: 20px; text-align: center;">
+        <p style="margin-bottom: 20px;">Lampiran</p>
+        @foreach(json_decode($anomali->lampiran_foto) as $foto)
+          <div style="display: inline-block; width: 45%; margin: 5px; vertical-align: middle;">
+            <img src="{{ public_path('storage/' . $foto) }}" alt="Foto Lampiran" style="max-width: 98%; max-height: 300px; border: 1px solid #ccc; padding: 5px;" />
+          </div>
+        @endforeach
+      </div>
+    </div>
+  @endif
 </body>
 </html>

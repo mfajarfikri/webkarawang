@@ -83,13 +83,13 @@ function HomeLayoutContent({ children }) {
             title: "Tentang Kami",
             url: "#",
             submenu: [
-                { title: "Profil Perusahaan", url: "/profil" },
-                { title: "Visi & Misi", url: "/visi-misi" },
+                { title: "Profil Perusahaan", url: route("profil") },
+                { title: "Visi & Misi", url: `${route("profil")}#visi-misi` },
                 {
                     title: "Struktur Organisasi",
                     url: route("struktur-organisasi"),
                 },
-                { title: "Sejarah", url: "/sejarah" },
+                { title: "Sejarah", url: `${route("profil")}#sejarah` },
             ],
         },
         {
@@ -141,7 +141,7 @@ function HomeLayoutContent({ children }) {
                         variant: "error",
                     });
                 },
-            }
+            },
         );
         setShowLogoutModal(false);
     };
@@ -209,7 +209,7 @@ function HomeLayoutContent({ children }) {
                                                         >
                                                             {submenu.title}
                                                         </Link>
-                                                    )
+                                                    ),
                                                 )}
                                             </div>
                                         </div>
@@ -227,7 +227,7 @@ function HomeLayoutContent({ children }) {
                                             setActiveDropdown(
                                                 activeDropdown === "profile"
                                                     ? null
-                                                    : "profile"
+                                                    : "profile",
                                             )
                                         }
                                         className="flex items-center gap-2 px-2 sm:px-4 py-2 rounded-lg text-gray-700 hover:text-blue-600 hover:bg-gray-50 transition-all duration-200"
@@ -242,7 +242,7 @@ function HomeLayoutContent({ children }) {
                                                                 ? `/storage/${auth.user.foto_profil}`
                                                                 : ""
                                                         }
-                                                        alt="Foto Profil"
+                                                        alt="Foto Profile"
                                                         className="h-8 w-8 rounded-full object-cover"
                                                     />
                                                 ) : (
@@ -309,12 +309,12 @@ function HomeLayoutContent({ children }) {
                                         </Link>
                                         <Link
                                             href={route(
-                                                "dashboard.profile.edit"
+                                                "dashboard.profile.edit",
                                             )}
                                             className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 transition rounded-md"
                                         >
                                             <FaCog className="text-blue-500" />{" "}
-                                            Profil
+                                            Profile
                                         </Link>
                                         <button
                                             onClick={() =>
@@ -444,13 +444,13 @@ function HomeLayoutContent({ children }) {
                                                             className="block py-2 text-sm text-gray-600 hover:text-blue-700"
                                                             onClick={() =>
                                                                 setMobileMenuOpen(
-                                                                    false
+                                                                    false,
                                                                 )
                                                             }
                                                         >
                                                             {submenu.title}
                                                         </Link>
-                                                    )
+                                                    ),
                                                 )}
                                             </div>
                                         </>
@@ -595,7 +595,7 @@ function HomeLayoutContent({ children }) {
                                         <Link
                                             href={route(
                                                 "berita.detail",
-                                                b.slug
+                                                b.slug,
                                             )}
                                             className="text-gray-400 hover:text-blue-600"
                                         >

@@ -15,14 +15,19 @@ class Berita extends Model
         'slug',
         'excerpt',
         'isi',
+        'content_json',
         'gambar',
         'user_id',
+        'tema_id',
         'created_by',
         'read_count',
+        'enabled',
     ];
 
     protected $casts = [
-        'gambar' => 'array'
+        'gambar' => 'array',
+        'content_json' => 'array',
+        'enabled' => 'boolean',
     ];
 
     // public function karyawan()
@@ -33,5 +38,10 @@ class Berita extends Model
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function tema()
+    {
+        return $this->belongsTo(Tema::class);
     }
 }

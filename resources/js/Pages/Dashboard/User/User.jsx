@@ -7,26 +7,17 @@ import {
     FaUserShield,
     FaCheck,
     FaTrash,
-    FaSync,
+    FaTimes,
+    FaChevronLeft,
+    FaChevronRight,
 } from "react-icons/fa";
-import {
-    Dialog,
-    DialogTitle,
-    DialogContent,
-    DialogActions,
-    Button as MuiButton,
-    CircularProgress,
-} from "@mui/material";
-import { useState } from "react";
+import { GiSecurityGate } from "react-icons/gi";
+import { useState, Fragment } from "react";
 import { router } from "@inertiajs/react";
 import React from "react";
 import ErrorBoundary from "@/Components/ErrorBoundary";
-import { Listbox } from "@headlessui/react";
-import { Combobox } from "@headlessui/react";
+import { Listbox, Combobox, Dialog, Transition } from "@headlessui/react";
 import { useSnackbar } from "notistack";
-import SecondaryButton from "@/Components/SecondaryButton";
-import DangerButton from "@/Components/DangerButton";
-import PrimaryButton from "@/Components/PrimaryButton";
 import axios from "axios";
 
 const BIDANG_OPTIONS = [
@@ -40,6 +31,127 @@ const BIDANG_OPTIONS = [
     "GI",
 ];
 const WILAYAH_OPTIONS = ["UPT Karawang", "ULTG Karawang", "ULTG Purwakarta"];
+
+// Helper Spinner Component
+const Spinner = ({ size = 20, color = "text-blue-600" }) => (
+    <svg
+        className={`animate-spin ${color}`}
+        width={size}
+        height={size}
+        xmlns="http://www.w3.org/2000/svg"
+        fill="none"
+        viewBox="0 0 24 24"
+    >
+        <circle
+            className="opacity-25"
+            cx="12"
+            cy="12"
+            r="10"
+            stroke="currentColor"
+            strokeWidth="4"
+        ></circle>
+        <path
+            className="opacity-75"
+            fill="currentColor"
+            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+        ></path>
+    </svg>
+);
+
+function ComboboxMultiple({ options, value, onChange }) {
+    const [query, setQuery] = useState("");
+    const filtered =
+        query === ""
+            ? options
+            : options.filter((o) =>
+                  o.name.toLowerCase().includes(query.toLowerCase()),
+              );
+    return (
+        <Combobox value={value} onChange={onChange} multiple>
+            <div className="relative">
+                <div className="flex flex-wrap gap-1 mb-2">
+                    {value.map((id) => {
+                        const opt = options.find((o) => o.id === id);
+                        return (
+                            <span
+                                key={id}
+                                className="bg-sky-50 text-sky-700 px-2.5 py-1 transition-all ease-in-out rounded-lg text-xs font-medium border border-sky-100"
+                            >
+                                {opt ? opt.name : id}
+                            </span>
+                        );
+                    })}
+                </div>
+                <Combobox.Input
+                    className="w-full rounded-xl border-gray-200 focus:border-sky-500 focus:ring-sky-500 text-sm py-2.5"
+                    onChange={(e) => setQuery(e.target.value)}
+                    displayValue={() => ""}
+                    placeholder="Cari Gardu Induk..."
+                />
+                <Transition
+                    as={Fragment}
+                    leave="transition ease-in duration-100"
+                    leaveFrom="opacity-100"
+                    leaveTo="opacity-0"
+                    afterLeave={() => setQuery("")}
+                >
+                    <Combobox.Options className="absolute z-10 mt-1 max-h-60 w-full overflow-auto rounded-xl bg-white py-1 text-base shadow-xl ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm border border-gray-100">
+                        {filtered.length === 0 && query !== "" ? (
+                            <div className="relative cursor-default select-none py-2 px-4 text-gray-700">
+                                Tidak ada data.
+                            </div>
+                        ) : (
+                            filtered.map((o) => (
+                                <Combobox.Option
+                                    key={o.id}
+                                    value={o.id}
+                                    className={({ active }) =>
+                                        `relative cursor-default select-none py-2.5 pl-10 pr-4 ${
+                                            active
+                                                ? "bg-sky-50 text-sky-900"
+                                                : "text-gray-900"
+                                        }`
+                                    }
+                                >
+                                    {({ selected, active }) => (
+                                        <>
+                                            <span
+                                                className={`block truncate ${
+                                                    selected
+                                                        ? "font-medium"
+                                                        : "font-normal"
+                                                }`}
+                                            >
+                                                {o.name}{" "}
+                                                <span className="text-xs text-gray-500 ml-1">
+                                                    ({o.ultg})
+                                                </span>
+                                            </span>
+                                            {selected ? (
+                                                <span
+                                                    className={`absolute inset-y-0 left-0 flex items-center pl-3 ${
+                                                        active
+                                                            ? "text-sky-600"
+                                                            : "text-sky-600"
+                                                    }`}
+                                                >
+                                                    <FaCheck
+                                                        className="h-4 w-4"
+                                                        aria-hidden="true"
+                                                    />
+                                                </span>
+                                            ) : null}
+                                        </>
+                                    )}
+                                </Combobox.Option>
+                            ))
+                        )}
+                    </Combobox.Options>
+                </Transition>
+            </div>
+        </Combobox>
+    );
+}
 
 export default function User() {
     const { enqueueSnackbar } = useSnackbar();
@@ -83,7 +195,7 @@ export default function User() {
                 {
                     variant: "error",
                     autoHideDuration: 5000,
-                }
+                },
             );
         }
         setRoleModalLoading(false);
@@ -111,7 +223,7 @@ export default function User() {
                 {
                     variant: "success",
                     autoHideDuration: 4000,
-                }
+                },
             );
             router.reload({ only: ["users"] });
         } catch (error) {
@@ -126,7 +238,7 @@ export default function User() {
                         errors.wilayah?.[0] ||
                         errors.gardu_induk_ids?.[0] ||
                         errors.bidang?.[0] ||
-                        ""
+                        "",
                 );
             } else {
                 console.error(error);
@@ -139,7 +251,7 @@ export default function User() {
                     {
                         variant: "error",
                         autoHideDuration: 5000,
-                    }
+                    },
                 );
             }
             setRoleModalSaving(false);
@@ -164,10 +276,7 @@ export default function User() {
     const [deleteLoading, setDeleteLoading] = useState(false);
 
     // Refresh state
-    const [refreshLoading, setRefreshLoading] = useState(false);
-    const [lastUpdated, setLastUpdated] = useState(new Date());
     const [dataLoading, setDataLoading] = useState(false);
-    const [dataChangeCount, setDataChangeCount] = useState(0);
 
     const openCreateModal = async () => {
         setCreateModalOpen(true);
@@ -195,7 +304,7 @@ export default function User() {
                 {
                     variant: "error",
                     autoHideDuration: 5000,
-                }
+                },
             );
         }
     };
@@ -219,7 +328,7 @@ export default function User() {
                     {
                         variant: "success",
                         autoHideDuration: 4000,
-                    }
+                    },
                 );
                 router.reload({ only: ["user"] });
             },
@@ -232,7 +341,7 @@ export default function User() {
                     {
                         variant: "error",
                         autoHideDuration: 5000,
-                    }
+                    },
                 );
             },
             onFinish: () => {
@@ -262,7 +371,7 @@ export default function User() {
                 {
                     variant: "success",
                     autoHideDuration: 4000,
-                }
+                },
             );
             router.reload({ only: ["users"] });
         } catch (error) {
@@ -275,7 +384,7 @@ export default function User() {
             } else {
                 setCreateError({});
             }
-            // Tampilkan error detail jika ada, jika tidak tampilkan pesan umum
+            // Tampilkan error detail jika ada
             enqueueSnackbar(
                 <span>
                     <b>Gagal membuat user!</b>{" "}
@@ -284,23 +393,11 @@ export default function User() {
                     error.response.data.message
                         ? error.response.data.message
                         : "Silakan periksa data yang dimasukkan."}
-                    {error.response &&
-                        error.response.data &&
-                        error.response.data.errors && (
-                            <ul className="mt-1 ml-2 list-disc text-xs text-red-700">
-                                {Object.entries(error.response.data.errors).map(
-                                    ([field, messages]) =>
-                                        messages.map((msg, idx) => (
-                                            <li key={field + idx}>{msg}</li>
-                                        ))
-                                )}
-                            </ul>
-                        )}
                 </span>,
                 {
                     variant: "error",
                     autoHideDuration: 5000,
-                }
+                },
             );
         } finally {
             setCreateLoading(false);
@@ -317,1534 +414,1729 @@ export default function User() {
     const filteredRows = users.filter(
         (user) =>
             filterName.trim() === "" ||
-            user.name.toLowerCase().includes(filterName.toLowerCase())
+            user.name.toLowerCase().includes(filterName.toLowerCase()),
     );
     const totalRows = filteredRows.length;
     const totalPages = Math.ceil(totalRows / rowsPerPage);
     const paginatedRows = filteredRows.slice(
         (page - 1) * rowsPerPage,
-        page * rowsPerPage
+        page * rowsPerPage,
     );
 
     return (
         <>
             <Head title="User" />
             <DashboardLayout>
-                <div className="w-full mx-auto">
-                    <div className="rounded-lg shadow-xl border border-gray-200 p-0 md:p-0 overflow-hidden">
-                        <div className="px-4 bg-white sm:px-6 pt-6 pb-4 border-b border-gray-200 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                            <div className="w-full md:w-2/3">
-                                <h2 className="text-xl font-bold text-gray-800 mb-1 flex items-center gap-2">
-                                    <FaUsers className="text-blue-500 text-2xl" />
-                                    <span>Manajemen User</span>
-                                </h2>
-                                <p className="text-gray-600 text-sm mb-2">
-                                    Kelola data user aplikasi dengan mudah dan
-                                    efisien. Pada halaman ini, Anda dapat
-                                    menambah, mengedit, menghapus, serta
-                                    mengelola peran (role) dan akses setiap user
-                                    yang terdaftar di dalam sistem. Pastikan
-                                    data user selalu terupdate agar pengelolaan
-                                    aplikasi berjalan optimal dan sesuai
-                                    kebutuhan organisasi Anda.
+                <div className="w-full mx-auto bg-white p-4 md:p-8 rounded-2xl space-y-6">
+                    {/* Header Section */}
+                    <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
+                        <div className="flex items-center gap-3">
+                            <div className="h-12 w-12 rounded-2xl bg-gradient-to-br from-sky-500 via-sky-400 to-cyan-400 flex items-center justify-center text-white shadow-md">
+                                <FaUsers className="w-6 h-6" />
+                            </div>
+                            <div>
+                                <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
+                                    Manajemen User
+                                </h1>
+                                <p className="text-sm md:text-base text-gray-600 mt-1">
+                                    Kelola data user dan hak akses sistem.
                                 </p>
                             </div>
-                            <div className="w-full md:w-auto flex justify-start md:justify-end">
-                                <PrimaryButton
-                                    onClick={openCreateModal}
-                                    className="gap-2"
+                        </div>
+                        <div className="flex items-center gap-3">
+                            <button
+                                onClick={openCreateModal}
+                                className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-blue-600 text-white font-medium hover:bg-blue-700 shadow-sm transition-all active:scale-95"
+                            >
+                                <FaPlus className="w-4 h-4" />
+                                <span>Tambah User</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Main Card */}
+                    <div className="bg-white/95 backdrop-blur-sm rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                        {/* Toolbar */}
+                        <div className="px-6 py-4 border-b border-gray-100 bg-gradient-to-r from-gray-50/80 via-white to-gray-50/80 flex flex-col sm:flex-row gap-4 justify-between items-center">
+                            <div className="flex items-center gap-3 w-full sm:w-auto">
+                                <button
+                                    onClick={() => setFilterOpen(true)}
+                                    className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 border ${
+                                        filterName
+                                            ? "bg-blue-50 text-blue-600 border-blue-200"
+                                            : "bg-white text-gray-600 border-gray-200 hover:bg-gray-50 hover:border-gray-300"
+                                    }`}
                                 >
-                                    <FaPlus /> Tambah User
-                                </PrimaryButton>
+                                    <FaFilter
+                                        className={
+                                            filterName
+                                                ? "text-blue-500"
+                                                : "text-gray-400"
+                                        }
+                                    />
+                                    <span>Filter</span>
+                                    {filterName && (
+                                        <span className="ml-1 bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded-full text-xs">
+                                            Aktif
+                                        </span>
+                                    )}
+                                </button>
+                            </div>
+
+                            <div className="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-end">
+                                <span className="text-sm text-gray-500">
+                                    Show
+                                </span>
+                                <Listbox
+                                    value={rowsPerPage}
+                                    onChange={setRowsPerPage}
+                                >
+                                    <div className="relative">
+                                        <Listbox.Button className="relative w-20 cursor-default rounded-lg bg-white py-2 pl-3 pr-10 text-left border border-gray-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-opacity-75 sm:text-sm shadow-sm">
+                                            <span className="block truncate">
+                                                {rowsPerPage}
+                                            </span>
+                                            <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2">
+                                                <FaChevronRight
+                                                    className="h-3 w-3 text-gray-400 rotate-90"
+                                                    aria-hidden="true"
+                                                />
+                                            </span>
+                                        </Listbox.Button>
+                                        <Transition
+                                            as={Fragment}
+                                            leave="transition ease-in duration-100"
+                                            leaveFrom="opacity-100"
+                                            leaveTo="opacity-0"
+                                        >
+                                            <Listbox.Options className="absolute right-0 mt-1 max-h-60 w-full overflow-auto rounded-md bg-white py-1 text-base shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm z-20">
+                                                {[8, 16, 32, 50].map(
+                                                    (option) => (
+                                                        <Listbox.Option
+                                                            key={option}
+                                                            className={({
+                                                                active,
+                                                            }) =>
+                                                                `relative cursor-default select-none py-2 pl-4 pr-4 ${
+                                                                    active
+                                                                        ? "bg-blue-50 text-blue-900"
+                                                                        : "text-gray-900"
+                                                                }`
+                                                            }
+                                                            value={option}
+                                                        >
+                                                            {({ selected }) => (
+                                                                <span
+                                                                    className={`block truncate ${
+                                                                        selected
+                                                                            ? "font-medium"
+                                                                            : "font-normal"
+                                                                    }`}
+                                                                >
+                                                                    {option}
+                                                                </span>
+                                                            )}
+                                                        </Listbox.Option>
+                                                    ),
+                                                )}
+                                            </Listbox.Options>
+                                        </Transition>
+                                    </div>
+                                </Listbox>
                             </div>
                         </div>
-                        <div className="px-2 md:px-6 pb-6 pt-4 bg-white/70">
-                            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-2">
-                                <div className="flex items-center gap-2">
-                                    <button
-                                        className=" bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-md shadow-sm hover:bg-gray-50 font-semibold flex items-center gap-2 transition-colors"
-                                        onClick={() => setFilterOpen(true)}
-                                        type="button"
-                                    >
-                                        <FaFilter />
-                                        Filter
-                                    </button>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    <label className="text-gray-600 text-sm">
-                                        Tampil
-                                    </label>
-                                    <Listbox
-                                        value={rowsPerPage}
-                                        onChange={setRowsPerPage}
-                                    >
-                                        <div className="relative">
-                                            <Listbox.Button className="border rounded px-2 py-1 text-sm focus:outline-none w-20 text-left bg-white">
-                                                {rowsPerPage}
-                                            </Listbox.Button>
-                                            <Listbox.Options className="absolute z-20 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-52 overflow-auto focus:outline-none">
-                                                {[8, 16, 32].map((option) => (
-                                                    <Listbox.Option
-                                                        key={option}
-                                                        value={option}
-                                                        className={({
-                                                            active,
-                                                            selected,
-                                                        }) =>
-                                                            `cursor-pointer select-none relative px-4 py-2 ${
-                                                                active
-                                                                    ? "bg-blue-50 text-blue-700"
-                                                                    : selected
-                                                                    ? "bg-gray-100 text-gray-900"
-                                                                    : "text-gray-800"
-                                                            }`
-                                                        }
-                                                    >
-                                                        {({ selected }) => (
-                                                            <span
-                                                                className={
-                                                                    selected
-                                                                        ? "font-semibold"
-                                                                        : "font-normal"
-                                                                }
-                                                            >
-                                                                {option}
-                                                            </span>
-                                                        )}
-                                                    </Listbox.Option>
-                                                ))}
-                                            </Listbox.Options>
-                                        </div>
-                                    </Listbox>
-                                    <span className="text-gray-500 text-xs">
-                                        / halaman
-                                    </span>
-                                </div>
-                            </div>
-                            <ErrorBoundary>
-                                <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white">
-                                    {dataLoading && (
-                                        <div className="absolute inset-0 bg-white/80 flex items-center justify-center z-10">
-                                            <div className="flex items-center gap-2 text-blue-600">
-                                                <CircularProgress size={20} />
-                                                <span className="text-sm font-medium">
-                                                    Memperbarui data...
-                                                </span>
+
+                        {/* Table */}
+                        <ErrorBoundary>
+                            {/* Mobile Card View */}
+                            <div className="md:hidden space-y-4 p-4 bg-gray-50/50">
+                                {paginatedRows.length === 0 ? (
+                                    <div className="text-center py-12 text-gray-500">
+                                        <FaUsers className="mx-auto text-4xl text-gray-300 mb-3" />
+                                        <p>Belum ada data user.</p>
+                                    </div>
+                                ) : (
+                                    paginatedRows.map((row) => (
+                                        <div
+                                            key={row.id}
+                                            className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 space-y-4"
+                                        >
+                                            {/* User Info */}
+                                            <div className="flex items-center gap-3 pb-3 border-b border-gray-50">
+                                                <div className="flex-shrink-0 h-10 w-10">
+                                                    {row.foto_profil ? (
+                                                        <img
+                                                            className="h-10 w-10 rounded-full object-cover border-2 border-white shadow-sm"
+                                                            src={
+                                                                row.foto_profil
+                                                            }
+                                                            alt=""
+                                                        />
+                                                    ) : (
+                                                        <div className="h-10 w-10 rounded-full bg-gradient-to-br from-blue-100 to-indigo-100 flex items-center justify-center text-blue-600 font-bold border-2 border-white shadow-sm">
+                                                            {row.name
+                                                                .charAt(0)
+                                                                .toUpperCase()}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                                <div>
+                                                    <div className="text-sm font-semibold text-gray-900">
+                                                        {row.name}
+                                                    </div>
+                                                    <div className="text-xs text-gray-500">
+                                                        {row.email}
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {/* Details Grid */}
+                                            <div className="grid grid-cols-2 gap-y-3 gap-x-4 text-sm">
+                                                <div>
+                                                    <span className="text-[10px] uppercase tracking-wider text-gray-400 font-semibold block mb-1">
+                                                        Role
+                                                    </span>
+                                                    <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-blue-50 text-blue-700 border border-blue-100">
+                                                        {row.role || "No Role"}
+                                                    </span>
+                                                </div>
+                                                <div>
+                                                    <span className="text-[10px] uppercase tracking-wider text-gray-400 font-semibold block mb-1">
+                                                        Bidang
+                                                    </span>
+                                                    {row.bidang ? (
+                                                        <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-purple-50 text-purple-700 border border-purple-100">
+                                                            {row.bidang}
+                                                        </span>
+                                                    ) : (
+                                                        <span className="text-gray-400 text-xs">
+                                                            -
+                                                        </span>
+                                                    )}
+                                                </div>
+                                                <div className="col-span-2">
+                                                    <span className="text-[10px] uppercase tracking-wider text-gray-400 font-semibold block mb-1">
+                                                        Wilayah
+                                                    </span>
+                                                    <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-gray-50 text-gray-700 border border-gray-100">
+                                                        {row.wilayah || "-"}
+                                                    </span>
+                                                </div>
+                                                <div className="col-span-2">
+                                                    <span className="text-[10px] uppercase tracking-wider text-gray-400 font-semibold block mb-1">
+                                                        Gardu Induk
+                                                    </span>
+                                                    {row.gardu_induks?.length >
+                                                    0 ? (
+                                                        <div className="flex flex-wrap gap-1.5">
+                                                            {row.gardu_induks
+                                                                .slice(0, 5)
+                                                                .map((gi) => (
+                                                                    <span
+                                                                        key={
+                                                                            gi.id
+                                                                        }
+                                                                        className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-green-50 text-green-600 border border-green-100 whitespace-nowrap"
+                                                                    >
+                                                                        {gi.name.replace(
+                                                                            /^(GI|GITET|GIS|GISTET)\s+(\d+KV\s+)?/i,
+                                                                            "",
+                                                                        )}
+                                                                    </span>
+                                                                ))}
+                                                            {row.gardu_induks
+                                                                .length > 5 && (
+                                                                <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-gray-50 text-gray-600 border border-gray-100">
+                                                                    +
+                                                                    {row
+                                                                        .gardu_induks
+                                                                        .length -
+                                                                        5}
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                    ) : (
+                                                        <span className="text-gray-400 text-xs italic">
+                                                            Tidak ada GI
+                                                            terhubung
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            </div>
+
+                                            {/* Actions */}
+                                            <div className="pt-3 border-t border-gray-100 flex gap-2">
+                                                <button
+                                                    onClick={() =>
+                                                        openRoleModal(row)
+                                                    }
+                                                    className="flex-1 py-2 rounded-lg bg-sky-50 text-sky-600 font-medium text-xs flex items-center justify-center gap-2 hover:bg-sky-100 transition-colors"
+                                                >
+                                                    <FaUserShield className="w-3.5 h-3.5" />{" "}
+                                                    Kelola Role
+                                                </button>
+                                                <button
+                                                    onClick={() =>
+                                                        openDeleteModal(row)
+                                                    }
+                                                    className="flex-1 py-2 rounded-lg bg-red-50 text-red-600 font-medium text-xs flex items-center justify-center gap-2 hover:bg-red-100 transition-colors"
+                                                >
+                                                    <FaTrash className="w-3.5 h-3.5" />{" "}
+                                                    Hapus
+                                                </button>
                                             </div>
                                         </div>
-                                    )}
-                                    <div className="max-h-[500px] min-h-[320px] overflow-y-auto custom-scrollbar">
-                                        <table className="min-w-[900px] w-full">
-                                            <thead className="bg-gray-100 text-gray-600 sticky top-0 z-10">
-                                                <tr>
-                                                    <th className="px-3 py-3 text-center text-xs sm:text-sm font-semibold whitespace-nowrap">
-                                                        No
-                                                    </th>
-                                                    <th className="px-3 py-3 text-center text-xs sm:text-sm font-semibold">
-                                                        Foto
-                                                    </th>
-                                                    <th className="px-3 py-3 text-left text-xs sm:text-sm font-semibold">
-                                                        Nama
-                                                    </th>
-                                                    <th className="px-3 py-3 text-left text-xs sm:text-sm font-semibold">
-                                                        Email
-                                                    </th>
-                                                    <th className="px-3 py-3 text-center text-xs sm:text-sm font-semibold">
-                                                        Role
-                                                    </th>
-                                                    <th className="px-3 py-3 text-center text-xs sm:text-sm font-semibold">
-                                                        Bidang
-                                                    </th>
-                                                    <th className="px-3 py-3 text-center text-xs sm:text-sm font-semibold">
-                                                        Wilayah
-                                                    </th>
-                                                    <th className="px-3 py-3 text-center text-xs sm:text-sm font-semibold">
-                                                        Gardu Induk
-                                                    </th>
-                                                    <th className="px-3 py-3 text-center text-xs sm:text-sm font-semibold">
-                                                        Aksi
-                                                    </th>
-                                                </tr>
-                                            </thead>
-                                            <tbody className="bg-white divide-y divide-gray-200">
-                                                {paginatedRows.length === 0 ? (
-                                                    <tr>
-                                                        <td
-                                                            colSpan={9}
-                                                            className="px-6 py-8 text-center text-gray-400 text-lg font-semibold"
-                                                        >
+                                    ))
+                                )}
+                            </div>
+                            <div className="hidden md:block overflow-x-auto">
+                                <table className="w-full">
+                                    <thead>
+                                        <tr className="bg-gray-50/80 border-b border-gray-200">
+                                            <th className="px-6 py-4 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider w-16">
+                                                No
+                                            </th>
+                                            <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                                                User
+                                            </th>
+                                            <th className="px-6 py-4 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                                                Role & Bidang
+                                            </th>
+                                            <th className="px-6 py-4 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                                                Wilayah
+                                            </th>
+                                            <th className="px-6 py-4 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                                                Aksi
+                                            </th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-gray-100 bg-white">
+                                        {paginatedRows.length === 0 ? (
+                                            <tr>
+                                                <td
+                                                    colSpan={5}
+                                                    className="px-6 py-12 text-center text-gray-400"
+                                                >
+                                                    <div className="flex flex-col items-center gap-2">
+                                                        <FaUsers className="text-4xl text-gray-200" />
+                                                        <span className="text-sm">
                                                             Belum ada data user.
-                                                        </td>
-                                                    </tr>
-                                                ) : (
-                                                    paginatedRows.map(
-                                                        (row, idx) => (
-                                                            <tr
-                                                                key={row.id}
-                                                                className="hover:bg-blue-50 transition-all duration-150"
-                                                            >
-                                                                <td className="px-6 py-3 text-center text-blue-700 font-bold rounded-l-lg">
-                                                                    {(page -
-                                                                        1) *
-                                                                        rowsPerPage +
-                                                                        idx +
-                                                                        1}
-                                                                </td>
-                                                                <td className="px-3 py-3 text-center">
-                                                                    {row.foto_profil ? (
-                                                                        <img
-                                                                            src={
-                                                                                row.foto_profil
-                                                                            }
-                                                                            alt={
-                                                                                row.name
-                                                                            }
-                                                                            className="h-10 w-10 rounded-full object-cover border border-blue-200 shadow-sm mx-auto"
-                                                                        />
-                                                                    ) : (
-                                                                        <div className="h-10 w-10 rounded-full bg-gradient-to-br from-blue-200 to-blue-100 flex items-center justify-center text-blue-700 font-bold text-lg border border-blue-100 shadow-sm mx-auto">
-                                                                            <span>
-                                                                                {row.name
-                                                                                    ?.split(
-                                                                                        " "
-                                                                                    )
-                                                                                    .map(
-                                                                                        (
-                                                                                            n
-                                                                                        ) =>
-                                                                                            n[0]
-                                                                                    )
-                                                                                    .join(
-                                                                                        ""
-                                                                                    )
-                                                                                    .substring(
-                                                                                        0,
-                                                                                        2
-                                                                                    )
-                                                                                    .toUpperCase()}
-                                                                            </span>
-                                                                        </div>
-                                                                    )}
-                                                                </td>
-                                                                <td className="px-3 py-3 font-semibold text-gray-900">
-                                                                    <span className="truncate max-w-[120px] block">
-                                                                        {
-                                                                            row.name
+                                                        </span>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        ) : (
+                                            paginatedRows.map((row, idx) => (
+                                                <tr
+                                                    key={row.id}
+                                                    className="hover:bg-blue-50/50 transition-colors duration-150"
+                                                >
+                                                    <td className="px-6 py-4 text-center whitespace-nowrap text-sm text-gray-500 font-medium">
+                                                        {(page - 1) *
+                                                            rowsPerPage +
+                                                            idx +
+                                                            1}
+                                                    </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap">
+                                                        <div className="flex items-center">
+                                                            <div className="flex-shrink-0 h-10 w-10">
+                                                                {row.foto_profil ? (
+                                                                    <img
+                                                                        className="h-10 w-10 rounded-full object-cover border-2 border-white shadow-sm"
+                                                                        src={
+                                                                            row.foto_profil
                                                                         }
-                                                                    </span>
-                                                                </td>
-                                                                <td className="px-3 py-3 text-gray-600 text-xs">
-                                                                    {row.email}
-                                                                </td>
-                                                                <td className="px-3 py-3 text-center">
-                                                                    <span className="inline-block px-2 py-1 rounded-full bg-blue-100 text-blue-700 text-xs font-semibold shadow-sm">
-                                                                        {row.role ||
-                                                                            "-"}
-                                                                    </span>
-                                                                </td>
-                                                                <td className="px-3 py-3 text-center">
-                                                                    {row.bidang ? (
-                                                                        <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-blue-100 text-blue-800 text-xs font-bold shadow border border-blue-200">
-                                                                            <FaUsers className="text-blue-400 text-sm" />
-                                                                            <span className="tracking-wide">
-                                                                                {
-                                                                                    row.bidang
-                                                                                }
-                                                                            </span>
-                                                                        </span>
-                                                                    ) : (
-                                                                        <span className="inline-block px-2 py-1 rounded-full bg-gray-100 text-gray-400 text-xs font-medium shadow">
-                                                                            Tidak
-                                                                            ada
-                                                                        </span>
-                                                                    )}
-                                                                </td>
-                                                                <td className="px-3 py-3 text-center">
-                                                                    <span className="inline-block px-2 py-1 rounded-full bg-gray-200 text-gray-700 text-xs font-medium">
-                                                                        {row.wilayah ||
-                                                                            "-"}
-                                                                    </span>
-                                                                </td>
-                                                                <td className="px-3 py-3 text-center">
-                                                                    {row.gardu_induks &&
-                                                                    row
-                                                                        .gardu_induks
-                                                                        .length >
-                                                                        0 ? (
-                                                                        <div className="flex flex-col gap-1 items-center">
-                                                                            {row.gardu_induks.map(
-                                                                                (
-                                                                                    gi
-                                                                                ) => (
-                                                                                    <div
-                                                                                        key={
-                                                                                            gi.id
-                                                                                        }
-                                                                                        className="inline-block px-2 py-1 rounded-full bg-green-100 text-green-700 font-semibold text-xs shadow-sm"
-                                                                                    >
-                                                                                        {
-                                                                                            gi.name
-                                                                                        }
-                                                                                    </div>
-                                                                                )
-                                                                            )}
-                                                                        </div>
-                                                                    ) : (
-                                                                        <span className="inline-block px-2 py-1 rounded-full bg-gray-100 text-gray-400 text-xs shadow-sm">
-                                                                            -
-                                                                        </span>
-                                                                    )}
-                                                                </td>
-                                                                <td className="px-3 py-3 text-center rounded-r-lg">
-                                                                    <div className="flex items-center justify-center gap-2">
-                                                                        <PrimaryButton
-                                                                            type="button"
-                                                                            onClick={() =>
-                                                                                openRoleModal(
-                                                                                    row
-                                                                                )
-                                                                            }
-                                                                            className="gap-2"
-                                                                            title="Kelola Role"
-                                                                        >
-                                                                            <FaUserShield />
-                                                                        </PrimaryButton>
-                                                                        <DangerButton
-                                                                            type="button"
-                                                                            onClick={() =>
-                                                                                openDeleteModal(
-                                                                                    row
-                                                                                )
-                                                                            }
-                                                                            className="gap-2"
-                                                                            title="Hapus User"
-                                                                        >
-                                                                            <FaTrash />
-                                                                        </DangerButton>
+                                                                        alt=""
+                                                                    />
+                                                                ) : (
+                                                                    <div className="h-10 w-10 rounded-full bg-gradient-to-br from-blue-100 to-indigo-100 flex items-center justify-center text-blue-600 font-bold border-2 border-white shadow-sm">
+                                                                        {row.name
+                                                                            .charAt(
+                                                                                0,
+                                                                            )
+                                                                            .toUpperCase()}
                                                                     </div>
-                                                                </td>
-                                                            </tr>
-                                                        )
-                                                    )
-                                                )}
-                                            </tbody>
-                                        </table>
-                                    </div>
+                                                                )}
+                                                            </div>
+                                                            <div className="ml-4">
+                                                                <div className="text-sm font-semibold text-gray-900">
+                                                                    {row.name}
+                                                                </div>
+                                                                <div className="text-xs text-gray-500">
+                                                                    {row.email}
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap text-center">
+                                                        <div className="flex flex-col items-center gap-1.5">
+                                                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                                                {row.role ||
+                                                                    "No Role"}
+                                                            </span>
+                                                            {row.bidang && (
+                                                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                                                                    {row.bidang}
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap text-center">
+                                                        <div className="text-sm text-gray-900">
+                                                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                                                                {row.wilayah ||
+                                                                    "-"}
+                                                            </span>
+                                                        </div>
+                                                        {row.gardu_induks
+                                                            ?.length > 0 && (
+                                                            <div className="flex flex-wrap justify-center gap-1 mt-2 max-w-[200px] mx-auto">
+                                                                {row.gardu_induks
+                                                                    .slice(0, 3)
+                                                                    .map(
+                                                                        (
+                                                                            gi,
+                                                                        ) => (
+                                                                            <span
+                                                                                key={
+                                                                                    gi.id
+                                                                                }
+                                                                                className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-green-50 text-green-600 border border-green-100 whitespace-nowrap"
+                                                                                title={
+                                                                                    gi.name
+                                                                                }
+                                                                            >
+                                                                                {gi.name.replace(
+                                                                                    /^(GI|GITET|GIS|GISTET)\s+(\d+KV\s+)?/i,
+                                                                                    "",
+                                                                                )}
+                                                                            </span>
+                                                                        ),
+                                                                    )}
+                                                                {row
+                                                                    .gardu_induks
+                                                                    .length >
+                                                                    3 && (
+                                                                    <span
+                                                                        className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-gray-50 text-gray-600 border border-gray-100 cursor-help"
+                                                                        title={row.gardu_induks
+                                                                            .slice(
+                                                                                3,
+                                                                            )
+                                                                            .map(
+                                                                                (
+                                                                                    g,
+                                                                                ) =>
+                                                                                    g.name,
+                                                                            )
+                                                                            .join(
+                                                                                "\n",
+                                                                            )}
+                                                                    >
+                                                                        +
+                                                                        {row
+                                                                            .gardu_induks
+                                                                            .length -
+                                                                            3}
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                        )}
+                                                    </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
+                                                        <div className="flex justify-center">
+                                                            <div className="inline-flex items-center gap-1.5 rounded-xl bg-gray-50/80 border border-gray-100 px-2 py-1 shadow-sm">
+                                                                <button
+                                                                    onClick={() =>
+                                                                        openRoleModal(
+                                                                            row,
+                                                                        )
+                                                                    }
+                                                                    className="inline-flex items-center justify-center h-9 w-9 rounded-full border border-sky-100 bg-sky-50 text-sky-600 hover:bg-sky-100 hover:text-sky-700 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-0 transition-all shadow-[0_1px_2px_rgba(15,23,42,0.06)]"
+                                                                    title="Kelola Role"
+                                                                >
+                                                                    <FaUserShield className="w-4 h-4" />
+                                                                </button>
+                                                                <button
+                                                                    onClick={() =>
+                                                                        openDeleteModal(
+                                                                            row,
+                                                                        )
+                                                                    }
+                                                                    className="inline-flex items-center justify-center h-9 w-9 rounded-full border border-red-100 bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-0 transition-all shadow-[0_1px_2px_rgba(15,23,42,0.06)]"
+                                                                    title="Hapus User"
+                                                                >
+                                                                    <FaTrash className="w-4 h-4" />
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            ))
+                                        )}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </ErrorBoundary>
+
+                        {/* Pagination */}
+                        {totalPages > 1 && (
+                            <div className="px-6 py-4 border-t border-gray-100 bg-gray-50/50 flex flex-col sm:flex-row items-center justify-between gap-4">
+                                <div className="text-sm text-gray-500">
+                                    Menampilkan{" "}
+                                    <span className="font-medium text-gray-900">
+                                        {(page - 1) * rowsPerPage + 1}
+                                    </span>{" "}
+                                    sampai{" "}
+                                    <span className="font-medium text-gray-900">
+                                        {Math.min(
+                                            page * rowsPerPage,
+                                            totalRows,
+                                        )}
+                                    </span>{" "}
+                                    dari{" "}
+                                    <span className="font-medium text-gray-900">
+                                        {totalRows}
+                                    </span>{" "}
+                                    hasil
                                 </div>
-                            </ErrorBoundary>
-                            {/* Pagination */}
-                            {totalPages > 1 && (
-                                <div className="flex flex-col sm:flex-row justify-between items-center mt-4 gap-2">
-                                    <div className="text-gray-600 text-sm">
-                                        Menampilkan{" "}
-                                        <span className="font-semibold">
-                                            {(page - 1) * rowsPerPage + 1}
-                                        </span>{" "}
-                                        -{" "}
-                                        <span className="font-semibold">
-                                            {Math.min(
-                                                page * rowsPerPage,
-                                                totalRows
-                                            )}
-                                        </span>{" "}
-                                        dari{" "}
-                                        <span className="font-semibold">
-                                            {totalRows}
-                                        </span>{" "}
-                                        data
-                                    </div>
+                                <div className="flex items-center gap-2">
+                                    <button
+                                        onClick={() => setPage(page - 1)}
+                                        disabled={page === 1}
+                                        className="p-2 rounded-lg border border-gray-200 bg-white text-gray-500 hover:bg-gray-50 hover:text-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                    >
+                                        <FaChevronLeft className="w-4 h-4" />
+                                    </button>
                                     <div className="flex items-center gap-1">
-                                        <button
-                                            className="px-3 py-1 rounded border text-gray-600 bg-white hover:bg-blue-50 disabled:opacity-50"
-                                            onClick={() => setPage(page - 1)}
-                                            disabled={page === 1}
-                                        >
-                                            &lt;
-                                        </button>
                                         {[...Array(totalPages)].map(
                                             (_, idx) => (
                                                 <button
                                                     key={idx}
-                                                    className={`px-3 py-1 rounded border ${
-                                                        page === idx + 1
-                                                            ? "bg-blue-600 text-white border-blue-600"
-                                                            : "bg-white text-gray-700 hover:bg-blue-50"
-                                                    }`}
                                                     onClick={() =>
                                                         setPage(idx + 1)
                                                     }
+                                                    className={`min-w-[32px] h-8 rounded-lg text-sm font-medium transition-colors ${
+                                                        page === idx + 1
+                                                            ? "bg-blue-600 text-white shadow-sm"
+                                                            : "bg-white text-gray-600 hover:bg-gray-50 border border-gray-200"
+                                                    }`}
                                                 >
                                                     {idx + 1}
                                                 </button>
-                                            )
+                                            ),
                                         )}
-                                        <button
-                                            className="px-3 py-1 rounded border text-gray-600 bg-white hover:bg-blue-50 disabled:opacity-50"
-                                            onClick={() => setPage(page + 1)}
-                                            disabled={page === totalPages}
-                                        >
-                                            &gt;
-                                        </button>
                                     </div>
+                                    <button
+                                        onClick={() => setPage(page + 1)}
+                                        disabled={page === totalPages}
+                                        className="p-2 rounded-lg border border-gray-200 bg-white text-gray-500 hover:bg-gray-50 hover:text-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                    >
+                                        <FaChevronRight className="w-4 h-4" />
+                                    </button>
                                 </div>
-                            )}
-                        </div>
+                            </div>
+                        )}
                     </div>
                 </div>
+
                 {/* Filter Dialog */}
-                <Dialog
-                    open={filterOpen}
-                    onClose={() => setFilterOpen(false)}
-                    maxWidth="xs"
-                    fullWidth
-                >
-                    <DialogTitle className="font-bold text-lg text-gray-800 border-b">
-                        Filter Data
-                    </DialogTitle>
-                    <DialogContent className="py-4">
-                        <div className="mb-4">
-                            <label className="block text-gray-700 font-semibold mb-2">
-                                Nama User
-                            </label>
-                            <input
-                                type="text"
-                                className="border rounded px-3 py-2 w-full"
-                                value={filterName}
-                                onChange={(e) => setFilterName(e.target.value)}
-                                placeholder="Cari nama user..."
-                            />
-                        </div>
-                    </DialogContent>
-                    <DialogActions className="border-t px-4 py-3 flex justify-between">
-                        <button
-                            type="button"
-                            onClick={() => {
-                                setFilterName("");
-                                setFilterOpen(false);
-                            }}
-                            className="px-4 py-2 rounded border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 font-semibold transition"
+                <Transition appear show={filterOpen} as={Fragment}>
+                    <Dialog
+                        as="div"
+                        className="relative z-50"
+                        onClose={() => setFilterOpen(false)}
+                    >
+                        <Transition.Child
+                            as={Fragment}
+                            enter="ease-out duration-300"
+                            enterFrom="opacity-0"
+                            enterTo="opacity-100"
+                            leave="ease-in duration-200"
+                            leaveFrom="opacity-100"
+                            leaveTo="opacity-0"
                         >
-                            Reset
-                        </button>
-                        <button
-                            type="button"
-                            onClick={() => setFilterOpen(false)}
-                            className="px-4 py-2 rounded bg-blue-600 text-white font-semibold shadow hover:bg-blue-700 transition"
-                        >
-                            Terapkan
-                        </button>
-                    </DialogActions>
-                </Dialog>
-            </DashboardLayout>
-            <Dialog
-                open={roleModalOpen}
-                onClose={() => setRoleModalOpen(false)}
-                maxWidth="sm"
-                fullWidth
-                PaperProps={{
-                    style: {
-                        borderRadius: 18,
-                        minHeight: 600,
-                        maxHeight: "90vh",
-                        background:
-                            "linear-gradient(135deg, #f8fafc 0%, #fff 100%)",
-                        boxShadow: "0 8px 32px 0 rgba(0,0,0,0.10)",
-                        padding: 0,
-                    },
-                }}
-            >
-                <DialogTitle
-                    className="font-bold text-xl text-gray-800 border-b px-6 py-4"
-                    style={{
-                        background:
-                            "linear-gradient(90deg, #e0e7ff 0%, #f8fafc 100%)",
-                    }}
-                >
-                    <div className="flex items-center justify-between">
-                        <span>Edit User</span>
-                        <button
-                            onClick={() => setRoleModalOpen(false)}
-                            className="text-gray-400 hover:text-gray-600 text-2xl font-bold"
-                        >
-                            ×
-                        </button>
-                    </div>
-                </DialogTitle>
-                <DialogContent
-                    className="py-6 px-6"
-                    style={{
-                        minHeight: 600,
-                        maxHeight: 800,
-                        overflowY: "auto",
-                    }}
-                >
-                    {roleModalLoading ? (
-                        <div className="flex justify-center items-center h-32">
-                            <CircularProgress size={32} />
-                        </div>
-                    ) : (
-                        <form
-                            onSubmit={(e) => {
-                                e.preventDefault();
-                                handleRoleModalSave();
-                            }}
-                        >
-                            <div className="mb-6 pt-4">
-                                {/* User Info Header */}
-                                <div className="flex items-center gap-4 mb-6 p-4 bg-gray-100 rounded-xl border border-gray-200">
-                                    {roleModalUser?.foto_profil ? (
-                                        <img
-                                            src={roleModalUser.foto_profil}
-                                            alt={roleModalUser?.name}
-                                            className="w-16 h-16 rounded-full object-cover border-2 border-blue-200 shadow-lg"
-                                        />
-                                    ) : (
-                                        <div className="w-16 h-16 rounded-full bg-gradient-to-br from-blue-200 to-blue-100 flex items-center justify-center text-blue-700 font-bold text-2xl border-2 border-blue-200 shadow-lg">
-                                            {roleModalUser?.name
-                                                ?.split(" ")
-                                                .map((n) => n[0])
-                                                .join("")
-                                                .substring(0, 2)
-                                                .toUpperCase() || "U"}
+                            <div className="fixed inset-0 bg-black/25 backdrop-blur-sm" />
+                        </Transition.Child>
+
+                        <div className="fixed inset-0 overflow-y-auto">
+                            <div className="flex min-h-full items-center justify-center p-4 text-center">
+                                <Transition.Child
+                                    as={Fragment}
+                                    enter="ease-out duration-300"
+                                    enterFrom="opacity-0 scale-95"
+                                    enterTo="opacity-100 scale-100"
+                                    leave="ease-in duration-200"
+                                    leaveFrom="opacity-100 scale-100"
+                                    leaveTo="opacity-0 scale-95"
+                                >
+                                    <Dialog.Panel className="w-full max-w-md transform overflow-hidden rounded-2xl bg-white/95 backdrop-blur-sm text-left align-middle shadow-xl transition-all border border-gray-100">
+                                        <div className="px-6 py-4 border-b border-gray-100 bg-gray-50 flex items-center justify-between">
+                                            <div className="flex items-center gap-3">
+                                                <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-sky-500 via-sky-400 to-cyan-400 flex items-center justify-center text-white shadow-md">
+                                                    <FaFilter className="w-5 h-5" />
+                                                </div>
+                                                <div>
+                                                    <Dialog.Title className="text-lg font-bold text-gray-900">
+                                                        Filter Data
+                                                    </Dialog.Title>
+                                                    <p className="text-sm text-gray-500 mt-0.5">
+                                                        Filter data user sesuai
+                                                        kebutuhan.
+                                                    </p>
+                                                </div>
+                                            </div>
+                                            <button
+                                                onClick={() =>
+                                                    setFilterOpen(false)
+                                                }
+                                                className="text-gray-400 hover:text-gray-500 transition-colors"
+                                            >
+                                                <FaTimes className="w-5 h-5" />
+                                            </button>
                                         </div>
-                                    )}
-                                    <div className="flex-1">
-                                        <h3 className="text-lg font-bold text-gray-800 mb-1">
-                                            {roleModalUser?.name}
-                                        </h3>
-                                        <p className="text-gray-600 text-sm mb-1">
-                                            {roleModalUser?.email}
-                                        </p>
-                                        <div className="flex items-center gap-2">
-                                            <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-red-200 text-red-800">
-                                                {roleModalUser?.role ||
-                                                    "No Role"}
-                                            </span>
-                                            {roleModalUser?.wilayah && (
-                                                <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-amber-100 text-amber-800">
-                                                    {roleModalUser.wilayah}
-                                                </span>
+                                        <div className="p-6">
+                                            <div className="space-y-4">
+                                                <div>
+                                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                        Nama User
+                                                    </label>
+                                                    <input
+                                                        type="text"
+                                                        className="w-full rounded-lg border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                                                        value={filterName}
+                                                        onChange={(e) =>
+                                                            setFilterName(
+                                                                e.target.value,
+                                                            )
+                                                        }
+                                                        placeholder="Cari nama..."
+                                                    />
+                                                </div>
+                                            </div>
+                                            <div className="mt-6 flex justify-end gap-3">
+                                                <button
+                                                    onClick={() => {
+                                                        setFilterName("");
+                                                        setFilterOpen(false);
+                                                    }}
+                                                    className="px-4 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 border border-gray-300"
+                                                >
+                                                    Reset
+                                                </button>
+                                                <button
+                                                    onClick={() =>
+                                                        setFilterOpen(false)
+                                                    }
+                                                    className="px-4 py-2 rounded-lg text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 shadow-sm"
+                                                >
+                                                    Terapkan
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </Dialog.Panel>
+                                </Transition.Child>
+                            </div>
+                        </div>
+                    </Dialog>
+                </Transition>
+
+                {/* Role Modal */}
+                <Transition appear show={roleModalOpen} as={Fragment}>
+                    <Dialog
+                        as="div"
+                        className="relative z-50"
+                        onClose={() => setRoleModalOpen(false)}
+                    >
+                        <Transition.Child
+                            as={Fragment}
+                            enter="ease-out duration-300"
+                            enterFrom="opacity-0"
+                            enterTo="opacity-100"
+                            leave="ease-in duration-200"
+                            leaveFrom="opacity-100"
+                            leaveTo="opacity-0"
+                        >
+                            <div className="fixed inset-0 bg-black/25 backdrop-blur-sm" />
+                        </Transition.Child>
+
+                        <div className="fixed inset-0 overflow-y-auto">
+                            <div className="flex min-h-full items-center justify-center p-4 text-center">
+                                <Transition.Child
+                                    as={Fragment}
+                                    enter="ease-out duration-300"
+                                    enterFrom="opacity-0 scale-95"
+                                    enterTo="opacity-100 scale-100"
+                                    leave="ease-in duration-200"
+                                    leaveFrom="opacity-100 scale-100"
+                                    leaveTo="opacity-0 scale-95"
+                                >
+                                    <Dialog.Panel className="w-full max-w-lg transform overflow-visible rounded-2xl bg-white/95 backdrop-blur-sm text-left align-middle shadow-xl transition-all border border-gray-100">
+                                        <div className="px-6 py-4 border-b border-gray-100 bg-gray-50">
+                                            <div className="flex items-center justify-between gap-3">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-sky-500 via-sky-400 to-cyan-400 flex items-center justify-center text-white shadow-md">
+                                                        <FaUserShield className="w-5 h-5" />
+                                                    </div>
+                                                    <div>
+                                                        <Dialog.Title
+                                                            as="h3"
+                                                            className="text-base md:text-lg font-semibold text-gray-900"
+                                                        >
+                                                            Edit Role & Akses
+                                                        </Dialog.Title>
+                                                        <p className="text-xs md:text-sm text-gray-500 mt-0.5">
+                                                            Kelola role dan hak
+                                                            akses user.
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                                <button
+                                                    onClick={() =>
+                                                        setRoleModalOpen(false)
+                                                    }
+                                                    className="text-gray-400 hover:text-gray-500 transition-colors"
+                                                >
+                                                    <FaTimes />
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        <div className="p-6">
+                                            {roleModalLoading ? (
+                                                <div className="flex justify-center items-center py-12">
+                                                    <Spinner size={32} />
+                                                </div>
+                                            ) : (
+                                                <div className="space-y-6">
+                                                    {/* User Info */}
+                                                    <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-xl border border-gray-100">
+                                                        <div className="h-12 w-12 rounded-full bg-white border border-gray-200 flex items-center justify-center text-lg font-bold text-blue-600 shadow-sm">
+                                                            <img
+                                                                src={
+                                                                    roleModalUser?.foto_profil
+                                                                }
+                                                                alt={
+                                                                    roleModalUser?.name
+                                                                }
+                                                                className="h-full w-full object-cover rounded-full ring-2 ring-blue-800"
+                                                            />
+                                                        </div>
+                                                        <div>
+                                                            <div className="font-semibold text-gray-900">
+                                                                {
+                                                                    roleModalUser?.name
+                                                                }
+                                                            </div>
+                                                            <div className="text-sm text-gray-500">
+                                                                {
+                                                                    roleModalUser?.email
+                                                                }
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="space-y-4">
+                                                        <div>
+                                                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                                Role User
+                                                            </label>
+                                                            <Listbox
+                                                                value={
+                                                                    roleModalCurrent
+                                                                }
+                                                                onChange={
+                                                                    setRoleModalCurrent
+                                                                }
+                                                            >
+                                                                <div className="relative">
+                                                                    <Listbox.Button className="relative w-full cursor-default rounded-xl bg-white py-2.5 pl-3 pr-10 text-left border border-gray-200 focus:outline-none focus:ring-2 focus:ring-sky-500 sm:text-sm">
+                                                                        <span className="block truncate">
+                                                                            {roleModalCurrent
+                                                                                ? roleModalRoles.find(
+                                                                                      (
+                                                                                          r,
+                                                                                      ) =>
+                                                                                          r.name ===
+                                                                                          roleModalCurrent,
+                                                                                  )
+                                                                                      ?.name
+                                                                                : "Pilih Role"}
+                                                                        </span>
+                                                                        <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2">
+                                                                            <FaChevronRight className="h-4 w-4 text-gray-400 rotate-90" />
+                                                                        </span>
+                                                                    </Listbox.Button>
+                                                                    <Transition
+                                                                        as={
+                                                                            Fragment
+                                                                        }
+                                                                        leave="transition ease-in duration-100"
+                                                                        leaveFrom="opacity-100"
+                                                                        leaveTo="opacity-0"
+                                                                    >
+                                                                        <Listbox.Options className="absolute z-50 mt-1 max-h-60 w-full overflow-auto rounded-xl bg-white py-1 text-base shadow-xl ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm border border-gray-100">
+                                                                            {roleModalRoles.map(
+                                                                                (
+                                                                                    role,
+                                                                                ) => (
+                                                                                    <Listbox.Option
+                                                                                        key={
+                                                                                            role.id
+                                                                                        }
+                                                                                        className={({
+                                                                                            active,
+                                                                                        }) =>
+                                                                                            `relative cursor-default select-none py-2.5 pl-10 pr-4 ${
+                                                                                                active
+                                                                                                    ? "bg-sky-50 text-sky-900"
+                                                                                                    : "text-gray-900"
+                                                                                            }`
+                                                                                        }
+                                                                                        value={
+                                                                                            role.name
+                                                                                        }
+                                                                                    >
+                                                                                        {({
+                                                                                            selected,
+                                                                                        }) => (
+                                                                                            <>
+                                                                                                <span
+                                                                                                    className={`block truncate ${
+                                                                                                        selected
+                                                                                                            ? "font-medium"
+                                                                                                            : "font-normal"
+                                                                                                    }`}
+                                                                                                >
+                                                                                                    {
+                                                                                                        role.name
+                                                                                                    }
+                                                                                                </span>
+                                                                                                {selected && (
+                                                                                                    <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-sky-600">
+                                                                                                        <FaCheck
+                                                                                                            className="h-4 w-4"
+                                                                                                            aria-hidden="true"
+                                                                                                        />
+                                                                                                    </span>
+                                                                                                )}
+                                                                                            </>
+                                                                                        )}
+                                                                                    </Listbox.Option>
+                                                                                ),
+                                                                            )}
+                                                                        </Listbox.Options>
+                                                                    </Transition>
+                                                                </div>
+                                                            </Listbox>
+                                                        </div>
+
+                                                        <div>
+                                                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                                Bidang
+                                                            </label>
+                                                            <Listbox
+                                                                value={
+                                                                    roleModalBidang
+                                                                }
+                                                                onChange={
+                                                                    setRoleModalBidang
+                                                                }
+                                                            >
+                                                                <div className="relative">
+                                                                    <Listbox.Button className="relative w-full cursor-default rounded-xl bg-white py-2.5 pl-3 pr-10 text-left border border-gray-200 focus:outline-none focus:ring-2 focus:ring-sky-500 sm:text-sm">
+                                                                        <span className="block truncate">
+                                                                            {roleModalBidang ||
+                                                                                "Pilih Bidang"}
+                                                                        </span>
+                                                                        <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2">
+                                                                            <FaChevronRight className="h-4 w-4 text-gray-400 rotate-90" />
+                                                                        </span>
+                                                                    </Listbox.Button>
+                                                                    <Transition
+                                                                        as={
+                                                                            Fragment
+                                                                        }
+                                                                        leave="transition ease-in duration-100"
+                                                                        leaveFrom="opacity-100"
+                                                                        leaveTo="opacity-0"
+                                                                    >
+                                                                        <Listbox.Options className="absolute z-50 mt-1 max-h-60 w-full overflow-auto rounded-xl bg-white py-1 text-base shadow-xl ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm border border-gray-100">
+                                                                            {BIDANG_OPTIONS.map(
+                                                                                (
+                                                                                    bidang,
+                                                                                ) => (
+                                                                                    <Listbox.Option
+                                                                                        key={
+                                                                                            bidang
+                                                                                        }
+                                                                                        className={({
+                                                                                            active,
+                                                                                        }) =>
+                                                                                            `relative cursor-default select-none py-2.5 pl-10 pr-4 ${
+                                                                                                active
+                                                                                                    ? "bg-sky-50 text-sky-900"
+                                                                                                    : "text-gray-900"
+                                                                                            }`
+                                                                                        }
+                                                                                        value={
+                                                                                            bidang
+                                                                                        }
+                                                                                    >
+                                                                                        {({
+                                                                                            selected,
+                                                                                        }) => (
+                                                                                            <>
+                                                                                                <span
+                                                                                                    className={`block truncate ${
+                                                                                                        selected
+                                                                                                            ? "font-medium"
+                                                                                                            : "font-normal"
+                                                                                                    }`}
+                                                                                                >
+                                                                                                    {
+                                                                                                        bidang
+                                                                                                    }
+                                                                                                </span>
+                                                                                                {selected && (
+                                                                                                    <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-sky-600">
+                                                                                                        <FaCheck
+                                                                                                            className="h-4 w-4"
+                                                                                                            aria-hidden="true"
+                                                                                                        />
+                                                                                                    </span>
+                                                                                                )}
+                                                                                            </>
+                                                                                        )}
+                                                                                    </Listbox.Option>
+                                                                                ),
+                                                                            )}
+                                                                        </Listbox.Options>
+                                                                    </Transition>
+                                                                </div>
+                                                            </Listbox>
+                                                        </div>
+
+                                                        <div>
+                                                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                                Wilayah
+                                                            </label>
+                                                            <Listbox
+                                                                value={
+                                                                    roleModalWilayah
+                                                                }
+                                                                onChange={
+                                                                    setRoleModalWilayah
+                                                                }
+                                                            >
+                                                                <div className="relative">
+                                                                    <Listbox.Button className="relative w-full cursor-default rounded-xl bg-white py-2.5 pl-3 pr-10 text-left border border-gray-200 focus:outline-none focus:ring-2 focus:ring-sky-500 sm:text-sm">
+                                                                        <span className="block truncate">
+                                                                            {roleModalWilayah ||
+                                                                                "Pilih Wilayah"}
+                                                                        </span>
+                                                                        <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2">
+                                                                            <FaChevronRight className="h-4 w-4 text-gray-400 rotate-90" />
+                                                                        </span>
+                                                                    </Listbox.Button>
+                                                                    <Transition
+                                                                        as={
+                                                                            Fragment
+                                                                        }
+                                                                        leave="transition ease-in duration-100"
+                                                                        leaveFrom="opacity-100"
+                                                                        leaveTo="opacity-0"
+                                                                    >
+                                                                        <Listbox.Options className="absolute z-50 mt-1 max-h-60 w-full overflow-auto rounded-xl bg-white py-1 text-base shadow-xl ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm border border-gray-100">
+                                                                            {WILAYAH_OPTIONS.map(
+                                                                                (
+                                                                                    wilayah,
+                                                                                ) => (
+                                                                                    <Listbox.Option
+                                                                                        key={
+                                                                                            wilayah
+                                                                                        }
+                                                                                        className={({
+                                                                                            active,
+                                                                                        }) =>
+                                                                                            `relative cursor-default select-none py-2.5 pl-10 pr-4 ${
+                                                                                                active
+                                                                                                    ? "bg-sky-50 text-sky-900"
+                                                                                                    : "text-gray-900"
+                                                                                            }`
+                                                                                        }
+                                                                                        value={
+                                                                                            wilayah
+                                                                                        }
+                                                                                    >
+                                                                                        {({
+                                                                                            selected,
+                                                                                        }) => (
+                                                                                            <>
+                                                                                                <span
+                                                                                                    className={`block truncate ${
+                                                                                                        selected
+                                                                                                            ? "font-medium"
+                                                                                                            : "font-normal"
+                                                                                                    }`}
+                                                                                                >
+                                                                                                    {
+                                                                                                        wilayah
+                                                                                                    }
+                                                                                                </span>
+                                                                                                {selected && (
+                                                                                                    <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-sky-600">
+                                                                                                        <FaCheck
+                                                                                                            className="h-4 w-4"
+                                                                                                            aria-hidden="true"
+                                                                                                        />
+                                                                                                    </span>
+                                                                                                )}
+                                                                                            </>
+                                                                                        )}
+                                                                                    </Listbox.Option>
+                                                                                ),
+                                                                            )}
+                                                                        </Listbox.Options>
+                                                                    </Transition>
+                                                                </div>
+                                                            </Listbox>
+                                                        </div>
+
+                                                        <div>
+                                                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                                Gardu Induk
+                                                            </label>
+                                                            <ComboboxMultiple
+                                                                options={
+                                                                    garduInduks
+                                                                }
+                                                                value={
+                                                                    roleModalGarduIndukIds
+                                                                }
+                                                                onChange={
+                                                                    setRoleModalGarduIndukIds
+                                                                }
+                                                            />
+                                                        </div>
+                                                    </div>
+
+                                                    {roleModalError && (
+                                                        <div className="p-3 rounded-lg bg-red-50 text-red-600 text-sm border border-red-100">
+                                                            {roleModalError}
+                                                        </div>
+                                                    )}
+                                                </div>
                                             )}
                                         </div>
-                                    </div>
-                                </div>
 
-                                {/* Form Fields */}
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    {/* Role Selection */}
-                                    <div className="md:col-span-2">
-                                        <label className="block text-gray-700 font-semibold mb-3 text-sm">
-                                            Role User
-                                        </label>
-                                        <div className="relative">
-                                            <Listbox
-                                                value={roleModalCurrent}
-                                                onChange={setRoleModalCurrent}
+                                        <div className="bg-gray-50 px-6 py-4 flex justify-end gap-3 border-t border-gray-100">
+                                            <button
+                                                type="button"
+                                                className="inline-flex justify-center rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+                                                onClick={() =>
+                                                    setRoleModalOpen(false)
+                                                }
+                                                disabled={roleModalSaving}
                                             >
-                                                <div className="relative">
-                                                    <Listbox.Button className="border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 rounded-lg px-4 py-2 w-full bg-white transition-all shadow text-gray-800 flex justify-between items-center">
-                                                        <span className="flex items-center gap-2">
-                                                            <FaUserShield className="text-blue-500" />
-                                                            {roleModalCurrent
-                                                                ? roleModalRoles.find(
-                                                                      (r) =>
-                                                                          r.name ===
-                                                                          roleModalCurrent
-                                                                  )?.name
-                                                                : "Pilih Role"}
-                                                        </span>
-                                                        <span className="pointer-events-none text-gray-400 ml-2">
-                                                            <svg
-                                                                width="20"
-                                                                height="20"
-                                                                fill="none"
-                                                                viewBox="0 0 20 20"
-                                                            >
-                                                                <path
-                                                                    d="M6 8l4 4 4-4"
-                                                                    stroke="currentColor"
-                                                                    strokeWidth="1.5"
-                                                                    strokeLinecap="round"
-                                                                    strokeLinejoin="round"
-                                                                />
-                                                            </svg>
-                                                        </span>
-                                                    </Listbox.Button>
-                                                    <Listbox.Options className="absolute z-20 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-52 overflow-auto focus:outline-none">
-                                                        <Listbox.Option
-                                                            key=""
-                                                            value=""
-                                                            className={({
-                                                                active,
-                                                            }) =>
-                                                                `cursor-pointer select-none relative px-4 py-2 ${
-                                                                    active
-                                                                        ? "bg-blue-50 text-blue-700"
-                                                                        : "text-gray-800"
-                                                                }`
-                                                            }
-                                                        >
-                                                            Pilih Role
-                                                        </Listbox.Option>
-                                                        {roleModalRoles.map(
-                                                            (r) => (
-                                                                <Listbox.Option
-                                                                    key={r.id}
-                                                                    value={
-                                                                        r.name
-                                                                    }
-                                                                    className={({
-                                                                        active,
-                                                                        selected,
-                                                                    }) =>
-                                                                        [
-                                                                            "cursor-pointer select-none relative px-4 py-2",
-                                                                            active
-                                                                                ? "bg-blue-50 text-blue-700"
-                                                                                : selected
-                                                                                ? "bg-blue-100 text-blue-800"
-                                                                                : "text-gray-800",
-                                                                            selected
-                                                                                ? "font-semibold"
-                                                                                : "",
-                                                                        ].join(
-                                                                            " "
-                                                                        )
-                                                                    }
-                                                                >
-                                                                    {({
-                                                                        selected,
-                                                                    }) => (
-                                                                        <div className="flex items-center">
-                                                                            {selected && (
-                                                                                <span className="mr-2 text-blue-600">
-                                                                                    <FaCheck
-                                                                                        className="h-4 w-4"
-                                                                                        aria-hidden="true"
-                                                                                    />
-                                                                                </span>
-                                                                            )}
-                                                                            <span>
-                                                                                {
-                                                                                    r.name
-                                                                                }
-                                                                            </span>
-                                                                        </div>
-                                                                    )}
-                                                                </Listbox.Option>
-                                                            )
-                                                        )}
-                                                    </Listbox.Options>
-                                                </div>
-                                            </Listbox>
-                                        </div>
-                                    </div>
-
-                                    {/* Bidang */}
-                                    <div>
-                                        <label className="block text-gray-700 font-semibold mb-3 text-sm">
-                                            Bidang
-                                        </label>
-                                        <div className="relative">
-                                            <Listbox
-                                                value={roleModalBidang}
-                                                onChange={setRoleModalBidang}
+                                                Batal
+                                            </button>
+                                            <button
+                                                type="button"
+                                                className="inline-flex justify-center rounded-lg border border-transparent bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:opacity-50"
+                                                onClick={handleRoleModalSave}
+                                                disabled={
+                                                    roleModalSaving ||
+                                                    roleModalLoading
+                                                }
                                             >
-                                                <div className="relative">
-                                                    <Listbox.Button className="border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 rounded-lg px-4 py-2 w-full bg-white transition-all shadow text-gray-800 flex justify-between items-center">
-                                                        <span>
-                                                            {roleModalBidang ||
-                                                                "Pilih Bidang"}
+                                                {roleModalSaving ? (
+                                                    <>
+                                                        <Spinner
+                                                            size={16}
+                                                            color="text-white"
+                                                        />
+                                                        <span className="ml-2">
+                                                            Menyimpan...
                                                         </span>
-                                                        <span className="pointer-events-none text-gray-400 ml-2">
-                                                            <svg
-                                                                width="20"
-                                                                height="20"
-                                                                fill="none"
-                                                                viewBox="0 0 20 20"
-                                                            >
-                                                                <path
-                                                                    d="M6 8l4 4 4-4"
-                                                                    stroke="currentColor"
-                                                                    strokeWidth="1.5"
-                                                                    strokeLinecap="round"
-                                                                    strokeLinejoin="round"
-                                                                />
-                                                            </svg>
-                                                        </span>
-                                                    </Listbox.Button>
-                                                    <Listbox.Options className="absolute z-20 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-52 overflow-auto focus:outline-none">
-                                                        <Listbox.Option
-                                                            key=""
-                                                            value=""
-                                                            className={({
-                                                                active,
-                                                            }) =>
-                                                                `cursor-pointer select-none relative px-4 py-2 ${
-                                                                    active
-                                                                        ? "bg-blue-50 text-blue-700"
-                                                                        : "text-gray-800"
-                                                                }`
-                                                            }
-                                                        >
-                                                            Pilih Bidang
-                                                        </Listbox.Option>
-                                                        {BIDANG_OPTIONS.map(
-                                                            (bidang) => (
-                                                                <Listbox.Option
-                                                                    key={bidang}
-                                                                    value={
-                                                                        bidang
-                                                                    }
-                                                                    className={({
-                                                                        active,
-                                                                        selected,
-                                                                    }) =>
-                                                                        [
-                                                                            "cursor-pointer select-none relative px-4 py-2",
-                                                                            active
-                                                                                ? "bg-blue-50 text-blue-700"
-                                                                                : selected
-                                                                                ? "bg-blue-100 text-blue-800"
-                                                                                : "text-gray-800",
-                                                                            selected
-                                                                                ? "font-semibold"
-                                                                                : "",
-                                                                        ].join(
-                                                                            " "
-                                                                        )
-                                                                    }
-                                                                >
-                                                                    {({
-                                                                        selected,
-                                                                    }) => (
-                                                                        <div className="flex items-center">
-                                                                            {selected && (
-                                                                                <span className="mr-2 text-blue-600">
-                                                                                    <FaCheck
-                                                                                        className="h-4 w-4"
-                                                                                        aria-hidden="true"
-                                                                                    />
-                                                                                </span>
-                                                                            )}
-                                                                            <span>
-                                                                                {
-                                                                                    bidang
-                                                                                }
-                                                                            </span>
-                                                                        </div>
-                                                                    )}
-                                                                </Listbox.Option>
-                                                            )
-                                                        )}
-                                                    </Listbox.Options>
-                                                </div>
-                                            </Listbox>
+                                                    </>
+                                                ) : (
+                                                    "Simpan Perubahan"
+                                                )}
+                                            </button>
                                         </div>
-                                    </div>
-
-                                    {/* Wilayah */}
-                                    <div>
-                                        <label className="block text-gray-700 font-semibold mb-3 text-sm">
-                                            Wilayah
-                                        </label>
-                                        <div className="relative">
-                                            <Listbox
-                                                value={roleModalWilayah}
-                                                onChange={setRoleModalWilayah}
-                                            >
-                                                <div className="relative">
-                                                    <Listbox.Button className="border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 rounded-lg px-4 py-2 w-full bg-white transition-all shadow text-gray-800 flex justify-between items-center">
-                                                        <span>
-                                                            {roleModalWilayah ||
-                                                                "Pilih Wilayah"}
-                                                        </span>
-                                                        <span className="pointer-events-none text-gray-400 ml-2">
-                                                            <svg
-                                                                width="20"
-                                                                height="20"
-                                                                fill="none"
-                                                                viewBox="0 0 20 20"
-                                                            >
-                                                                <path
-                                                                    d="M6 8l4 4 4-4"
-                                                                    stroke="currentColor"
-                                                                    strokeWidth="1.5"
-                                                                    strokeLinecap="round"
-                                                                    strokeLinejoin="round"
-                                                                />
-                                                            </svg>
-                                                        </span>
-                                                    </Listbox.Button>
-                                                    <Listbox.Options className="absolute z-20 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-52 overflow-auto focus:outline-none">
-                                                        <Listbox.Option
-                                                            key=""
-                                                            value=""
-                                                            className={({
-                                                                active,
-                                                            }) =>
-                                                                `cursor-pointer select-none relative px-4 py-2 ${
-                                                                    active
-                                                                        ? "bg-blue-50 text-blue-700"
-                                                                        : "text-gray-800"
-                                                                }`
-                                                            }
-                                                        >
-                                                            Pilih Wilayah
-                                                        </Listbox.Option>
-                                                        {WILAYAH_OPTIONS.map(
-                                                            (ultg) => (
-                                                                <Listbox.Option
-                                                                    key={ultg}
-                                                                    value={ultg}
-                                                                    className={({
-                                                                        active,
-                                                                        selected,
-                                                                    }) =>
-                                                                        [
-                                                                            "cursor-pointer select-none relative px-4 py-2",
-                                                                            active
-                                                                                ? "bg-blue-50 text-blue-700"
-                                                                                : selected
-                                                                                ? "bg-blue-100 text-blue-800"
-                                                                                : "text-gray-800",
-                                                                            selected
-                                                                                ? "font-semibold"
-                                                                                : "",
-                                                                        ].join(
-                                                                            " "
-                                                                        )
-                                                                    }
-                                                                >
-                                                                    {({
-                                                                        selected,
-                                                                    }) => (
-                                                                        <div className="flex items-center">
-                                                                            {selected && (
-                                                                                <span className="mr-2 text-blue-600">
-                                                                                    <FaCheck
-                                                                                        className="h-4 w-4"
-                                                                                        aria-hidden="true"
-                                                                                    />
-                                                                                </span>
-                                                                            )}
-                                                                            <span>
-                                                                                {
-                                                                                    ultg
-                                                                                }
-                                                                            </span>
-                                                                        </div>
-                                                                    )}
-                                                                </Listbox.Option>
-                                                            )
-                                                        )}
-                                                    </Listbox.Options>
-                                                </div>
-                                            </Listbox>
-                                        </div>
-                                    </div>
-
-                                    {/* Gardu Induk */}
-                                    <div className="md:col-span-2">
-                                        <label className="block text-gray-700 font-semibold mb-3 text-sm">
-                                            Gardu Induk
-                                        </label>
-                                        <ComboboxMultiple
-                                            className="absolute shadow-md"
-                                            options={garduInduks}
-                                            value={roleModalGarduIndukIds}
-                                            onChange={setRoleModalGarduIndukIds}
-                                        />
-                                    </div>
-                                </div>
-
-                                {roleModalError && (
-                                    <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-                                        <div className="flex items-center gap-2">
-                                            <svg
-                                                className="w-5 h-5 text-red-500"
-                                                fill="none"
-                                                stroke="currentColor"
-                                                viewBox="0 0 24 24"
-                                            >
-                                                <path
-                                                    strokeLinecap="round"
-                                                    strokeLinejoin="round"
-                                                    strokeWidth={2}
-                                                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"
-                                                />
-                                            </svg>
-                                            <span className="text-red-700 text-sm font-medium">
-                                                {roleModalError}
-                                            </span>
-                                        </div>
-                                    </div>
-                                )}
+                                    </Dialog.Panel>
+                                </Transition.Child>
                             </div>
-                        </form>
-                    )}
-                </DialogContent>
-                <DialogActions className="border-t px-6 py-4 flex justify-between bg-slate-50">
-                    <SecondaryButton
-                        onClick={() => setRoleModalOpen(false)}
-                        disabled={roleModalSaving}
-                    >
-                        Batal
-                    </SecondaryButton>
-                    <PrimaryButton
-                        onClick={handleRoleModalSave}
-                        disabled={
-                            roleModalSaving ||
-                            roleModalLoading ||
-                            !roleModalCurrent ||
-                            !roleModalBidang
-                        }
-                    >
-                        {roleModalSaving ? (
-                            <CircularProgress size={20} color="inherit" />
-                        ) : (
-                            "Simpan Perubahan"
-                        )}
-                    </PrimaryButton>
-                </DialogActions>
-            </Dialog>
-            {/* Modal Tambah User - custom slide-in from right */}
-            {createModalOpen && (
-                <>
-                    {/* Overlay */}
-                    <div
-                        className="fixed inset-0 bg-black/40 z-40 transition-opacity duration-300 animate-fadein"
-                        onClick={() =>
+                        </div>
+                    </Dialog>
+                </Transition>
+
+                {/* Create Modal - Slide Over */}
+                <Transition appear show={createModalOpen} as={Fragment}>
+                    <Dialog
+                        as="div"
+                        className="relative z-50"
+                        onClose={() =>
                             !createLoading && setCreateModalOpen(false)
                         }
-                    />
-                    {/* Panel */}
-                    <div
-                        className="fixed top-0 right-0 h-full w-full max-w-2xl bg-white shadow-2xl z-50 flex flex-col transition-transform duration-300 animate-slidein rounded-l-2xl"
-                        style={{ boxShadow: "0 0 40px 0 rgba(0,0,0,0.15)" }}
                     >
-                        <div className="flex items-center justify-between px-8 py-6 border-b bg-gradient-to-r from-blue-50 to-indigo-50">
-                            <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
-                                    <FaPlus className="text-blue-600 text-lg" />
-                                </div>
-                                <div>
-                                    <div className="font-bold text-2xl text-gray-800">
-                                        Tambah User Baru
-                                    </div>
-                                    <div className="text-gray-600 text-sm">
-                                        Isi data user yang akan ditambahkan
-                                    </div>
-                                </div>
-                            </div>
-                            <button
-                                onClick={() =>
-                                    !createLoading && setCreateModalOpen(false)
-                                }
-                                className="text-gray-400 hover:text-blue-600 text-3xl font-bold px-2 transition-colors"
-                                disabled={createLoading}
-                                aria-label="Tutup"
-                            >
-                                &times;
-                            </button>
-                        </div>
-                        <div className="flex-1 overflow-y-auto px-8 py-8 bg-gradient-to-br from-slate-50 to-white">
-                            <form
-                                onSubmit={(e) => {
-                                    e.preventDefault();
-                                    handleCreateUser();
-                                }}
-                            >
-                                <div className="space-y-6">
-                                    {/* Personal Information */}
-                                    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                                        <div className="flex items-center gap-2 mb-4">
-                                            <div className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center">
-                                                <span className="text-blue-600 text-xs font-bold">
-                                                    1
-                                                </span>
-                                            </div>
-                                            <h3 className="text-lg font-semibold text-gray-800">
-                                                Informasi Pribadi
-                                            </h3>
-                                        </div>
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                            <div>
-                                                <label className="block text-gray-700 font-semibold mb-2 text-sm">
-                                                    Nama Lengkap
-                                                </label>
-                                                <input
-                                                    type="text"
-                                                    className="border border-gray-200 rounded-lg px-4 py-3 w-full focus:ring-2 focus:ring-blue-200 focus:border-blue-400 transition text-base"
-                                                    value={createName}
-                                                    onChange={(e) =>
-                                                        setCreateName(
-                                                            e.target.value
-                                                        )
-                                                    }
-                                                    required
-                                                    placeholder="Masukkan nama lengkap"
-                                                />
-                                                {createError.name && (
-                                                    <div className="text-red-500 mt-1 text-xs">
-                                                        {createError.name}
-                                                    </div>
-                                                )}
-                                            </div>
-                                            <div>
-                                                <label className="block text-gray-700 font-semibold mb-2 text-sm">
-                                                    Email
-                                                </label>
-                                                <input
-                                                    type="email"
-                                                    className="border border-gray-200 rounded-lg px-4 py-3 w-full focus:ring-2 focus:ring-blue-200 focus:border-blue-400 transition text-base"
-                                                    value={createEmail}
-                                                    onChange={(e) =>
-                                                        setCreateEmail(
-                                                            e.target.value
-                                                        )
-                                                    }
-                                                    required
-                                                    placeholder="Masukkan alamat email"
-                                                />
-                                                {createError.email && (
-                                                    <div className="text-red-500 mt-1 text-xs">
-                                                        {createError.email}
-                                                    </div>
-                                                )}
-                                            </div>
-                                        </div>
-                                    </div>
+                        <Transition.Child
+                            as={Fragment}
+                            enter="ease-in-out duration-300"
+                            enterFrom="opacity-0"
+                            enterTo="opacity-100"
+                            leave="ease-in-out duration-300"
+                            leaveFrom="opacity-100"
+                            leaveTo="opacity-0"
+                        >
+                            <div className="fixed inset-0 bg-black/30 backdrop-blur-sm" />
+                        </Transition.Child>
 
-                                    {/* Security Information */}
-                                    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                                        <div className="flex items-center gap-2 mb-4">
-                                            <div className="w-6 h-6 rounded-full bg-green-100 flex items-center justify-center">
-                                                <span className="text-green-600 text-xs font-bold">
-                                                    2
-                                                </span>
-                                            </div>
-                                            <h3 className="text-lg font-semibold text-gray-800">
-                                                Keamanan
-                                            </h3>
-                                        </div>
-                                        <div>
-                                            <label className="block text-gray-700 font-semibold mb-2 text-sm">
-                                                Password
-                                            </label>
-                                            <input
-                                                type="password"
-                                                className="border border-gray-200 rounded-lg px-4 py-3 w-full focus:ring-2 focus:ring-blue-200 focus:border-blue-400 transition text-base"
-                                                value={createPassword}
-                                                onChange={(e) =>
-                                                    setCreatePassword(
-                                                        e.target.value
-                                                    )
-                                                }
-                                                required
-                                                placeholder="Masukkan password"
-                                            />
-                                            {createError.password && (
-                                                <div className="text-red-500 mt-1 text-xs">
-                                                    {createError.password}
+                        <div className="fixed inset-0 overflow-hidden">
+                            <div className="absolute inset-0 overflow-hidden">
+                                <div className="pointer-events-none fixed inset-y-0 right-0 flex max-w-full pl-10">
+                                    <Transition.Child
+                                        as={Fragment}
+                                        enter="transform transition ease-in-out duration-300 sm:duration-300"
+                                        enterFrom="translate-x-full"
+                                        enterTo="translate-x-0"
+                                        leave="transform transition ease-in-out duration-300 sm:duration-300"
+                                        leaveFrom="translate-x-0"
+                                        leaveTo="translate-x-full"
+                                    >
+                                        <Dialog.Panel className="pointer-events-auto w-screen max-w-2xl">
+                                            <div className="flex h-full flex-col bg-white shadow-xl">
+                                                <div className="px-6 py-4 border-b border-gray-100 bg-gray-50 flex items-center justify-between">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-sky-500 via-sky-400 to-cyan-400 flex items-center justify-center text-white shadow-md">
+                                                            <FaPlus className="w-5 h-5" />
+                                                        </div>
+                                                        <div>
+                                                            <Dialog.Title className="text-lg font-bold text-gray-900">
+                                                                Tambah User Baru
+                                                            </Dialog.Title>
+                                                            <p className="text-sm text-gray-500 mt-0.5">
+                                                                Isi form berikut
+                                                                untuk
+                                                                menambahkan user
+                                                                baru.
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                    <button
+                                                        type="button"
+                                                        className="text-gray-400 hover:text-gray-500 transition-colors"
+                                                        onClick={() =>
+                                                            setCreateModalOpen(
+                                                                false,
+                                                            )
+                                                        }
+                                                        disabled={createLoading}
+                                                    >
+                                                        <FaTimes className="w-5 h-5" />
+                                                    </button>
                                                 </div>
-                                            )}
-                                        </div>
-                                    </div>
 
-                                    {/* Role and Access */}
-                                    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                                        <div className="flex items-center gap-2 mb-4">
-                                            <div className="w-6 h-6 rounded-full bg-purple-100 flex items-center justify-center">
-                                                <span className="text-purple-600 text-xs font-bold">
-                                                    3
-                                                </span>
-                                            </div>
-                                            <h3 className="text-lg font-semibold text-gray-800">
-                                                Role & Akses
-                                            </h3>
-                                        </div>
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                            <div>
-                                                <label className="block text-gray-700 font-semibold mb-2 text-sm">
-                                                    Role
-                                                </label>
-                                                <Listbox
-                                                    value={createRole}
-                                                    onChange={setCreateRole}
-                                                >
-                                                    <div className="relative">
-                                                        <Listbox.Button className="border border-gray-200 rounded-lg px-4 py-3 w-full focus:ring-2 focus:ring-blue-200 focus:border-blue-400 transition text-base bg-white text-left flex justify-between items-center">
-                                                            <span className="flex items-center gap-2">
-                                                                <FaUserShield className="text-blue-500" />
-                                                                {createRole
-                                                                    ? allRoles.find(
-                                                                          (r) =>
-                                                                              r.name ===
-                                                                              createRole
-                                                                      )?.name
-                                                                    : "Pilih Role"}
-                                                            </span>
-                                                            <span className="pointer-events-none text-gray-400 ml-2">
-                                                                <svg
-                                                                    width="20"
-                                                                    height="20"
-                                                                    fill="none"
-                                                                    viewBox="0 0 20 20"
-                                                                >
-                                                                    <path
-                                                                        d="M6 8l4 4 4-4"
-                                                                        stroke="currentColor"
-                                                                        strokeWidth="1.5"
-                                                                        strokeLinecap="round"
-                                                                        strokeLinejoin="round"
-                                                                    />
-                                                                </svg>
-                                                            </span>
-                                                        </Listbox.Button>
-                                                        <Listbox.Options className="absolute z-10 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-auto focus:outline-none">
-                                                            {allRoles.map(
-                                                                (r) => (
-                                                                    <Listbox.Option
-                                                                        key={
-                                                                            r.id
-                                                                        }
+                                                <div className="flex-1 overflow-y-auto p-6 bg-gray-50">
+                                                    <form
+                                                        onSubmit={(e) => {
+                                                            e.preventDefault();
+                                                            handleCreateUser();
+                                                        }}
+                                                        className="space-y-6"
+                                                    >
+                                                        {/* Informasi Pribadi */}
+                                                        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+                                                            <h4 className="text-base font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                                                                <span className="flex items-center justify-center w-6 h-6 rounded-full bg-blue-100 text-blue-600 text-xs font-bold">
+                                                                    1
+                                                                </span>
+                                                                Informasi
+                                                                Pribadi
+                                                            </h4>
+                                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                                <div>
+                                                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                                        Nama
+                                                                        Lengkap
+                                                                    </label>
+                                                                    <input
+                                                                        type="text"
+                                                                        required
+                                                                        className="w-full rounded-lg border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                                                                         value={
-                                                                            r.name
+                                                                            createName
                                                                         }
-                                                                        className={({
-                                                                            active,
-                                                                        }) =>
-                                                                            `cursor-pointer select-none relative px-4 py-2 ${
-                                                                                active
-                                                                                    ? "bg-blue-100 text-blue-900"
-                                                                                    : "text-gray-900"
-                                                                            }}`
+                                                                        onChange={(
+                                                                            e,
+                                                                        ) =>
+                                                                            setCreateName(
+                                                                                e
+                                                                                    .target
+                                                                                    .value,
+                                                                            )
                                                                         }
-                                                                    >
-                                                                        {({
-                                                                            selected,
-                                                                        }) => (
-                                                                            <>
-                                                                                <span
-                                                                                    className={`block pl-10 truncate ${
-                                                                                        selected
-                                                                                            ? "font-semibold"
-                                                                                            : "font-normal"
-                                                                                    }`}
-                                                                                >
-                                                                                    {
-                                                                                        r.name
-                                                                                    }
-                                                                                </span>
-                                                                                {selected ? (
-                                                                                    <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-blue-600">
-                                                                                        <FaCheck
-                                                                                            className="h-4 w-4"
-                                                                                            aria-hidden="true"
-                                                                                        />
-                                                                                    </span>
-                                                                                ) : null}
-                                                                            </>
-                                                                        )}
-                                                                    </Listbox.Option>
-                                                                )
-                                                            )}
-                                                        </Listbox.Options>
-                                                    </div>
-                                                </Listbox>
-                                                {createError.role && (
-                                                    <div className="text-red-500 mt-1 text-xs">
-                                                        {createError.role}
-                                                    </div>
-                                                )}
-                                            </div>
-                                            <div>
-                                                <label className="block text-gray-700 font-semibold mb-2 text-sm">
-                                                    Bidang
-                                                </label>
-                                                <Listbox
-                                                    value={createBidang}
-                                                    onChange={setCreateBidang}
-                                                >
-                                                    <div className="relative">
-                                                        <Listbox.Button className="border border-gray-200 rounded-lg px-4 py-3 w-full focus:ring-2 focus:ring-blue-200 focus:border-blue-400 transition text-base bg-white text-left flex justify-between items-center">
-                                                            <span>
-                                                                {createBidang ||
-                                                                    "Pilih Bidang"}
-                                                            </span>
-                                                            <span className="pointer-events-none text-gray-400 ml-2">
-                                                                <svg
-                                                                    width="20"
-                                                                    height="20"
-                                                                    fill="none"
-                                                                    viewBox="0 0 20 20"
-                                                                >
-                                                                    <path
-                                                                        d="M6 8l4 4 4-4"
-                                                                        stroke="currentColor"
-                                                                        strokeWidth="1.5"
-                                                                        strokeLinecap="round"
-                                                                        strokeLinejoin="round"
+                                                                        placeholder="Nama Lengkap"
                                                                     />
-                                                                </svg>
-                                                            </span>
-                                                        </Listbox.Button>
-                                                        <Listbox.Options className="absolute z-10 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-auto focus:outline-none">
-                                                            {BIDANG_OPTIONS.map(
-                                                                (bidang) => (
-                                                                    <Listbox.Option
-                                                                        key={
-                                                                            bidang
-                                                                        }
+                                                                    {createError.name && (
+                                                                        <p className="text-red-500 text-xs mt-1">
+                                                                            {
+                                                                                createError.name
+                                                                            }
+                                                                        </p>
+                                                                    )}
+                                                                </div>
+                                                                <div>
+                                                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                                        Email
+                                                                    </label>
+                                                                    <input
+                                                                        type="email"
+                                                                        required
+                                                                        className="w-full rounded-lg border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                                                                         value={
-                                                                            bidang
+                                                                            createEmail
                                                                         }
-                                                                        className={({
-                                                                            active,
-                                                                        }) =>
-                                                                            `cursor-pointer select-none relative px-4 py-2 ${
-                                                                                active
-                                                                                    ? "bg-blue-100 text-blue-900"
-                                                                                    : "text-gray-900"
-                                                                            }`
+                                                                        onChange={(
+                                                                            e,
+                                                                        ) =>
+                                                                            setCreateEmail(
+                                                                                e
+                                                                                    .target
+                                                                                    .value,
+                                                                            )
                                                                         }
-                                                                    >
-                                                                        {bidang}
-                                                                    </Listbox.Option>
-                                                                )
-                                                            )}
-                                                        </Listbox.Options>
-                                                    </div>
-                                                </Listbox>
-                                                {createError.bidang && (
-                                                    <div className="text-red-500 mt-1 text-xs">
-                                                        {createError.bidang}
-                                                    </div>
-                                                )}
-                                            </div>
-                                            <div>
-                                                <label className="block text-gray-700 font-semibold mb-2 text-sm">
-                                                    Wilayah
-                                                </label>
-                                                <Listbox
-                                                    value={createWilayah}
-                                                    onChange={setCreateWilayah}
-                                                >
-                                                    <div className="relative">
-                                                        <Listbox.Button className="border border-gray-200 rounded-lg px-4 py-3 w-full focus:ring-2 focus:ring-blue-200 focus:border-blue-400 transition text-base bg-white text-left flex justify-between items-center">
-                                                            <span>
-                                                                {createWilayah ||
-                                                                    "Pilih Wilayah"}
-                                                            </span>
-                                                            <span className="pointer-events-none text-gray-400 ml-2">
-                                                                <svg
-                                                                    width="20"
-                                                                    height="20"
-                                                                    fill="none"
-                                                                    viewBox="0 0 20 20"
-                                                                >
-                                                                    <path
-                                                                        d="M6 8l4 4 4-4"
-                                                                        stroke="currentColor"
-                                                                        strokeWidth="1.5"
-                                                                        strokeLinecap="round"
-                                                                        strokeLinejoin="round"
+                                                                        placeholder="email@example.com"
                                                                     />
-                                                                </svg>
-                                                            </span>
-                                                        </Listbox.Button>
-                                                        <Listbox.Options className="absolute z-10 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-auto focus:outline-none">
-                                                            {[
-                                                                "UPT Karawang",
-                                                                "ULTG Karawang",
-                                                                "ULTG Purwakarta",
-                                                            ].map((ultg) => (
-                                                                <Listbox.Option
-                                                                    key={ultg}
-                                                                    value={ultg}
-                                                                    className={({
-                                                                        active,
-                                                                    }) =>
-                                                                        `cursor-pointer select-none relative px-4 py-2 ${
-                                                                            active
-                                                                                ? "bg-blue-100 text-blue-900"
-                                                                                : "text-gray-900"
-                                                                        }`
+                                                                    {createError.email && (
+                                                                        <p className="text-red-500 text-xs mt-1">
+                                                                            {
+                                                                                createError.email
+                                                                            }
+                                                                        </p>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+                                                        </div>
+
+                                                        {/* Keamanan */}
+                                                        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+                                                            <h4 className="text-base font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                                                                <span className="flex items-center justify-center w-6 h-6 rounded-full bg-green-100 text-green-600 text-xs font-bold">
+                                                                    2
+                                                                </span>
+                                                                Keamanan
+                                                            </h4>
+                                                            <div>
+                                                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                                    Password
+                                                                </label>
+                                                                <input
+                                                                    type="password"
+                                                                    required
+                                                                    className="w-full rounded-lg border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                                                                    value={
+                                                                        createPassword
                                                                     }
-                                                                >
-                                                                    {ultg}
-                                                                </Listbox.Option>
-                                                            ))}
-                                                        </Listbox.Options>
-                                                    </div>
-                                                </Listbox>
-                                                {createError.ultg && (
-                                                    <div className="text-red-500 mt-1 text-xs">
-                                                        {createError.ultg}
-                                                    </div>
-                                                )}
-                                            </div>
-                                        </div>
-                                    </div>
+                                                                    onChange={(
+                                                                        e,
+                                                                    ) =>
+                                                                        setCreatePassword(
+                                                                            e
+                                                                                .target
+                                                                                .value,
+                                                                        )
+                                                                    }
+                                                                    placeholder="••••••••"
+                                                                />
+                                                                {createError.password && (
+                                                                    <p className="text-red-500 text-xs mt-1">
+                                                                        {
+                                                                            createError.password
+                                                                        }
+                                                                    </p>
+                                                                )}
+                                                            </div>
+                                                        </div>
 
-                                    {/* Gardu Induk Assignment */}
-                                    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                                        <div className="flex items-center gap-2 mb-4">
-                                            <div className="w-6 h-6 rounded-full bg-orange-100 flex items-center justify-center">
-                                                <span className="text-orange-600 text-xs font-bold">
-                                                    4
-                                                </span>
-                                            </div>
-                                            <h3 className="text-lg font-semibold text-gray-800">
-                                                Gardu Induk
-                                            </h3>
-                                        </div>
-                                        <div>
-                                            <label className="block text-gray-700 font-semibold mb-2 text-sm">
-                                                Pilih Gardu Induk
-                                            </label>
-                                            <ComboboxMultiple
-                                                options={garduInduks}
-                                                value={createGarduIndukIds}
-                                                onChange={
-                                                    setCreateGarduIndukIds
-                                                }
-                                            />
-                                            {createError.gardu_induk_ids && (
-                                                <div className="text-red-500 mt-1 text-xs">
-                                                    {
-                                                        createError.gardu_induk_ids
-                                                    }
+                                                        {/* Role & Akses */}
+                                                        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+                                                            <h4 className="text-base font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                                                                <span className="flex items-center justify-center w-6 h-6 rounded-full bg-purple-100 text-purple-600 text-xs font-bold">
+                                                                    3
+                                                                </span>
+                                                                Role & Akses
+                                                            </h4>
+                                                            <div className="grid grid-cols-1 gap-4">
+                                                                <div>
+                                                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                                        Role
+                                                                    </label>
+                                                                    <Listbox
+                                                                        value={
+                                                                            createRole
+                                                                        }
+                                                                        onChange={
+                                                                            setCreateRole
+                                                                        }
+                                                                    >
+                                                                        <div className="relative">
+                                                                            <Listbox.Button className="relative w-full cursor-default rounded-xl bg-white py-2.5 pl-3 pr-10 text-left border border-gray-200 focus:outline-none focus:ring-2 focus:ring-sky-500 sm:text-sm">
+                                                                                <span className="block truncate">
+                                                                                    {createRole
+                                                                                        ? allRoles.find(
+                                                                                              (
+                                                                                                  r,
+                                                                                              ) =>
+                                                                                                  r.name ===
+                                                                                                  createRole,
+                                                                                          )
+                                                                                              ?.name
+                                                                                        : "Pilih Role"}
+                                                                                </span>
+                                                                                <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2">
+                                                                                    <FaChevronRight className="h-4 w-4 text-gray-400 rotate-90" />
+                                                                                </span>
+                                                                            </Listbox.Button>
+                                                                            <Transition
+                                                                                as={
+                                                                                    Fragment
+                                                                                }
+                                                                                leave="transition ease-in duration-100"
+                                                                                leaveFrom="opacity-100"
+                                                                                leaveTo="opacity-0"
+                                                                            >
+                                                                                <Listbox.Options className="absolute z-10 mt-1 max-h-60 w-full overflow-auto rounded-xl bg-white py-1 text-base shadow-xl ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm border border-gray-100">
+                                                                                    {allRoles.map(
+                                                                                        (
+                                                                                            role,
+                                                                                        ) => (
+                                                                                            <Listbox.Option
+                                                                                                key={
+                                                                                                    role.id
+                                                                                                }
+                                                                                                className={({
+                                                                                                    active,
+                                                                                                }) =>
+                                                                                                    `relative cursor-default select-none py-2.5 pl-10 pr-4 ${
+                                                                                                        active
+                                                                                                            ? "bg-sky-50 text-sky-900"
+                                                                                                            : "text-gray-900"
+                                                                                                    }`
+                                                                                                }
+                                                                                                value={
+                                                                                                    role.name
+                                                                                                }
+                                                                                            >
+                                                                                                {({
+                                                                                                    selected,
+                                                                                                }) => (
+                                                                                                    <>
+                                                                                                        <span
+                                                                                                            className={`block truncate ${
+                                                                                                                selected
+                                                                                                                    ? "font-medium"
+                                                                                                                    : "font-normal"
+                                                                                                            }`}
+                                                                                                        >
+                                                                                                            {
+                                                                                                                role.name
+                                                                                                            }
+                                                                                                        </span>
+                                                                                                        {selected && (
+                                                                                                            <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-sky-600">
+                                                                                                                <FaCheck
+                                                                                                                    className="h-4 w-4"
+                                                                                                                    aria-hidden="true"
+                                                                                                                />
+                                                                                                            </span>
+                                                                                                        )}
+                                                                                                    </>
+                                                                                                )}
+                                                                                            </Listbox.Option>
+                                                                                        ),
+                                                                                    )}
+                                                                                </Listbox.Options>
+                                                                            </Transition>
+                                                                        </div>
+                                                                    </Listbox>
+                                                                    {createError.role && (
+                                                                        <p className="text-red-500 text-xs mt-1">
+                                                                            {
+                                                                                createError.role
+                                                                            }
+                                                                        </p>
+                                                                    )}
+                                                                </div>
+
+                                                                <div>
+                                                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                                        Bidang
+                                                                    </label>
+                                                                    <Listbox
+                                                                        value={
+                                                                            createBidang
+                                                                        }
+                                                                        onChange={
+                                                                            setCreateBidang
+                                                                        }
+                                                                    >
+                                                                        <div className="relative">
+                                                                            <Listbox.Button className="relative w-full cursor-default rounded-lg bg-white py-2 pl-3 pr-10 text-left border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 sm:text-sm">
+                                                                                <span className="block truncate">
+                                                                                    {createBidang ||
+                                                                                        "Pilih Bidang"}
+                                                                                </span>
+                                                                                <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2">
+                                                                                    <FaChevronRight className="h-4 w-4 text-gray-400 rotate-90" />
+                                                                                </span>
+                                                                            </Listbox.Button>
+                                                                            <Transition
+                                                                                as={
+                                                                                    Fragment
+                                                                                }
+                                                                                leave="transition ease-in duration-100"
+                                                                                leaveFrom="opacity-100"
+                                                                                leaveTo="opacity-0"
+                                                                            >
+                                                                                <Listbox.Options className="absolute z-10 mt-1 max-h-60 w-full overflow-auto rounded-md bg-white py-1 text-base shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm">
+                                                                                    {BIDANG_OPTIONS.map(
+                                                                                        (
+                                                                                            bidang,
+                                                                                        ) => (
+                                                                                            <Listbox.Option
+                                                                                                key={
+                                                                                                    bidang
+                                                                                                }
+                                                                                                className={({
+                                                                                                    active,
+                                                                                                }) =>
+                                                                                                    `relative cursor-default select-none py-2 pl-10 pr-4 ${
+                                                                                                        active
+                                                                                                            ? "bg-blue-100 text-blue-900"
+                                                                                                            : "text-gray-900"
+                                                                                                    }`
+                                                                                                }
+                                                                                                value={
+                                                                                                    bidang
+                                                                                                }
+                                                                                            >
+                                                                                                {({
+                                                                                                    selected,
+                                                                                                }) => (
+                                                                                                    <>
+                                                                                                        <span
+                                                                                                            className={`block truncate ${
+                                                                                                                selected
+                                                                                                                    ? "font-medium"
+                                                                                                                    : "font-normal"
+                                                                                                            }`}
+                                                                                                        >
+                                                                                                            {
+                                                                                                                bidang
+                                                                                                            }
+                                                                                                        </span>
+                                                                                                        {selected && (
+                                                                                                            <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-blue-600">
+                                                                                                                <FaCheck
+                                                                                                                    className="h-5 w-5"
+                                                                                                                    aria-hidden="true"
+                                                                                                                />
+                                                                                                            </span>
+                                                                                                        )}
+                                                                                                    </>
+                                                                                                )}
+                                                                                            </Listbox.Option>
+                                                                                        ),
+                                                                                    )}
+                                                                                </Listbox.Options>
+                                                                            </Transition>
+                                                                        </div>
+                                                                    </Listbox>
+                                                                    {createError.bidang && (
+                                                                        <p className="text-red-500 text-xs mt-1">
+                                                                            {
+                                                                                createError.bidang
+                                                                            }
+                                                                        </p>
+                                                                    )}
+                                                                </div>
+
+                                                                <div>
+                                                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                                        Wilayah
+                                                                    </label>
+                                                                    <Listbox
+                                                                        value={
+                                                                            createWilayah
+                                                                        }
+                                                                        onChange={
+                                                                            setCreateWilayah
+                                                                        }
+                                                                    >
+                                                                        <div className="relative">
+                                                                            <Listbox.Button className="relative w-full cursor-default rounded-lg bg-white py-2 pl-3 pr-10 text-left border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 sm:text-sm">
+                                                                                <span className="block truncate">
+                                                                                    {createWilayah ||
+                                                                                        "Pilih Wilayah"}
+                                                                                </span>
+                                                                                <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2">
+                                                                                    <FaChevronRight className="h-4 w-4 text-gray-400 rotate-90" />
+                                                                                </span>
+                                                                            </Listbox.Button>
+                                                                            <Transition
+                                                                                as={
+                                                                                    Fragment
+                                                                                }
+                                                                                leave="transition ease-in duration-100"
+                                                                                leaveFrom="opacity-100"
+                                                                                leaveTo="opacity-0"
+                                                                            >
+                                                                                <Listbox.Options className="absolute z-10 mt-1 max-h-60 w-full overflow-auto rounded-md bg-white py-1 text-base shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm">
+                                                                                    {WILAYAH_OPTIONS.map(
+                                                                                        (
+                                                                                            wilayah,
+                                                                                        ) => (
+                                                                                            <Listbox.Option
+                                                                                                key={
+                                                                                                    wilayah
+                                                                                                }
+                                                                                                className={({
+                                                                                                    active,
+                                                                                                }) =>
+                                                                                                    `relative cursor-default select-none py-2 pl-10 pr-4 ${
+                                                                                                        active
+                                                                                                            ? "bg-blue-100 text-blue-900"
+                                                                                                            : "text-gray-900"
+                                                                                                    }`
+                                                                                                }
+                                                                                                value={
+                                                                                                    wilayah
+                                                                                                }
+                                                                                            >
+                                                                                                {({
+                                                                                                    selected,
+                                                                                                }) => (
+                                                                                                    <>
+                                                                                                        <span
+                                                                                                            className={`block truncate ${
+                                                                                                                selected
+                                                                                                                    ? "font-medium"
+                                                                                                                    : "font-normal"
+                                                                                                            }`}
+                                                                                                        >
+                                                                                                            {
+                                                                                                                wilayah
+                                                                                                            }
+                                                                                                        </span>
+                                                                                                        {selected && (
+                                                                                                            <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-blue-600">
+                                                                                                                <FaCheck
+                                                                                                                    className="h-5 w-5"
+                                                                                                                    aria-hidden="true"
+                                                                                                                />
+                                                                                                            </span>
+                                                                                                        )}
+                                                                                                    </>
+                                                                                                )}
+                                                                                            </Listbox.Option>
+                                                                                        ),
+                                                                                    )}
+                                                                                </Listbox.Options>
+                                                                            </Transition>
+                                                                        </div>
+                                                                    </Listbox>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+
+                                                        {/* Gardu Induk */}
+                                                        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+                                                            <h4 className="text-base font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                                                                <span className="flex items-center justify-center w-6 h-6 rounded-full bg-orange-100 text-orange-600 text-xs font-bold">
+                                                                    4
+                                                                </span>
+                                                                Gardu Induk
+                                                            </h4>
+                                                            <div>
+                                                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                                    Pilih Gardu
+                                                                    Induk
+                                                                </label>
+                                                                <ComboboxMultiple
+                                                                    options={
+                                                                        garduInduks
+                                                                    }
+                                                                    value={
+                                                                        createGarduIndukIds
+                                                                    }
+                                                                    onChange={
+                                                                        setCreateGarduIndukIds
+                                                                    }
+                                                                />
+                                                            </div>
+                                                        </div>
+                                                    </form>
                                                 </div>
-                                            )}
-                                        </div>
-                                    </div>
-                                </div>
-                            </form>
-                        </div>
-                        <div className="border-t px-8 py-6 flex justify-end gap-3 bg-white rounded-b-2xl">
-                            <SecondaryButton
-                                type="button"
-                                onClick={() => setCreateModalOpen(false)}
-                                className="px-5 py-2 rounded-lg border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 font-semibold transition disabled:opacity-50"
-                                disabled={createLoading}
-                            >
-                                Batal
-                            </SecondaryButton>
-                            <PrimaryButton
-                                onClick={handleCreateUser}
-                                disabled={
-                                    createLoading ||
-                                    !createName ||
-                                    !createEmail ||
-                                    !createRole ||
-                                    !createBidang
-                                }
-                            >
-                                {createLoading ? (
-                                    <CircularProgress
-                                        size={20}
-                                        color="inherit"
-                                    />
-                                ) : (
-                                    "Buat User"
-                                )}
-                            </PrimaryButton>
-                        </div>
-                    </div>
-                    {/* Animations */}
-                    <style>{`
-                        @keyframes slidein {
-                            from { transform: translateX(100%); }
-                            to { transform: translateX(0); }
-                        }
-                        .animate-slidein { animation: slidein 0.3s cubic-bezier(.4,0,.2,1); }
-                        @keyframes fadein {
-                            from { opacity: 0; }
-                            to { opacity: 1; }
-                        }
-                        .animate-fadein { animation: fadein 0.2s cubic-bezier(.4,0,.2,1); }
-                    `}</style>
-                </>
-            )}
-            {/* Delete Confirmation Modal */}
-            <Dialog
-                open={deleteModalOpen}
-                onClose={() => !deleteLoading && setDeleteModalOpen(false)}
-                maxWidth="xs"
-                fullWidth
-            >
-                <DialogTitle className="font-bold text-lg text-gray-800 border-b">
-                    Konfirmasi Hapus User
-                </DialogTitle>
-                <DialogContent className="py-6">
-                    <div className="flex items-center pt-4 gap-4 mb-4">
-                        <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center">
-                            <FaTrash className="text-red-600 text-xl" />
-                        </div>
-                        <div>
-                            <h3 className="text-lg font-semibold text-gray-800">
-                                Hapus User
-                            </h3>
-                            <p className="text-gray-600 text-sm">
-                                Apakah Anda yakin ingin menghapus user ini?
-                            </p>
-                        </div>
-                    </div>
-                    <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                        <div className="flex items-center gap-3">
-                            {deleteUser?.foto_profil ? (
-                                <img
-                                    src={deleteUser.foto_profil}
-                                    alt={deleteUser.name}
-                                    className="h-10 w-10 rounded-full object-cover border border-red-200"
-                                />
-                            ) : (
-                                <div className="h-10 w-10 rounded-full bg-gradient-to-br from-red-200 to-red-100 flex items-center justify-center text-red-700 font-bold text-lg border border-red-100">
-                                    <span>
-                                        {deleteUser?.name
-                                            ?.split(" ")
-                                            .map((n) => n[0])
-                                            .join("")
-                                            .substring(0, 2)
-                                            .toUpperCase()}
-                                    </span>
-                                </div>
-                            )}
-                            <div>
-                                <div className="font-semibold text-gray-800">
-                                    {deleteUser?.name}
-                                </div>
-                                <div className="text-sm text-gray-600">
-                                    {deleteUser?.email}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                        <div className="flex items-start gap-2">
-                            <svg
-                                className="w-5 h-5 text-yellow-600 mt-0.5 flex-shrink-0"
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
-                            >
-                                <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth={2}
-                                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"
-                                />
-                            </svg>
-                            <div className="text-sm text-yellow-700">
-                                <p className="font-medium">Peringatan:</p>
-                                <p className="mt-1">
-                                    Tindakan ini tidak dapat dibatalkan. Semua
-                                    data user akan dihapus secara permanen.
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                </DialogContent>
-                <DialogActions className="border-t px-6 py-4 flex justify-between bg-slate-50">
-                    <SecondaryButton
-                        type="button"
-                        onClick={() => setDeleteModalOpen(false)}
-                        disabled={deleteLoading}
-                    >
-                        Batal
-                    </SecondaryButton>
-                    <DangerButton
-                        type="button"
-                        onClick={handleDeleteUser}
-                        disabled={deleteLoading}
-                    >
-                        {deleteLoading ? (
-                            <CircularProgress size={20} color="inherit" />
-                        ) : (
-                            "Hapus User"
-                        )}
-                    </DangerButton>
-                </DialogActions>
-            </Dialog>
-        </>
-    );
-}
 
-function ComboboxMultiple({ options, value, onChange }) {
-    const [query, setQuery] = useState("");
-    const filtered =
-        query === ""
-            ? options
-            : options.filter((o) =>
-                  o.name.toLowerCase().includes(query.toLowerCase())
-              );
-    return (
-        <Combobox value={value} onChange={onChange} multiple>
-            <div className="relative">
-                <div className="flex flex-wrap gap-1 mb-1">
-                    {value.map((id) => {
-                        const opt = options.find((o) => o.id === id);
-                        return (
-                            <span
-                                key={id}
-                                className="bg-blue-100 text-blue-700 px-2 py-1 mb-2 transition-all ease-in-out rounded text-xs font-medium"
-                            >
-                                {opt ? opt.name : id}
-                            </span>
-                        );
-                    })}
-                </div>
-                <Combobox.Input
-                    className="border shadow-md border-gray-200 rounded-lg px-4 py-2 w-full focus:ring-2 focus:ring-blue-200 focus:border-blue-400 transition text-base bg-white"
-                    onChange={(e) => setQuery(e.target.value)}
-                    displayValue={() => ""}
-                    placeholder="Cari Gardu Induk..."
-                />
-                <Combobox.Options className="absolute z-10 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-auto focus:outline-none">
-                    {filtered.length === 0 ? (
-                        <div className="px-4 py-2 text-gray-400">
-                            Tidak ada data
+                                                <div className="bg-white px-6 py-4 flex justify-end gap-3 border-t border-gray-100">
+                                                    <button
+                                                        type="button"
+                                                        className="inline-flex justify-center rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+                                                        onClick={() =>
+                                                            setCreateModalOpen(
+                                                                false,
+                                                            )
+                                                        }
+                                                        disabled={createLoading}
+                                                    >
+                                                        Batal
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        className="inline-flex justify-center rounded-lg border border-transparent bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:opacity-50"
+                                                        onClick={
+                                                            handleCreateUser
+                                                        }
+                                                        disabled={createLoading}
+                                                    >
+                                                        {createLoading ? (
+                                                            <>
+                                                                <Spinner
+                                                                    size={16}
+                                                                    color="text-white"
+                                                                />
+                                                                <span className="ml-2">
+                                                                    Memproses...
+                                                                </span>
+                                                            </>
+                                                        ) : (
+                                                            "Buat User"
+                                                        )}
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </Dialog.Panel>
+                                    </Transition.Child>
+                                </div>
+                            </div>
                         </div>
-                    ) : (
-                        filtered.map((o) => (
-                            <Combobox.Option
-                                key={o.id}
-                                value={o.id}
-                                className={({ active, selected }) =>
-                                    `cursor-pointer text-sm select-none relative px-4 py-2 ${
-                                        active
-                                            ? "bg-blue-100 text-blue-900"
-                                            : "text-gray-900"
-                                    } ${
-                                        selected
-                                            ? "font-semibold bg-blue-50"
-                                            : ""
-                                    }`
-                                }
-                            >
-                                {({ selected }) => (
-                                    <span className="flex items-center">
-                                        {o.name}{" "}
-                                        <span className="text-xs text-gray-400 ml-2">
-                                            ({o.ultg})
-                                        </span>
-                                        {selected && (
-                                            <span className="ml-auto flex items-center text-blue-600">
-                                                <FaCheck
-                                                    className="h-4 w-4"
-                                                    aria-hidden="true"
-                                                />
-                                            </span>
-                                        )}
-                                    </span>
-                                )}
-                            </Combobox.Option>
-                        ))
-                    )}
-                </Combobox.Options>
-            </div>
-        </Combobox>
+                    </Dialog>
+                </Transition>
+
+                {/* Delete Modal */}
+                <Transition appear show={deleteModalOpen} as={Fragment}>
+                    <Dialog
+                        as="div"
+                        className="relative z-50"
+                        onClose={() =>
+                            !deleteLoading && setDeleteModalOpen(false)
+                        }
+                    >
+                        <Transition.Child
+                            as={Fragment}
+                            enter="ease-out duration-300"
+                            enterFrom="opacity-0"
+                            enterTo="opacity-100"
+                            leave="ease-in duration-200"
+                            leaveFrom="opacity-100"
+                            leaveTo="opacity-0"
+                        >
+                            <div className="fixed inset-0 bg-black/25 backdrop-blur-sm" />
+                        </Transition.Child>
+
+                        <div className="fixed inset-0 overflow-y-auto">
+                            <div className="flex min-h-full items-center justify-center p-4 text-center">
+                                <Transition.Child
+                                    as={Fragment}
+                                    enter="ease-out duration-300"
+                                    enterFrom="opacity-0 scale-95"
+                                    enterTo="opacity-100 scale-100"
+                                    leave="ease-in duration-200"
+                                    leaveFrom="opacity-100 scale-100"
+                                    leaveTo="opacity-0 scale-95"
+                                >
+                                    <Dialog.Panel className="w-full max-w-md transform overflow-hidden rounded-2xl bg-white/95 backdrop-blur-sm text-left align-middle shadow-xl transition-all border border-gray-100">
+                                        <div className="px-6 py-4 border-b border-gray-100 bg-gray-50 flex items-center justify-between">
+                                            <div className="flex items-center gap-3">
+                                                <div className="h-10 w-10 rounded-xl bg-red-100 flex items-center justify-center text-red-600 shadow-sm">
+                                                    <FaTrash className="w-5 h-5" />
+                                                </div>
+                                                <div>
+                                                    <Dialog.Title className="text-lg font-bold text-gray-900">
+                                                        Hapus User
+                                                    </Dialog.Title>
+                                                    <p className="text-sm text-gray-500 mt-0.5">
+                                                        Konfirmasi penghapusan
+                                                        data.
+                                                    </p>
+                                                </div>
+                                            </div>
+                                            <button
+                                                type="button"
+                                                onClick={() =>
+                                                    !deleteLoading &&
+                                                    setDeleteModalOpen(false)
+                                                }
+                                                className="text-gray-400 hover:text-gray-500 transition-colors"
+                                                disabled={deleteLoading}
+                                            >
+                                                <FaTimes className="w-5 h-5" />
+                                            </button>
+                                        </div>
+
+                                        <div className="p-6">
+                                            <p className="text-gray-600">
+                                                Apakah Anda yakin ingin
+                                                menghapus user{" "}
+                                                <span className="font-bold text-gray-900">
+                                                    {deleteUser?.name}
+                                                </span>
+                                                ? Data yang dihapus tidak dapat
+                                                dikembalikan.
+                                            </p>
+                                        </div>
+
+                                        <div className="bg-gray-50 px-6 py-4 flex justify-end gap-3 border-t border-gray-100">
+                                            <button
+                                                type="button"
+                                                className="inline-flex justify-center rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+                                                onClick={() =>
+                                                    setDeleteModalOpen(false)
+                                                }
+                                                disabled={deleteLoading}
+                                            >
+                                                Batal
+                                            </button>
+                                            <button
+                                                type="button"
+                                                className="inline-flex justify-center rounded-lg border border-transparent bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2 disabled:opacity-50"
+                                                onClick={handleDeleteUser}
+                                                disabled={deleteLoading}
+                                            >
+                                                {deleteLoading ? (
+                                                    <>
+                                                        <Spinner
+                                                            size={16}
+                                                            color="text-white"
+                                                        />
+                                                        <span className="ml-2">
+                                                            Menghapus...
+                                                        </span>
+                                                    </>
+                                                ) : (
+                                                    "Hapus User"
+                                                )}
+                                            </button>
+                                        </div>
+                                    </Dialog.Panel>
+                                </Transition.Child>
+                            </div>
+                        </div>
+                    </Dialog>
+                </Transition>
+            </DashboardLayout>
+        </>
     );
 }

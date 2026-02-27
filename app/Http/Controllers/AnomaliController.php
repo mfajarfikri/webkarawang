@@ -9,6 +9,7 @@ use App\Models\Kategori;
 use App\Models\GarduInduk;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 use Maatwebsite\Excel\Facades\Excel;
@@ -221,17 +222,30 @@ class AnomaliController extends Controller
         }
     }
 
-    public function exportPdf(Anomali $anomali)
+    public function exportPdf(Request $request, Anomali $anomali)
     {
         try {
-            $anomali->load(['gardu_induk', 'kategori', 'user']);
+            $anomali->load(['gardu_induk', 'kategori', 'user', 'approvedBy']);
 
             $pdf = Pdf::loadView('exports.pdf', ['anomali' => $anomali])
                 ->setPaper('a4', 'portrait');
 
             $filename = 'anomali_' . preg_replace('/\s+/', '_', $anomali->judul) . '.pdf';
 
-            return $pdf->download($filename);
+            $etag = '"' . sha1($anomali->id . '|' . optional($anomali->updated_at)->timestamp) . '"';
+            $headers = [
+                'Content-Type' => 'application/pdf',
+                'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+                'Cache-Control' => 'private, max-age=3600',
+                'ETag' => $etag,
+                'X-Content-Type-Options' => 'nosniff',
+            ];
+
+            if ($request->headers->get('If-None-Match') === $etag) {
+                return response('', 304, $headers);
+            }
+
+            return response($pdf->output(), 200, $headers);
             // return view('exports.pdf', compact('anomali'));
         } catch (\Exception $e) {
             Log::error('Export PDF error: ' . $e->getMessage(), [
@@ -347,6 +361,7 @@ class AnomaliController extends Controller
         $validator = Validator::make($request->all(), [
             'tanggal_mulai' => 'required|date',
             'tanggal_selesai' => 'required|date|after_or_equal:tanggal_mulai',
+            'job_type' => 'nullable|string|max:100',
         ], [
             'tanggal_mulai.required' => 'Tanggal mulai harus diisi',
             'tanggal_mulai.date' => 'Format tanggal mulai tidak valid',
@@ -367,6 +382,7 @@ class AnomaliController extends Controller
             $anomali->update([
                 'tanggal_mulai' => $request->tanggal_mulai,
                 'tanggal_selesai' => $request->tanggal_selesai,
+                'job_type' => $request->job_type,
             ]);
 
             // Membuat timeline entry untuk penjadwalan
@@ -375,7 +391,7 @@ class AnomaliController extends Controller
                 'description' => 'Anomali telah dijadwalkan untuk dikerjakan',
                 'old_value' => $anomali->tanggal_mulai ? $anomali->tanggal_mulai . ' - ' . $anomali->tanggal_selesai : null,
                 'new_value' => $request->tanggal_mulai . ' - ' . $request->tanggal_selesai,
-                'comment' => 'Penjadwalan pekerjaan anomali dari tanggal ' . date('d mmmm Y', strtotime($request->tanggal_mulai)) . ' sampai ' . date('d MMM YYYY', strtotime($request->tanggal_selesai)),
+                'comment' => 'Penjadwalan pekerjaan anomali dari tanggal ' . date('d F Y', strtotime($request->tanggal_mulai)) . ' sampai ' . date('d F Y', strtotime($request->tanggal_selesai)),
                 'user_id' => Auth::user()->id,
             ]);
 
@@ -388,6 +404,135 @@ class AnomaliController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Gagal memperbarui schedule: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function closeForm(Anomali $anomali)
+    {
+        $anomali->load(['gardu_induk', 'kategori', 'user', 'assignedUser', 'approvedBy']);
+        return Inertia::render('Dashboard/Anomali/Close', [
+            'anomalis' => $anomali
+        ]);
+    }
+
+    public function closeStore(Request $request, Anomali $anomali)
+    {
+        if ($anomali->status === 'Close') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Anomali sudah ditutup.'
+            ], 422);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'tanggal_pekerjaan' => 'required|date|before_or_equal:today',
+            'lampiran_pdf' => 'required|file|mimes:pdf|max:5120',
+        ], [
+            'tanggal_pekerjaan.required' => 'Tanggal pekerjaan harus diisi',
+            'tanggal_pekerjaan.date' => 'Format tanggal pekerjaan tidak valid',
+            'tanggal_pekerjaan.before_or_equal' => 'Tanggal pekerjaan tidak boleh melebihi hari ini',
+            'lampiran_pdf.required' => 'File PDF wajib diunggah',
+            'lampiran_pdf.file' => 'Lampiran harus berupa file',
+            'lampiran_pdf.mimes' => 'Lampiran harus berformat PDF',
+            'lampiran_pdf.max' => 'Ukuran file PDF maksimal 5MB',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validasi gagal',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        try {
+            $tanggalPekerjaan = $request->input('tanggal_pekerjaan');
+            $pdfFile = $request->file('lampiran_pdf');
+
+            $result = DB::transaction(function () use ($anomali, $tanggalPekerjaan, $pdfFile) {
+                $pdfPath = $pdfFile->store('Lampiran Penutupan Anomali', 'public');
+
+                DB::table('anomali_closures')->insert([
+                    'anomali_id' => $anomali->id,
+                    'tanggal_pekerjaan' => $tanggalPekerjaan,
+                    'lampiran_pdf_path' => $pdfPath,
+                    'created_by' => Auth::id(),
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+
+                $oldStatus = $anomali->status;
+                $anomali->status = 'Close';
+                $anomali->tanggal_selesai = $tanggalPekerjaan;
+                $anomali->save();
+
+                $timelineController = new AnomaliTimelineController();
+                $timelineController->addStatusChangeEntry(
+                    $anomali->id,
+                    $oldStatus,
+                    'Close',
+                    'Anomali ditutup pada tanggal ' . date('d F Y', strtotime($tanggalPekerjaan)),
+                );
+                $timelineController->addCompletionEntry(
+                    $anomali->id,
+                    'Penanganan anomali selesai pada tanggal ' . date('d F Y', strtotime($tanggalPekerjaan)),
+                );
+
+                return [
+                    'pdf_path' => $pdfPath,
+                ];
+            });
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Anomali berhasil ditutup',
+                'redirect' => route('dashboard.anomali.index'),
+                'data' => $result,
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal menutup anomali: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Remove the schedule of the specified resource.
+     */
+    public function deleteSchedule(Anomali $anomali)
+    {
+        try {
+            $oldValue = $anomali->tanggal_mulai && $anomali->tanggal_selesai
+                ? $anomali->tanggal_mulai . ' - ' . $anomali->tanggal_selesai
+                : null;
+
+            $anomali->update([
+                'tanggal_mulai' => null,
+                'tanggal_selesai' => null,
+            ]);
+
+            if ($oldValue) {
+                $anomali->timelines()->create([
+                    'event_type' => 'schedule_deleted',
+                    'description' => 'Jadwal pekerjaan anomali dihapus',
+                    'old_value' => $oldValue,
+                    'new_value' => null,
+                    'comment' => 'Jadwal pekerjaan anomali dihapus oleh ' . Auth::user()->name,
+                    'user_id' => Auth::user()->id,
+                ]);
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Jadwal pekerjaan berhasil dihapus',
+                'redirect' => route('dashboard.anomali.schedule', $anomali->slug),
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal menghapus jadwal: ' . $e->getMessage(),
             ], 500);
         }
     }

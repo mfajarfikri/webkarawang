@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Berita;
 use App\Models\GarduInduk;
+use App\Models\CompanyProfile;
 use Inertia\Inertia;
 
 class HomeController extends Controller
@@ -11,7 +12,17 @@ class HomeController extends Controller
     public function index()
     {
         return Inertia::render('Home/Home', [
-            'berita' => Berita::with('user')->latest()->get()
+            'berita' => Berita::with('user')->where('enabled', true)->latest()->get()
+        ]);
+    }
+
+    public function profilPerusahaan()
+    {
+        $profile = CompanyProfile::query()->orderBy('id')->first();
+        $published = $profile && $profile->status === 'published' ? $profile->published_data : null;
+
+        return Inertia::render('Home/ProfilPerusahaan', [
+            'publishedProfile' => $published,
         ]);
     }
 

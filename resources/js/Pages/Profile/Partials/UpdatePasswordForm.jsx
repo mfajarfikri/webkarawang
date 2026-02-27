@@ -46,14 +46,14 @@ export default function UpdatePasswordForm({ className = "" }) {
 
     return (
         <section className={className}>
-            <header>
-                <h2 className="text-lg font-medium text-gray-900">
-                    Perbarui Kata Sandi
+            <header className="space-y-1">
+                <h2 className="text-base md:text-lg font-semibold text-gray-900">
+                    Perbarui kata sandi
                 </h2>
 
-                <p className="mt-1 text-sm text-gray-600">
-                    Pastikan akun Anda menggunakan kata sandi yang panjang dan
-                    acak agar tetap aman.
+                <p className="text-xs md:text-sm text-gray-600">
+                    Gunakan kata sandi yang kuat dan unik untuk menjaga keamanan
+                    akun Anda.
                 </p>
             </header>
 
@@ -121,8 +121,10 @@ export default function UpdatePasswordForm({ className = "" }) {
                     />
                 </div>
 
-                <div className="flex items-center gap-4">
-                    <PrimaryButton disabled={processing}>Save</PrimaryButton>
+                <div className="flex flex-col sm:flex-row items-center gap-3">
+                    <PrimaryButton disabled={processing}>
+                        Simpan
+                    </PrimaryButton>
 
                     <Transition
                         show={recentlySuccessful}
@@ -131,7 +133,7 @@ export default function UpdatePasswordForm({ className = "" }) {
                         leave="transition ease-in-out"
                         leaveTo="opacity-0"
                     >
-                        <p className="text-sm text-gray-600">Saved.</p>
+                        <p className="text-sm text-gray-600">Tersimpan.</p>
                     </Transition>
                 </div>
             </form>

@@ -1,5 +1,6 @@
 import DashboardLayout from "@/Layouts/DashboardLayout";
 import { usePage } from "@inertiajs/react";
+import { FaShieldAlt, FaKey } from "react-icons/fa";
 
 export default function Permission() {
     const { permissions } = usePage().props;
@@ -8,30 +9,62 @@ export default function Permission() {
 
     return (
         <DashboardLayout title="Permission">
-            <div className="min-h-screen bg-gray-50 py-8">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    {/* Header Section */}
-                    <div className="mb-8">
-                        <h1 className="text-3xl font-bold text-gray-900 mb-2">
-                            Daftar Permission Sistem
-                        </h1>
-                        <p className="text-gray-600">
-                            Berikut adalah daftar permission yang tersedia dalam
-                            sistem
-                        </p>
+            <div className="min-h-screen bg-white rounded-2xl py-10">
+                <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-8">
+                    <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
+                        <div className="flex items-center gap-3">
+                            <div className="h-12 w-12 rounded-2xl bg-gradient-to-br from-sky-500 via-sky-400 to-cyan-400 flex items-center justify-center text-white shadow-md">
+                                <FaShieldAlt className="w-6 h-6" />
+                            </div>
+                            <div>
+                                <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
+                                    Daftar Permission Sistem
+                                </h1>
+                                <p className="text-sm md:text-base text-gray-600 mt-1">
+                                    Kontrol akses fitur aplikasi sesuai standar
+                                    keamanan PLN.
+                                </p>
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-3">
+                            <div className="hidden sm:flex items-center gap-2 px-3 py-2 rounded-xl bg-white/80 backdrop-blur border border-sky-100 shadow-sm">
+                                <div className="flex h-7 w-7 items-center justify-center rounded-full bg-sky-50 text-sky-600">
+                                    <FaKey className="w-3.5 h-3.5" />
+                                </div>
+                                <div className="text-xs text-gray-600">
+                                    <div className="font-semibold text-gray-800">
+                                        {permissions ? permissions.length : 0}{" "}
+                                        permission
+                                    </div>
+                                    <div>
+                                        Terintegrasi dengan role & akses menu
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
-                    {/* Permissions Table Card */}
-                    <div className="bg-white rounded-xl shadow-sm border border-gray-200">
-                        <div className="px-6 py-4 border-b border-gray-200">
-                            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
-                                <h2 className="text-lg font-semibold text-gray-900 mb-2 sm:mb-0">
-                                    Permission Sistem
-                                </h2>
-                                <div className="text-sm text-gray-500">
-                                    Total:{" "}
-                                    {permissions ? permissions.length : 0}{" "}
-                                    permission
+                    <div className="bg-white/95 backdrop-blur-sm rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                        <div className="px-6 py-4 border-b border-gray-100 bg-gradient-to-r from-gray-50/80 via-white to-gray-50/80">
+                            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                                <div>
+                                    <h2 className="text-base md:text-lg font-semibold text-gray-900">
+                                        Permission Sistem
+                                    </h2>
+                                    <p className="text-xs md:text-sm text-gray-500 mt-0.5">
+                                        Monitoring hak akses modul dan fitur
+                                        aplikasi.
+                                    </p>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <span className="inline-flex items-center rounded-full bg-sky-50 px-3 py-1 text-xs font-medium text-sky-700 border border-sky-100">
+                                        Total permission:{" "}
+                                        <span className="ml-1 font-semibold">
+                                            {permissions
+                                                ? permissions.length
+                                                : 0}
+                                        </span>
+                                    </span>
                                 </div>
                             </div>
                         </div>
@@ -40,47 +73,47 @@ export default function Permission() {
                             {permissions && permissions.length > 0 ? (
                                 <div className="overflow-x-auto">
                                     <table className="min-w-full divide-y divide-gray-200">
-                                        <thead className="bg-gray-50">
+                                        <thead className="bg-gray-50/80">
                                             <tr>
-                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wide">
                                                     No
                                                 </th>
-                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wide">
                                                     Nama Permission
                                                 </th>
-                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wide">
                                                     Keterangan
                                                 </th>
-                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wide">
                                                     Guard Name
                                                 </th>
                                             </tr>
                                         </thead>
-                                        <tbody className="bg-white divide-y divide-gray-200">
+                                        <tbody className="bg-white divide-y divide-gray-100">
                                             {permissions.map(
                                                 (permission, index) => (
                                                     <tr
                                                         key={permission.id}
-                                                        className="hover:bg-gray-50 transition-colors duration-150"
+                                                        className="hover:bg-sky-50/70 transition-colors"
                                                     >
-                                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                        <td className="px-6 py-4 whitespace-nowrap text-xs md:text-sm text-gray-500">
                                                             {index + 1}
                                                         </td>
                                                         <td className="px-6 py-4 whitespace-nowrap">
-                                                            <div className="text-sm font-medium text-gray-900">
+                                                            <div className="text-sm font-semibold text-gray-900">
                                                                 {
                                                                     permission.name
                                                                 }
                                                             </div>
                                                         </td>
                                                         <td className="px-6 py-4">
-                                                            <div className="text-sm text-gray-600 max-w-xs">
+                                                            <div className="text-xs md:text-sm text-gray-600 max-w-xs">
                                                                 {permission.description ||
                                                                     "Tidak ada keterangan"}
                                                             </div>
                                                         </td>
                                                         <td className="px-6 py-4 whitespace-nowrap">
-                                                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-sky-50 text-sky-700 border border-sky-200">
                                                                 {permission.guard_name ||
                                                                     "web"}
                                                             </span>
@@ -92,26 +125,17 @@ export default function Permission() {
                                     </table>
                                 </div>
                             ) : (
-                                <div className="text-center py-12">
-                                    <svg
-                                        className="mx-auto h-12 w-12 text-gray-400"
-                                        fill="none"
-                                        viewBox="0 0 24 24"
-                                        stroke="currentColor"
-                                    >
-                                        <path
-                                            strokeLinecap="round"
-                                            strokeLinejoin="round"
-                                            strokeWidth={2}
-                                            d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
-                                        />
-                                    </svg>
-                                    <h3 className="mt-2 text-sm font-medium text-gray-900">
-                                        Belum ada permission
+                                <div className="px-6 py-12 text-center">
+                                    <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-sky-50 text-sky-500">
+                                        <FaShieldAlt className="w-8 h-8" />
+                                    </div>
+                                    <h3 className="mt-4 text-base font-semibold text-gray-900">
+                                        Belum ada permission terdaftar
                                     </h3>
-                                    <p className="mt-1 text-sm text-gray-500">
-                                        Tidak ada permission yang tersedia dalam
-                                        sistem.
+                                    <p className="mt-2 text-sm text-gray-500 max-w-md mx-auto">
+                                        Tambahkan permission melalui modul
+                                        manajemen akses untuk mengatur hak user
+                                        terhadap fitur aplikasi.
                                     </p>
                                 </div>
                             )}

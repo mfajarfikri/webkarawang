@@ -6,7 +6,6 @@ use App\Models\User;
 use App\Models\Berita;
 use App\Models\Anomali;
 // use Illuminate\Database\Console\Seeds\WithoutModelEvents;
-use App\Models\GarduInduk;
 use Illuminate\Database\Seeder;
 
 class DatabaseSeeder extends Seeder
@@ -29,11 +28,7 @@ class DatabaseSeeder extends Seeder
             KategoriSeeder::class,
             GarduIndukSeeder::class
         ]);
-        // Anomali::factory(50)->create();
+        Anomali::factory(50)->create();
         Berita::factory(10)->create();
-        // Kategori::factory(5)->create();
-        // User::factory(10)->create();
-        // GarduInduk::factory(18)->create();
-        // Anomali::factory(50)->create();
     }
 }

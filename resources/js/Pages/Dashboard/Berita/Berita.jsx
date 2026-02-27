@@ -1,6 +1,12 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, {
+    useState,
+    useEffect,
+    useCallback,
+    useMemo,
+    useRef,
+} from "react";
 import DashboardLayout from "@/Layouts/DashboardLayout";
-import { Head, Link, router, usePage } from "@inertiajs/react";
+import { Head, Link, usePage } from "@inertiajs/react";
 import {
     FaPlus,
     FaEdit,
@@ -10,29 +16,33 @@ import {
     FaSpinner,
     FaNewspaper,
     FaEllipsisV,
-    FaArrowLeft,
-    FaArrowRight,
     FaTimes,
     FaCalendar,
-    FaClock,
     FaChevronLeft,
     FaChevronRight,
+    FaThLarge,
+    FaList,
+    FaTable,
+    FaExclamationTriangle,
+    FaInbox,
 } from "react-icons/fa";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
 import { useSnackbar } from "notistack";
+import { generateExcerpt } from "@/utils/editorParser";
 import axios from "axios";
 
-export default function Berita({ berita: initialBerita, response }) {
+export default function Berita({ berita: initialBerita }) {
     const [searchTerm, setSearchTerm] = useState("");
     const [berita, setBerita] = useState(initialBerita || "");
     const [isLoading, setIsLoading] = useState(false);
+    const [loadError, setLoadError] = useState("");
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [beritaToDelete, setBeritaToDelete] = useState(null);
     const { enqueueSnackbar } = useSnackbar();
     const { csrf_token } = usePage().props;
     const [actionDropdown, setActionDropdown] = useState(null);
-    const { flash } = usePage().props;
+    const [viewMode, setViewMode] = useState("grid");
     const [pagination, setPagination] = useState({
         current_page: initialBerita?.current_page || 1,
         last_page: initialBerita?.last_page || 1,
@@ -41,6 +51,11 @@ export default function Berita({ berita: initialBerita, response }) {
         from: initialBerita?.from || 0,
         to: initialBerita?.to || 0,
     });
+
+    const deleteTitleId = useMemo(() => "delete-berita-title", []);
+    const deleteDescId = useMemo(() => "delete-berita-desc", []);
+    const statusId = useMemo(() => "berita-status", []);
+    const tablistRef = useRef(null);
 
     // Fungsi debounce untuk menunda eksekusi fungsi
     const debounce = (func, delay) => {
@@ -59,7 +74,8 @@ export default function Berita({ berita: initialBerita, response }) {
 
     // Fungsi untuk reset pencarian
     const resetSearch = () => {
-        document.getElementById("search-input").value = "";
+        const inputElement = document.getElementById("search-input");
+        if (inputElement) inputElement.value = "";
         setSearchTerm("");
     };
 
@@ -67,9 +83,10 @@ export default function Berita({ berita: initialBerita, response }) {
     const fetchBerita = useCallback(
         async (page = 1) => {
             setIsLoading(true);
+            setLoadError("");
             try {
                 const response = await axios.get(
-                    route("api.berita.index", { page })
+                    route("api.berita.index", { page }),
                 );
                 setBerita(response.data.data);
                 setPagination({
@@ -82,6 +99,9 @@ export default function Berita({ berita: initialBerita, response }) {
                 });
             } catch (error) {
                 console.error("Error fetching berita:", error);
+                setLoadError(
+                    error.response?.data?.message || "Gagal memuat data berita",
+                );
                 enqueueSnackbar("Gagal memuat data berita", {
                     variant: "error",
                     anchorOrigin: {
@@ -93,7 +113,7 @@ export default function Berita({ berita: initialBerita, response }) {
                 setIsLoading(false);
             }
         },
-        [enqueueSnackbar]
+        [enqueueSnackbar],
     );
 
     // Handle page change
@@ -114,9 +134,215 @@ export default function Berita({ berita: initialBerita, response }) {
                   item.judul.toLowerCase().includes(searchTerm.toLowerCase()) ||
                   item.user.name
                       .toLowerCase()
-                      .includes(searchTerm.toLowerCase())
+                      .includes(searchTerm.toLowerCase()) ||
+                  item.tema?.nama
+                      ?.toLowerCase()
+                      .includes(searchTerm.toLowerCase()),
           ) || []
         : berita?.data || [];
+
+    const hasData = filteredBerita.length > 0;
+
+    // Perubahan signifikan: helper aman untuk thumbnail (mencegah JSON.parse error).
+    const getThumbnailUrl = (item) => {
+        try {
+            if (!item?.gambar) return "/img/heroBerita.jpg";
+            if (typeof item.gambar === "string") {
+                const arr = JSON.parse(item.gambar);
+                if (Array.isArray(arr) && arr.length > 0)
+                    return `/storage/berita/${arr[0]}`;
+                return "/img/heroBerita.jpg";
+            }
+            if (Array.isArray(item.gambar) && item.gambar.length > 0)
+                return `/storage/berita/${item.gambar[0]}`;
+            return "/img/heroBerita.jpg";
+        } catch {
+            return "/img/heroBerita.jpg";
+        }
+    };
+
+    const formatDateShort = (value) => {
+        try {
+            return format(new Date(value), "d MMM yyyy", { locale: id });
+        } catch {
+            return "-";
+        }
+    };
+
+    // Perubahan signifikan: view switcher (list/grid/table) + keyboard navigation.
+    const viewTabs = useMemo(
+        () => [
+            { id: "list", label: "List", icon: FaList },
+            { id: "grid", label: "Grid", icon: FaThLarge },
+            { id: "table", label: "Table", icon: FaTable },
+        ],
+        [],
+    );
+
+    const onTabKeyDown = (e) => {
+        if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
+        e.preventDefault();
+        const idx = viewTabs.findIndex((t) => t.id === viewMode);
+        const nextIdx =
+            e.key === "ArrowLeft"
+                ? (idx - 1 + viewTabs.length) % viewTabs.length
+                : (idx + 1) % viewTabs.length;
+        const next = viewTabs[nextIdx];
+        setViewMode(next.id);
+        const btn = tablistRef.current?.querySelector(
+            `[data-view-tab="${next.id}"]`,
+        );
+        btn?.focus();
+    };
+
+    const renderLoading = () => {
+        const common =
+            "rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden";
+        if (viewMode === "table") {
+            return (
+                <div className={`${common} animate-pulse`} aria-hidden="true">
+                    <div className="border-b border-slate-100 px-6 py-4">
+                        <div className="h-4 w-44 rounded bg-slate-200" />
+                    </div>
+                    <div className="p-6 space-y-3">
+                        {Array.from({ length: 8 }).map((_, i) => (
+                            <div
+                                key={i}
+                                className="h-10 rounded-xl bg-slate-100"
+                            />
+                        ))}
+                    </div>
+                </div>
+            );
+        }
+
+        if (viewMode === "list") {
+            return (
+                <div className="space-y-3" aria-hidden="true">
+                    {Array.from({ length: 8 }).map((_, i) => (
+                        <div
+                            key={i}
+                            className={`${common} px-6 py-5 animate-pulse`}
+                        >
+                            <div className="flex items-start gap-4">
+                                <div className="h-16 w-24 rounded-xl bg-slate-100" />
+                                <div className="flex-1">
+                                    <div className="h-4 w-2/3 rounded bg-slate-200" />
+                                    <div className="mt-3 h-3 w-1/2 rounded bg-slate-100" />
+                                </div>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            );
+        }
+
+        return (
+            <div
+                className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+                aria-hidden="true"
+            >
+                {Array.from({ length: 6 }).map((_, i) => (
+                    <div key={i} className={`${common} animate-pulse`}>
+                        <div className="h-40 bg-slate-100" />
+                        <div className="p-6">
+                            <div className="h-4 w-3/4 rounded bg-slate-200" />
+                            <div className="mt-3 h-3 w-full rounded bg-slate-100" />
+                            <div className="mt-2 h-3 w-5/6 rounded bg-slate-100" />
+                            <div className="mt-6 h-9 w-32 rounded-xl bg-slate-100" />
+                        </div>
+                    </div>
+                ))}
+            </div>
+        );
+    };
+
+    const renderEmpty = () => {
+        const title = searchTerm ? "Tidak ada hasil" : "Belum ada berita";
+        const desc = searchTerm
+            ? `Tidak ditemukan berita untuk pencarian "${searchTerm}".`
+            : "Belum ada artikel yang tersedia saat ini.";
+
+        return (
+            <div className="rounded-2xl border border-slate-200 bg-white shadow-sm p-8 sm:p-10 text-center">
+                <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-50 border border-slate-100 text-slate-500">
+                    <FaInbox className="h-6 w-6" aria-hidden="true" />
+                </div>
+                <h3 className="mt-5 text-lg font-bold text-slate-900">
+                    {title}
+                </h3>
+                <p className="mt-2 text-sm text-slate-600 max-w-lg mx-auto">
+                    {desc}
+                </p>
+                <div className="mt-6 flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-3">
+                    {searchTerm ? (
+                        <button
+                            type="button"
+                            onClick={resetSearch}
+                            className="inline-flex items-center justify-center rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-bold text-sky-700 hover:bg-sky-50 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/30"
+                        >
+                            Reset Pencarian
+                        </button>
+                    ) : (
+                        <Link
+                            href={route("dashboard.berita.create")}
+                            className="inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-sky-600 to-cyan-600 px-5 py-3 text-sm font-bold text-white shadow-sm hover:from-sky-700 hover:to-cyan-700 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/30"
+                        >
+                            <FaPlus className="h-4 w-4" aria-hidden="true" />
+                            Buat Berita Pertama
+                        </Link>
+                    )}
+                    <button
+                        type="button"
+                        onClick={() =>
+                            fetchBerita(pagination.current_page || 1)
+                        }
+                        className="inline-flex items-center justify-center rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/30"
+                    >
+                        Muat ulang
+                    </button>
+                </div>
+            </div>
+        );
+    };
+
+    const renderError = () => {
+        return (
+            <div
+                className="rounded-2xl border border-rose-200 bg-rose-50 px-6 py-5 text-rose-900 shadow-sm"
+                role="alert"
+                aria-live="polite"
+            >
+                <div className="flex items-start gap-3">
+                    <div className="mt-0.5 text-rose-600">
+                        <FaExclamationTriangle
+                            className="h-5 w-5"
+                            aria-hidden="true"
+                        />
+                    </div>
+                    <div className="min-w-0">
+                        <div className="text-sm font-bold">
+                            Gagal memuat berita
+                        </div>
+                        <div className="mt-1 text-sm text-rose-800">
+                            {loadError}
+                        </div>
+                        <div className="mt-4">
+                            <button
+                                type="button"
+                                onClick={() =>
+                                    fetchBerita(pagination.current_page || 1)
+                                }
+                                className="inline-flex items-center justify-center rounded-2xl bg-rose-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-rose-700 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-500/30"
+                            >
+                                Coba lagi
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+    };
 
     const handleDelete = (berita) => {
         try {
@@ -134,7 +360,7 @@ export default function Berita({ berita: initialBerita, response }) {
                     setBerita((prevBerita) => ({
                         ...prevBerita,
                         data: prevBerita.data.filter(
-                            (item) => item.id !== berita.id
+                            (item) => item.id !== berita.id,
                         ),
                     }));
 
@@ -161,7 +387,7 @@ export default function Berita({ berita: initialBerita, response }) {
                                 vertical: "bottom",
                                 horizontal: "left",
                             },
-                        }
+                        },
                     );
                 })
                 .finally(() => {
@@ -178,7 +404,7 @@ export default function Berita({ berita: initialBerita, response }) {
                         vertical: "bottom",
                         horizontal: "left",
                     },
-                }
+                },
             );
             setIsLoading(false);
         }
@@ -189,510 +415,790 @@ export default function Berita({ berita: initialBerita, response }) {
         setActionDropdown(actionDropdown === id ? null : id);
     };
 
+    // Close dropdown when clicking outside
+    useEffect(() => {
+        const handleClickOutside = () => setActionDropdown(null);
+        document.addEventListener("click", handleClickOutside);
+        return () => document.removeEventListener("click", handleClickOutside);
+    }, []);
+
     return (
         <DashboardLayout>
             <Head title="Berita" />
 
-            <div className="py-6 w-full mx-auto px-4 sm:px-6 lg:px-8">
-                {/* Header Section */}
-                <div className="bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-800 rounded-2xl shadow-xl mb-8 overflow-visible relative">
-                    <div className="absolute inset-0 bg-pattern opacity-10 rounded-2xl"></div>
-                    <div className="px-6 py-10 md:px-12 md:py-12 relative z-10">
-                        <div className="flex flex-col md:flex-row md:items-center justify-between">
-                            <div className="mb-8 md:mb-0">
-                                <div className="flex items-center mb-3">
-                                    <div className="flex items-center justify-center bg-white/20 backdrop-blur-sm rounded-full w-14 h-14 mr-4 shadow-inner">
-                                        <FaNewspaper className="text-white text-xl" />
-                                    </div>
-                                    <h1 className="text-3xl md:text-4xl font-bold text-white tracking-tight">
+            <div className="w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+                    <div className="p-6 sm:p-8 border-b border-slate-100">
+                        <div className="flex flex-col gap-5 md:flex-row md:items-start md:justify-between">
+                            <div className="flex items-start gap-4">
+                                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-sky-600 to-cyan-600 text-white shadow-sm">
+                                    <FaNewspaper
+                                        className="text-lg"
+                                        aria-hidden="true"
+                                    />
+                                </div>
+                                <div>
+                                    <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900">
                                         Manajemen Berita
                                     </h1>
-                                </div>
-                                <p className="mt-3 text-blue-100 max-w-2xl text-lg opacity-90">
-                                    Kelola berita dan informasi terkini PLN UPT
-                                    Karawang
-                                </p>
-                                <div className="mt-4 flex items-center text-blue-100 text-sm">
-                                    <div className="flex items-center mr-6">
-                                        <div className="w-2 h-2 rounded-full bg-green-400 mr-2"></div>
-                                        <span>
-                                            {pagination?.total || 0} Berita
-                                            Aktif
+                                    <p className="mt-2 text-sm sm:text-base text-slate-600 max-w-2xl">
+                                        Kelola publikasi dan artikel PLN UPT
+                                        Karawang dengan tampilan yang konsisten.
+                                    </p>
+                                    <div
+                                        id={statusId}
+                                        className="mt-4 inline-flex items-center gap-2 rounded-full bg-slate-50 px-4 py-1.5 text-xs font-semibold text-slate-600 ring-1 ring-slate-200"
+                                    >
+                                        <span
+                                            className="inline-flex h-2 w-2 rounded-full bg-emerald-500"
+                                            aria-hidden="true"
+                                        />
+                                        <span className="text-slate-900">
+                                            {pagination?.total || 0}
                                         </span>
+                                        <span>Artikel</span>
                                     </div>
-                                    {berita?.data?.last_updated && (
-                                        <div className="flex items-center">
-                                            <FaCalendar className="mr-2 text-xs" />
-                                            <span>
-                                                Terakhir diperbarui:{" "}
-                                                {format(
-                                                    new Date(
-                                                        initialBerita.last_updated
-                                                    ),
-                                                    "dd MMM yyyy",
-                                                    { locale: id }
-                                                )}
-                                            </span>
-                                        </div>
-                                    )}
                                 </div>
                             </div>
+
                             <Link
                                 href={route("dashboard.berita.create")}
-                                className="inline-flex items-center px-6 py-3 bg-white text-blue-700 hover:bg-blue-50 rounded-xl transition-all duration-200 shadow-md font-medium transform hover:scale-105 hover:shadow-lg"
+                                className="inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-sky-600 to-cyan-600 px-5 py-3 text-sm font-bold text-white shadow-sm hover:from-sky-700 hover:to-cyan-700 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/30"
                             >
-                                <FaPlus className="mr-2" />
-                                Tambah Berita
+                                <FaPlus
+                                    className="h-4 w-4"
+                                    aria-hidden="true"
+                                />
+                                Buat Berita Baru
                             </Link>
                         </div>
                     </div>
-                </div>
 
-                {/* Search and Filter Bar */}
-                <div className="bg-white rounded-xl shadow-md p-6 mb-8">
-                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                        <div className="relative w-full md:w-1/3">
-                            <div className="relative group">
-                                <input
-                                    id="search-input"
-                                    type="text"
-                                    placeholder="Cari judul berita atau penulis..."
-                                    className="w-full px-5 py-3 pl-12 pr-10 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-300 shadow-sm transition-all duration-200 bg-gray-50 focus:bg-white"
-                                    defaultValue={searchTerm}
-                                    onChange={handleSearch}
-                                />
-                                <div className="absolute left-4 top-3.5 text-gray-400 group-focus-within:text-blue-500 transition-colors duration-200">
-                                    <FaSearch className="h-5 w-5" />
-                                </div>
-                                {isLoading && (
-                                    <div className="absolute right-4 top-3.5 text-blue-500">
-                                        <FaSpinner className="h-5 w-5 animate-spin" />
-                                    </div>
-                                )}
-                                {searchTerm && (
-                                    <button
-                                        onClick={resetSearch}
-                                        className="absolute right-4 top-3.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 p-1 rounded-full transition-all duration-200"
-                                        title="Reset pencarian"
-                                    >
-                                        <FaTimes className="h-4 w-4" />
-                                    </button>
-                                )}
-                            </div>
-                            {searchTerm && (
-                                <div className="text-sm text-gray-500 mt-2 ml-1">
-                                    Menampilkan {filteredBerita.length} hasil
-                                    untuk "{searchTerm}"
-                                </div>
-                            )}
-                        </div>
-
-                        <div className="flex items-center gap-3">
-                            <div className="text-sm text-gray-500 hidden md:block">
-                                Total:{" "}
-                                <span className="font-medium text-gray-700">
-                                    {filteredBerita.length} berita
-                                </span>
-                            </div>
-                            <div className="flex-grow md:flex-grow-0"></div>
-                            <div className="flex items-center gap-2">
-                                <button
-                                    className="px-4 py-2 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 flex items-center text-sm font-medium transition-colors duration-200"
-                                    title="Urutkan berdasarkan tanggal"
+                    <div className="p-6 sm:p-8">
+                        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-5">
+                            <div className="w-full lg:max-w-md">
+                                <label
+                                    htmlFor="search-input"
+                                    className="sr-only"
                                 >
-                                    <FaCalendar className="mr-2 text-gray-400" />
-                                    Terbaru
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Berita Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                    {filteredBerita.map((item) => (
-                        <div
-                            key={item.id}
-                            className="group bg-white rounded-2xl shadow-md hover:shadow-xl transition-all duration-300 overflow-visible flex flex-col h-full border border-gray-100 hover:border-blue-200 relative"
-                        >
-                            <div className="relative h-52 overflow-hidden">
-                                {item.gambar && (
-                                    <img
-                                        src={
-                                            typeof item.gambar === "string"
-                                                ? `/storage/berita/${
-                                                      JSON.parse(item.gambar)[0]
-                                                  }`
-                                                : Array.isArray(item.gambar) &&
-                                                  item.gambar.length > 0
-                                                ? `/storage/berita/${item.gambar[0]}`
-                                                : "/img/heroBerita.jpg"
-                                        }
-                                        alt={item.judul}
-                                        loading="lazy"
-                                        className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-500"
-                                        onError={(e) => {
-                                            e.target.onerror = null;
-                                            e.target.src =
-                                                "/img/heroBerita.jpg";
-                                        }}
+                                    Cari berita
+                                </label>
+                                <div className="relative group">
+                                    <input
+                                        id="search-input"
+                                        type="text"
+                                        placeholder="Cari berita..."
+                                        className="w-full rounded-2xl border border-slate-200 bg-white px-12 py-3 text-[15px] text-slate-900 shadow-sm placeholder:text-slate-400 transition hover:border-slate-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/20 focus:border-sky-500"
+                                        defaultValue={searchTerm}
+                                        onChange={handleSearch}
+                                        aria-describedby={statusId}
                                     />
-                                )}
-                                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/40 to-transparent" />
-
-                                {/* Badge */}
-                                <div className="absolute top-4 left-4 bg-blue-600/90 text-white text-xs font-bold px-3 py-1.5 rounded-full backdrop-blur-sm">
-                                    Berita
+                                    <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-sky-600 transition-colors">
+                                        <FaSearch
+                                            className="h-4 w-4"
+                                            aria-hidden="true"
+                                        />
+                                    </div>
+                                    {isLoading ? (
+                                        <div className="absolute right-4 top-1/2 -translate-y-1/2 text-sky-600">
+                                            <FaSpinner
+                                                className="h-4 w-4 animate-spin"
+                                                aria-hidden="true"
+                                            />
+                                        </div>
+                                    ) : null}
+                                    {searchTerm ? (
+                                        <button
+                                            type="button"
+                                            onClick={resetSearch}
+                                            className="absolute right-3 top-1/2 -translate-y-1/2 inline-flex h-10 w-10 items-center justify-center rounded-2xl text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-500/30"
+                                            aria-label="Hapus pencarian"
+                                        >
+                                            <FaTimes
+                                                className="h-3.5 w-3.5"
+                                                aria-hidden="true"
+                                            />
+                                        </button>
+                                    ) : null}
                                 </div>
-
-                                <div className="absolute bottom-4 left-4 right-4 flex justify-between items-center text-white">
-                                    <div className="flex items-center text-sm bg-black/30 px-3 py-1 rounded-full backdrop-blur-sm">
-                                        <FaUser className="mr-2 text-xs" />
-                                        <span className="truncate max-w-[120px]">
-                                            {item.user.name || "-"}
+                                {searchTerm ? (
+                                    <div className="mt-3 text-sm text-slate-600">
+                                        Menampilkan hasil pencarian untuk{" "}
+                                        <span className="font-bold text-slate-900">
+                                            “{searchTerm}”
                                         </span>
                                     </div>
-                                    <div className="flex items-center text-sm bg-black/30 px-3 py-1 rounded-full backdrop-blur-sm">
-                                        <FaCalendar className="mr-2 text-xs" />
-                                        {format(
-                                            new Date(item.created_at),
-                                            "dd MMM yyyy",
-                                            { locale: id }
-                                        )}
-                                    </div>
-                                </div>
+                                ) : null}
                             </div>
 
-                            <div className="p-6 flex flex-col flex-grow">
-                                <h2 className="text-xl font-bold text-gray-800 line-clamp-2 mb-3 group-hover:text-blue-700 transition-colors duration-200">
-                                    {item.judul}
-                                </h2>
-                                <div
-                                    className="text-gray-600 text-sm line-clamp-3 mb-4 flex-grow overflow-hidden"
-                                    dangerouslySetInnerHTML={{
-                                        __html: item.isi.replace(
-                                            /<[^>]*>/g,
-                                            " "
-                                        ),
-                                    }}
-                                />
+                            <div className="flex flex-col sm:flex-row sm:items-center gap-3 justify-between">
+                                <div className="text-sm text-slate-600">
+                                    <span className="font-bold text-slate-900">
+                                        {filteredBerita.length}
+                                    </span>{" "}
+                                    artikel ditampilkan
+                                </div>
 
-                                <div className="flex justify-between items-center pt-4 border-t border-gray-100 mt-auto">
-                                    <Link
-                                        href={route(
-                                            "dashboard.berita.show",
-                                            item.slug
-                                        )}
-                                        className="text-blue-600 hover:text-blue-800 text-sm font-medium flex items-center group-hover:underline"
-                                    >
-                                        Baca selengkapnya
-                                        <svg
-                                            xmlns="http://www.w3.org/2000/svg"
-                                            className="h-4 w-4 ml-1 group-hover:translate-x-1 transition-transform duration-200"
-                                            fill="none"
-                                            viewBox="0 0 24 24"
-                                            stroke="currentColor"
-                                        >
-                                            <path
-                                                strokeLinecap="round"
-                                                strokeLinejoin="round"
-                                                strokeWidth={2}
-                                                d="M9 5l7 7-7 7"
-                                            />
-                                        </svg>
-                                    </Link>
-                                    <div className="relative z-[10]">
-                                        <button
-                                            onClick={(e) =>
-                                                toggleActionDropdown(item.id, e)
-                                            }
-                                            className="p-2 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-100 transition-colors duration-200"
-                                            aria-label="Menu aksi"
-                                        >
-                                            <FaEllipsisV />
-                                        </button>
-                                        {actionDropdown === item.id && (
-                                            <div
-                                                className="absolute right-0 top-full mt-1 w-48 rounded-xl shadow-xl bg-white ring-1 ring-black ring-opacity-5 z-[100] overflow-visible border border-gray-100"
-                                                onClick={(e) =>
-                                                    e.stopPropagation()
+                                <div
+                                    ref={tablistRef}
+                                    role="tablist"
+                                    aria-label="Mode tampilan berita"
+                                    onKeyDown={onTabKeyDown}
+                                    className="inline-flex items-center rounded-2xl border border-slate-200 bg-slate-50 p-1"
+                                >
+                                    {viewTabs.map((t) => {
+                                        const isActive = t.id === viewMode;
+                                        const Icon = t.icon;
+                                        return (
+                                            <button
+                                                key={t.id}
+                                                type="button"
+                                                role="tab"
+                                                aria-selected={isActive}
+                                                tabIndex={isActive ? 0 : -1}
+                                                data-view-tab={t.id}
+                                                onClick={() =>
+                                                    setViewMode(t.id)
                                                 }
-                                                style={{ minWidth: "200px" }}
+                                                className={`inline-flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-bold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/30 ${
+                                                    isActive
+                                                        ? "bg-white text-sky-700 shadow-sm"
+                                                        : "text-slate-600 hover:text-slate-800 hover:bg-white/60"
+                                                }`}
                                             >
-                                                <div className="py-1">
-                                                    <Link
-                                                        href={route(
-                                                            "dashboard.berita.edit",
-                                                            item.slug
-                                                        )}
-                                                        className="flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700 transition-colors duration-200"
-                                                        onClick={(e) =>
-                                                            e.stopPropagation()
-                                                        }
-                                                    >
-                                                        <FaEdit className="mr-3 h-4 w-4" />
-                                                        Edit
-                                                    </Link>
-                                                    <button
-                                                        onClick={(e) => {
-                                                            e.preventDefault();
-                                                            e.stopPropagation();
-                                                            setBeritaToDelete(
-                                                                item
-                                                            );
-                                                            setShowDeleteModal(
-                                                                true
-                                                            );
-                                                            toggleActionDropdown(
-                                                                item.id
-                                                            );
-                                                        }}
-                                                        className="flex items-center w-full px-4 py-3 text-sm text-red-600 hover:bg-red-50 cursor-pointer transition-colors duration-200"
-                                                        type="button"
-                                                    >
-                                                        <FaTrash className="mr-3 h-4 w-4" />
-                                                        Hapus
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        )}
-                                    </div>
+                                                <Icon
+                                                    className="h-3.5 w-3.5"
+                                                    aria-hidden="true"
+                                                />
+                                                {t.label}
+                                            </button>
+                                        );
+                                    })}
                                 </div>
                             </div>
                         </div>
-                    ))}
+                    </div>
                 </div>
 
-                {/* Loading State */}
-                {isLoading && (
-                    <div className="col-span-full py-16">
-                        <div className="flex flex-col items-center justify-center max-w-md mx-auto text-center bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
-                            <div className="relative">
-                                <div className="w-16 h-16 border-4 border-blue-200 rounded-full"></div>
-                                <div className="absolute top-0 w-16 h-16 border-4 border-blue-600 rounded-full border-t-transparent animate-spin"></div>
+                <div className="mt-8">
+                    {loadError && !hasData ? (
+                        renderError()
+                    ) : isLoading && !hasData ? (
+                        <div>
+                            <div className="sr-only" aria-live="polite">
+                                Memuat daftar berita
                             </div>
-                            <h3 className="text-xl font-bold text-gray-900 mt-6 mb-2">
-                                Memuat Berita
-                            </h3>
-                            <p className="text-gray-500">
-                                Mohon tunggu sebentar, kami sedang memuat data
-                                berita terbaru...
-                            </p>
+                            {renderLoading()}
                         </div>
-                    </div>
-                )}
-
-                {/* Empty State */}
-                {filteredBerita.length === 0 && !isLoading && (
-                    <div className="col-span-full py-16">
-                        <div className="flex flex-col items-center justify-center max-w-md mx-auto text-center bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
-                            <div className="bg-blue-50 p-4 rounded-full mb-5">
-                                <FaNewspaper className="h-10 w-10 text-blue-500" />
-                            </div>
-                            <h3 className="text-xl font-bold text-gray-900 mb-2">
-                                {searchTerm
-                                    ? "Pencarian Tidak Ditemukan"
-                                    : "Belum Ada Berita"}
-                            </h3>
-                            <p className="text-gray-500 mb-6">
-                                {searchTerm
-                                    ? `Tidak ada berita yang cocok dengan pencarian "${searchTerm}"`
-                                    : "Belum ada berita yang ditambahkan. Silakan tambahkan berita baru untuk ditampilkan di sini."}
-                            </p>
-                            {searchTerm ? (
-                                <button
-                                    onClick={resetSearch}
-                                    className="px-5 py-2.5 text-sm font-medium text-white bg-blue-600 rounded-xl hover:bg-blue-700 transition-colors duration-200 shadow-sm flex items-center justify-center"
-                                >
-                                    <svg
-                                        xmlns="http://www.w3.org/2000/svg"
-                                        className="h-4 w-4 mr-2"
-                                        fill="none"
-                                        viewBox="0 0 24 24"
-                                        stroke="currentColor"
-                                    >
-                                        <path
-                                            strokeLinecap="round"
-                                            strokeLinejoin="round"
-                                            strokeWidth={2}
-                                            d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-                                        />
-                                    </svg>
-                                    Reset Pencarian
-                                </button>
-                            ) : (
-                                <Link
-                                    href={route("dashboard.berita.create")}
-                                    className="px-5 py-2.5 text-sm font-medium text-white bg-blue-600 rounded-xl hover:bg-blue-700 transition-colors duration-200 shadow-sm flex items-center justify-center"
-                                >
-                                    <FaPlus className="h-4 w-4 mr-2" />
-                                    Tambah Berita Baru
-                                </Link>
-                            )}
-                        </div>
-                    </div>
-                )}
-
-                {/* Pagination */}
-                {filteredBerita.length > 0 && (
-                    <div className="col-span-full mt-12">
-                        <div className="flex flex-col items-center space-y-4">
-                            <div className="text-sm text-gray-500">
-                                Menampilkan halaman {pagination.current_page}{" "}
-                                dari {pagination.last_page} ({pagination.total}{" "}
-                                total berita)
-                            </div>
-                            <div className="flex items-center space-x-2">
-                                <button
-                                    onClick={() =>
-                                        handlePageChange(
-                                            pagination.current_page - 1
-                                        )
-                                    }
-                                    disabled={pagination.current_page <= 1}
-                                    className={`flex items-center px-4 py-2 rounded-lg border ${
-                                        pagination.current_page <= 1
-                                            ? "border-gray-200 text-gray-300 cursor-not-allowed"
-                                            : "border-blue-500 text-blue-600 hover:bg-blue-50"
-                                    }`}
-                                >
-                                    <FaChevronLeft className="mr-1 h-3 w-3" />
-                                    <span>Sebelumnya</span>
-                                </button>
-
-                                <div className="hidden md:flex space-x-1">
-                                    {Array.from(
-                                        { length: pagination.last_page },
-                                        (_, i) => i + 1
-                                    ).map((page) => (
-                                        <button
-                                            key={page}
-                                            onClick={() =>
-                                                handlePageChange(page)
-                                            }
-                                            className={`w-10 h-10 flex items-center justify-center rounded-lg ${
-                                                pagination.current_page === page
-                                                    ? "bg-blue-600 text-white font-medium"
-                                                    : "text-gray-700 hover:bg-gray-100 border border-gray-200"
-                                            }`}
+                    ) : hasData ? (
+                        <>
+                            {viewMode === "table" ? (
+                                <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+                                    <div className="overflow-x-auto">
+                                        <table className="min-w-full text-sm">
+                                            <thead className="bg-slate-50 border-b border-slate-200">
+                                                <tr>
+                                                    <th
+                                                        scope="col"
+                                                        className="px-6 py-3 text-left text-[11px] font-semibold uppercase tracking-widest text-slate-500"
+                                                    >
+                                                        Judul
+                                                    </th>
+                                                    <th
+                                                        scope="col"
+                                                        className="px-6 py-3 text-left text-[11px] font-semibold uppercase tracking-widest text-slate-500"
+                                                    >
+                                                        Tema
+                                                    </th>
+                                                    <th
+                                                        scope="col"
+                                                        className="px-6 py-3 text-left text-[11px] font-semibold uppercase tracking-widest text-slate-500"
+                                                    >
+                                                        Penulis
+                                                    </th>
+                                                    <th
+                                                        scope="col"
+                                                        className="px-6 py-3 text-left text-[11px] font-semibold uppercase tracking-widest text-slate-500"
+                                                    >
+                                                        Tanggal
+                                                    </th>
+                                                    <th
+                                                        scope="col"
+                                                        className="px-6 py-3 text-right text-[11px] font-semibold uppercase tracking-widest text-slate-500"
+                                                    >
+                                                        Aksi
+                                                    </th>
+                                                </tr>
+                                            </thead>
+                                            <tbody className="divide-y divide-slate-100">
+                                                {filteredBerita.map((item) => (
+                                                    <tr
+                                                        key={item.id}
+                                                        className="hover:bg-slate-50/60 transition"
+                                                    >
+                                                        <td className="px-6 py-4">
+                                                            <Link
+                                                                href={route(
+                                                                    "dashboard.berita.show",
+                                                                    item.slug,
+                                                                )}
+                                                                className="font-bold text-slate-900 hover:text-sky-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/30 rounded"
+                                                            >
+                                                                {item.judul}
+                                                            </Link>
+                                                            <div className="mt-1 text-xs text-slate-500 line-clamp-1">
+                                                                {(item.content_json
+                                                                    ? generateExcerpt(
+                                                                          item.content_json,
+                                                                          120,
+                                                                      )
+                                                                    : item.isi
+                                                                          .replace(
+                                                                              /<[^>]*>/g,
+                                                                              " ",
+                                                                          )
+                                                                          .substring(
+                                                                              0,
+                                                                              120,
+                                                                          )
+                                                                ).replace(
+                                                                    /<[^>]*>/g,
+                                                                    " ",
+                                                                )}
+                                                            </div>
+                                                        </td>
+                                                        <td className="px-6 py-4 text-slate-600">
+                                                            {item.tema?.nama ||
+                                                                "Umum"}
+                                                        </td>
+                                                        <td className="px-6 py-4 text-slate-600">
+                                                            {item.user?.name ||
+                                                                "Admin"}
+                                                        </td>
+                                                        <td className="px-6 py-4 text-slate-600">
+                                                            {formatDateShort(
+                                                                item.created_at,
+                                                            )}
+                                                        </td>
+                                                        <td className="px-6 py-4">
+                                                            <div className="flex items-center justify-end gap-2">
+                                                                <Link
+                                                                    href={route(
+                                                                        "dashboard.berita.edit",
+                                                                        item.slug,
+                                                                    )}
+                                                                    className="inline-flex h-9 items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-xs font-bold text-slate-700 hover:bg-slate-50 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/30"
+                                                                >
+                                                                    <FaEdit
+                                                                        className="mr-2 h-3.5 w-3.5"
+                                                                        aria-hidden="true"
+                                                                    />
+                                                                    Edit
+                                                                </Link>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => {
+                                                                        setBeritaToDelete(
+                                                                            item,
+                                                                        );
+                                                                        setShowDeleteModal(
+                                                                            true,
+                                                                        );
+                                                                    }}
+                                                                    className="inline-flex h-9 items-center justify-center rounded-xl border border-rose-200 bg-rose-50 px-3 text-xs font-bold text-rose-700 hover:bg-rose-100 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-500/30"
+                                                                >
+                                                                    <FaTrash
+                                                                        className="mr-2 h-3.5 w-3.5"
+                                                                        aria-hidden="true"
+                                                                    />
+                                                                    Hapus
+                                                                </button>
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            ) : viewMode === "list" ? (
+                                <div className="space-y-3">
+                                    {filteredBerita.map((item) => (
+                                        <div
+                                            key={item.id}
+                                            className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden"
                                         >
-                                            {page}
-                                        </button>
+                                            <div className="p-6 flex flex-col sm:flex-row gap-5">
+                                                <img
+                                                    src={getThumbnailUrl(item)}
+                                                    alt={item.judul}
+                                                    loading="lazy"
+                                                    className="h-36 w-full sm:w-52 rounded-2xl object-cover border border-slate-100"
+                                                    onError={(e) => {
+                                                        e.target.onerror = null;
+                                                        e.target.src =
+                                                            "/img/heroBerita.jpg";
+                                                    }}
+                                                />
+                                                <div className="min-w-0 flex-1">
+                                                    <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500">
+                                                        <span className="inline-flex items-center rounded-full bg-slate-50 px-3 py-1 font-semibold ring-1 ring-slate-200">
+                                                            {item.tema?.nama ||
+                                                                "Umum"}
+                                                        </span>
+                                                        <span className="inline-flex items-center gap-1.5">
+                                                            <FaUser
+                                                                className="h-3 w-3"
+                                                                aria-hidden="true"
+                                                            />
+                                                            {item.user?.name ||
+                                                                "Admin"}
+                                                        </span>
+                                                        <span className="inline-flex items-center gap-1.5">
+                                                            <FaCalendar
+                                                                className="h-3 w-3"
+                                                                aria-hidden="true"
+                                                            />
+                                                            {formatDateShort(
+                                                                item.created_at,
+                                                            )}
+                                                        </span>
+                                                    </div>
+                                                    <Link
+                                                        href={route(
+                                                            "dashboard.berita.show",
+                                                            item.slug,
+                                                        )}
+                                                        className="mt-3 block text-lg font-extrabold tracking-tight text-slate-900 hover:text-sky-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/30 rounded"
+                                                    >
+                                                        {item.judul}
+                                                    </Link>
+                                                    <div
+                                                        className="mt-2 text-sm text-slate-600 leading-relaxed line-clamp-3"
+                                                        dangerouslySetInnerHTML={{
+                                                            __html: item.content_json
+                                                                ? generateExcerpt(
+                                                                      item.content_json,
+                                                                      170,
+                                                                  )
+                                                                : item.isi
+                                                                      .replace(
+                                                                          /<[^>]*>/g,
+                                                                          " ",
+                                                                      )
+                                                                      .substring(
+                                                                          0,
+                                                                          170,
+                                                                      ) + "...",
+                                                        }}
+                                                    />
+                                                    <div className="mt-5 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+                                                        <Link
+                                                            href={route(
+                                                                "dashboard.berita.show",
+                                                                item.slug,
+                                                            )}
+                                                            className="inline-flex items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-sky-700 hover:bg-sky-50 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/30"
+                                                        >
+                                                            Baca Selengkapnya
+                                                        </Link>
+                                                        <div className="flex items-center gap-2 justify-end">
+                                                            <Link
+                                                                href={route(
+                                                                    "dashboard.berita.edit",
+                                                                    item.slug,
+                                                                )}
+                                                                className="inline-flex items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-700 hover:bg-slate-50 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/30"
+                                                            >
+                                                                <FaEdit
+                                                                    className="mr-2 h-4 w-4"
+                                                                    aria-hidden="true"
+                                                                />
+                                                                Edit
+                                                            </Link>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => {
+                                                                    setBeritaToDelete(
+                                                                        item,
+                                                                    );
+                                                                    setShowDeleteModal(
+                                                                        true,
+                                                                    );
+                                                                }}
+                                                                className="inline-flex items-center justify-center rounded-2xl border border-rose-200 bg-rose-50 px-4 py-2.5 text-sm font-bold text-rose-700 hover:bg-rose-100 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-500/30"
+                                                            >
+                                                                <FaTrash
+                                                                    className="mr-2 h-4 w-4"
+                                                                    aria-hidden="true"
+                                                                />
+                                                                Hapus
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
                                     ))}
                                 </div>
+                            ) : (
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                    {filteredBerita.map((item) => (
+                                        <div
+                                            key={item.id}
+                                            className="group rounded-2xl border border-slate-200 bg-white shadow-sm hover:shadow-md transition overflow-hidden flex flex-col"
+                                        >
+                                            <div className="relative h-44 overflow-hidden">
+                                                <img
+                                                    src={getThumbnailUrl(item)}
+                                                    alt={item.judul}
+                                                    loading="lazy"
+                                                    className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                                                    onError={(e) => {
+                                                        e.target.onerror = null;
+                                                        e.target.src =
+                                                            "/img/heroBerita.jpg";
+                                                    }}
+                                                />
+                                                <div className="absolute inset-0 bg-gradient-to-t from-slate-950/70 via-slate-950/20 to-transparent" />
+                                                <div className="absolute left-4 top-4 inline-flex items-center rounded-full bg-white/15 px-3 py-1 text-xs font-bold text-white ring-1 ring-white/20 backdrop-blur">
+                                                    {item.tema?.nama || "Umum"}
+                                                </div>
+                                                <div className="absolute right-4 top-4">
+                                                    <button
+                                                        type="button"
+                                                        onClick={(e) =>
+                                                            toggleActionDropdown(
+                                                                item.id,
+                                                                e,
+                                                            )
+                                                        }
+                                                        aria-haspopup="menu"
+                                                        aria-expanded={
+                                                            actionDropdown ===
+                                                            item.id
+                                                        }
+                                                        className="inline-flex h-9 w-9 items-center justify-center rounded-2xl bg-black/20 text-white ring-1 ring-white/10 backdrop-blur hover:bg-black/35 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-white/40"
+                                                        aria-label="Buka menu aksi"
+                                                    >
+                                                        <FaEllipsisV
+                                                            className="text-xs"
+                                                            aria-hidden="true"
+                                                        />
+                                                    </button>
+                                                    {actionDropdown ===
+                                                    item.id ? (
+                                                        <div
+                                                            role="menu"
+                                                            className="absolute right-0 top-full mt-2 w-52 rounded-2xl border border-slate-200 bg-white shadow-lg overflow-hidden"
+                                                            onClick={(e) =>
+                                                                e.stopPropagation()
+                                                            }
+                                                        >
+                                                            <div className="p-2">
+                                                                <Link
+                                                                    role="menuitem"
+                                                                    href={route(
+                                                                        "dashboard.berita.edit",
+                                                                        item.slug,
+                                                                    )}
+                                                                    className="flex items-center rounded-xl px-3 py-2.5 text-sm font-semibold text-slate-700 hover:bg-sky-50 hover:text-sky-800 transition"
+                                                                >
+                                                                    <FaEdit
+                                                                        className="mr-3 h-3.5 w-3.5"
+                                                                        aria-hidden="true"
+                                                                    />
+                                                                    Edit Artikel
+                                                                </Link>
+                                                                <button
+                                                                    role="menuitem"
+                                                                    type="button"
+                                                                    onClick={(
+                                                                        e,
+                                                                    ) => {
+                                                                        e.preventDefault();
+                                                                        e.stopPropagation();
+                                                                        setBeritaToDelete(
+                                                                            item,
+                                                                        );
+                                                                        setShowDeleteModal(
+                                                                            true,
+                                                                        );
+                                                                        setActionDropdown(
+                                                                            null,
+                                                                        );
+                                                                    }}
+                                                                    className="flex w-full items-center rounded-xl px-3 py-2.5 text-sm font-semibold text-rose-700 hover:bg-rose-50 transition"
+                                                                >
+                                                                    <FaTrash
+                                                                        className="mr-3 h-3.5 w-3.5"
+                                                                        aria-hidden="true"
+                                                                    />
+                                                                    Hapus
+                                                                    Artikel
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    ) : null}
+                                                </div>
+                                                <div className="absolute bottom-0 left-0 right-0 p-5">
+                                                    <div className="flex items-center gap-3 text-white/90 text-xs font-semibold">
+                                                        <span className="inline-flex items-center gap-1.5">
+                                                            <FaUser
+                                                                className="h-3 w-3 opacity-80"
+                                                                aria-hidden="true"
+                                                            />
+                                                            <span className="truncate max-w-[140px]">
+                                                                {item.user
+                                                                    ?.name ||
+                                                                    "Admin"}
+                                                            </span>
+                                                        </span>
+                                                        <span
+                                                            className="h-1 w-1 rounded-full bg-white/50"
+                                                            aria-hidden="true"
+                                                        />
+                                                        <span className="inline-flex items-center gap-1.5">
+                                                            <FaCalendar
+                                                                className="h-3 w-3 opacity-80"
+                                                                aria-hidden="true"
+                                                            />
+                                                            {formatDateShort(
+                                                                item.created_at,
+                                                            )}
+                                                        </span>
+                                                    </div>
+                                                    <Link
+                                                        href={route(
+                                                            "dashboard.berita.show",
+                                                            item.slug,
+                                                        )}
+                                                        className="mt-2 block text-lg font-extrabold tracking-tight text-white hover:text-sky-200 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-white/40 rounded"
+                                                    >
+                                                        <span className="line-clamp-2">
+                                                            {item.judul}
+                                                        </span>
+                                                    </Link>
+                                                </div>
+                                            </div>
+                                            <div className="p-6 flex flex-col flex-1">
+                                                <div
+                                                    className="text-sm text-slate-600 leading-relaxed line-clamp-3"
+                                                    dangerouslySetInnerHTML={{
+                                                        __html: item.content_json
+                                                            ? generateExcerpt(
+                                                                  item.content_json,
+                                                                  150,
+                                                              )
+                                                            : item.isi
+                                                                  .replace(
+                                                                      /<[^>]*>/g,
+                                                                      " ",
+                                                                  )
+                                                                  .substring(
+                                                                      0,
+                                                                      150,
+                                                                  ) + "...",
+                                                    }}
+                                                />
+                                                <div className="mt-6 pt-5 border-t border-slate-100 flex items-center justify-between">
+                                                    <Link
+                                                        href={route(
+                                                            "dashboard.berita.show",
+                                                            item.slug,
+                                                        )}
+                                                        className="text-sm font-bold text-sky-700 hover:text-sky-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/30 rounded inline-flex items-center"
+                                                    >
+                                                        Baca Selengkapnya
+                                                        <FaChevronRight
+                                                            className="ml-1.5 text-xs"
+                                                            aria-hidden="true"
+                                                        />
+                                                    </Link>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </>
+                    ) : loadError ? (
+                        renderError()
+                    ) : (
+                        renderEmpty()
+                    )}
+                </div>
 
-                                <button
-                                    onClick={() =>
-                                        handlePageChange(
-                                            pagination.current_page + 1
-                                        )
-                                    }
-                                    disabled={
-                                        pagination.current_page >=
-                                        pagination.last_page
-                                    }
-                                    className={`flex items-center px-4 py-2 rounded-lg border ${
-                                        pagination.current_page >=
-                                        pagination.last_page
-                                            ? "border-gray-200 text-gray-300 cursor-not-allowed"
-                                            : "border-blue-500 text-blue-600 hover:bg-blue-50"
-                                    }`}
-                                >
-                                    <span>Selanjutnya</span>
-                                    <FaChevronRight className="ml-1 h-3 w-3" />
-                                </button>
+                {/* Pagination */}
+                {!isLoading && filteredBerita.length > 0 && (
+                    <div className="mt-12 flex flex-col md:flex-row items-center justify-between gap-6 border-t border-gray-200 pt-8">
+                        <div className="text-sm text-gray-500 font-medium">
+                            Menampilkan{" "}
+                            <span className="text-gray-900 font-bold">
+                                {pagination.from}
+                            </span>{" "}
+                            sampai{" "}
+                            <span className="text-gray-900 font-bold">
+                                {pagination.to}
+                            </span>{" "}
+                            dari{" "}
+                            <span className="text-gray-900 font-bold">
+                                {pagination.total}
+                            </span>{" "}
+                            data
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                            <button
+                                onClick={() =>
+                                    handlePageChange(
+                                        pagination.current_page - 1,
+                                    )
+                                }
+                                disabled={pagination.current_page <= 1}
+                                className={`h-10 px-4 flex items-center justify-center rounded-xl border text-sm font-semibold transition-all duration-200 ${
+                                    pagination.current_page <= 1
+                                        ? "border-gray-200 text-gray-300 cursor-not-allowed bg-gray-50"
+                                        : "border-gray-200 text-gray-700 hover:bg-white hover:border-sky-300 hover:text-sky-600 hover:shadow-sm"
+                                }`}
+                            >
+                                <FaChevronLeft className="mr-1.5 h-3 w-3" />
+                                Sebelumnya
+                            </button>
+
+                            <div className="hidden md:flex items-center gap-1">
+                                {Array.from(
+                                    {
+                                        length: Math.min(
+                                            5,
+                                            pagination.last_page,
+                                        ),
+                                    },
+                                    (_, i) => {
+                                        // Simple pagination logic for display
+                                        let pageNum = i + 1;
+                                        if (
+                                            pagination.last_page > 5 &&
+                                            pagination.current_page > 3
+                                        ) {
+                                            pageNum =
+                                                pagination.current_page - 3 + i;
+                                            if (pageNum > pagination.last_page)
+                                                pageNum =
+                                                    pagination.last_page -
+                                                    (4 - i);
+                                        }
+
+                                        return (
+                                            <button
+                                                key={pageNum}
+                                                onClick={() =>
+                                                    handlePageChange(pageNum)
+                                                }
+                                                className={`h-10 w-10 flex items-center justify-center rounded-xl text-sm font-bold transition-all duration-200 ${
+                                                    pagination.current_page ===
+                                                    pageNum
+                                                        ? "bg-sky-700 text-white shadow-lg shadow-sky-700/20 scale-105"
+                                                        : "text-gray-600 hover:bg-sky-50 hover:text-sky-700"
+                                                }`}
+                                            >
+                                                {pageNum}
+                                            </button>
+                                        );
+                                    },
+                                )}
                             </div>
+
+                            <button
+                                onClick={() =>
+                                    handlePageChange(
+                                        pagination.current_page + 1,
+                                    )
+                                }
+                                disabled={
+                                    pagination.current_page >=
+                                    pagination.last_page
+                                }
+                                className={`h-10 px-4 flex items-center justify-center rounded-xl border text-sm font-semibold transition-all duration-200 ${
+                                    pagination.current_page >=
+                                    pagination.last_page
+                                        ? "border-gray-200 text-gray-300 cursor-not-allowed bg-gray-50"
+                                        : "border-gray-200 text-gray-700 hover:bg-white hover:border-sky-300 hover:text-sky-600 hover:shadow-sm"
+                                }`}
+                            >
+                                Selanjutnya
+                                <FaChevronRight className="ml-1.5 h-3 w-3" />
+                            </button>
                         </div>
                     </div>
                 )}
 
                 {/* Delete Confirmation Modal */}
                 {showDeleteModal && beritaToDelete && (
-                    <div className="fixed inset-0 z-[100] overflow-y-visible">
-                        <div className="flex items-center justify-center min-h-screen px-4">
-                            <div className="fixed inset-0 bg-gray-900 bg-opacity-50 backdrop-blur-sm transition-opacity" />
-                            <div className="relative bg-white rounded-2xl max-w-md w-full shadow-2xl transform transition-all">
-                                <div className="absolute top-0 right-0 pt-4 pr-4">
+                    <div className="fixed inset-0 z-[100] overflow-y-auto">
+                        <div className="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
+                            <div
+                                className="fixed inset-0 transition-opacity bg-gray-900/60 backdrop-blur-sm"
+                                aria-hidden="true"
+                                onClick={() => {
+                                    setShowDeleteModal(false);
+                                    setBeritaToDelete(null);
+                                }}
+                            ></div>
+
+                            <span
+                                className="hidden sm:inline-block sm:align-middle sm:h-screen"
+                                aria-hidden="true"
+                            >
+                                &#8203;
+                            </span>
+
+                            <div className="inline-block w-full max-w-md p-6 my-8 overflow-hidden text-left align-middle transition-all transform bg-white shadow-2xl rounded-3xl sm:align-middle animate-in fade-in zoom-in-95 duration-300">
+                                <div className="text-center">
+                                    <div className="flex items-center justify-center w-20 h-20 mx-auto bg-red-50 rounded-full ring-8 ring-red-50/50 mb-6">
+                                        <FaTrash className="w-8 h-8 text-red-500" />
+                                    </div>
+                                    <h3 className="text-2xl font-bold leading-6 text-gray-900 mb-2">
+                                        Hapus Berita?
+                                    </h3>
+                                    <p className="text-sm text-gray-500 mb-6">
+                                        Apakah Anda yakin ingin menghapus berita{" "}
+                                        <span className="font-semibold text-gray-900">
+                                            "{beritaToDelete.judul}"
+                                        </span>
+                                        ? Tindakan ini tidak dapat dibatalkan.
+                                    </p>
+                                </div>
+
+                                <div className="flex flex-col sm:flex-row-reverse gap-3 mt-6">
                                     <button
                                         type="button"
-                                        className="bg-white rounded-full p-1.5 inline-flex items-center justify-center text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500"
+                                        className="w-full inline-flex justify-center items-center px-6 py-3 border border-transparent text-sm font-bold rounded-xl text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 shadow-lg shadow-red-600/20 transition-all duration-200"
+                                        onClick={(e) => {
+                                            e.preventDefault();
+                                            handleDelete(beritaToDelete);
+                                        }}
+                                        disabled={isLoading}
+                                    >
+                                        {isLoading ? (
+                                            <>
+                                                <FaSpinner className="w-4 h-4 mr-2 animate-spin" />
+                                                Menghapus...
+                                            </>
+                                        ) : (
+                                            "Ya, Hapus Berita"
+                                        )}
+                                    </button>
+                                    <button
+                                        type="button"
+                                        className="w-full inline-flex justify-center items-center px-6 py-3 border border-gray-200 text-sm font-bold rounded-xl text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-200 transition-all duration-200"
                                         onClick={() => {
                                             setShowDeleteModal(false);
                                             setBeritaToDelete(null);
                                         }}
                                     >
-                                        <span className="sr-only">Tutup</span>
-                                        <svg
-                                            className="h-5 w-5"
-                                            xmlns="http://www.w3.org/2000/svg"
-                                            fill="none"
-                                            viewBox="0 0 24 24"
-                                            stroke="currentColor"
-                                            aria-hidden="true"
-                                        >
-                                            <path
-                                                strokeLinecap="round"
-                                                strokeLinejoin="round"
-                                                strokeWidth="2"
-                                                d="M6 18L18 6M6 6l12 12"
-                                            />
-                                        </svg>
+                                        Batal
                                     </button>
-                                </div>
-                                <div className="p-8">
-                                    <div className="flex items-center justify-center w-16 h-16 mx-auto bg-red-100 rounded-full mb-6">
-                                        <FaTrash className="h-7 w-7 text-red-600" />
-                                    </div>
-                                    <div className="text-center">
-                                        <h3 className="text-xl font-bold text-gray-900 mb-2">
-                                            Konfirmasi Hapus Berita
-                                        </h3>
-                                        <div className="mt-4 mb-2 p-3 bg-gray-50 rounded-lg border border-gray-100">
-                                            <p className="font-medium text-gray-800 line-clamp-2">
-                                                "{beritaToDelete.judul}"
-                                            </p>
-                                        </div>
-                                        <p className="mt-3 text-sm text-gray-500">
-                                            Apakah Anda yakin ingin menghapus
-                                            berita ini?
-                                            <span className="font-medium text-red-600">
-                                                Tindakan ini tidak dapat
-                                                dibatalkan.
-                                            </span>
-                                        </p>
-                                    </div>
-                                    <div className="mt-8 flex flex-col-reverse sm:flex-row sm:justify-end gap-3">
-                                        <button
-                                            type="button"
-                                            className="px-5 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-xl hover:bg-gray-50 transition-colors duration-200 shadow-sm"
-                                            onClick={() => {
-                                                setShowDeleteModal(false);
-                                                setBeritaToDelete(null);
-                                            }}
-                                        >
-                                            Batal
-                                        </button>
-                                        <button
-                                            type="button"
-                                            className="px-5 py-2.5 text-sm font-medium text-white bg-red-600 rounded-xl hover:bg-red-700 transition-colors duration-200 shadow-sm flex items-center justify-center"
-                                            onClick={(e) => {
-                                                e.preventDefault(); // Mencegah perilaku default form submission
-                                                handleDelete(beritaToDelete);
-                                            }}
-                                        >
-                                            {isLoading ? (
-                                                <>
-                                                    <FaSpinner className="animate-spin mr-2 h-4 w-4" />
-                                                    Menghapus...
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <FaTrash className="mr-2 h-4 w-4" />
-                                                    Hapus Berita
-                                                </>
-                                            )}
-                                        </button>
-                                    </div>
                                 </div>
                             </div>
                         </div>

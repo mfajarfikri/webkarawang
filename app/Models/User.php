@@ -70,4 +70,28 @@ class User extends Authenticatable implements MustVerifyEmail
     {
         return $this->hasMany(\App\Models\GarduInduk::class, 'id', 'gardu_induk_ids');
     }
+
+    /**
+     * Get the anomalies created by the user.
+     */
+    public function anomalis()
+    {
+        return $this->hasMany(Anomali::class, 'user_id');
+    }
+
+    /**
+     * Get the anomalies assigned to the user.
+     */
+    public function assignedAnomalis()
+    {
+        return $this->hasMany(Anomali::class, 'assign_to');
+    }
+
+    /**
+     * Get the anomalies approved by the user.
+     */
+    public function approvedAnomalis()
+    {
+        return $this->hasMany(Anomali::class, 'approve_by');
+    }
 }

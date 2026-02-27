@@ -154,7 +154,9 @@
     border-radius: 0.5rem;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
     min-height: 200px;
-    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    transition:
+        border-color 0.2s ease,
+        box-shadow 0.2s ease;
 }
 
 .tiptap :first-child {
@@ -559,9 +561,15 @@ blockquote {
     background: #ffffff;
     border: 1px solid #e5e7eb;
     border-radius: 1rem;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1), 0 1px 8px rgba(0, 0, 0, 0.05);
+    box-shadow:
+        0 10px 30px rgba(0, 0, 0, 0.1),
+        0 1px 8px rgba(0, 0, 0, 0.05);
     overflow: hidden;
-    font-family: "Montserrat", ui-sans-serif, system-ui, -apple-system;
+    font-family:
+        "Montserrat",
+        ui-sans-serif,
+        system-ui,
+        -apple-system;
 }
 
 .calendar-header {
@@ -818,7 +826,8 @@ blockquote {
     max-width: 400px;
     background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
     border-radius: var(--rdp-border-radius);
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1),
+    box-shadow:
+        0 4px 6px -1px rgba(0, 0, 0, 0.1),
         0 2px 4px -1px rgba(0, 0, 0, 0.06);
     overflow: hidden;
     transition: all 0.3s ease;
@@ -829,7 +838,8 @@ blockquote {
 
 .rdp-custom .rdp-month:hover {
     transform: translateY(-2px);
-    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1),
+    box-shadow:
+        0 10px 15px -3px rgba(0, 0, 0, 0.1),
         0 4px 6px -2px rgba(0, 0, 0, 0.05);
 }
 
@@ -1242,5 +1252,170 @@ blockquote {
     .rdp-custom .rdp-day_outside:hover {
         background-color: #1f2937;
         color: #9ca3af;
+    }
+
+    /**
+     * Customize the range selection styles
+     */
+    .gallery-grid {
+        display: grid;
+        grid-template-columns: repeat(1, 1fr);
+        gap: 1rem;
+    }
+
+    @media (min-width: 640px) {
+        .gallery-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+    }
+
+    @media (min-width: 768px) {
+        .gallery-grid {
+            grid-template-columns: repeat(3, 1fr);
+        }
+    }
+
+    @media (min-width: 1024px) {
+        .gallery-grid {
+            grid-template-columns: repeat(4, 1fr);
+        }
+    }
+
+    /* CSS untuk masonry grid */
+    .masonry-grid {
+        column-count: 1;
+        column-gap: 1.5rem;
+    }
+
+    @media (min-width: 640px) {
+        .masonry-grid {
+            column-count: 2;
+        }
+    }
+
+    @media (min-width: 768px) {
+        .masonry-grid {
+            column-count: 3;
+        }
+    }
+
+    @media (min-width: 1024px) {
+        .masonry-grid {
+            column-count: 4;
+        }
+    }
+
+    .masonry-grid .gallery-item {
+        break-inside: avoid;
+        margin-bottom: 1.5rem;
+    }
+
+    .gallery-item {
+        break-inside: avoid;
+        position: relative;
+        transform: translateZ(0); /* Untuk performa animasi yang lebih baik */
+        will-change: transform; /* Untuk performa animasi yang lebih baik */
+    }
+
+    /* Aspect ratio polyfill */
+    .aspect-w-1 {
+        position: relative;
+        padding-bottom: 100%;
+    }
+
+    .aspect-w-1 > img {
+        position: absolute;
+        height: 100%;
+        width: 100%;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        left: 0;
+        object-fit: cover;
+        object-position: center;
+    }
+
+    /* Tombol scroll to top */
+    .scroll-to-top {
+        position: fixed;
+        bottom: 2rem;
+        right: 2rem;
+        background-color: rgba(59, 130, 246, 0.8);
+        color: white;
+        width: 3rem;
+        height: 3rem;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        z-index: 40;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+        backdrop-filter: blur(4px);
+    }
+
+    .scroll-to-top:hover {
+        background-color: rgba(37, 99, 235, 1);
+        transform: translateY(-3px);
+    }
+
+    .rbc-calendar {
+        min-height: 600px;
+        font-family: inherit;
+    }
+    .rbc-header {
+        padding: 1rem 0;
+        font-weight: 700;
+        color: #64748b;
+        font-size: 0.875rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        border-bottom: 1px solid #f1f5f9;
+    }
+    .rbc-month-view {
+        border: 1px solid #f1f5f9;
+        border-radius: 1rem;
+        overflow: hidden;
+    }
+    .rbc-day-bg {
+        border-left: 1px solid #f1f5f9;
+    }
+    .rbc-off-range-bg {
+        background-color: #f8fafc;
+    }
+    .rbc-today {
+        background-color: #f0f9ff;
+    }
+    .rbc-date-cell {
+        padding: 0.5rem 0.75rem;
+        font-weight: 500;
+        color: #334155;
+        text-align: right;
+    }
+    .rbc-event {
+        background-color: #3b82f6;
+        border-radius: 0.5rem;
+        padding: 2px 5px;
+        font-size: 0.85rem;
+    }
+    .rbc-toolbar button {
+        color: #64748b;
+        font-weight: 600;
+        padding: 0.5rem 1rem;
+        border-radius: 0.75rem;
+        border: 1px solid #e2e8f0;
+        box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    }
+    .rbc-toolbar button.rbc-active {
+        background-color: #eff6ff;
+        color: #2563eb;
+        border-color: #bfdbfe;
+        box-shadow: none;
+    }
+    .rbc-toolbar button:hover {
+        background-color: #f8fafc;
+        color: #1d4ed8;
+        border-color: #bfdbfe;
     }
 }

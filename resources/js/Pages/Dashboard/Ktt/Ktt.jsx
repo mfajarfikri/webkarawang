@@ -1,7 +1,15 @@
 import DashboardLayout from "@/Layouts/DashboardLayout";
 import { Head, Link, useForm } from "@inertiajs/react";
 import { useEffect, useState, useMemo } from "react";
-import { FaBuilding, FaPlus, FaMapMarkerAlt, FaChevronLeft, FaChevronRight, FaSearch, FaCheck } from "react-icons/fa";
+import {
+    FaBuilding,
+    FaPlus,
+    FaMapMarkerAlt,
+    FaChevronLeft,
+    FaChevronRight,
+    FaSearch,
+    FaCheck,
+} from "react-icons/fa";
 import { Listbox } from "@headlessui/react";
 import Modal from "@/Components/Modal";
 import SecondaryButton from "@/Components/SecondaryButton";
@@ -12,12 +20,12 @@ import axios from "axios";
 
 // Fungsi untuk membuat badge tipe, sama seperti di file Anomali.jsx
 function TipeBadge({ tipe }) {
-    let color = "bg-gray-200 text-gray-700";
-    if (tipe === "Gold") color = "bg-yellow-100 text-yellow-800";
-    else if (tipe === "Silver") color = "bg-gray-200 text-gray-700";
+    let color = "bg-slate-100 text-slate-700";
+    if (tipe === "Gold") color = "bg-amber-100 text-amber-800";
+    else if (tipe === "Silver") color = "bg-slate-200 text-slate-700";
     else if (tipe === "Bronze") color = "bg-amber-100 text-amber-800";
-    else if (tipe === "Khusus") color = "bg-gray-800 text-white";
-    else if (tipe === "Reguler") color = "bg-blue-100 text-blue-800";
+    else if (tipe === "Khusus") color = "bg-slate-800 text-white";
+    else if (tipe === "Reguler") color = "bg-sky-100 text-sky-800";
     return (
         <span className={`px-2 py-1 rounded text-xs font-semibold ${color}`}>
             {tipe}
@@ -30,7 +38,7 @@ export default function Ktt({ ktts }) {
     const [rowsPerPage, setRowsPerPage] = useState(10);
     const [page, setPage] = useState(1);
     const [searchTerm, setSearchTerm] = useState("");
-    
+
     const { data, setData, reset, errors, processing } = useForm({
         name: "",
         lokasi: "",
@@ -78,7 +86,7 @@ export default function Ktt({ ktts }) {
             .then((response) => {
                 toast.success(
                     `KTT ${data.name} berhasil ditambahkan`,
-                    toastConfig
+                    toastConfig,
                 );
                 handleClose();
                 reset();
@@ -101,14 +109,14 @@ export default function Ktt({ ktts }) {
                         Object.keys(validationErrors).forEach((key) => {
                             toast.error(
                                 `${key}: ${validationErrors[key][0]}`,
-                                toastConfig
+                                toastConfig,
                             );
                         });
                     } else {
                         toast.error(
                             error.response.data.message ||
                                 "Validation error occurred",
-                            toastConfig
+                            toastConfig,
                         );
                     }
                 } else {
@@ -116,12 +124,12 @@ export default function Ktt({ ktts }) {
                     toast.error(
                         error.response?.data?.message ||
                             "Gagal menambahkan KTT",
-                        toastConfig
+                        toastConfig,
                     );
                 }
             });
     };
-    
+
     const handleRowsPerPageChange = (val) => {
         setRowsPerPage(val);
         setPage(1);
@@ -131,12 +139,12 @@ export default function Ktt({ ktts }) {
         setSearchTerm(val);
         setPage(1);
     };
-    
+
     const filteredKtts = useMemo(() => {
         if (!Array.isArray(rows)) return [];
-    
+
         let filtered = rows;
-    
+
         if (searchTerm && searchTerm.trim() !== "") {
             const searchLower = searchTerm.toLowerCase().trim();
             filtered = filtered.filter((ktt) => {
@@ -144,25 +152,26 @@ export default function Ktt({ ktts }) {
                     (ktt.name || "").toLowerCase().includes(searchLower) ||
                     (ktt.lokasi || "").toLowerCase().includes(searchLower) ||
                     (ktt.tipe || "").toLowerCase().includes(searchLower) ||
-                    (ktt.kapasitas.toString() || "").toLowerCase().includes(searchLower)
+                    (ktt.kapasitas.toString() || "")
+                        .toLowerCase()
+                        .includes(searchLower)
                 );
             });
         }
-    
+
         return filtered;
     }, [rows, searchTerm]);
-    
+
     const totalRows = filteredKtts.length;
     const totalPages = Math.max(1, Math.ceil(totalRows / rowsPerPage));
-    
+
     const paginatedData = useMemo(() => {
         const start = (page - 1) * rowsPerPage;
         return filteredKtts.slice(start, start + rowsPerPage);
     }, [filteredKtts, page, rowsPerPage]);
-    
+
     const handlePrev = () => setPage((p) => Math.max(1, p - 1));
     const handleNext = () => setPage((p) => Math.min(totalPages, p + 1));
-
 
     return (
         <>
@@ -170,63 +179,116 @@ export default function Ktt({ ktts }) {
             <DashboardLayout>
                 <ToastContainer />
                 <div className="py-6 w-full mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="bg-gradient-to-r from-blue-600 to-indigo-700 rounded-xl shadow-lg mb-6 overflow-hidden">
-                        <div className="px-6 py-8 md:px-10 md:py-10">
-                            <div className="flex flex-col md:flex-row md:items-center justify-between">
-                                <div className="mb-6 md:mb-0">
-                                    <h1 className="text-2xl md:text-3xl font-bold text-white flex items-center">
-                                        <div className="flex items-center justify-center bg-blue-500 rounded-full w-12 h-12 mr-3">
-                                            <FaBuilding className="text-blue-200" />
+                    <div className="mb-8 rounded-2xl border border-slate-200 bg-white shadow-sm">
+                        <div className="px-6 py-6 md:px-8 md:py-8">
+                            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+                                <div>
+                                    <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-600 mb-3">
+                                        <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+                                        Ringkasan KTT
+                                    </div>
+                                    <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight text-slate-900 flex items-center">
+                                        <div className="flex items-center justify-center bg-slate-50 border border-slate-200 rounded-2xl w-11 h-11 mr-3 shadow-sm">
+                                            <FaBuilding className="text-slate-600" />
                                         </div>
                                         Konsumen Tegangan Tinggi
                                     </h1>
-                                    <p className="mt-2 text-blue-100 max-w-2xl">
-                                        Data konsumen tegangan tinggi (KTT) yang terdaftar pada sistem
+                                    <p className="mt-2 text-sm md:text-base text-slate-600 max-w-2xl">
+                                        Data konsumen tegangan tinggi (KTT) yang
+                                        terdaftar dan dimonitor pada sistem UPT
+                                        Karawang.
                                     </p>
                                 </div>
                                 <button
                                     onClick={handleOpen}
-                                    className="inline-flex items-center px-4 py-2 bg-white text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-200 shadow-sm font-medium"
+                                    className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50"
+                                    aria-label="Tambah data KTT"
                                 >
-                                    <FaPlus className="mr-2" />
-                                    Tambah KTT
+                                    <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-sky-600 text-white">
+                                        <FaPlus className="h-3.5 w-3.5" />
+                                    </span>
+                                    <span>Tambah KTT</span>
                                 </button>
                             </div>
                         </div>
                     </div>
-                    {/* Bagian card data KTT Karawang dan Purwakarta tetap sama */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div className="group relative overflow-hidden rounded-xl bg-white hover:shadow-xl transition-all duration-300 border">
-                            <div className="p-8">
-                                <div className="flex items-center justify-between mb-6">
-                                    <div className="flex items-center space-x-4">
-                                        <div className="flex items-center justify-center w-14 h-14 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 text-white shadow-md">
-                                            <FaBuilding className="w-7 h-7" />
+                        <div className="group relative overflow-hidden rounded-2xl bg-white border border-slate-200 shadow-sm transition-colors hover:bg-slate-50">
+                            <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-sky-500 via-sky-400 to-cyan-400 opacity-80" />
+                            <div className="p-6">
+                                <div className="flex items-center justify-between mb-5">
+                                    <div className="flex items-center gap-4">
+                                        <div className="flex items-center justify-center w-14 h-14 rounded-2xl bg-sky-600 text-white shadow-md">
+                                            {/* <FaMapMarkerAlt className="w-7 h-7" /> */}
+                                            <svg
+                                                width="24"
+                                                height="18"
+                                                xmlns="http://www.w3.org/2000/svg"
+                                                viewBox="0 0 24 18"
+                                            >
+                                                {/* <!-- Background --> */}
+                                                <rect
+                                                    width="24"
+                                                    height="18"
+                                                    fill="#e0f7fa"
+                                                />
+
+                                                {/* <!-- Outline of Karawang region (simplified path based on general geography) --> */}
+                                                <path
+                                                    d="M3 4 L21 4 L21 14 L14 14 L11 11 L7 11 L3 8 Z"
+                                                    fill="#4caf50"
+                                                    stroke="#2e7d32"
+                                                    strokeWidth="1"
+                                                />
+
+                                                {/* <!-- Rivers (simplified) --> */}
+                                                <path
+                                                    d="M6 7 L12 7 L15 10"
+                                                    fill="none"
+                                                    stroke="#2196f3"
+                                                    strokeWidth="1.5"
+                                                />
+
+                                                {/* <!-- Coastline (northern part) --> */}
+                                                <line
+                                                    x1="3"
+                                                    y1="4"
+                                                    x2="21"
+                                                    y2="4"
+                                                    stroke="#0277bd"
+                                                    strokeWidth="2"
+                                                />
+                                            </svg>
                                         </div>
                                         <div>
-                                            <h3 className="text-2xl font-bold text-gray-800">
+                                            <h3 className="text-xl font-bold text-slate-900">
                                                 Karawang
                                             </h3>
-                                            <p className="text-sm text-gray-500 mt-1">
+                                            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-600 mt-1">
                                                 Wilayah Operasional
                                             </p>
                                         </div>
                                     </div>
+                                    <span className="hidden md:inline-flex items-center rounded-full bg-sky-50 px-3 py-1 text-[11px] font-semibold text-sky-700 border border-sky-100">
+                                        ULTG Karawang
+                                    </span>
                                 </div>
-                                <div className="grid grid-cols-2 gap-6">
-                                    <div className="bg-white rounded-lg p-4 shadow-sm border border-blue-50">
-                                        <p className="text-sm text-gray-500 mb-1">
+                                <div className="grid grid-cols-2 gap-5">
+                                    <div className="relative overflow-hidden rounded-xl bg-white p-4 shadow-sm border border-slate-200">
+                                        <div className="absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-sky-500 to-cyan-400" />
+                                        <p className="text-xs font-medium text-slate-500 mb-1">
                                             Total KTT
                                         </p>
-                                        <p className="text-2xl font-bold text-blue-600">
+                                        <p className="text-2xl font-extrabold text-slate-900">
                                             24 Unit
                                         </p>
                                     </div>
-                                    <div className="bg-white rounded-lg p-4 shadow-sm border border-blue-50">
-                                        <p className="text-sm text-gray-500 mb-1">
+                                    <div className="relative overflow-hidden rounded-xl bg-white p-4 shadow-sm border border-slate-200">
+                                        <div className="absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-cyan-400 to-sky-500" />
+                                        <p className="text-xs font-medium text-slate-500 mb-1">
                                             Kapasitas
                                         </p>
-                                        <p className="text-2xl font-bold text-blue-600">
+                                        <p className="text-2xl font-extrabold text-slate-900">
                                             150 MVA
                                         </p>
                                     </div>
@@ -234,11 +296,12 @@ export default function Ktt({ ktts }) {
                             </div>
                         </div>
 
-                        <div className="group relative overflow-hidden rounded-xl bg-white hover:shadow-xl transition-all duration-300 border">
-                            <div className="p-8">
-                                <div className="flex items-center justify-between mb-6">
-                                    <div className="flex items-center space-x-4">
-                                        <div className="flex items-center justify-center w-14 h-14 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 text-white shadow-md">
+                        <div className="group relative overflow-hidden rounded-2xl bg-white border border-slate-200 shadow-sm transition-colors hover:bg-slate-50">
+                            <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-indigo-500 via-sky-500 to-cyan-400 opacity-80" />
+                            <div className="p-6">
+                                <div className="flex items-center justify-between mb-5">
+                                    <div className="flex items-center gap-4">
+                                        <div className="flex items-center justify-center w-14 h-14 rounded-2xl bg-indigo-600 text-white shadow-md">
                                             <svg
                                                 className="w-7 h-7"
                                                 viewBox="0 0 24 24"
@@ -269,29 +332,34 @@ export default function Ktt({ ktts }) {
                                             </svg>
                                         </div>
                                         <div>
-                                            <h3 className="text-2xl font-bold text-gray-800">
+                                            <h3 className="text-xl font-bold text-slate-900">
                                                 Purwakarta
                                             </h3>
-                                            <p className="text-sm text-gray-500 mt-1">
+                                            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-600 mt-1">
                                                 Wilayah Operasional
                                             </p>
                                         </div>
                                     </div>
+                                    <span className="hidden md:inline-flex items-center rounded-full bg-indigo-50 px-3 py-1 text-[11px] font-semibold text-indigo-700 border border-indigo-100">
+                                        ULTG Purwakarta
+                                    </span>
                                 </div>
-                                <div className="grid grid-cols-2 gap-6">
-                                    <div className="bg-white rounded-lg p-4 shadow-sm border border-blue-50">
-                                        <p className="text-sm text-gray-500 mb-1">
+                                <div className="grid grid-cols-2 gap-5">
+                                    <div className="relative overflow-hidden rounded-xl bg-white p-4 shadow-sm border border-slate-200">
+                                        <div className="absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-indigo-500 to-sky-500" />
+                                        <p className="text-xs font-medium text-slate-500 mb-1">
                                             Total KTT
                                         </p>
-                                        <p className="text-2xl font-bold text-blue-600">
+                                        <p className="text-2xl font-extrabold text-slate-900">
                                             24 Unit
                                         </p>
                                     </div>
-                                    <div className="bg-white rounded-lg p-4 shadow-sm border border-blue-50">
-                                        <p className="text-sm text-gray-500 mb-1">
+                                    <div className="relative overflow-hidden rounded-xl bg-white p-4 shadow-sm border border-slate-200">
+                                        <div className="absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-sky-500 to-indigo-500" />
+                                        <p className="text-xs font-medium text-slate-500 mb-1">
                                             Kapasitas
                                         </p>
-                                        <p className="text-2xl font-bold text-blue-600">
+                                        <p className="text-2xl font-extrabold text-slate-900">
                                             150 MVA
                                         </p>
                                     </div>
@@ -301,14 +369,14 @@ export default function Ktt({ ktts }) {
                     </div>
 
                     {/* Mengganti DataGrid dengan tabel HTML manual */}
-                    <div className="bg-white rounded-xl mt-6 shadow-sm border overflow-hidden">
+                    <div className="bg-white rounded-2xl mt-6 shadow-sm border border-slate-200 overflow-hidden">
                         <div className="p-6">
                             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                                 <div className="w-full">
-                                    <h2 className="text-2xl font-bold text-gray-800">
+                                    <h2 className="text-2xl font-extrabold tracking-tight text-slate-900">
                                         Data KTT UPT Karawang
                                     </h2>
-                                    <p className="text-sm text-gray-500 mt-1">
+                                    <p className="text-sm text-slate-600 mt-1">
                                         Kelola data KTT di wilayah Karawang
                                     </p>
                                 </div>
@@ -317,20 +385,23 @@ export default function Ktt({ ktts }) {
                                         <input
                                             type="text"
                                             placeholder="Cari nama KTT..."
-                                            className="w-full pl-12 pr-4 py-2 border border-gray-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
+                                            className="w-full pl-12 pr-4 py-2 border border-slate-300 rounded-lg focus:border-sky-500 focus:ring-2 focus:ring-sky-500"
                                             value={searchTerm}
-                                            onChange={(e) => handleSearch(e.target.value)}
+                                            onChange={(e) =>
+                                                handleSearch(e.target.value)
+                                            }
+                                            aria-label="Cari nama KTT"
                                         />
-                                        <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-lg" />
+                                        <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-lg" />
                                     </div>
                                 </div>
                             </div>
                         </div>
                         <div className="px-2 md:px-6 pb-6 pt-4">
-                            <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white">
+                            <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">
                                 <div className="overflow-y-auto custom-scrollbar">
                                     <table className="min-w-full w-full table-auto">
-                                        <thead className="bg-gray-100 text-gray-600 sticky top-0">
+                                        <thead className="bg-slate-50 text-slate-700 sticky top-0">
                                             <tr>
                                                 <th className="w-[5%] px-3 py-3 text-left text-xs sm:text-sm font-semibold whitespace-nowrap">
                                                     No
@@ -352,39 +423,66 @@ export default function Ktt({ ktts }) {
                                                 </th>
                                             </tr>
                                         </thead>
-                                        <tbody className="bg-white divide-y divide-gray-200">
+                                        <tbody className="bg-white divide-y divide-slate-200">
                                             {paginatedData.length === 0 ? (
                                                 <tr>
-                                                    <td colSpan={6} className="text-center py-10 text-gray-400 font-semibold text-base">
+                                                    <td
+                                                        colSpan={6}
+                                                        className="text-center py-10 text-slate-400 font-semibold text-base"
+                                                    >
                                                         Tidak ada data KTT.
                                                     </td>
                                                 </tr>
                                             ) : (
-                                                paginatedData.map((ktt, idx) => (
-                                                    <tr className="hover:bg-gray-50" key={ktt.id}>
-                                                        <td className="px-3 py-3 text-left text-xs sm:text-sm text-gray-600 whitespace-nowrap">
-                                                            {(page - 1) * rowsPerPage + idx + 1}
-                                                        </td>
-                                                        <td className="px-3 py-3 text-left text-xs sm:text-sm text-gray-800 truncate max-w-[8rem] sm:max-w-[12rem]" title={ktt.name}>
-                                                            {ktt.name}
-                                                        </td>
-                                                        <td className="px-3 py-3 text-left text-xs sm:text-sm text-gray-700">
-                                                            {ktt.lokasi}
-                                                        </td>
-                                                        <td className="px-3 py-3 text-left text-xs sm:text-sm whitespace-nowrap">
-                                                            <TipeBadge tipe={ktt.tipe} />
-                                                        </td>
-                                                        <td className="px-3 py-3 text-left text-xs sm:text-sm text-gray-700">
-                                                            {ktt.kapasitas} MVA
-                                                        </td>
-                                                        <td className="px-3 py-3 text-left text-xs sm:text-sm text-gray-600 whitespace-nowrap">
-                                                            <div className="flex items-center gap-1">
-                                                                <FaMapMarkerAlt className="text-red-500" />
-                                                                <span>{ktt.latitude}, {ktt.longitude}</span>
-                                                            </div>
-                                                        </td>
-                                                    </tr>
-                                                ))
+                                                paginatedData.map(
+                                                    (ktt, idx) => (
+                                                        <tr
+                                                            className="hover:bg-slate-50"
+                                                            key={ktt.id}
+                                                        >
+                                                            <td className="px-3 py-3 text-left text-xs sm:text-sm text-slate-600 whitespace-nowrap">
+                                                                {(page - 1) *
+                                                                    rowsPerPage +
+                                                                    idx +
+                                                                    1}
+                                                            </td>
+                                                            <td
+                                                                className="px-3 py-3 text-left text-xs sm:text-sm text-slate-800 truncate max-w-[8rem] sm:max-w-[12rem]"
+                                                                title={ktt.name}
+                                                            >
+                                                                {ktt.name}
+                                                            </td>
+                                                            <td className="px-3 py-3 text-left text-xs sm:text-sm text-slate-700">
+                                                                {ktt.lokasi}
+                                                            </td>
+                                                            <td className="px-3 py-3 text-left text-xs sm:text-sm whitespace-nowrap">
+                                                                <TipeBadge
+                                                                    tipe={
+                                                                        ktt.tipe
+                                                                    }
+                                                                />
+                                                            </td>
+                                                            <td className="px-3 py-3 text-left text-xs sm:text-sm text-slate-700">
+                                                                {ktt.kapasitas}{" "}
+                                                                MVA
+                                                            </td>
+                                                            <td className="px-3 py-3 text-left text-xs sm:text-sm text-slate-600 whitespace-nowrap">
+                                                                <div className="flex items-center gap-1">
+                                                                    <FaMapMarkerAlt className="text-red-500" />
+                                                                    <span>
+                                                                        {
+                                                                            ktt.latitude
+                                                                        }
+                                                                        ,{" "}
+                                                                        {
+                                                                            ktt.longitude
+                                                                        }
+                                                                    </span>
+                                                                </div>
+                                                            </td>
+                                                        </tr>
+                                                    ),
+                                                )
                                             )}
                                         </tbody>
                                     </table>
@@ -393,76 +491,79 @@ export default function Ktt({ ktts }) {
                             <div className="flex flex-col gap-2 mt-4 px-2 w-full">
                                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 w-full">
                                     <div className="flex items-center gap-2">
-                                        <label className="text-gray-600 text-sm font-medium mr-1">
+                                        <label className="text-slate-600 text-sm font-medium mr-1">
                                             Tampil
                                         </label>
                                         <div className="min-w-[4.5rem]">
                                             <Listbox
                                                 value={rowsPerPage}
-                                                onChange={handleRowsPerPageChange}
+                                                onChange={
+                                                    handleRowsPerPageChange
+                                                }
                                             >
                                                 <div className="relative">
-                                                    <Listbox.Button className="border border-gray-300 rounded-lg px-2 py-1 text-sm w-full text-left bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+                                                    <Listbox.Button className="border border-slate-300 rounded-lg px-2 py-1 text-sm w-full text-left bg-white focus:ring-2 focus:ring-sky-500 focus:border-sky-500 transition">
                                                         {rowsPerPage}
                                                     </Listbox.Button>
-                                                    <Listbox.Options className="absolute left-0 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg z-50 overflow-hidden">
-                                                        {[10, 20, 50].map((option) => (
-                                                            <Listbox.Option
-                                                                key={option}
-                                                                value={option}
-                                                                className={({ active, selected }) =>
-                                                                    `relative cursor-pointer select-none px-2 py-1 text-sm transition-colors ${
-                                                                        active
-                                                                            ? "bg-blue-50 text-blue-800"
-                                                                            : selected
-                                                                            ? "bg-gray-100 text-gray-900"
-                                                                            : "text-gray-700"
-                                                                    }`
-                                                                }
-                                                            >
-                                                                {({ selected }) => (
-                                                                    <div className="flex items-center">
-                                                                        <span
-                                                                            className={`block truncate ${
-                                                                                selected
-                                                                                    ? "font-semibold"
-                                                                                    : "font-normal"
-                                                                            }`}
-                                                                        >
-                                                                            {option}
-                                                                        </span>
-                                                                        {selected && (
-                                                                            <span className="ml-auto flex items-center text-blue-600">
-                                                                                <FaCheck
-                                                                                    className="h-4 w-4"
-                                                                                    aria-hidden="true"
-                                                                                />
+                                                    <Listbox.Options className="absolute left-0 mt-1 w-full bg-white border border-slate-200 rounded-lg shadow-lg z-50 overflow-hidden">
+                                                        {[10, 20, 50].map(
+                                                            (option) => (
+                                                                <Listbox.Option
+                                                                    key={option}
+                                                                    value={
+                                                                        option
+                                                                    }
+                                                                    className={({
+                                                                        active,
+                                                                        selected,
+                                                                    }) =>
+                                                                        `relative cursor-pointer select-none px-2 py-1 text-sm transition-colors ${active ? "bg-sky-50 text-sky-800" : selected ? "bg-slate-100 text-slate-900" : "text-slate-700"}`
+                                                                    }
+                                                                >
+                                                                    {({
+                                                                        selected,
+                                                                    }) => (
+                                                                        <div className="flex items-center">
+                                                                            <span
+                                                                                className={`block truncate ${selected ? "font-semibold" : "font-normal"}`}
+                                                                            >
+                                                                                {
+                                                                                    option
+                                                                                }
                                                                             </span>
-                                                                        )}
-                                                                    </div>
-                                                                )}
-                                                            </Listbox.Option>
-                                                        ))}
+                                                                            {selected && (
+                                                                                <span className="ml-auto flex items-center text-sky-600">
+                                                                                    <FaCheck
+                                                                                        className="h-4 w-4"
+                                                                                        aria-hidden="true"
+                                                                                    />
+                                                                                </span>
+                                                                            )}
+                                                                        </div>
+                                                                    )}
+                                                                </Listbox.Option>
+                                                            ),
+                                                        )}
                                                     </Listbox.Options>
                                                 </div>
                                             </Listbox>
                                         </div>
-                                        <span className="text-gray-500 text-xs ml-1">
+                                        <span className="text-slate-500 text-xs ml-1">
                                             / halaman
                                         </span>
                                     </div>
-                                    <div className="text-sm text-gray-600 mb-1 sm:mb-0 text-center sm:text-left">
+                                    <div className="text-sm text-slate-600 mb-1 sm:mb-0 text-center sm:text-left">
                                         Halaman{" "}
-                                        <span className="font-semibold text-gray-800">
+                                        <span className="font-semibold text-slate-800">
                                             {page}
                                         </span>{" "}
                                         dari{" "}
-                                        <span className="font-semibold text-gray-800">
+                                        <span className="font-semibold text-slate-800">
                                             {totalPages}
                                         </span>
                                         <span className="mx-2">|</span>
                                         Total{" "}
-                                        <span className="font-semibold text-gray-800">
+                                        <span className="font-semibold text-slate-800">
                                             {totalRows}
                                         </span>{" "}
                                         data
@@ -471,30 +572,21 @@ export default function Ktt({ ktts }) {
                                         <button
                                             onClick={handlePrev}
                                             disabled={page === 1}
-                                            className={`px-3 py-2 rounded-l-md border border-r-0 text-sm flex items-center gap-1 font-semibold transition-colors
-                                            ${
-                                                page === 1
-                                                    ? "bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed"
-                                                    : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
-                                            }
-                                            `}
+                                            className={`px-3 py-2 rounded-l-md border border-r-0 text-sm flex items-center gap-1 font-semibold transition-colors ${page === 1 ? "bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed" : "bg-white text-slate-700 border-slate-300 hover:bg-slate-50"}`}
                                             aria-label="Halaman sebelumnya"
                                         >
                                             <FaChevronLeft />
                                         </button>
-                                        <span className="px-4 py-2 text-sm bg-gray-50 text-gray-800 select-none font-bold tracking-wide border-t border-b border-gray-200">
+                                        <span
+                                            className="px-4 py-2 text-sm bg-slate-50 text-slate-800 select-none font-bold tracking-wide border-t border-b border-slate-200"
+                                            aria-live="polite"
+                                        >
                                             {page}
                                         </span>
                                         <button
                                             onClick={handleNext}
                                             disabled={page === totalPages}
-                                            className={`px-3 py-2 rounded-r-md border border-l-0 text-sm flex items-center gap-1 font-semibold transition-colors
-                                            ${
-                                                page === totalPages
-                                                    ? "bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed"
-                                                    : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
-                                            }
-                                            `}
+                                            className={`px-3 py-2 rounded-r-md border border-l-0 text-sm flex items-center gap-1 font-semibold transition-colors ${page === totalPages ? "bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed" : "bg-white text-slate-700 border-slate-300 hover:bg-slate-50"}`}
                                             aria-label="Halaman berikutnya"
                                         >
                                             <FaChevronRight />
@@ -521,7 +613,7 @@ export default function Ktt({ ktts }) {
                         },
                     }}
                 >
-                    <DialogTitle className="flex items-center justify-between p-6 border-b border-gray-100 bg-gradient-to-r from-blue-600 to-indigo-700">
+                    <DialogTitle className="flex items-center justify-between p-6 border-b border-slate-100 bg-gradient-to-r from-sky-600 to-sky-700">
                         <span className="text-xl font-semibold text-white">
                             Tambah Data KTT
                         </span>
@@ -543,7 +635,7 @@ export default function Ktt({ ktts }) {
                         >
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4">
                                 <div className="flex flex-col">
-                                    <label className="text-sm font-medium text-gray-700 mb-1">
+                                    <label className="text-sm font-medium text-slate-700 mb-1">
                                         Nama KTT
                                     </label>
                                     <input
@@ -552,13 +644,13 @@ export default function Ktt({ ktts }) {
                                         value={data.name}
                                         onChange={handleChange}
                                         required
-                                        className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors"
+                                        className="w-full px-4 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-colors"
                                         placeholder="Masukkan nama KTT"
                                     />
                                 </div>
 
                                 <div className="flex flex-col">
-                                    <label className="text-sm font-medium text-gray-700 mb-1">
+                                    <label className="text-sm font-medium text-slate-700 mb-1">
                                         Lokasi
                                     </label>
                                     <select
@@ -566,7 +658,7 @@ export default function Ktt({ ktts }) {
                                         value={data.lokasi}
                                         onChange={handleChange}
                                         required
-                                        className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors"
+                                        className="w-full px-4 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-colors"
                                     >
                                         <option value="">Pilih Lokasi</option>
                                         <option value="Karawang">
@@ -579,7 +671,7 @@ export default function Ktt({ ktts }) {
                                 </div>
 
                                 <div className="flex flex-col">
-                                    <label className="text-sm font-medium text-gray-700 mb-1">
+                                    <label className="text-sm font-medium text-slate-700 mb-1">
                                         Tipe
                                     </label>
                                     <select
@@ -587,7 +679,7 @@ export default function Ktt({ ktts }) {
                                         value={data.tipe}
                                         onChange={handleChange}
                                         required
-                                        className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors"
+                                        className="w-full px-4 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-colors"
                                     >
                                         <option value="">Pilih Tipe</option>
                                         <option value="Khusus">Khusus</option>
@@ -600,7 +692,7 @@ export default function Ktt({ ktts }) {
                                 </div>
 
                                 <div className="flex flex-col">
-                                    <label className="text-sm font-medium text-gray-700 mb-1">
+                                    <label className="text-sm font-medium text-slate-700 mb-1">
                                         Kapasitas
                                     </label>
                                     <div className="relative">
@@ -611,17 +703,17 @@ export default function Ktt({ ktts }) {
                                             onChange={handleChange}
                                             required
                                             min="0"
-                                            className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors pr-12"
+                                            className="w-full px-4 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-colors pr-12"
                                             placeholder="Masukkan kapasitas"
                                         />
-                                        <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500">
+                                        <span className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500">
                                             MVA
                                         </span>
                                     </div>
                                 </div>
 
                                 <div className="flex flex-col">
-                                    <label className="text-sm font-medium text-gray-700 mb-1">
+                                    <label className="text-sm font-medium text-slate-700 mb-1">
                                         Latitude
                                     </label>
                                     <input
@@ -631,13 +723,13 @@ export default function Ktt({ ktts }) {
                                         onChange={handleChange}
                                         required
                                         step="any"
-                                        className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors"
+                                        className="w-full px-4 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-colors"
                                         placeholder="Masukkan latitude"
                                     />
                                 </div>
 
                                 <div className="flex flex-col">
-                                    <label className="text-sm font-medium text-gray-700 mb-1">
+                                    <label className="text-sm font-medium text-slate-700 mb-1">
                                         Longitude
                                     </label>
                                     <input
@@ -647,7 +739,7 @@ export default function Ktt({ ktts }) {
                                         onChange={handleChange}
                                         required
                                         step="any"
-                                        className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors"
+                                        className="w-full px-4 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-colors"
                                         placeholder="Masukkan longitude"
                                     />
                                 </div>
@@ -655,7 +747,7 @@ export default function Ktt({ ktts }) {
                             <div className="flex pt-2 justify-end">
                                 <button
                                     type="submit"
-                                    className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
+                                    className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-semibold rounded-md text-white bg-sky-600 hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sky-500 disabled:opacity-50"
                                 >
                                     Simpan
                                 </button>

@@ -5,11 +5,13 @@ namespace App\Http\Controllers;
 use Exception;
 use Inertia\Inertia;
 use App\Models\Berita;
+use App\Models\Tema;
 use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Http;
 
 class BeritaController extends Controller
 {
@@ -19,16 +21,81 @@ class BeritaController extends Controller
     public function index()
     {
         return Inertia::render('Dashboard/Berita/Berita', [
-            'berita' => Berita::with('user')->latest()->paginate(6)
+            'berita' => Berita::with(['user', 'tema'])->latest()->paginate(6)
         ]);
+    
     }
+
+    public function fetchUrl(Request $request)
+    {
+        $url = $request->query('url');
+        
+        if (!$url) {
+            return response()->json([
+                'success' => 0,
+                'error' => 'URL is required'
+            ]);
+        }
+
+        try {
+            // Validate URL format
+            if (!filter_var($url, FILTER_VALIDATE_URL)) {
+                throw new Exception('Invalid URL format');
+            }
+
+            $response = Http::timeout(10)->get($url);
+            
+            if (!$response->successful()) {
+                throw new Exception('Failed to fetch URL');
+            }
+
+            $html = $response->body();
+            
+            // Basic parsing for OpenGraph tags
+            preg_match('/<meta property="og:title" content="(.*?)"/i', $html, $titleMatches);
+            preg_match('/<meta property="og:description" content="(.*?)"/i', $html, $descriptionMatches);
+            preg_match('/<meta property="og:image" content="(.*?)"/i', $html, $imageMatches);
+            
+            // Fallback to standard meta tags or title tag
+            if (empty($titleMatches[1])) {
+                preg_match('/<title>(.*?)<\/title>/i', $html, $titleMatches);
+            }
+            if (empty($descriptionMatches[1])) {
+                preg_match('/<meta name="description" content="(.*?)"/i', $html, $descriptionMatches);
+            }
+
+            $meta = [
+                  'title' => $titleMatches[1] ?? $url,
+                  'description' => $descriptionMatches[1] ?? '',
+                  'image' => [
+                      'url' => $imageMatches[1] ?? ''
+                  ],
+                  'url' => $url
+              ];
+
+              return response()->json([
+                  'success' => 1,
+                  'link' => $url,
+                  'meta' => $meta
+              ]);
+
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => 0,
+                'error' => $e->getMessage()
+            ]);
+        }
+    }
+
 
     /**
      * Show the form for creating a new resource.
      */
     public function create()
     {
-        return Inertia::render('Dashboard/Berita/Create');
+        return Inertia::render('Dashboard/Berita/Create', [
+            'temas' => Tema::select('id', 'nama')->get()
+        ]);
     }
 
     /**
@@ -43,6 +110,7 @@ class BeritaController extends Controller
             'excerpt' => 'required|string',
             'gambar' => 'required|array',
             'gambar.*' => 'required|image|max:5048',
+            'tema' => 'nullable|string|max:255',
         ]);
 
         if ($validator->fails()) {
@@ -77,12 +145,23 @@ class BeritaController extends Controller
         }
 
         try {
+            $temaId = null;
+            if ($request->tema) {
+                $tema = Tema::firstOrCreate(
+                    ['nama' => $request->tema],
+                    ['slug' => Str::slug($request->tema)]
+                );
+                $temaId = $tema->id;
+            }
+
             $berita = Berita::create([
                 'judul' => $request->judul,
                 'slug' => $request->slug,
                 'excerpt' => $request->excerpt,
                 'user_id' => Auth::id(),
                 'isi' => $request->isi,
+                'content_json' => $request->content_json ? json_decode($request->content_json) : null,
+                'tema_id' => $temaId,
                 'gambar' => json_encode($photos),  // Simpan array gambar dalam bentuk JSON
             ]);
 
@@ -120,7 +199,11 @@ class BeritaController extends Controller
      */
     public function edit(Berita $berita)
     {
-        //
+        $berita->load('tema');
+        return Inertia::render('Dashboard/Berita/Edit', [
+            'berita' => $berita,
+            'temas' => Tema::select('id', 'nama')->get()
+        ]);
     }
 
     /**
@@ -128,32 +211,88 @@ class BeritaController extends Controller
      */
     public function update(Request $request, Berita $berita)
     {
-        $request->validate([
+        $validator = Validator::make($request->all(), [
             'judul' => 'required|string|max:255',
             'isi' => 'required|string',
-            'gambar' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
-            'karyawan_id' => 'required|exists:karyawans,id',
+            'content_json' => 'nullable|string',
+            'excerpt' => 'required|string',
+            'gambar' => 'nullable|array',
+            'gambar.*' => 'image|max:5048',
+            'existing_images' => 'nullable|array',
+            'tema' => 'nullable|string|max:255',
         ]);
 
-        $data = $request->all();
-        $data['slug'] = Str::slug($request->judul);
-
-        if ($request->hasFile('gambar')) {
-            // Delete old image if exists
-            if ($berita->gambar) {
-                Storage::delete('public/berita/' . $berita->gambar);
-            }
-
-            $gambar = $request->file('gambar');
-            $namaGambar = time() . '_' . str_replace(' ', '-', $gambar->getClientOriginalName());
-            $gambar->storeAs('public/berita', $namaGambar);
-            $data['gambar'] = $namaGambar;
+        if ($validator->fails()) {
+            return response()->json([
+                'type' => 'error',
+                'message' => 'Gagal memperbarui berita: ' . $validator->errors()->first()
+            ], 422);
         }
 
-        $berita->update($data);
+        try {
+            // Handle Tema
+            $temaId = null;
+            if ($request->tema) {
+                $tema = Tema::firstOrCreate(
+                    ['nama' => $request->tema],
+                    ['slug' => Str::slug($request->tema)]
+                );
+                $temaId = $tema->id;
+            }
 
-        return redirect()->route('berita.index')
-            ->with('success', 'Berita berhasil diperbarui');
+            // Handle Images
+            $finalPhotos = $request->existing_images ?? [];
+            
+            // Delete removed images
+            $oldPhotos = $berita->gambar ?? [];
+            $keptPhotos = $request->existing_images ?? [];
+            if (is_array($oldPhotos)) {
+                $removedPhotos = array_diff($oldPhotos, $keptPhotos);
+                foreach ($removedPhotos as $photo) {
+                    Storage::delete('public/berita/' . $photo);
+                }
+            }
+
+            // Add new images
+            if ($request->hasFile('gambar')) {
+                foreach ($request->file('gambar') as $file) {
+                    if ($file->isValid()) {
+                        $namaGambar = time() . '_' . uniqid() . $file->getClientOriginalName();
+                        $file->storeAs('berita', $namaGambar, 'public');
+                        $finalPhotos[] = $namaGambar;
+                    }
+                }
+            }
+
+            if (empty($finalPhotos)) {
+                return response()->json([
+                    'type' => 'error',
+                    'message' => 'Minimal satu foto harus tersedia'
+                ], 422);
+            }
+
+            $berita->update([
+                'judul' => $request->judul,
+                'slug' => $request->slug,
+                'excerpt' => $request->excerpt,
+                'isi' => $request->isi,
+                'content_json' => $request->content_json ? json_decode($request->content_json) : null,
+                'tema_id' => $temaId,
+                'gambar' => json_encode($finalPhotos),
+            ]);
+
+            return response()->json([
+                'type' => 'success',
+                'message' => 'Berita Berhasil diperbarui',
+                'berita' => $berita
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'type' => 'error',
+                'message' => 'Gagal memperbarui Berita: ' . $e->getMessage()
+            ], 500);
+        }
     }
 
     /**

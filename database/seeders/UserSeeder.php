@@ -31,7 +31,7 @@ class UserSeeder extends Seeder
                 'id' => 2,
                 'name' => '',
                 'email' => 'muhammadfajarfikrifadilah@gmail.com',
-                'password' => '',
+                'password' => bcrypt('12345678'),
                 'created_at' => now(),
                 'updated_at' => now(),
             ),
@@ -47,13 +47,37 @@ class UserSeeder extends Seeder
         $user = User::first();
 
 
-        $permissions = ['View Role', 'View Anomali', 'View Anomali Create', 'View Ktt', 'Approve Anomali'];
+        $permissions = [
+            'View Role', 
+            'View Anomali', 
+            'View Anomali Create', 
+            'View Ktt', 
+            'Anomali Dashboard', 
+            'Review Anomali',
+            'Approve Anomali',
+            'Dashboard Berita',
+            'Buat Berita',
+            'Berita Home',
+            'Detail Berita',
+            'Edit Berita',
+            'Hapus Berita',
+            'Buat Ktt', 
+            'Detail Ktt'];
         $descriptions = [
-            'Mengakses halaman manajemen role',
-            'Mengakses halaman anomali',
-            'Mengakses halaman pembuatan anomali',
-            'Mengakses halaman utama KTT',
-            'Mengakses halaman approval anomali'
+            'Akses ke halaman manajemen role',
+            'Akses ke halaman anomali',
+            'Akses ke halaman pembuatan anomali',
+            'Akses ke halaman utama KTT',
+            'Akses ke halaman persetujuan anomali',
+            'Akses ke berita pada halaman home',
+            'Akses ke halaman dashboard anomali',
+            'Akses ke halaman pembuatan KTT',
+            'Akses ke halaman detail KTT',
+            'Akses ke halaman dashboard berita',
+            'Akses ke halaman pembuatan berita',
+            'Akses ke halaman detail berita',
+            'Akses ke halaman edit berita',
+            'Akses ke halaman hapus berita',
         ];
         foreach ($permissions as $i => $perm) {
             Permission::firstOrCreate(

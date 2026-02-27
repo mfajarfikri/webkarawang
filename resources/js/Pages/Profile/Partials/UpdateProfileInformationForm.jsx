@@ -112,14 +112,13 @@ export default function UpdateProfileInformation({
         <section className={className + " w-full"}>
             <div className="grid grid-cols-3 gap-6">
                 <div className="col-span-2">
-                    {/* Form Profil */}
-                    <header className="w-full">
-                        <h3 className="text-lg font-semibold text-blue-700 w-full">
-                            Informasi Profile
+                    <header className="w-full space-y-1">
+                        <h3 className="text-base md:text-lg font-semibold text-gray-900 w-full">
+                            Data akun
                         </h3>
-                        <p className="mt-1 text-sm text-gray-600 w-full">
-                            Perbarui informasi profil akun dan alamat email
-                            Anda.
+                        <p className="text-xs md:text-sm text-gray-600 w-full">
+                            Perbarui informasi profil dan alamat email yang
+                            digunakan untuk akun Anda.
                         </p>
                     </header>
                     <form onSubmit={submit} className="mt-6 space-y-6 w-full">
@@ -211,8 +210,7 @@ export default function UpdateProfileInformation({
                     </form>
                 </div>
                 <div className="col-span-1">
-                    <div className="bg-blue-50 border-2 h-full border-blue-200 rounded-lg shadow-sm flex flex-col items-center justify-center p-4 gap-4">
-                        {/* Preview foto profil saat ini */}
+                    <div className="bg-blue-50/80 border border-blue-200 h-full rounded-2xl shadow-sm flex flex-col items-center justify-center p-4 gap-4">
                         <div className="flex flex-col items-center gap-2 w-full">
                             <div className="w-32 h-32 rounded-full overflow-hidden border-4 border-blue-200 bg-white flex items-center justify-center">
                                 {fotoProfilPreview ? (

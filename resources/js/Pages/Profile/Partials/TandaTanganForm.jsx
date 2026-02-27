@@ -84,11 +84,11 @@ export default function TandaTanganForm({ existingSignatureUrl }) {
 
     return (
         <div className="w-full">
-            <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
-                <form onSubmit={handleSubmit} className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
-                        <div className="col-span-1">
-                            <div className="border-2 border-gray-300 rounded-lg bg-gray-50 p-4">
+            <div className="bg-white/95 rounded-2xl border border-gray-100 shadow-sm p-6">
+                <form onSubmit={handleSubmit} className="space-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <div className="border-2 border-dashed border-gray-300 rounded-xl bg-gray-50 p-4">
                                 <SignaturePad
                                     ref={sigRef}
                                     canvasProps={{
@@ -98,10 +98,9 @@ export default function TandaTanganForm({ existingSignatureUrl }) {
                                 />
                             </div>
                         </div>
-                        <div className="col-span-1">
-                            {/* Display existing signature if available */}
+                        <div className="flex flex-col gap-4">
                             {existingSignatureUrl && (
-                                <div className="mb-4 p-3 bg-green-50 rounded-lg border border-green-200">
+                                <div className="p-3 bg-green-50 rounded-xl border border-green-200">
                                     <div className="flex items-center gap-2 mb-2">
                                         <svg
                                             className="w-5 h-5 text-green-600"
@@ -154,7 +153,7 @@ export default function TandaTanganForm({ existingSignatureUrl }) {
                                                 };
                                                 img.src = existingSignatureUrl;
                                             }}
-                                            className="text-sm text-blue-600 hover:text-blue-800 font-medium"
+                                            className="text-xs font-medium text-blue-600 hover:text-blue-800"
                                         >
                                             Muat tanda tangan ini
                                         </button>
@@ -162,7 +161,7 @@ export default function TandaTanganForm({ existingSignatureUrl }) {
                                 </div>
                             )}
 
-                            <div className="mt-4 p-3 bg-blue-50 rounded-lg">
+                            <div className="p-3 bg-blue-50/80 rounded-xl border border-blue-100">
                                 <div className="flex items-start gap-2">
                                     <svg
                                         className="w-5 h-5 text-blue-500 mt-0.5 flex-shrink-0"
@@ -203,16 +202,17 @@ export default function TandaTanganForm({ existingSignatureUrl }) {
                                     </div>
                                 </div>
                             </div>
-                            <div className="flex mt-4 gap-3 justify-center">
+
+                            <div className="flex flex-col sm:flex-row mt-2 gap-3 justify-end">
                                 <DangerButton
                                     type="button"
-                                    className="w-full justify-center items-center"
+                                    className="w-full sm:w-auto justify-center items-center"
                                     onClick={handleClear}
                                 >
                                     Hapus
                                 </DangerButton>
                                 <PrimaryButton
-                                    className={`w-full justify-center gap-1 ${
+                                    className={`w-full sm:w-auto justify-center gap-1 ${
                                         loading
                                             ? "opacity-60 cursor-not-allowed"
                                             : ""
@@ -256,53 +256,6 @@ export default function TandaTanganForm({ existingSignatureUrl }) {
                                     )}
                                     {loading ? "Menyimpan..." : "Simpan"}
                                 </PrimaryButton>
-                                {/* <button
-                                    type="submit"
-                                    className={`w-full px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors duration-200 flex items-center gap-2 ${
-                                        loading
-                                            ? "opacity-60 cursor-not-allowed"
-                                            : ""
-                                    }`}
-                                    disabled={loading}
-                                >
-                                    {loading ? (
-                                        <svg
-                                            className="animate-spin h-4 w-4"
-                                            xmlns="http://www.w3.org/2000/svg"
-                                            fill="none"
-                                            viewBox="0 0 24 24"
-                                        >
-                                            <circle
-                                                className="opacity-25"
-                                                cx="12"
-                                                cy="12"
-                                                r="10"
-                                                stroke="currentColor"
-                                                strokeWidth="4"
-                                            ></circle>
-                                            <path
-                                                className="opacity-75"
-                                                fill="currentColor"
-                                                d="M4 12a8 8 0 018-8v8z"
-                                            ></path>
-                                        </svg>
-                                    ) : (
-                                        <svg
-                                            className="w-4 h-4"
-                                            fill="none"
-                                            stroke="currentColor"
-                                            viewBox="0 0 24 24"
-                                        >
-                                            <path
-                                                strokeLinecap="round"
-                                                strokeLinejoin="round"
-                                                strokeWidth={2}
-                                                d="M5 13l4 4L19 7"
-                                            />
-                                        </svg>
-                                    )}
-                                    {loading ? "Menyimpan..." : "Simpan"}
-                                </button> */}
                             </div>
                         </div>
                     </div>

@@ -1,19 +1,23 @@
 import DashboardLayout from "@/Layouts/DashboardLayout";
 import { usePage } from "@inertiajs/react";
 import { router as Inertia } from "@inertiajs/react";
-import { useState } from "react";
-import { Switch, Listbox } from "@headlessui/react";
-import { FaEdit, FaEllipsisV, FaFilter, FaInfo } from "react-icons/fa";
+import { useState, Fragment } from "react";
+import { Switch, Listbox, Dialog, Transition } from "@headlessui/react";
 import {
-    Dialog,
-    DialogTitle,
-    DialogContent,
-    DialogActions,
-    Checkbox,
-    FormControlLabel,
-    Button as MuiButton,
-    CircularProgress,
-} from "@mui/material";
+    FaEdit,
+    FaEllipsisV,
+    FaFilter,
+    FaInfo,
+    FaUserShield,
+    FaUsers,
+    FaPlus,
+    FaSearch,
+    FaChevronLeft,
+    FaChevronRight,
+    FaTrash,
+    FaShieldAlt,
+} from "react-icons/fa";
+import { CircularProgress } from "@mui/material";
 import { useEffect } from "react";
 import { Link } from "@inertiajs/react";
 import {
@@ -160,355 +164,423 @@ export default function Role() {
 
     return (
         <DashboardLayout title="Manajemen Role">
-            <div className="py-6 w-full mx-auto px-4 sm:px-6 lg:px-8 bg-gray-50 min-h-screen">
-                <h1 className="text-2xl md:text-3xl font-bold mb-6 text-gray-800">
-                    Manajemen Role
-                </h1>
-                <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-0 overflow-hidden">
-                    <div className="px-6 pt-6 pb-2 border-b border-gray-200 bg-white">
-                        <h2 className="text-xl font-bold text-blue-800 mb-2">
-                            Tambah Role Baru
-                        </h2>
-                        <form
-                            onSubmit={handleSubmit}
-                            className="flex flex-col sm:flex-row gap-2 mb-4 items-start sm:items-end"
-                        >
-                            <div className="flex-1 w-full">
-                                <input
-                                    type="text"
-                                    className="border border-gray-300 rounded px-4 py-2 w-full focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
-                                    placeholder="Nama Role"
-                                    value={name}
-                                    onChange={(e) => setName(e.target.value)}
-                                    required
-                                />
-                                {errors && errors.name && (
-                                    <div className="text-red-500 mt-1 text-sm">
-                                        {errors.name}
-                                    </div>
-                                )}
+            <div className="min-h-screen bg-white rounded-2xl py-10">
+                <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-8">
+                    {/* Header Section */}
+                    <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
+                        <div className="flex items-center gap-3">
+                            <div className="h-12 w-12 rounded-2xl bg-gradient-to-br from-sky-500 via-sky-400 to-cyan-400 flex items-center justify-center text-white shadow-md">
+                                <FaUserShield className="w-6 h-6" />
                             </div>
-                            <button
-                                type="submit"
-                                className="bg-blue-600 text-white px-6 py-2 rounded-md shadow-sm hover:bg-blue-700 font-semibold disabled:opacity-50 w-full sm:w-auto transition-colors"
-                                disabled={loading}
-                            >
-                                Tambah
-                            </button>
-                        </form>
-                    </div>
-                    <div className="px-2 md:px-6 pb-6 pt-4">
-                        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-2">
-                            <button
-                                className="bg-blue-600 text-white px-4 py-2 rounded-md shadow-sm hover:bg-blue-700 font-semibold flex items-center gap-2 transition-colors"
-                                onClick={() => setFilterOpen(true)}
-                                type="button"
-                            >
-                                <FaFilter />
-                                Filter
-                            </button>
-                            <div className="flex items-center gap-2 bg-white border border-gray-200 rounded-md px-3 py-2 shadow-sm">
-                                <label className="text-gray-600 text-sm font-medium">
-                                    Tampil
-                                </label>
-                                <Listbox
-                                    value={rowsPerPage}
-                                    onChange={setRowsPerPage}
-                                >
-                                    <div className="relative">
-                                        <Listbox.Button className="border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-20 text-left">
-                                            {rowsPerPage}
-                                        </Listbox.Button>
-                                        <Listbox.Options className="absolute z-10 mt-1 w-full bg-white border border-gray-200 rounded shadow-lg text-sm">
-                                            {[10, 25, 50].map((option) => (
-                                                <Listbox.Option
-                                                    key={option}
-                                                    value={option}
-                                                    className={({
-                                                        active,
-                                                        selected,
-                                                    }) =>
-                                                        `cursor-pointer select-none px-3 py-2 ${
-                                                            active
-                                                                ? "bg-blue-100 text-blue-900"
-                                                                : "text-gray-900"
-                                                        } ${
-                                                            selected
-                                                                ? "font-semibold"
-                                                                : ""
-                                                        }`
-                                                    }
-                                                >
-                                                    {option}
-                                                </Listbox.Option>
-                                            ))}
-                                        </Listbox.Options>
-                                    </div>
-                                </Listbox>
-                                <span className="text-gray-500 text-xs">
-                                    / halaman
-                                </span>
+                            <div>
+                                <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
+                                    Manajemen Role
+                                </h1>
+                                <p className="text-sm md:text-base text-gray-600 mt-1">
+                                    Kelola peran dan hak akses pengguna dalam
+                                    sistem.
+                                </p>
                             </div>
                         </div>
-                        <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white">
+                        <div className="flex items-center gap-3">
+                            <div className="hidden sm:flex items-center gap-2 px-3 py-2 rounded-xl bg-white/80 backdrop-blur border border-blue-100 shadow-sm">
+                                <div className="flex h-7 w-7 items-center justify-center rounded-full bg-blue-50 text-blue-600">
+                                    <FaUsers className="w-3.5 h-3.5" />
+                                </div>
+                                <div className="text-xs text-gray-600">
+                                    <div className="font-semibold text-gray-800">
+                                        {roles ? roles.length : 0} roles
+                                    </div>
+                                    <div>Terdaftar dalam sistem</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Add Role Card */}
+                    <div className="bg-white/95 backdrop-blur-sm rounded-2xl shadow-sm border border-gray-100 overflow-hidden mb-8">
+                        <div className="px-6 py-4 border-b border-gray-100 bg-gradient-to-r from-gray-50/80 via-white to-gray-50/80">
+                            <h2 className="text-base md:text-lg font-semibold text-gray-900 flex items-center gap-2">
+                                <FaPlus className="text-blue-600 w-4 h-4" />
+                                Tambah Role Baru
+                            </h2>
+                        </div>
+                        <div className="p-6">
+                            <form
+                                onSubmit={handleSubmit}
+                                className="flex flex-col sm:flex-row gap-4 items-end"
+                            >
+                                <div className="flex-1 w-full">
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                        Nama Role
+                                    </label>
+                                    <input
+                                        type="text"
+                                        className="border border-gray-300 rounded-lg px-4 py-2 w-full focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-shadow"
+                                        placeholder="Contoh: Administrator"
+                                        value={name}
+                                        onChange={(e) =>
+                                            setName(e.target.value)
+                                        }
+                                        required
+                                    />
+                                    {errors && errors.name && (
+                                        <div className="text-red-500 mt-1 text-sm">
+                                            {errors.name}
+                                        </div>
+                                    )}
+                                </div>
+                                <button
+                                    type="submit"
+                                    className="bg-blue-600 text-white px-6 py-2.5 rounded-lg shadow-sm hover:bg-blue-700 font-medium disabled:opacity-50 w-full sm:w-auto transition-all duration-200 flex items-center justify-center gap-2"
+                                    disabled={loading}
+                                >
+                                    <FaPlus className="w-4 h-4" />
+                                    Tambah
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+
+                    {/* Roles Table Card */}
+                    <div className="bg-white/95 backdrop-blur-sm rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                        <div className="px-6 py-4 border-b border-gray-100 bg-gradient-to-r from-gray-50/80 via-white to-gray-50/80">
+                            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                                <div>
+                                    <h2 className="text-base md:text-lg font-semibold text-gray-900">
+                                        Daftar Role
+                                    </h2>
+                                    <p className="text-xs md:text-sm text-gray-500 mt-0.5">
+                                        Daftar semua role yang tersedia.
+                                    </p>
+                                </div>
+
+                                <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+                                    {/* Filter Button */}
+                                    <button
+                                        className={`px-4 py-2 rounded-lg border text-sm font-medium flex items-center justify-center gap-2 transition-colors ${
+                                            filterOpen
+                                                ? "bg-blue-50 border-blue-200 text-blue-700"
+                                                : "bg-white border-gray-200 text-gray-700 hover:bg-gray-50"
+                                        }`}
+                                        onClick={() =>
+                                            setFilterOpen(!filterOpen)
+                                        }
+                                    >
+                                        <FaFilter
+                                            className={
+                                                filterOpen
+                                                    ? "text-blue-600"
+                                                    : "text-gray-400"
+                                            }
+                                        />
+                                        Filter
+                                    </button>
+
+                                    {/* Rows Per Page */}
+                                    <div className="flex items-center gap-2 bg-white border border-gray-200 rounded-lg px-3 py-2 shadow-sm">
+                                        <span className="text-gray-500 text-xs font-medium">
+                                            Show
+                                        </span>
+                                        <Listbox
+                                            value={rowsPerPage}
+                                            onChange={setRowsPerPage}
+                                        >
+                                            <div className="relative">
+                                                <Listbox.Button className="text-sm font-semibold text-gray-800 focus:outline-none cursor-pointer flex items-center gap-1">
+                                                    {rowsPerPage}
+                                                    <span className="text-gray-400 text-xs">
+                                                        ▼
+                                                    </span>
+                                                </Listbox.Button>
+                                                <Listbox.Options className="absolute right-0 z-10 mt-2 w-20 bg-white border border-gray-100 rounded-lg shadow-lg text-sm overflow-hidden py-1">
+                                                    {[10, 25, 50].map(
+                                                        (option) => (
+                                                            <Listbox.Option
+                                                                key={option}
+                                                                value={option}
+                                                                className={({
+                                                                    active,
+                                                                    selected,
+                                                                }) =>
+                                                                    `cursor-pointer select-none px-3 py-2 ${
+                                                                        active
+                                                                            ? "bg-blue-50 text-blue-900"
+                                                                            : "text-gray-700"
+                                                                    } ${
+                                                                        selected
+                                                                            ? "font-semibold bg-blue-50"
+                                                                            : ""
+                                                                    }`
+                                                                }
+                                                            >
+                                                                {option}
+                                                            </Listbox.Option>
+                                                        )
+                                                    )}
+                                                </Listbox.Options>
+                                            </div>
+                                        </Listbox>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Filter Section */}
+                            {filterOpen && (
+                                <div className="mt-4 pt-4 border-t border-gray-100 animate-fadeIn">
+                                    <div className="relative">
+                                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                            <FaSearch className="text-gray-400" />
+                                        </div>
+                                        <input
+                                            type="text"
+                                            className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition-shadow"
+                                            placeholder="Cari nama role..."
+                                            value={filterName}
+                                            onChange={(e) =>
+                                                setFilterName(e.target.value)
+                                            }
+                                        />
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="overflow-x-auto">
                             <ErrorBoundary>
-                                <table className="min-w-full">
-                                    <thead className="bg-gray-100 text-gray-600">
+                                <table className="min-w-full divide-y divide-gray-100">
+                                    <thead className="bg-gray-50/80">
                                         <tr>
                                             <th
                                                 scope="col"
-                                                className="px-6 py-3 text-left text-xs font-bold text-blue-800 uppercase tracking-wider"
+                                                className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wide"
                                             >
                                                 Nama Role
                                             </th>
                                             <th
                                                 scope="col"
-                                                className="px-6 py-3 text-left text-xs font-bold text-blue-800 uppercase tracking-wider"
+                                                className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wide"
                                             >
                                                 Permission
                                             </th>
                                             <th
                                                 scope="col"
-                                                className="px-6 py-3 text-center text-xs font-bold text-blue-800 uppercase tracking-wider"
+                                                className="px-6 py-4 text-center text-xs font-semibold text-gray-600 uppercase tracking-wide"
                                             >
                                                 Aksi
                                             </th>
                                         </tr>
                                     </thead>
-                                    <tbody className="bg-white divide-y divide-gray-200">
+                                    <tbody className="bg-white divide-y divide-gray-100">
                                         {paginatedRows.length === 0 ? (
                                             <tr>
                                                 <td
                                                     colSpan={3}
-                                                    className="px-6 py-8 text-center text-gray-400 text-lg font-semibold"
+                                                    className="px-6 py-12 text-center"
                                                 >
-                                                    Tidak ada role.
+                                                    <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-gray-100 text-gray-400 mb-3">
+                                                        <FaUserShield className="w-6 h-6" />
+                                                    </div>
+                                                    <p className="text-gray-500 font-medium">
+                                                        Tidak ada role
+                                                        ditemukan.
+                                                    </p>
                                                 </td>
                                             </tr>
                                         ) : (
                                             paginatedRows.map((row) => (
                                                 <tr
                                                     key={row.id}
-                                                    className="hover:bg-blue-50 transition"
+                                                    className="hover:bg-blue-50/50 transition-colors duration-150"
                                                 >
-                                                    <td
-                                                        className="px-6 py-4 whitespace-nowrap text-gray-900 font-semibold text-base md:text-sm max-w-xs truncate"
-                                                        title={row.name}
-                                                    >
-                                                        {row.name}
+                                                    <td className="px-6 py-4 whitespace-nowrap">
+                                                        <div className="text-sm font-semibold text-gray-900">
+                                                            {row.name}
+                                                        </div>
                                                     </td>
-                                                    <td
-                                                        className="px-6 py-4 whitespace-nowrap text-gray-700 text-sm max-w-lg truncate"
-                                                        title={
-                                                            Array.isArray(
+                                                    <td className="px-6 py-4">
+                                                        <div className="flex flex-wrap gap-1 max-w-xl">
+                                                            {Array.isArray(
                                                                 row.permissions
-                                                            )
-                                                                ? row.permissions
-                                                                      .map(
-                                                                          (p) =>
-                                                                              p.name
-                                                                      )
-                                                                      .join(
-                                                                          ", "
-                                                                      )
-                                                                : ""
-                                                        }
-                                                    >
-                                                        {Array.isArray(
+                                                            ) &&
                                                             row.permissions
-                                                        ) &&
-                                                        row.permissions.length >
-                                                            0
-                                                            ? row.permissions
-                                                                  .map(
-                                                                      (p) =>
-                                                                          p.name
-                                                                  )
-                                                                  .join(", ")
-                                                            : "-"}
+                                                                .length > 0 ? (
+                                                                row.permissions
+                                                                    .slice(0, 5)
+                                                                    .map(
+                                                                        (p) => (
+                                                                            <span
+                                                                                key={
+                                                                                    p.id
+                                                                                }
+                                                                                className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-50 text-blue-700 border border-blue-100"
+                                                                            >
+                                                                                {
+                                                                                    p.name
+                                                                                }
+                                                                            </span>
+                                                                        )
+                                                                    )
+                                                            ) : (
+                                                                <span className="text-gray-400 text-sm italic">
+                                                                    - Tidak ada
+                                                                    permission -
+                                                                </span>
+                                                            )}
+                                                            {row.permissions
+                                                                .length > 5 && (
+                                                                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-600 border border-gray-200">
+                                                                    +
+                                                                    {row
+                                                                        .permissions
+                                                                        .length -
+                                                                        5}{" "}
+                                                                    lainnya
+                                                                </span>
+                                                            )}
+                                                        </div>
                                                     </td>
                                                     <td className="px-6 py-4 whitespace-nowrap text-center">
-                                                        <div className="flex justify-center items-center gap-1">
-                                                            <IconButton
-                                                                aria-label="actions"
-                                                                onClick={(e) =>
-                                                                    handleMenuOpen(
-                                                                        row.id,
-                                                                        e
-                                                                    )
-                                                                }
-                                                                size="small"
-                                                                sx={{
-                                                                    p: 0.5,
-                                                                    "&:hover": {
-                                                                        backgroundColor:
-                                                                            "#e5e7eb",
-                                                                    },
-                                                                }}
-                                                            >
-                                                                <FaEllipsisV
-                                                                    className="text-gray-500"
-                                                                    style={{
-                                                                        width: "1rem",
-                                                                        height: "1rem",
-                                                                    }}
-                                                                />
-                                                            </IconButton>
-                                                            <Menu
-                                                                anchorEl={
-                                                                    anchorEls[
-                                                                        row.id
-                                                                    ]
-                                                                }
-                                                                open={Boolean(
-                                                                    anchorEls[
-                                                                        row.id
-                                                                    ]
-                                                                )}
-                                                                onClose={() =>
+                                                        <IconButton
+                                                            aria-label="actions"
+                                                            onClick={(e) =>
+                                                                handleMenuOpen(
+                                                                    row.id,
+                                                                    e
+                                                                )
+                                                            }
+                                                            size="small"
+                                                            className="hover:bg-gray-100 text-gray-500"
+                                                        >
+                                                            <FaEllipsisV className="w-4 h-4" />
+                                                        </IconButton>
+                                                        <Menu
+                                                            anchorEl={
+                                                                anchorEls[
+                                                                    row.id
+                                                                ]
+                                                            }
+                                                            open={Boolean(
+                                                                anchorEls[
+                                                                    row.id
+                                                                ]
+                                                            )}
+                                                            onClose={() =>
+                                                                handleMenuClose(
+                                                                    row.id
+                                                                )
+                                                            }
+                                                            anchorOrigin={{
+                                                                vertical:
+                                                                    "bottom",
+                                                                horizontal:
+                                                                    "right",
+                                                            }}
+                                                            transformOrigin={{
+                                                                vertical: "top",
+                                                                horizontal:
+                                                                    "right",
+                                                            }}
+                                                            PaperProps={{
+                                                                elevation: 2,
+                                                                sx: {
+                                                                    mt: 1,
+                                                                    minWidth: 160,
+                                                                    borderRadius: 2,
+                                                                    overflow:
+                                                                        "hidden",
+                                                                    boxShadow:
+                                                                        "0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)",
+                                                                    border: "1px solid #f3f4f6",
+                                                                },
+                                                            }}
+                                                        >
+                                                            <MenuItem
+                                                                onClick={() => {
                                                                     handleMenuClose(
                                                                         row.id
-                                                                    )
-                                                                }
-                                                                anchorOrigin={{
-                                                                    vertical:
-                                                                        "bottom",
-                                                                    horizontal:
-                                                                        "right",
+                                                                    );
+                                                                    openEditModal(
+                                                                        row
+                                                                    );
                                                                 }}
-                                                                transformOrigin={{
-                                                                    vertical:
-                                                                        "top",
-                                                                    horizontal:
-                                                                        "right",
-                                                                }}
-                                                                PaperProps={{
-                                                                    style: {
-                                                                        minWidth: 180,
-                                                                    },
-                                                                }}
+                                                                className="hover:bg-gray-50 text-gray-700"
                                                             >
-                                                                <MenuItem
-                                                                    onClick={() => {
-                                                                        handleMenuClose(
-                                                                            row.id
-                                                                        );
-                                                                        openEditModal(
-                                                                            row
-                                                                        );
+                                                                <ListItemIcon
+                                                                    sx={{
+                                                                        minWidth: 32,
                                                                     }}
                                                                 >
-                                                                    <ListItemIcon
-                                                                        sx={{
-                                                                            minWidth: 32,
-                                                                        }}
-                                                                    >
-                                                                        <svg
-                                                                            width="20"
-                                                                            height="20"
-                                                                            fill="none"
-                                                                            stroke="currentColor"
-                                                                            strokeWidth="1.7"
-                                                                            strokeLinecap="round"
-                                                                            strokeLinejoin="round"
-                                                                            className="text-gray-500"
-                                                                            viewBox="0 0 24 24"
-                                                                        >
-                                                                            <path d="M12 20h9" />
-                                                                            <path d="M16.5 3.5a2.121 2.121 0 1 1 3 3L7 19l-4 1 1-4 12.5-12.5z" />
-                                                                        </svg>
-                                                                    </ListItemIcon>
-                                                                    <ListItemText>
-                                                                        Edit
-                                                                    </ListItemText>
-                                                                </MenuItem>
-                                                                <MenuItem
-                                                                    onClick={() => {
-                                                                        handleMenuClose(
-                                                                            row.id
-                                                                        );
-                                                                        openPermissionModal(
-                                                                            row
-                                                                        );
+                                                                    <FaEdit className="w-4 h-4 text-blue-600" />
+                                                                </ListItemIcon>
+                                                                <ListItemText
+                                                                    primaryTypographyProps={{
+                                                                        fontSize:
+                                                                            "0.875rem",
+                                                                        fontWeight: 500,
                                                                     }}
                                                                 >
-                                                                    <ListItemIcon
-                                                                        sx={{
-                                                                            minWidth: 32,
-                                                                        }}
-                                                                    >
-                                                                        <svg
-                                                                            width="20"
-                                                                            height="20"
-                                                                            fill="none"
-                                                                            stroke="currentColor"
-                                                                            strokeWidth="1.7"
-                                                                            strokeLinecap="round"
-                                                                            strokeLinejoin="round"
-                                                                            className="text-blue-500"
-                                                                            viewBox="0 0 24 24"
-                                                                        >
-                                                                            <circle
-                                                                                cx="15"
-                                                                                cy="9"
-                                                                                r="3"
-                                                                            />
-                                                                            <path d="M2 15.5V17a2 2 0 0 0 2 2h1.5a2 2 0 0 0 2-2V15.5a6.5 6.5 0 1 1 13 0V17a2 2 0 0 1-2 2H17" />
-                                                                        </svg>
-                                                                    </ListItemIcon>
-                                                                    <ListItemText>
-                                                                        Kelola
-                                                                        Permission
-                                                                    </ListItemText>
-                                                                </MenuItem>
-                                                                <MenuItem
-                                                                    onClick={() => {
-                                                                        handleMenuClose(
-                                                                            row.id
-                                                                        );
-                                                                        handleDelete(
-                                                                            row.id
-                                                                        );
+                                                                    Edit Role
+                                                                </ListItemText>
+                                                            </MenuItem>
+                                                            <MenuItem
+                                                                onClick={() => {
+                                                                    handleMenuClose(
+                                                                        row.id
+                                                                    );
+                                                                    openPermissionModal(
+                                                                        row
+                                                                    );
+                                                                }}
+                                                                className="hover:bg-gray-50 text-gray-700"
+                                                            >
+                                                                <ListItemIcon
+                                                                    sx={{
+                                                                        minWidth: 32,
                                                                     }}
                                                                 >
-                                                                    <ListItemIcon
-                                                                        sx={{
-                                                                            minWidth: 32,
-                                                                        }}
-                                                                    >
-                                                                        <svg
-                                                                            width="20"
-                                                                            height="20"
-                                                                            fill="none"
-                                                                            stroke="currentColor"
-                                                                            strokeWidth="1.7"
-                                                                            strokeLinecap="round"
-                                                                            strokeLinejoin="round"
-                                                                            className="text-red-500"
-                                                                            viewBox="0 0 24 24"
-                                                                        >
-                                                                            <polyline points="3 6 5 6 21 6" />
-                                                                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2" />
-                                                                            <line
-                                                                                x1="10"
-                                                                                y1="11"
-                                                                                x2="10"
-                                                                                y2="17"
-                                                                            />
-                                                                            <line
-                                                                                x1="14"
-                                                                                y1="11"
-                                                                                x2="14"
-                                                                                y2="17"
-                                                                            />
-                                                                        </svg>
-                                                                    </ListItemIcon>
-                                                                    <ListItemText className="text-red-600">
-                                                                        Hapus
-                                                                    </ListItemText>
-                                                                </MenuItem>
-                                                            </Menu>
-                                                        </div>
+                                                                    <FaUserShield className="w-4 h-4 text-indigo-600" />
+                                                                </ListItemIcon>
+                                                                <ListItemText
+                                                                    primaryTypographyProps={{
+                                                                        fontSize:
+                                                                            "0.875rem",
+                                                                        fontWeight: 500,
+                                                                    }}
+                                                                >
+                                                                    Permissions
+                                                                </ListItemText>
+                                                            </MenuItem>
+                                                            <MenuItem
+                                                                onClick={() => {
+                                                                    handleMenuClose(
+                                                                        row.id
+                                                                    );
+                                                                    handleDelete(
+                                                                        row.id
+                                                                    );
+                                                                }}
+                                                                className="hover:bg-red-50 text-red-600"
+                                                            >
+                                                                <ListItemIcon
+                                                                    sx={{
+                                                                        minWidth: 32,
+                                                                    }}
+                                                                >
+                                                                    <FaTrash className="w-4 h-4 text-red-500" />
+                                                                </ListItemIcon>
+                                                                <ListItemText
+                                                                    primaryTypographyProps={{
+                                                                        fontSize:
+                                                                            "0.875rem",
+                                                                        fontWeight: 500,
+                                                                        color: "rgb(220 38 38)",
+                                                                    }}
+                                                                >
+                                                                    Hapus Role
+                                                                </ListItemText>
+                                                            </MenuItem>
+                                                        </Menu>
                                                     </td>
                                                 </tr>
                                             ))
@@ -519,52 +591,58 @@ export default function Role() {
                         </div>
                         {/* Pagination */}
                         {totalPages > 1 && (
-                            <div className="flex flex-col sm:flex-row justify-between items-center mt-4 gap-2">
-                                <div className="text-gray-600 text-sm">
+                            <div className="flex flex-col sm:flex-row justify-between items-center px-6 py-4 border-t border-gray-100 bg-gray-50/50">
+                                <div className="text-gray-500 text-sm mb-4 sm:mb-0">
                                     Menampilkan{" "}
-                                    <span className="font-semibold">
+                                    <span className="font-semibold text-gray-900">
                                         {(page - 1) * rowsPerPage + 1}
                                     </span>{" "}
-                                    -{" "}
-                                    <span className="font-semibold">
+                                    sampai{" "}
+                                    <span className="font-semibold text-gray-900">
                                         {Math.min(
                                             page * rowsPerPage,
                                             totalRows
                                         )}
                                     </span>{" "}
                                     dari{" "}
-                                    <span className="font-semibold">
+                                    <span className="font-semibold text-gray-900">
                                         {totalRows}
                                     </span>{" "}
                                     data
                                 </div>
-                                <div className="flex items-center gap-1">
+                                <div className="flex items-center gap-2">
                                     <button
-                                        className="px-3 py-1 rounded border text-gray-600 bg-white hover:bg-blue-50 disabled:opacity-50"
+                                        className="p-2 rounded-lg border border-gray-200 bg-white text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                                         onClick={() => setPage(page - 1)}
                                         disabled={page === 1}
                                     >
-                                        &lt;
+                                        <FaChevronLeft className="w-4 h-4" />
                                     </button>
-                                    {[...Array(totalPages)].map((_, idx) => (
-                                        <button
-                                            key={idx}
-                                            className={`px-3 py-1 rounded border ${
-                                                page === idx + 1
-                                                    ? "bg-blue-600 text-white border-blue-600"
-                                                    : "bg-white text-gray-700 hover:bg-blue-50"
-                                            }`}
-                                            onClick={() => setPage(idx + 1)}
-                                        >
-                                            {idx + 1}
-                                        </button>
-                                    ))}
+                                    <div className="flex items-center gap-1">
+                                        {[...Array(totalPages)].map(
+                                            (_, idx) => (
+                                                <button
+                                                    key={idx}
+                                                    className={`w-8 h-8 rounded-lg text-sm font-medium transition-colors ${
+                                                        page === idx + 1
+                                                            ? "bg-blue-600 text-white shadow-sm"
+                                                            : "bg-white text-gray-600 border border-gray-200 hover:bg-gray-50"
+                                                    }`}
+                                                    onClick={() =>
+                                                        setPage(idx + 1)
+                                                    }
+                                                >
+                                                    {idx + 1}
+                                                </button>
+                                            )
+                                        )}
+                                    </div>
                                     <button
-                                        className="px-3 py-1 rounded border text-gray-600 bg-white hover:bg-blue-50 disabled:opacity-50"
+                                        className="p-2 rounded-lg border border-gray-200 bg-white text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                                         onClick={() => setPage(page + 1)}
                                         disabled={page === totalPages}
                                     >
-                                        &gt;
+                                        <FaChevronRight className="w-4 h-4" />
                                     </button>
                                 </div>
                             </div>
@@ -572,226 +650,320 @@ export default function Role() {
                     </div>
                 </div>
             </div>
-            {/* Filter Dialog */}
-            <Dialog
-                open={filterOpen}
-                onClose={() => setFilterOpen(false)}
-                maxWidth="xs"
-                fullWidth
-            >
-                <DialogTitle className="font-bold text-lg text-gray-800 border-b">
-                    Filter Data
-                </DialogTitle>
-                <DialogContent className="py-4">
-                    <div className="mb-4">
-                        <label className="block text-gray-700 font-semibold mb-2">
-                            Nama Role
-                        </label>
-                        <input
-                            type="text"
-                            className="border rounded px-3 py-2 w-full"
-                            value={filterName}
-                            onChange={(e) => setFilterName(e.target.value)}
-                            placeholder="Cari nama role..."
-                        />
-                    </div>
-                </DialogContent>
-                <DialogActions className="border-t px-4 py-3 flex justify-between">
-                    <MuiButton
-                        onClick={() => {
-                            setFilterName("");
-                            setFilterOpen(false);
-                        }}
-                        color="inherit"
-                        variant="outlined"
+            <Transition appear show={modalOpen} as={Fragment}>
+                <Dialog
+                    as="div"
+                    className="relative z-50"
+                    onClose={() => setModalOpen(false)}
+                >
+                    <Transition.Child
+                        as={Fragment}
+                        enter="ease-out duration-200"
+                        enterFrom="opacity-0"
+                        enterTo="opacity-100"
+                        leave="ease-in duration-150"
+                        leaveFrom="opacity-100"
+                        leaveTo="opacity-0"
                     >
-                        Reset
-                    </MuiButton>
-                    <MuiButton
-                        onClick={() => setFilterOpen(false)}
-                        color="primary"
-                        variant="contained"
-                    >
-                        Terapkan
-                    </MuiButton>
-                </DialogActions>
-            </Dialog>
-            <Dialog
-                open={modalOpen}
-                onClose={() => setModalOpen(false)}
-                maxWidth="xl"
-                fullWidth
-            >
-                <DialogTitle className="font-bold text-lg text-gray-800 border-b">
-                    Kelola Permission
-                </DialogTitle>
-                <DialogContent className="py-4">
-                    {modalLoading ? (
-                        <div className="flex justify-center items-center h-32">
-                            <CircularProgress size={32} />
-                        </div>
-                    ) : (
-                        <div className="flex flex-col gap-2">
-                            <div className="mb-2 mt-4 text-gray-700 font-semibold">
-                                Role:{" "}
-                                <span className="text-blue-700">
-                                    {modalRole?.name}
-                                </span>
-                            </div>
-                            {allPermissions.length === 0 ? (
-                                <div className="text-gray-500">
-                                    Tidak ada permission.
-                                </div>
-                            ) : (
-                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                                    {allPermissions.map((perm) => {
-                                        const isActive =
-                                            rolePermissions.includes(perm.id);
-                                        return (
-                                            <div
-                                                key={perm.id}
-                                                className={`group transition-all duration-200 rounded-lg border flex items-center px-3 py-2 bg-white/95 hover:shadow cursor-pointer ${
-                                                    isActive
-                                                        ? "border-blue-500 bg-blue-50/80"
-                                                        : "border-gray-200"
-                                                }`}
-                                                onClick={() =>
-                                                    handlePermissionToggle(
-                                                        perm.id
-                                                    )
-                                                }
-                                            >
-                                                <Switch
-                                                    checked={isActive}
-                                                    onChange={() =>
-                                                        handlePermissionToggle(
-                                                            perm.id
-                                                        )
-                                                    }
-                                                    className={`${
-                                                        isActive
-                                                            ? "bg-blue-600"
-                                                            : "bg-gray-200"
-                                                    } relative inline-flex h-5 w-10 items-center rounded-full transition-colors focus:outline-none`}
-                                                    onClick={(e) =>
-                                                        e.stopPropagation()
-                                                    }
-                                                >
-                                                    <span
-                                                        className={`${
-                                                            isActive
-                                                                ? "translate-x-5"
-                                                                : "translate-x-1"
-                                                        } inline-block h-4 w-4 transform rounded-full bg-white transition-transform`}
-                                                    />
-                                                </Switch>
-                                                <div className="ml-2 flex-1 min-w-0">
-                                                    <div className="flex items-center gap-1">
-                                                        <span
-                                                            className={`font-semibold text-sm truncate ${
-                                                                isActive
-                                                                    ? "text-blue-700"
-                                                                    : "text-gray-800 group-hover:text-blue-600"
-                                                            }`}
-                                                        >
-                                                            {perm.name}
-                                                        </span>
-                                                        {isActive && (
-                                                            <span className="ml-1 px-1 py-0.5 rounded text-xs bg-blue-100 text-blue-700 font-semibold">
-                                                                Aktif
-                                                            </span>
-                                                        )}
-                                                    </div>
-                                                    <div className="mt-0.5">
-                                                        <span className="text-gray-400 text-xs italic truncate block">
-                                                            {perm.description ||
-                                                                "Tidak ada deskripsi."}
-                                                        </span>
-                                                    </div>
+                        <div className="fixed inset-0 bg-black/30 backdrop-blur-sm" />
+                    </Transition.Child>
+
+                    <div className="fixed inset-0 overflow-y-auto">
+                        <div className="flex min-h-full items-center justify-center p-4 text-center">
+                            <Transition.Child
+                                as={Fragment}
+                                enter="ease-out duration-200"
+                                enterFrom="opacity-0 translate-y-2 scale-95"
+                                enterTo="opacity-100 translate-y-0 scale-100"
+                                leave="ease-in duration-150"
+                                leaveFrom="opacity-100 translate-y-0 scale-100"
+                                leaveTo="opacity-0 translate-y-2 scale-95"
+                            >
+                                <Dialog.Panel className="w-full max-w-5xl transform overflow-hidden rounded-2xl bg-white/95 backdrop-blur-sm text-left align-middle shadow-xl border border-gray-100">
+                                    <div className="px-6 py-4 border-b border-gray-100 bg-gray-50">
+                                        <div className="flex items-center justify-between gap-3">
+                                            <div className="flex items-center gap-3">
+                                                <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-sky-500 via-sky-400 to-cyan-400 flex items-center justify-center text-white shadow-md">
+                                                    <FaShieldAlt className="w-5 h-5" />
+                                                </div>
+                                                <div>
+                                                    <Dialog.Title className="text-base md:text-lg font-semibold">
+                                                        Kelola Permission
+                                                    </Dialog.Title>
+                                                    <p className="text-xs md:text-sm mt-0.5">
+                                                        Atur hak akses
+                                                        permission untuk role
+                                                        terpilih.
+                                                    </p>
                                                 </div>
                                             </div>
-                                        );
-                                    })}
-                                </div>
-                            )}
+                                        </div>
+                                    </div>
+
+                                    <div className="px-6 py-5 bg-white">
+                                        {modalLoading ? (
+                                            <div className="flex justify-center items-center h-40">
+                                                <CircularProgress size={32} />
+                                            </div>
+                                        ) : (
+                                            <div className="space-y-4">
+                                                <div className="flex flex-wrap items-center justify-between gap-3">
+                                                    <div className="text-sm text-gray-700">
+                                                        <span className="font-medium text-gray-500">
+                                                            Role:
+                                                        </span>{" "}
+                                                        <span className="inline-flex items-center rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700 border border-blue-100">
+                                                            {modalRole?.name}
+                                                        </span>
+                                                    </div>
+                                                    <div className="text-xs text-gray-500">
+                                                        Pilih permission yang
+                                                        diizinkan untuk role
+                                                        ini.
+                                                    </div>
+                                                </div>
+                                                {allPermissions.length === 0 ? (
+                                                    <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-gray-200 bg-gray-50/60 px-6 py-10 text-center">
+                                                        <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-gray-100 text-gray-400">
+                                                            <FaUserShield className="w-6 h-6" />
+                                                        </div>
+                                                        <p className="text-sm font-medium text-gray-700">
+                                                            Tidak ada permission
+                                                            tersedia
+                                                        </p>
+                                                        <p className="mt-1 text-xs text-gray-500 max-w-xs">
+                                                            Tambahkan permission
+                                                            terlebih dahulu pada
+                                                            modul permission.
+                                                        </p>
+                                                    </div>
+                                                ) : (
+                                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 max-h-[420px] overflow-y-auto pr-1">
+                                                        {allPermissions.map(
+                                                            (perm) => {
+                                                                const isActive =
+                                                                    rolePermissions.includes(
+                                                                        perm.id
+                                                                    );
+                                                                return (
+                                                                    <div
+                                                                        key={
+                                                                            perm.id
+                                                                        }
+                                                                        className={`group transition-all duration-200 rounded-lg border flex items-center px-3 py-2 bg-white/95 hover:shadow cursor-pointer ${
+                                                                            isActive
+                                                                                ? "border-cyan-500 bg-cyan-50/80"
+                                                                                : "border-gray-200"
+                                                                        }`}
+                                                                        onClick={() =>
+                                                                            handlePermissionToggle(
+                                                                                perm.id
+                                                                            )
+                                                                        }
+                                                                    >
+                                                                        <Switch
+                                                                            checked={
+                                                                                isActive
+                                                                            }
+                                                                            onChange={() =>
+                                                                                handlePermissionToggle(
+                                                                                    perm.id
+                                                                                )
+                                                                            }
+                                                                            className={`${
+                                                                                isActive
+                                                                                    ? "bg-cyan-600"
+                                                                                    : "bg-gray-200"
+                                                                            } relative inline-flex h-5 w-10 items-center rounded-full transition-colors focus:outline-none`}
+                                                                            onClick={(
+                                                                                e
+                                                                            ) =>
+                                                                                e.stopPropagation()
+                                                                            }
+                                                                        >
+                                                                            <span
+                                                                                className={`${
+                                                                                    isActive
+                                                                                        ? "translate-x-5"
+                                                                                        : "translate-x-1"
+                                                                                } inline-block h-4 w-4 transform rounded-full bg-white transition-transform`}
+                                                                            />
+                                                                        </Switch>
+                                                                        <div className="ml-2 flex-1 min-w-0">
+                                                                            <div className="flex items-center gap-1">
+                                                                                <span
+                                                                                    className={`font-semibold text-sm truncate ${
+                                                                                        isActive
+                                                                                            ? "text-cyan-700"
+                                                                                            : "text-gray-800 group-hover:text-cyan-600"
+                                                                                    }`}
+                                                                                >
+                                                                                    {
+                                                                                        perm.name
+                                                                                    }
+                                                                                </span>
+                                                                                {isActive && (
+                                                                                    <span className="ml-1 px-1 py-0.5 rounded text-xs bg-cyan-100 text-cyan-700 font-semibold">
+                                                                                        Aktif
+                                                                                    </span>
+                                                                                )}
+                                                                            </div>
+                                                                            <div className="mt-0.5">
+                                                                                <span className="text-gray-400 text-xs italic truncate block">
+                                                                                    {perm.description ||
+                                                                                        "Tidak ada deskripsi."}
+                                                                                </span>
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                );
+                                                            }
+                                                        )}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    <div className="border-t border-gray-100 px-6 py-4 bg-gray-50/80 flex justify-between">
+                                        <button
+                                            type="button"
+                                            onClick={() => setModalOpen(false)}
+                                            disabled={modalSaving}
+                                            className="rounded-lg px-4 py-1.5 text-sm font-medium text-gray-700 border border-gray-300 bg-white hover:bg-gray-50 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
+                                        >
+                                            Batal
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={handleSavePermissions}
+                                            disabled={
+                                                modalSaving || modalLoading
+                                            }
+                                            className="inline-flex items-center justify-center rounded-lg px-5 py-1.5 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 shadow-sm disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
+                                        >
+                                            {modalSaving ? (
+                                                <CircularProgress
+                                                    size={20}
+                                                    color="inherit"
+                                                />
+                                            ) : (
+                                                "Simpan"
+                                            )}
+                                        </button>
+                                    </div>
+                                </Dialog.Panel>
+                            </Transition.Child>
                         </div>
-                    )}
-                </DialogContent>
-                <DialogActions className="border-t px-4 py-3 flex justify-between">
-                    <MuiButton
-                        onClick={() => setModalOpen(false)}
-                        color="inherit"
-                        variant="outlined"
-                        disabled={modalSaving}
-                    >
-                        Batal
-                    </MuiButton>
-                    <MuiButton
-                        onClick={handleSavePermissions}
-                        color="primary"
-                        variant="contained"
-                        disabled={modalSaving || modalLoading}
-                    >
-                        {modalSaving ? (
-                            <CircularProgress size={20} color="inherit" />
-                        ) : (
-                            "Simpan"
-                        )}
-                    </MuiButton>
-                </DialogActions>
-            </Dialog>
-            <Dialog
-                open={editModalOpen}
-                onClose={() => setEditModalOpen(false)}
-                maxWidth="xs"
-                fullWidth
-            >
-                <DialogTitle className="font-bold text-lg text-gray-800 border-b">
-                    Edit Role
-                </DialogTitle>
-                <DialogContent className="py-4">
-                    <div className="mb-4">
-                        <label className="block text-gray-700 font-semibold mb-2">
-                            Nama Role
-                        </label>
-                        <input
-                            type="text"
-                            className="border rounded px-3 py-2 w-full"
-                            value={editName}
-                            onChange={(e) => setEditName(e.target.value)}
-                            required
-                            autoFocus
-                        />
-                        {editError && (
-                            <div className="text-red-500 mt-1 text-sm">
-                                {editError}
-                            </div>
-                        )}
                     </div>
-                </DialogContent>
-                <DialogActions className="border-t px-4 py-3 flex justify-between">
-                    <MuiButton
-                        onClick={() => setEditModalOpen(false)}
-                        color="inherit"
-                        variant="outlined"
-                        disabled={editLoading}
+                </Dialog>
+            </Transition>
+
+            <Transition appear show={editModalOpen} as={Fragment}>
+                <Dialog
+                    as="div"
+                    className="relative z-50"
+                    onClose={() => setEditModalOpen(false)}
+                >
+                    <Transition.Child
+                        as={Fragment}
+                        enter="ease-out duration-200"
+                        enterFrom="opacity-0"
+                        enterTo="opacity-100"
+                        leave="ease-in duration-150"
+                        leaveFrom="opacity-100"
+                        leaveTo="opacity-0"
                     >
-                        Batal
-                    </MuiButton>
-                    <MuiButton
-                        onClick={handleEditSave}
-                        color="primary"
-                        variant="contained"
-                        disabled={editLoading || !editName.trim()}
-                    >
-                        {editLoading ? (
-                            <CircularProgress size={20} color="inherit" />
-                        ) : (
-                            "Simpan"
-                        )}
-                    </MuiButton>
-                </DialogActions>
-            </Dialog>
+                        <div className="fixed inset-0 bg-black/30 backdrop-blur-sm" />
+                    </Transition.Child>
+
+                    <div className="fixed inset-0 overflow-y-auto">
+                        <div className="flex min-h-full items-center justify-center p-4 text-center">
+                            <Transition.Child
+                                as={Fragment}
+                                enter="ease-out duration-200"
+                                enterFrom="opacity-0 translate-y-2 scale-95"
+                                enterTo="opacity-100 translate-y-0 scale-100"
+                                leave="ease-in duration-150"
+                                leaveFrom="opacity-100 translate-y-0 scale-100"
+                                leaveTo="opacity-0 translate-y-2 scale-95"
+                            >
+                                <Dialog.Panel className="w-full max-w-md transform overflow-hidden rounded-2xl bg-white/95 backdrop-blur-sm text-left align-middle shadow-xl border border-gray-100">
+                                    <div className="px-6 py-4 border-b border-gray-100 bg-gradient-to-r from-gray-50 via-white to-gray-50">
+                                        <div className="flex items-center gap-3">
+                                            <div className="h-9 w-9 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600">
+                                                <FaEdit className="w-4 h-4" />
+                                            </div>
+                                            <div>
+                                                <Dialog.Title className="text-base font-semibold text-gray-900">
+                                                    Edit Role
+                                                </Dialog.Title>
+                                                <p className="mt-0.5 text-xs text-gray-500">
+                                                    Perbarui nama role sesuai
+                                                    kebutuhan akses.
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="px-6 py-5 bg-white">
+                                        <div className="mb-4">
+                                            <label className="block text-sm text-gray-700 font-medium mb-1.5">
+                                                Nama Role
+                                            </label>
+                                            <input
+                                                type="text"
+                                                className="border border-gray-300 rounded-lg px-4 py-2 w-full focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-shadow"
+                                                value={editName}
+                                                onChange={(e) =>
+                                                    setEditName(e.target.value)
+                                                }
+                                                required
+                                                autoFocus
+                                            />
+                                            {editError && (
+                                                <div className="text-red-500 mt-1 text-sm">
+                                                    {editError}
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    <div className="border-t border-gray-100 px-6 py-4 bg-gray-50/80 flex justify-between">
+                                        <button
+                                            type="button"
+                                            onClick={() =>
+                                                setEditModalOpen(false)
+                                            }
+                                            disabled={editLoading}
+                                            className="rounded-lg px-4 py-1.5 text-sm font-medium text-gray-700 border border-gray-300 bg-white hover:bg-gray-50 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
+                                        >
+                                            Batal
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={handleEditSave}
+                                            disabled={
+                                                editLoading || !editName.trim()
+                                            }
+                                            className="inline-flex items-center justify-center rounded-lg px-5 py-1.5 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 shadow-sm disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
+                                        >
+                                            {editLoading ? (
+                                                <CircularProgress
+                                                    size={20}
+                                                    color="inherit"
+                                                />
+                                            ) : (
+                                                "Simpan"
+                                            )}
+                                        </button>
+                                    </div>
+                                </Dialog.Panel>
+                            </Transition.Child>
+                        </div>
+                    </div>
+                </Dialog>
+            </Transition>
         </DashboardLayout>
     );
 }

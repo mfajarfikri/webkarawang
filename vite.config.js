@@ -42,4 +42,9 @@ export default defineConfig({
             overlay: false,
         },
     },
+    test: {
+        environment: "jsdom",
+        globals: true,
+        setupFiles: ["./vitest.setup.js"],
+    },
 });

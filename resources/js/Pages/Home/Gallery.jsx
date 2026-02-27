@@ -16,15 +16,23 @@ import {
     FaRegHeart,
     FaUndo,
     FaChevronUp,
+    FaImage,
 } from "react-icons/fa";
 import { motion, AnimatePresence } from "framer-motion";
 import axios from "axios";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
+import {
+    generateExcerpt,
+    edjsParser,
+    sanitizeEditorData,
+} from "@/utils/editorParser";
 
 export default function Gallery() {
     const { auth } = usePage().props;
     const filterRef = useRef(null);
+    const gridRef = useRef(null);
+    const closeBtnRef = useRef(null);
 
     // State untuk filter dan lightbox
     const [activeCategory, setActiveCategory] = useState("all");
@@ -38,7 +46,15 @@ export default function Gallery() {
     const [allImages, setAllImages] = useState([]);
     const [favorites, setFavorites] = useState([]);
     const [showFilters, setShowFilters] = useState(false);
-    const [viewMode, setViewMode] = useState("grid"); // grid, masonry, list
+    const [viewMode, setViewMode] = useState("masonry"); // grid, masonry, list
+    const [themes, setThemes] = useState([]);
+    const [pagination, setPagination] = useState({
+        current_page: 1,
+        last_page: 1,
+    });
+    const [loadingMore, setLoadingMore] = useState(false);
+    const [isImageError, setIsImageError] = useState(false);
+    const [focusedIndex, setFocusedIndex] = useState(0);
 
     // Load saved favorites from localStorage on component mount
     useEffect(() => {
@@ -53,39 +69,87 @@ export default function Gallery() {
         localStorage.setItem("gallery_favorites", JSON.stringify(favorites));
     }, [favorites]);
 
-    useEffect(() => {
-        const fetchBerita = async () => {
-            try {
-                const response = await axios.get("/api/berita");
-                const beritaData = response.data.berita || [];
-                setBerita(beritaData);
+    const fetchThemes = async () => {
+        try {
+            const response = await axios.get("/api/themes");
+            setThemes(response.data.themes || []);
+        } catch (error) {
+            console.error("Error fetching themes:", error);
+        }
+    };
 
-                // Flatten all images from all berita items into a single array with metadata
-                const images = [];
-                beritaData.forEach((item) => {
-                    const gambarArray = JSON.parse(item.gambar);
+    const fetchBerita = async (page = 1, append = false) => {
+        try {
+            if (append) setLoadingMore(true);
+            else setLoading(true);
+
+            const response = await axios.get(
+                `/api/berita?page=${page}&per_page=12`,
+            );
+            const newData = response.data.berita || [];
+            const meta = response.data.pagination;
+
+            setPagination({
+                current_page: meta.current_page,
+                last_page: meta.last_page,
+            });
+
+            if (append) {
+                setBerita((prev) => [...prev, ...newData]);
+            } else {
+                setBerita(newData);
+            }
+
+            // Process images
+            const newImages = [];
+            newData.forEach((item) => {
+                let gambarArray = [];
+                try {
+                    if (item.gambar) {
+                        const parsed = JSON.parse(item.gambar);
+                        gambarArray = Array.isArray(parsed) ? parsed : [parsed];
+                    }
+                } catch (e) {
+                    // Fallback if not valid JSON (e.g. raw string)
+                    if (typeof item.gambar === "string") {
+                        gambarArray = [item.gambar];
+                    }
+                }
+
+                if (Array.isArray(gambarArray)) {
                     gambarArray.forEach((img) => {
-                        images.push({
-                            ...item,
-                            image: img,
-                            id: `${item.id}-${img}`, // Create unique ID for each image
-                        });
+                        if (img && typeof img === "string") {
+                            newImages.push({
+                                ...item,
+                                image: img,
+                                id: `${item.id}-${img}`, // Create unique ID for each image
+                            });
+                        }
                     });
-                });
-                setAllImages(images);
+                }
+            });
 
+            if (append) {
+                setAllImages((prev) => [...prev, ...newImages]);
+                setLoadingMore(false);
+            } else {
+                setAllImages(newImages);
                 // Simulate loading for smoother transitions
                 setTimeout(() => {
                     setLoading(false);
                 }, 800);
-            } catch (error) {
-                setError(error);
-                console.error("Error Fetching berita:", error);
-                setLoading(false);
             }
-        };
+        } catch (error) {
+            setError(error);
+            console.error("Error Fetching berita:", error);
+            setLoading(false);
+            setLoadingMore(false);
+        }
+    };
 
-        fetchBerita();
+    useEffect(() => {
+        fetchThemes();
+        fetchBerita(1);
 
         // Load saved view mode preference from localStorage
         const savedViewMode = localStorage.getItem("gallery_view_mode");
@@ -97,15 +161,26 @@ export default function Gallery() {
         }
     }, []);
 
-    // Data kategori dengan ikon dan warna
-    const categories = [
-        { id: "all", name: "Semua", color: "blue" },
-        { id: "csr", name: "CSR", color: "green" },
-        { id: "training", name: "Pelatihan", color: "blue" },
-        { id: "ceremony", name: "Seremonial", color: "purple" },
-        { id: "visit", name: "Kunjungan", color: "amber" },
-        { id: "meeting", name: "Rapat", color: "gray" },
-    ];
+    const handleLoadMore = () => {
+        if (pagination.current_page < pagination.last_page) {
+            fetchBerita(pagination.current_page + 1, true);
+        }
+    };
+
+    // Helper to get color for theme
+    const getThemeColor = (index) => {
+        const colors = [
+            "blue",
+            "green",
+            "purple",
+            "amber",
+            "rose",
+            "indigo",
+            "cyan",
+            "teal",
+        ];
+        return colors[index % colors.length];
+    };
 
     // Toggle favorite status for an image
     const toggleFavorite = (imageId) => {
@@ -135,13 +210,40 @@ export default function Gallery() {
         localStorage.setItem("gallery_view_mode", mode);
     };
 
+    // Navigasi keyboard pada grid galeri (roving tabindex sederhana)
+    const onItemKeyDown = (index, e) => {
+        const max = filteredImages.length;
+        if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            openLightbox(index);
+            return;
+        }
+        if (e.key === "ArrowRight" || e.key === "ArrowDown") {
+            e.preventDefault();
+            const next = Math.min(max - 1, index + 1);
+            setFocusedIndex(next);
+            const buttons = gridRef.current?.querySelectorAll(
+                "[data-gallery-item='true']",
+            );
+            buttons?.[next]?.focus();
+        } else if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
+            e.preventDefault();
+            const prev = Math.max(0, index - 1);
+            setFocusedIndex(prev);
+            const buttons = gridRef.current?.querySelectorAll(
+                "[data-gallery-item='true']",
+            );
+            buttons?.[prev]?.focus();
+        }
+    };
+
     // Filter gallery berdasarkan kategori, pencarian, dan favorit
     const filteredImages = allImages.filter((item) => {
         // Filter by category
         const matchCategory =
             activeCategory === "all" || activeCategory === "favorites"
                 ? true
-                : item.category === activeCategory;
+                : item.tema?.id === activeCategory;
 
         // Filter by search query
         const matchSearch =
@@ -160,6 +262,7 @@ export default function Gallery() {
     const openLightbox = (index) => {
         setCurrentImageIndex(index);
         setLightboxOpen(true);
+        setIsImageError(false);
         // Disable scroll saat lightbox terbuka
         document.body.style.overflow = "hidden";
     };
@@ -167,20 +270,22 @@ export default function Gallery() {
     // Fungsi untuk menutup lightbox
     const closeLightbox = () => {
         setLightboxOpen(false);
+        setIsImageError(false);
         // Enable scroll kembali
         document.body.style.overflow = "auto";
     };
 
     // Navigasi lightbox
     const navigateLightbox = (direction) => {
+        setIsImageError(false);
         if (direction === "next") {
             setCurrentImageIndex(
-                (currentImageIndex + 1) % filteredImages.length
+                (currentImageIndex + 1) % filteredImages.length,
             );
         } else {
             setCurrentImageIndex(
                 (currentImageIndex - 1 + filteredImages.length) %
-                    filteredImages.length
+                    filteredImages.length,
             );
         }
     };
@@ -199,6 +304,57 @@ export default function Gallery() {
             window.removeEventListener("scroll", handleScroll);
         };
     }, []);
+
+    // Keyboard support saat lightbox terbuka
+    useEffect(() => {
+        if (!lightboxOpen) return;
+        closeBtnRef.current?.focus();
+        const onKey = (e) => {
+            if (e.key === "Escape") {
+                e.preventDefault();
+                closeLightbox();
+            } else if (e.key === "ArrowRight") {
+                e.preventDefault();
+                navigateLightbox("next");
+            } else if (e.key === "ArrowLeft") {
+                e.preventDefault();
+                navigateLightbox("prev");
+            }
+        };
+        document.addEventListener("keydown", onKey);
+        return () => document.removeEventListener("keydown", onKey);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [lightboxOpen, currentImageIndex, filteredImages.length]);
+
+    // Helper untuk merender konten berita (support EditorJS & HTML biasa)
+    const renderNewsContent = (item) => {
+        if (!item) return "Tidak ada deskripsi tersedia.";
+
+        // Coba render dari content_json (EditorJS)
+        if (item.content_json && item.content_json !== "null") {
+            try {
+                let parsed =
+                    typeof item.content_json === "string"
+                        ? JSON.parse(item.content_json)
+                        : item.content_json;
+
+                // Sanitize data
+                parsed = sanitizeEditorData(parsed);
+
+                if (parsed && parsed.blocks && Array.isArray(parsed.blocks)) {
+                    const htmlArray = edjsParser.parse(parsed);
+                    if (Array.isArray(htmlArray)) {
+                        return htmlArray.join("");
+                    }
+                }
+            } catch (error) {
+                console.error("Error parsing content:", error);
+            }
+        }
+
+        // Fallback ke isi (HTML) atau excerpt
+        return item.isi || item.excerpt || "Tidak ada deskripsi tersedia.";
+    };
 
     // Fungsi untuk scroll ke atas halaman
     const scrollToTop = () => {
@@ -393,14 +549,14 @@ export default function Gallery() {
                                         height:
                                             showFilters ||
                                             !window.matchMedia(
-                                                "(max-width: 768px)"
+                                                "(max-width: 768px)",
                                             ).matches
                                                 ? "auto"
                                                 : 0,
                                         opacity:
                                             showFilters ||
                                             !window.matchMedia(
-                                                "(max-width: 768px)"
+                                                "(max-width: 768px)",
                                             ).matches
                                                 ? 1
                                                 : 0,
@@ -428,22 +584,50 @@ export default function Gallery() {
                                         <span>Favorit</span>
                                     </button>
 
-                                    {/* Regular categories */}
-                                    {categories.map((category) => (
-                                        <button
-                                            key={category.id}
-                                            onClick={() =>
-                                                setActiveCategory(category.id)
-                                            }
-                                            className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 ${
-                                                activeCategory === category.id
-                                                    ? `bg-gradient-to-r from-${category.color}-700 to-${category.color}-500 text-white shadow-md`
-                                                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                                            }`}
-                                        >
-                                            {category.name}
-                                        </button>
-                                    ))}
+                                    {/* All Categories */}
+                                    <button
+                                        onClick={() => setActiveCategory("all")}
+                                        className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 ${
+                                            activeCategory === "all"
+                                                ? "bg-blue-600 text-white shadow-md"
+                                                : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                                        }`}
+                                    >
+                                        Semua
+                                    </button>
+
+                                    {themes.map((theme, index) => {
+                                        const colorClasses = [
+                                            "bg-blue-600",
+                                            "bg-green-600",
+                                            "bg-purple-600",
+                                            "bg-amber-600",
+                                            "bg-rose-600",
+                                            "bg-indigo-600",
+                                            "bg-cyan-600",
+                                            "bg-teal-600",
+                                        ];
+                                        const activeClass =
+                                            colorClasses[
+                                                index % colorClasses.length
+                                            ];
+
+                                        return (
+                                            <button
+                                                key={theme.id}
+                                                onClick={() =>
+                                                    setActiveCategory(theme.id)
+                                                }
+                                                className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 ${
+                                                    activeCategory === theme.id
+                                                        ? `${activeClass} text-white shadow-md`
+                                                        : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                                                }`}
+                                            >
+                                                {theme.nama}
+                                            </button>
+                                        );
+                                    })}
                                 </motion.div>
                             </AnimatePresence>
 
@@ -541,117 +725,186 @@ export default function Gallery() {
                 <div className="bg-gray-50 py-12">
                     <div className="container mx-auto px-4">
                         {loading ? (
-                            <div className="flex justify-center items-center py-20">
+                            <div
+                                className="flex justify-center items-center py-20"
+                                role="status"
+                                aria-live="polite"
+                                aria-busy="true"
+                            >
                                 <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+                                <span className="sr-only">
+                                    Memuat galeri...
+                                </span>
                             </div>
                         ) : filteredImages.length > 0 ? (
-                            <motion.div
-                                initial={{ opacity: 0 }}
-                                animate={{ opacity: 1 }}
-                                transition={{ duration: 0.5 }}
-                                className={`${
-                                    viewMode === "grid"
-                                        ? "gallery-grid"
-                                        : "masonry-grid"
-                                }`}
-                            >
-                                {filteredImages.map((item, index) => (
-                                    <motion.div
-                                        key={`${item.id}-${index}`}
-                                        initial={{ opacity: 0, y: 20 }}
-                                        animate={{ opacity: 1, y: 0 }}
-                                        transition={{
-                                            delay: index * 0.05,
-                                            duration: 0.3,
-                                        }}
-                                        whileHover={{ y: -5 }}
-                                        className="gallery-item"
-                                    >
-                                        <div
-                                            className="rounded-xl overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 group h-full relative cursor-pointer"
-                                            onClick={() => openLightbox(index)}
+                            <>
+                                <motion.div
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    transition={{ duration: 0.5 }}
+                                    className={`${
+                                        viewMode === "grid"
+                                            ? "gallery-grid"
+                                            : "masonry-grid"
+                                    }`}
+                                    role="grid"
+                                    aria-label="Galeri foto"
+                                    ref={gridRef}
+                                >
+                                    {filteredImages.map((item, index) => (
+                                        <motion.div
+                                            key={`${item.id}-${index}`}
+                                            initial={{ opacity: 0, y: 20 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            transition={{
+                                                delay: index * 0.05,
+                                                duration: 0.3,
+                                            }}
+                                            whileHover={{ y: -5 }}
+                                            className="gallery-item"
                                         >
-                                            <div className="aspect-w-1 aspect-h-1 w-full">
-                                                <img
-                                                    loading="lazy"
-                                                    src={`/storage/berita/${item.image}`}
-                                                    alt={item.title}
-                                                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-                                                />
-                                            </div>
-
-                                            {/* Favorite button */}
-                                            <button
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    toggleFavorite(item.id);
-                                                }}
-                                                className="absolute top-3 right-3 z-10 p-1.5 rounded-full bg-white/20 backdrop-blur-sm text-white hover:bg-white/40 transition-all duration-300"
+                                            <div
+                                                className="rounded-xl overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 group h-full relative cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+                                                onClick={() =>
+                                                    openLightbox(index)
+                                                }
+                                                onKeyDown={(e) =>
+                                                    onItemKeyDown(index, e)
+                                                }
+                                                aria-label={`Buka foto ${item.judul || "tanpa judul"}`}
+                                                tabIndex={
+                                                    index === focusedIndex
+                                                        ? 0
+                                                        : -1
+                                                }
+                                                data-gallery-item="true"
+                                                role="gridcell"
                                             >
-                                                {isFavorited(item.id) ? (
-                                                    <FaHeart className="h-4 w-4 text-rose-500" />
-                                                ) : (
-                                                    <FaRegHeart className="h-4 w-4" />
-                                                )}
-                                            </button>
+                                                <div className="aspect-w-1 aspect-h-1 w-full">
+                                                    <img
+                                                        loading="lazy"
+                                                        decoding="async"
+                                                        src={`/storage/berita/${item.image}`}
+                                                        alt={item.title}
+                                                        className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                                                        onError={(e) => {
+                                                            e.currentTarget.src =
+                                                                "/img/heroBerita.jpg";
+                                                            e.currentTarget.alt =
+                                                                "Gambar tidak tersedia";
+                                                        }}
+                                                    />
+                                                </div>
 
-                                            {/* Overlay yang muncul saat hover dengan animasi */}
-                                            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-300 flex flex-col justify-end p-6">
-                                                <div className="transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300">
-                                                    <div className="flex items-center mb-2">
-                                                        <span
-                                                            className={`text-xs font-medium px-2.5 py-0.5 rounded-full ${
-                                                                item.category ===
-                                                                "csr"
-                                                                    ? "bg-green-500 text-white"
-                                                                    : item.category ===
-                                                                      "training"
-                                                                    ? "bg-blue-500 text-white"
-                                                                    : item.category ===
-                                                                      "ceremony"
-                                                                    ? "bg-purple-500 text-white"
-                                                                    : item.category ===
-                                                                      "visit"
-                                                                    ? "bg-amber-500 text-white"
-                                                                    : "bg-gray-500 text-white"
-                                                            }`}
-                                                        >
-                                                            {
-                                                                categories.find(
-                                                                    (cat) =>
-                                                                        cat.id ===
-                                                                        item.category
-                                                                )?.name
-                                                            }
-                                                        </span>
+                                                {/* Favorite button */}
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        toggleFavorite(item.id);
+                                                    }}
+                                                    className="absolute top-3 right-3 z-10 p-1.5 rounded-full bg-white/20 backdrop-blur-sm text-white hover:bg-white/40 transition-all duration-300"
+                                                >
+                                                    {isFavorited(item.id) ? (
+                                                        <FaHeart className="h-4 w-4 text-rose-500" />
+                                                    ) : (
+                                                        <FaRegHeart className="h-4 w-4" />
+                                                    )}
+                                                </button>
+
+                                                {/* Overlay yang muncul saat hover dengan animasi */}
+                                                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-300 flex flex-col justify-end p-6">
+                                                    <div className="transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300">
+                                                        <div className="flex items-center mb-2">
+                                                            <span
+                                                                className={`text-xs font-medium px-2.5 py-0.5 rounded-full text-white ${(() => {
+                                                                    const index =
+                                                                        themes.findIndex(
+                                                                            (
+                                                                                t,
+                                                                            ) =>
+                                                                                t.id ===
+                                                                                item
+                                                                                    .tema
+                                                                                    ?.id,
+                                                                        );
+                                                                    const classes =
+                                                                        [
+                                                                            "bg-blue-500",
+                                                                            "bg-green-500",
+                                                                            "bg-purple-500",
+                                                                            "bg-amber-500",
+                                                                            "bg-rose-500",
+                                                                            "bg-indigo-500",
+                                                                            "bg-cyan-500",
+                                                                            "bg-teal-500",
+                                                                        ];
+                                                                    return index >=
+                                                                        0
+                                                                        ? classes[
+                                                                              index %
+                                                                                  classes.length
+                                                                          ]
+                                                                        : "bg-gray-500";
+                                                                })()}`}
+                                                            >
+                                                                {item.tema
+                                                                    ?.nama ||
+                                                                    "Berita"}
+                                                            </span>
+                                                        </div>
+                                                        <h3 className="text-lg font-semibold text-white mb-2">
+                                                            {item.judul}
+                                                        </h3>
+                                                        <div className="flex items-center text-xs text-gray-300 mb-3">
+                                                            <FaCalendarAlt className="h-3 w-3 mr-1 text-blue-300" />
+                                                            <span>
+                                                                {format(
+                                                                    new Date(
+                                                                        item.created_at,
+                                                                    ),
+                                                                    "dd MMMM yyyy",
+                                                                    {
+                                                                        locale: id,
+                                                                    },
+                                                                )}
+                                                            </span>
+                                                        </div>
+                                                        <button className="inline-flex items-center text-sm text-white bg-blue-600/80 hover:bg-blue-600 px-3 py-1.5 rounded-md transition-colors duration-200">
+                                                            <FaEye className="mr-1.5 h-3.5 w-3.5" />
+                                                            Lihat Detail
+                                                        </button>
                                                     </div>
-                                                    <h3 className="text-lg font-semibold text-white mb-2">
-                                                        {item.judul}
-                                                    </h3>
-                                                    <div className="flex items-center text-xs text-gray-300 mb-3">
-                                                        <FaCalendarAlt className="h-3 w-3 mr-1 text-blue-300" />
-                                                        <span>
-                                                            {format(
-                                                                new Date(
-                                                                    item.created_at
-                                                                ),
-                                                                "dd MMMM yyyy",
-                                                                {
-                                                                    locale: id,
-                                                                }
-                                                            )}
-                                                        </span>
-                                                    </div>
-                                                    <button className="inline-flex items-center text-sm text-white bg-blue-600/80 hover:bg-blue-600 px-3 py-1.5 rounded-md transition-colors duration-200">
-                                                        <FaEye className="mr-1.5 h-3.5 w-3.5" />
-                                                        Lihat Detail
-                                                    </button>
                                                 </div>
                                             </div>
-                                        </div>
-                                    </motion.div>
-                                ))}
-                            </motion.div>
+                                        </motion.div>
+                                    ))}
+                                </motion.div>
+
+                                {pagination.current_page <
+                                    pagination.last_page && (
+                                    <div className="flex justify-center mt-12">
+                                        <button
+                                            onClick={handleLoadMore}
+                                            disabled={loadingMore}
+                                            className="px-6 py-3 bg-white border border-gray-200 text-gray-700 font-medium rounded-full shadow-sm hover:bg-gray-50 hover:shadow-md transition-all duration-300 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                                        >
+                                            {loadingMore ? (
+                                                <>
+                                                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-gray-500 border-t-transparent"></div>
+                                                    <span>Memuat...</span>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <FaDownload className="h-4 w-4" />
+                                                    <span>
+                                                        Muat Lebih Banyak
+                                                    </span>
+                                                </>
+                                            )}
+                                        </button>
+                                    </div>
+                                )}
+                            </>
                         ) : (
                             <motion.div
                                 initial={{ opacity: 0, y: 20 }}
@@ -691,235 +944,270 @@ export default function Gallery() {
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
-                            transition={{ duration: 0.3 }}
-                            className="fixed inset-0 z-50 bg-black bg-opacity-95 flex items-center justify-center p-4"
+                            transition={{ duration: 0.2 }}
+                            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-md p-0 md:p-4"
                             onClick={closeLightbox}
+                            role="dialog"
+                            aria-modal="true"
+                            aria-labelledby="lightbox-title"
+                            aria-describedby="lightbox-desc"
                         >
+                            {/* Close button - Fixed top right */}
+                            <button
+                                onClick={closeLightbox}
+                                className="absolute top-4 right-4 z-50 p-2 text-white/70 hover:text-white bg-black/20 hover:bg-white/10 rounded-full transition-all duration-200"
+                                ref={closeBtnRef}
+                                aria-label="Tutup galeri"
+                            >
+                                <FaTimes className="w-6 h-6" />
+                            </button>
+
+                            {/* Navigation Buttons - Fixed sides for desktop */}
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    navigateLightbox("prev");
+                                }}
+                                className="absolute left-4 top-1/2 -translate-y-1/2 z-50 p-3 text-white/70 hover:text-white bg-black/20 hover:bg-white/10 rounded-full transition-all duration-200 hidden md:flex"
+                            >
+                                <FaChevronLeft className="w-8 h-8" />
+                            </button>
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    navigateLightbox("next");
+                                }}
+                                className="absolute right-4 top-1/2 -translate-y-1/2 z-50 p-3 text-white/70 hover:text-white bg-black/20 hover:bg-white/10 rounded-full transition-all duration-200 hidden md:flex"
+                            >
+                                <FaChevronRight className="w-8 h-8" />
+                            </button>
+
                             <motion.div
-                                initial={{ opacity: 0, scale: 0.9 }}
-                                animate={{ opacity: 1, scale: 1 }}
-                                exit={{ opacity: 0, scale: 0.9 }}
-                                transition={{ duration: 0.3 }}
-                                className="relative w-full max-w-5xl mx-auto"
+                                initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                                animate={{ opacity: 1, scale: 1, y: 0 }}
+                                exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                                transition={{
+                                    duration: 0.3,
+                                    type: "spring",
+                                    damping: 25,
+                                    stiffness: 300,
+                                }}
+                                className="bg-white/50 backdrop-blur-xl w-full max-w-7xl max-h-[100vh] md:max-h-[90vh] md:rounded-2xl overflow-hidden shadow-2xl flex flex-col lg:flex-row"
                                 onClick={(e) => e.stopPropagation()}
                             >
-                                {/* Close button */}
-                                <button
-                                    onClick={closeLightbox}
-                                    className="absolute -top-12 right-0 text-white/80 hover:text-white bg-black/30 hover:bg-black/50 p-2.5 rounded-full transition-all duration-300"
-                                    aria-label="Close lightbox"
-                                >
-                                    <FaTimes className="h-6 w-6" />
-                                </button>
-
-                                {/* Navigation buttons */}
-                                <button
-                                    onClick={() => navigateLightbox("prev")}
-                                    className="absolute left-0 top-1/2 -translate-y-1/2 -ml-12 text-white/80 hover:text-white bg-black/30 hover:bg-black/50 p-3 rounded-full transition-all duration-300 group"
-                                    aria-label="Previous image"
-                                >
-                                    <FaChevronLeft className="h-8 w-8 group-hover:-translate-x-0.5 transition-transform" />
-                                </button>
-                                <button
-                                    onClick={() => navigateLightbox("next")}
-                                    className="absolute right-0 top-1/2 -translate-y-1/2 -mr-12 text-white/80 hover:text-white bg-black/30 hover:bg-black/50 p-3 rounded-full transition-all duration-300 group"
-                                    aria-label="Next image"
-                                >
-                                    <FaChevronRight className="h-8 w-8 group-hover:translate-x-0.5 transition-transform" />
-                                </button>
-
-                                {/* Image and content container */}
-                                <div className="bg-white rounded-xl overflow-hidden shadow-2xl">
-                                    {/* Image container with loading state */}
-                                    <div className="relative">
-                                        <motion.img
+                                {/* Image Section */}
+                                <div className="relative flex-1 bg-black flex items-center justify-center min-h-[40vh] lg:min-h-full overflow-hidden group">
+                                    {isImageError ? (
+                                        <motion.div
+                                            key={`error-${filteredImages[currentImageIndex].id}`}
                                             initial={{ opacity: 0 }}
                                             animate={{ opacity: 1 }}
-                                            transition={{ duration: 0.5 }}
-                                            loading="eager"
+                                            className="flex flex-col items-center justify-center text-white/50 p-12 text-center"
+                                        >
+                                            <FaImage className="w-24 h-24 mb-4 opacity-50" />
+                                            <p className="text-lg font-medium">
+                                                Gambar tidak tersedia
+                                            </p>
+                                        </motion.div>
+                                    ) : (
+                                        <motion.img
+                                            key={
+                                                filteredImages[
+                                                    currentImageIndex
+                                                ].id
+                                            }
+                                            initial={{ opacity: 0 }}
+                                            animate={{ opacity: 1 }}
+                                            transition={{ duration: 0.3 }}
                                             src={`/storage/berita/${filteredImages[currentImageIndex].image}`}
                                             alt={
                                                 filteredImages[
                                                     currentImageIndex
-                                                ].title
+                                                ].judul
                                             }
-                                            className="w-full h-auto max-h-[70vh] object-contain"
+                                            className="max-w-full max-h-[85vh] lg:max-h-full object-contain"
+                                            onError={() =>
+                                                setIsImageError(true)
+                                            }
                                         />
+                                    )}
 
-                                        {/* Category badge */}
-                                        <div className="absolute top-4 left-4">
-                                            <span
-                                                className={`inline-block px-3 py-1.5 rounded-lg text-sm font-medium ${
-                                                    filteredImages[
-                                                        currentImageIndex
-                                                    ].category === "csr"
-                                                        ? "bg-green-500/90"
-                                                        : filteredImages[
-                                                              currentImageIndex
-                                                          ].category ===
-                                                          "training"
-                                                        ? "bg-blue-500/90"
-                                                        : filteredImages[
-                                                              currentImageIndex
-                                                          ].category ===
-                                                          "ceremony"
-                                                        ? "bg-purple-500/90"
-                                                        : filteredImages[
-                                                              currentImageIndex
-                                                          ].category === "visit"
-                                                        ? "bg-amber-500/90"
-                                                        : "bg-gray-500/90"
-                                                } text-white backdrop-blur-sm`}
-                                            >
-                                                {categories.find(
-                                                    (c) =>
-                                                        c.id ===
-                                                        filteredImages[
-                                                            currentImageIndex
-                                                        ].category
-                                                )?.name || "Lainnya"}
-                                            </span>
-                                        </div>
-
-                                        {/* Favorite button */}
+                                    {/* Mobile Navigation Overlay */}
+                                    <div className="absolute inset-0 flex justify-between items-center md:hidden px-2 pointer-events-none">
                                         <button
                                             onClick={(e) => {
                                                 e.stopPropagation();
-                                                toggleFavorite(
-                                                    filteredImages[
-                                                        currentImageIndex
-                                                    ].id
-                                                );
+                                                navigateLightbox("prev");
                                             }}
-                                            className="absolute top-4 right-4 p-2 rounded-full bg-white/20 backdrop-blur-sm text-white hover:bg-white/40 transition-all duration-300"
+                                            className="p-2 text-white/70 bg-black/20 rounded-full pointer-events-auto"
                                         >
-                                            {isFavorited(
-                                                filteredImages[
-                                                    currentImageIndex
-                                                ].id
-                                            ) ? (
-                                                <FaHeart className="h-5 w-5 text-rose-500" />
-                                            ) : (
-                                                <FaRegHeart className="h-5 w-5" />
-                                            )}
+                                            <FaChevronLeft className="w-6 h-6" />
                                         </button>
-
-                                        {/* Image counter */}
-                                        <div className="absolute bottom-4 left-4 bg-black/50 text-white text-sm px-3 py-1.5 rounded-lg backdrop-blur-sm">
-                                            {currentImageIndex + 1} /{" "}
-                                            {filteredImages.length}
-                                        </div>
-
-                                        <div className="absolute bottom-4 right-4 flex space-x-2">
-                                            <button className="bg-white/20 backdrop-blur-sm p-2 rounded-full text-white hover:bg-white/30 transition-colors">
-                                                <FaDownload className="h-5 w-5" />
-                                            </button>
-                                            <button className="bg-white/20 backdrop-blur-sm p-2 rounded-full text-white hover:bg-white/30 transition-colors">
-                                                <FaShare className="h-5 w-5" />
-                                            </button>
-                                        </div>
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                navigateLightbox("next");
+                                            }}
+                                            className="p-2 text-white/70 bg-black/20 rounded-full pointer-events-auto"
+                                        >
+                                            <FaChevronRight className="w-6 h-6" />
+                                        </button>
                                     </div>
-                                    <div className="p-6">
-                                        <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-4 mb-4">
+
+                                    {/* Image Overlay Controls (Top Left) */}
+                                    <div className="absolute top-4 left-4 flex gap-2">
+                                        <span
+                                            className={`px-3 py-1 rounded-full text-xs font-medium text-white shadow-lg backdrop-blur-xl ${(() => {
+                                                const index = themes.findIndex(
+                                                    (t) =>
+                                                        t.id ===
+                                                        filteredImages[
+                                                            currentImageIndex
+                                                        ].tema?.id,
+                                                );
+                                                const classes = [
+                                                    "bg-blue-600/90",
+                                                    "bg-green-600/90",
+                                                    "bg-purple-600/90",
+                                                    "bg-amber-600/90",
+                                                    "bg-rose-600/90",
+                                                    "bg-indigo-600/90",
+                                                    "bg-cyan-600/90",
+                                                    "bg-teal-600/90",
+                                                ];
+                                                return index >= 0
+                                                    ? classes[
+                                                          index % classes.length
+                                                      ]
+                                                    : "bg-gray-600/90";
+                                            })()}`}
+                                        >
+                                            {filteredImages[currentImageIndex]
+                                                .tema?.nama || "Berita"}
+                                        </span>
+                                    </div>
+                                </div>
+
+                                {/* Details Section */}
+                                <div className="w-full lg:w-[400px] bg-white/80 backdrop-blur-2xl flex flex-col border-l border-white/20 shadow-[-10px_0_30px_rgba(0,0,0,0.05)]">
+                                    <div className="p-8 flex-1 overflow-y-auto custom-scrollbar">
+                                        {/* Header */}
+                                        <div className="flex items-start justify-between gap-4 mb-8">
                                             <div>
-                                                <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                                                <h3
+                                                    id="lightbox-title"
+                                                    className="text-2xl font-bold text-slate-900 leading-snug mb-3"
+                                                >
                                                     {
                                                         filteredImages[
                                                             currentImageIndex
                                                         ].judul
                                                     }
                                                 </h3>
-                                                <div className="flex flex-wrap items-center gap-3 text-sm text-gray-500">
-                                                    <span className="inline-flex items-center">
-                                                        <FaCalendarAlt className="mr-1.5 h-3.5 w-3.5 text-blue-500" />
+                                                <div className="flex items-center gap-3 flex-wrap">
+                                                    <span className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-100/80 text-xs text-slate-500 font-medium">
+                                                        <FaCalendarAlt className="text-slate-400 w-3.5 h-3.5" />
                                                         {format(
                                                             new Date(
                                                                 filteredImages[
                                                                     currentImageIndex
-                                                                ].created_at
+                                                                ].created_at,
                                                             ),
-                                                            "dd MMMM yyyy",
-                                                            { locale: id }
+                                                            "d MMM yyyy",
+                                                            { locale: id },
                                                         )}
                                                     </span>
+                                                    <span className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50 text-xs text-blue-600 font-medium border border-blue-100">
+                                                        {filteredImages[
+                                                            currentImageIndex
+                                                        ].tema?.nama || "Umum"}
+                                                    </span>
                                                 </div>
                                             </div>
 
-                                            <div className="flex space-x-2 self-end md:self-start">
-                                                <button
-                                                    className="flex items-center gap-1.5 px-3 py-1.5 text-gray-700 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-300 border border-gray-200"
-                                                    aria-label="Download image"
-                                                >
-                                                    <FaDownload className="h-4 w-4" />
-                                                    <span className="text-sm font-medium">
-                                                        Download
-                                                    </span>
-                                                </button>
-                                                <button
-                                                    className="flex items-center gap-1.5 px-3 py-1.5 text-gray-700 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-300 border border-gray-200"
-                                                    aria-label="Share image"
-                                                >
-                                                    <FaShare className="h-4 w-4" />
-                                                    <span className="text-sm font-medium">
-                                                        Bagikan
-                                                    </span>
-                                                </button>
-                                            </div>
+                                            <motion.button
+                                                whileTap={{ scale: 0.9 }}
+                                                onClick={() =>
+                                                    toggleFavorite(
+                                                        filteredImages[
+                                                            currentImageIndex
+                                                        ].id,
+                                                    )
+                                                }
+                                                className={`p-3 rounded-2xl transition-all duration-300 shadow-sm flex-shrink-0 ${
+                                                    isFavorited(
+                                                        filteredImages[
+                                                            currentImageIndex
+                                                        ].id,
+                                                    )
+                                                        ? "bg-rose-50 text-rose-500 shadow-rose-100 ring-1 ring-rose-100"
+                                                        : "bg-white text-slate-400 hover:bg-slate-50 ring-1 ring-slate-100"
+                                                }`}
+                                            >
+                                                {isFavorited(
+                                                    filteredImages[
+                                                        currentImageIndex
+                                                    ].id,
+                                                ) ? (
+                                                    <FaHeart className="w-5 h-5" />
+                                                ) : (
+                                                    <FaRegHeart className="w-5 h-5" />
+                                                )}
+                                            </motion.button>
                                         </div>
 
-                                        <div className="bg-gray-50 p-4 rounded-lg mb-4">
-                                            <p className="text-gray-600">
-                                                {filteredImages[
-                                                    currentImageIndex
-                                                ].isi ||
-                                                    "Tidak ada deskripsi untuk gambar ini."}
-                                            </p>
+                                        {/* Content */}
+                                        <div
+                                            id="lightbox-desc"
+                                            className="mb-8"
+                                        >
+                                            <div
+                                                className="text-slate-600 leading-relaxed text-[15px] space-y-4 font-normal"
+                                                dangerouslySetInnerHTML={{
+                                                    __html: renderNewsContent(
+                                                        filteredImages[
+                                                            currentImageIndex
+                                                        ],
+                                                    ),
+                                                }}
+                                            />
                                         </div>
 
-                                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                                            <div>
-                                                <div className="text-gray-500 mb-1">
-                                                    Kategori
-                                                </div>
-                                                <div className="font-medium">
-                                                    {categories.find(
-                                                        (c) =>
-                                                            c.id ===
-                                                            filteredImages[
-                                                                currentImageIndex
-                                                            ].category
-                                                    )?.name || "Lainnya"}
-                                                </div>
-                                            </div>
-                                            <div>
-                                                <div className="text-gray-500 mb-1">
-                                                    Tanggal
-                                                </div>
-                                                <div className="font-medium">
-                                                    {format(
-                                                        new Date(
-                                                            filteredImages[
-                                                                currentImageIndex
-                                                            ].created_at
-                                                        ),
-                                                        "dd MMMM yyyy",
-                                                        { locale: id }
-                                                    )}
-                                                </div>
-                                            </div>
-                                            <div>
-                                                <div className="text-gray-500 mb-1">
-                                                    ID Berita
-                                                </div>
-                                                <div className="font-medium">
+                                        {/* Metadata Cards */}
+                                        <div className="grid grid-cols-2 gap-3 mb-6">
+                                            <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100/50">
+                                                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-1">
+                                                    ID Referensi
+                                                </p>
+                                                <p className="font-mono text-xs text-slate-600 truncate">
+                                                    #
                                                     {
                                                         filteredImages[
                                                             currentImageIndex
                                                         ].id.split("-")[0]
                                                     }
-                                                </div>
+                                                </p>
+                                            </div>
+                                            <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100/50">
+                                                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-1">
+                                                    Fotografer
+                                                </p>
+                                                <p className="font-medium text-xs text-slate-700 truncate">
+                                                    Admin Web
+                                                </p>
                                             </div>
                                         </div>
+                                    </div>
+
+                                    {/* Footer Actions */}
+                                    <div className="p-6 bg-white/80 backdrop-blur-md border-t border-slate-100 flex gap-4">
+                                        <button className="flex-1 group flex items-center justify-center gap-2.5 px-4 py-3.5 bg-slate-900 hover:bg-slate-800 text-white rounded-2xl font-medium transition-all shadow-lg shadow-slate-200 active:scale-[0.98]">
+                                            <FaDownload className="w-4 h-4 group-hover:-translate-y-0.5 transition-transform" />
+                                            <span>Download</span>
+                                        </button>
+                                        <button className="flex-none flex items-center justify-center p-3.5 bg-white border border-slate-200 hover:border-slate-300 hover:bg-slate-50 text-slate-700 rounded-2xl transition-all shadow-sm active:scale-[0.98]">
+                                            <FaShare className="w-5 h-5" />
+                                        </button>
                                     </div>
                                 </div>
                             </motion.div>
@@ -945,111 +1233,8 @@ export default function Gallery() {
             </HomeLayout>
 
             {/* CSS untuk Gallery Grid */}
-            <style jsx global>{`
-                .gallery-grid {
-                    display: grid;
-                    grid-template-columns: repeat(1, 1fr);
-                    gap: 1rem;
-                }
-
-                @media (min-width: 640px) {
-                    .gallery-grid {
-                        grid-template-columns: repeat(2, 1fr);
-                    }
-                }
-
-                @media (min-width: 768px) {
-                    .gallery-grid {
-                        grid-template-columns: repeat(3, 1fr);
-                    }
-                }
-
-                @media (min-width: 1024px) {
-                    .gallery-grid {
-                        grid-template-columns: repeat(4, 1fr);
-                    }
-                }
-
-                /* CSS untuk masonry grid */
-                .masonry-grid {
-                    column-count: 1;
-                    column-gap: 1.5rem;
-                }
-
-                @media (min-width: 640px) {
-                    .masonry-grid {
-                        column-count: 2;
-                    }
-                }
-
-                @media (min-width: 768px) {
-                    .masonry-grid {
-                        column-count: 3;
-                    }
-                }
-
-                @media (min-width: 1024px) {
-                    .masonry-grid {
-                        column-count: 4;
-                    }
-                }
-
-                .masonry-grid .gallery-item {
-                    break-inside: avoid;
-                    margin-bottom: 1.5rem;
-                }
-
-                .gallery-item {
-                    break-inside: avoid;
-                    position: relative;
-                    transform: translateZ(
-                        0
-                    ); /* Untuk performa animasi yang lebih baik */
-                    will-change: transform; /* Untuk performa animasi yang lebih baik */
-                }
-
-                /* Aspect ratio polyfill */
-                .aspect-w-1 {
-                    position: relative;
-                    padding-bottom: 100%;
-                }
-
-                .aspect-w-1 > img {
-                    position: absolute;
-                    height: 100%;
-                    width: 100%;
-                    top: 0;
-                    right: 0;
-                    bottom: 0;
-                    left: 0;
-                    object-fit: cover;
-                    object-position: center;
-                }
-
-                /* Tombol scroll to top */
-                .scroll-to-top {
-                    position: fixed;
-                    bottom: 2rem;
-                    right: 2rem;
-                    background-color: rgba(59, 130, 246, 0.8);
-                    color: white;
-                    width: 3rem;
-                    height: 3rem;
-                    border-radius: 50%;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    cursor: pointer;
-                    transition: all 0.3s ease;
-                    z-index: 40;
-                    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
-                    backdrop-filter: blur(4px);
-                }
-
-                .scroll-to-top:hover {
-                    background-color: rgba(37, 99, 235, 1);
-                    transform: translateY(-3px);
-                }
+            <style>{`
+                
             `}</style>
         </>
     );
