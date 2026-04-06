@@ -277,13 +277,10 @@
             <p><span style="font-weight: bold; text-decoration: underline;">{{ $anomali->approvedBy->name ?? 'Adi Kusmiyanto' }}</span></p>
           </td>
           <td style="width: 50%; text-align: center; vertical-align: top; border: none;">
-            <p>TL JARGI {{$anomali->gardu_induk->name.replace(
-                                                                            /^(GI|GITET|GIS|GISTET)\s+(\d+KV\s+)?/i,
-                                                                            "",
-                                                                        ) ?? '...'}}</p>
+            <p>TL JARGI {{ preg_replace('/^(GI|GITET|GIS|GISTET)\s+(\d+KV\s+)?/i', '', $anomali->gardu_induk->name) ?? '...' }}</p>
             @if($anomali->user && $anomali->user->tanda_tangan_path)
               <img
-                src="{{ public_path('storage/' . $anomali->tanda_tangan_pemilik) }}"
+                src="{{ public_path('storage/' . $anomali->user->tanda_tangan_path) }}"
                 alt="Signature of {{ $anomali->user->name }}"
                 class="mt-4 max-h-24 mx-auto"
                 style="margin-top:16px;max-height:96px;display:block;margin-left:auto;margin-right:auto;"
@@ -298,7 +295,10 @@
     </div>
   </div>
 
-  @if($anomali->lampiran_foto && count(json_decode($anomali->lampiran_foto)) > 0)
+  @php
+    $lampiran = json_decode($anomali->lampiran_foto);
+  @endphp
+  @if($lampiran && is_array($lampiran) && count($lampiran) > 0)
     <div style="page-break-before: always;"></div>
     <div class="container">
       <table class="header-table">
@@ -324,7 +324,7 @@
     </table>
       <div style="padding: 20px; text-align: center;">
         <p style="margin-bottom: 20px;">Lampiran</p>
-        @foreach(json_decode($anomali->lampiran_foto) as $foto)
+        @foreach($lampiran as $foto)
           <div style="display: inline-block; width: 45%; margin: 5px; vertical-align: middle;">
             <img src="{{ public_path('storage/' . $foto) }}" alt="Foto Lampiran" style="max-width: 98%; max-height: 300px; border: 1px solid #ccc; padding: 5px;" />
           </div>

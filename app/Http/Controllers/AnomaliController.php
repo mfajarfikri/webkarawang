@@ -246,7 +246,6 @@ class AnomaliController extends Controller
             }
 
             return response($pdf->output(), 200, $headers);
-            // return view('exports.pdf', compact('anomali'));
         } catch (\Exception $e) {
             Log::error('Export PDF error: ' . $e->getMessage(), [
                 'id' => $anomali->id,
