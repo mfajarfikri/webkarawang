@@ -31,7 +31,7 @@ class UserController extends Controller
             ];
         });
         $garduInduks = GarduInduk::select('id', 'name', 'ultg')->get();
-        return inertia('Dashboard/User/index', [
+        return inertia('Dashboard/User/User', [
             'users' => $users,
             'garduInduks' => $garduInduks,
         ]);
