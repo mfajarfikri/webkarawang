@@ -93,19 +93,6 @@ function HomeLayoutContent({ children }) {
             ],
         },
         {
-            title: "Layanan",
-            url: "#",
-            submenu: [
-                { title: "Ruang Rapat", url: route("ruangRapat") },
-                { title: "Pasang Baru", url: "/pasang-baru" },
-                { title: "Tambah Daya", url: "/tambah-daya" },
-                {
-                    title: "Penyambungan Sementara",
-                    url: "/penyambungan-sementara",
-                },
-            ],
-        },
-        {
             title: "Informasi",
             url: "#",
             submenu: [

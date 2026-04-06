@@ -111,12 +111,6 @@ export default function Login({ status, canResetPassword }) {
                 setLoginError(
                     "Terjadi kesalahan saat login. Silakan coba lagi.",
                 );
-                enqueueSnackbar(
-                    "Terjadi kesalahan saat login. Silakan coba lagi.",
-                    {
-                        variant: "error",
-                    },
-                );
             }
         } finally {
             setLoading(false);
@@ -126,10 +120,10 @@ export default function Login({ status, canResetPassword }) {
     return (
         <div className="min-h-screen bg-slate-50">
             <Head title="Login" />
-            <div className="mx-auto w-full max-w-6xl px-4 sm:px-6 lg:px-8 py-10 sm:py-12">
+            <div className="mx-auto w-full max-w-6xl px-4 sm:px-6 lg:px-2 py-10 sm:py-12">
                 {/* Perubahan signifikan: layout 2-kolom (brand panel + card) agar konsisten dengan halaman dashboard/home */}
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
-                    <div className="lg:col-span-7">
+                <div className="grid grid-cols-1 lg:grid-cols-10 gap-8 items-center min-h-[calc(100vh-8rem)] justify-between">
+                    <div className="lg:col-span-5">
                         <div className="motion-safe:animate-fadeInUp">
                             <Link
                                 href={route("home")}
@@ -173,10 +167,10 @@ export default function Login({ status, canResetPassword }) {
                                         Produktivitas
                                     </div>
                                     <div className="mt-2 text-sm font-bold text-slate-900">
-                                        UI konsisten & cepat
+                                        Daftar Tugas dan Sistem GTD
                                     </div>
                                     <div className="mt-1 text-sm text-slate-600">
-                                        Fokus pada pekerjaan, bukan navigasi.
+                                        Memudahkan To Do List Anda.
                                     </div>
                                 </div>
                             </div>
