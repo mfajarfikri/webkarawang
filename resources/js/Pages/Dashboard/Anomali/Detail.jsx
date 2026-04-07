@@ -36,7 +36,11 @@ import {
 import React from "react";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
-import { formatDateDMY, formatMaybeDateRange } from "@/Components/Utils/formatDate";
+import {
+    formatDate,
+    formatDateDMY,
+    formatMaybeDateRange,
+} from "@/Components/Utils/formatDate";
 import { formatRupiah } from "@/utils/formatter";
 import PdfDownloadButton from "@/Components/Dashboard/Anomali/PdfDownloadButton";
 
@@ -223,7 +227,14 @@ export default function Detail({ anomalis }) {
 
     // Format tanggal
     const formatDate = (dateString) => {
-        return formatDateDMY(dateString);
+        if (!dateString) return "-";
+        try {
+            return format(new Date(dateString), "eeee, d MMMM yyyy", {
+                locale: id,
+            });
+        } catch (e) {
+            return dateString;
+        }
     };
 
     // Parse lampiran foto

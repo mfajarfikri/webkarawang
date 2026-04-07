@@ -5,7 +5,10 @@ import { Calendar, dateFnsLocalizer } from "react-big-calendar";
 import "react-big-calendar/lib/css/react-big-calendar.css";
 import { format, parse, startOfWeek, getDay } from "date-fns";
 import { id } from "date-fns/locale";
-import { formatDateDMY, formatMaybeDateRange } from "@/Components/Utils/formatDate";
+import {
+    formatDateDMY,
+    formatMaybeDateRange,
+} from "@/Components/Utils/formatDate";
 import axios from "axios";
 import { SnackbarProvider, useSnackbar } from "notistack";
 import PdfDownloadButton from "@/Components/Dashboard/Anomali/PdfDownloadButton";
@@ -263,22 +266,24 @@ function ScheduleContent({ anomalis, users }) {
         if (!dateRange.from || !dateRange.to) {
             enqueueSnackbar("Rentang tanggal pekerjaan harus dipilih", {
                 variant: "error",
-                content: (key, message) => (
-                    <StyledSnackbar
-                        id={key}
-                        message={message}
-                        variant="error"
-                    />
-                ),
+                autoHideDuration: 3000,
             });
             return;
         }
 
         setIsSubmitting(true);
 
+        // Gunakan format lokal YYYY-MM-DD tanpa konversi ISO yang menggeser timezone
+        const formatDateForBackend = (date) => {
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, "0");
+            const day = String(date.getDate()).padStart(2, "0");
+            return `${year}-${month}-${day}`;
+        };
+
         const data = {
-            tanggal_mulai: dateRange.from.toISOString().split("T")[0],
-            tanggal_selesai: dateRange.to.toISOString().split("T")[0],
+            tanggal_mulai: formatDateForBackend(dateRange.from),
+            tanggal_selesai: formatDateForBackend(dateRange.to),
             notes: notes,
         };
 
@@ -290,13 +295,7 @@ function ScheduleContent({ anomalis, users }) {
                 // Show success notification
                 enqueueSnackbar("Jadwal pekerjaan berhasil disimpan", {
                     variant: "success",
-                    content: (key, message) => (
-                        <StyledSnackbar
-                            id={key}
-                            message={message}
-                            variant="success"
-                        />
-                    ),
+                    autoHideDuration: 3000,
                 });
 
                 // Redirect setelah 2 detik
@@ -318,13 +317,7 @@ function ScheduleContent({ anomalis, users }) {
                         "Terjadi kesalahan saat menyimpan jadwal pekerjaan",
                     {
                         variant: "error",
-                        content: (key, message) => (
-                            <StyledSnackbar
-                                id={key}
-                                message={message}
-                                variant="error"
-                            />
-                        ),
+                        autoHideDuration: 5000,
                     },
                 );
             });
@@ -340,7 +333,16 @@ function ScheduleContent({ anomalis, users }) {
         // Prevent selecting past dates
         const today = new Date();
         today.setHours(0, 0, 0, 0);
-        if (startDate < today) {
+
+        // Buat salinan startDate tanpa waktu untuk perbandingan yang tepat
+        const startDay = new Date(startDate);
+        startDay.setHours(0, 0, 0, 0);
+
+        if (startDay < today) {
+            enqueueSnackbar("Tidak dapat memilih tanggal di masa lalu", {
+                variant: "error",
+                autoHideDuration: 3000,
+            });
             return;
         }
 

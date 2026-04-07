@@ -52,7 +52,7 @@ export function formatDateDMY(date) {
             typeof date === "string" ? parseDateOnly(date) : null;
         const dt = parsedDateOnly || new Date(date);
         if (Number.isNaN(dt.getTime())) return "-";
-        return format(dt, "dd/MM/yyyy", { locale: id });
+        return format(dt, "EEEE, d MMMM yyyy", { locale: id });
     } catch {
         return "-";
     }
@@ -70,9 +70,9 @@ export function formatMaybeDateRange(value) {
         const from = parseDateOnly(rangeMatch[1]);
         const to = parseDateOnly(rangeMatch[2]);
         if (!from || !to) return "Tanggal tidak valid";
-        return `${format(from, "dd/MM/yyyy", { locale: id })} - ${format(
+        return `${format(from, "EEEE, d MMMM yyyy", { locale: id })} - ${format(
             to,
-            "dd/MM/yyyy",
+            "EEEE, d MMMM yyyy",
             { locale: id },
         )}`;
     }
