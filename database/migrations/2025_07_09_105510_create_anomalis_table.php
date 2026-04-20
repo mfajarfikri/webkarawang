@@ -27,19 +27,20 @@ return new class extends Migration
             $table->string('kode_asset')->nullable();
             $table->string('tahun_operasi')->nullable();
             $table->string('tahun_buat')->nullable();
+            $table->string('bay')->nullable();
             $table->string('penempatan_alat');
             $table->date('tanggal_kejadian');
             $table->text('penyebab');
             $table->text('akibat');
-            $table->text('usul_saran')->nullable(); 
+            $table->text('usul_saran')->nullable();
             $table->json('lampiran_foto')->nullable();
             $table->enum('status', ['New', 'Open', 'In Progress', 'Pending', 'Close', 'Rejected']);
-            
+
             $table->string('tanda_tangan_pemilik')->nullable();
             $table->string('tanda_tangan_approve')->nullable();
             $table->unsignedBigInteger('user_id');
-            
-            
+
+
 
             // diisi ketika approve
             $table->enum('approve', ['Yes', 'No'])->nullable();

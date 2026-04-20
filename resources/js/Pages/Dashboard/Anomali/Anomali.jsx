@@ -83,7 +83,7 @@ function UltgBadge({ ultg }) {
 function AnomaliCalendar({ filteredAnomalis, onEventClick }) {
     const calendarRef = useRef(null);
     const [windowWidth, setWindowWidth] = useState(
-        typeof window !== "undefined" ? window.innerWidth : 1024,
+        typeof window !== "undefined" ? window.innerWidth : 1024
     );
     const [currentView, setCurrentView] = useState("dayGridMonth");
     const [viewTitle, setViewTitle] = useState("");
@@ -127,7 +127,7 @@ function AnomaliCalendar({ filteredAnomalis, onEventClick }) {
         const set = new Set(
             filteredAnomalis
                 .map((a) => a.kategori?.name)
-                .filter((name) => typeof name === "string" && name.trim()),
+                .filter((name) => typeof name === "string" && name.trim())
         );
         return ["All", ...Array.from(set).sort((a, b) => a.localeCompare(b))];
     }, [filteredAnomalis]);
@@ -136,7 +136,7 @@ function AnomaliCalendar({ filteredAnomalis, onEventClick }) {
         const set = new Set(
             filteredAnomalis
                 .map((a) => a.ultg)
-                .filter((ultg) => typeof ultg === "string" && ultg.trim()),
+                .filter((ultg) => typeof ultg === "string" && ultg.trim())
         );
         return ["All", ...Array.from(set).sort((a, b) => a.localeCompare(b))];
     }, [filteredAnomalis]);
@@ -198,7 +198,7 @@ function AnomaliCalendar({ filteredAnomalis, onEventClick }) {
                         endDate !== startDate
                             ? new Date(
                                   new Date(endDate).getTime() +
-                                      24 * 60 * 60 * 1000,
+                                      24 * 60 * 60 * 1000
                               )
                                   .toISOString()
                                   .split("T")[0]
@@ -410,7 +410,7 @@ function AnomaliCalendar({ filteredAnomalis, onEventClick }) {
                                         <div className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
                                             {new Date().toLocaleString(
                                                 "id-ID",
-                                                { month: "short" },
+                                                { month: "short" }
                                             )}
                                         </div>
                                         <div className="text-xs text-slate-500">
@@ -621,7 +621,7 @@ function AnomaliCalendar({ filteredAnomalis, onEventClick }) {
                                             value={filterDateFrom}
                                             onChange={(e) =>
                                                 setFilterDateFrom(
-                                                    e.target.value,
+                                                    e.target.value
                                                 )
                                             }
                                             className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm focus:border-cyan-500 focus:ring-cyan-500"
@@ -706,7 +706,7 @@ function AnomaliCalendar({ filteredAnomalis, onEventClick }) {
                                                                         </>
                                                                     )}
                                                                 </Listbox.Option>
-                                                            ),
+                                                            )
                                                         )}
                                                     </Listbox.Options>
                                                 </Transition>
@@ -778,7 +778,7 @@ function AnomaliCalendar({ filteredAnomalis, onEventClick }) {
                                                                         </>
                                                                     )}
                                                                 </Listbox.Option>
-                                                            ),
+                                                            )
                                                         )}
                                                     </Listbox.Options>
                                                 </Transition>
@@ -796,7 +796,7 @@ function AnomaliCalendar({ filteredAnomalis, onEventClick }) {
                                             value={scheduleSearch}
                                             onChange={(e) =>
                                                 setScheduleSearch(
-                                                    e.target.value,
+                                                    e.target.value
                                                 )
                                             }
                                             className="w-full rounded-xl border border-slate-200 bg-white py-2 pl-10 pr-3 text-sm text-slate-700 shadow-sm focus:border-cyan-500 focus:ring-cyan-500"
@@ -933,14 +933,14 @@ function AnomaliCalendar({ filteredAnomalis, onEventClick }) {
                                                 type="button"
                                                 onClick={() =>
                                                     toggleSort(
-                                                        "tanggal_selesai",
+                                                        "tanggal_selesai"
                                                     )
                                                 }
                                                 className="inline-flex items-center gap-2"
                                             >
                                                 Selesai{" "}
                                                 {sortIndicator(
-                                                    "tanggal_selesai",
+                                                    "tanggal_selesai"
                                                 )}
                                             </button>
                                         </th>
@@ -1013,13 +1013,13 @@ function AnomaliCalendar({ filteredAnomalis, onEventClick }) {
                                             >
                                                 <td className="px-6 py-4 text-sm text-slate-700 whitespace-nowrap">
                                                     {formatDate(
-                                                        anomali.tanggal_mulai,
+                                                        anomali.tanggal_mulai
                                                     )}
                                                 </td>
                                                 <td className="px-6 py-4 text-sm text-slate-700 whitespace-nowrap">
                                                     {anomali.tanggal_selesai
                                                         ? formatDate(
-                                                              anomali.tanggal_selesai,
+                                                              anomali.tanggal_selesai
                                                           )
                                                         : "-"}
                                                 </td>
@@ -1030,7 +1030,14 @@ function AnomaliCalendar({ filteredAnomalis, onEventClick }) {
                                                     <div className="text-xs text-slate-500 mt-0.5 truncate max-w-[340px]">
                                                         {anomali.gardu_induk
                                                             ?.name
-                                                            ? `${anomali.gardu_induk.name} • ${anomali.peralatan || "-"}`
+                                                            ? `${
+                                                                  anomali
+                                                                      .gardu_induk
+                                                                      .name
+                                                              } • ${
+                                                                  anomali.peralatan ||
+                                                                  "-"
+                                                              }`
                                                             : anomali.peralatan ||
                                                               "-"}
                                                     </div>
@@ -1051,7 +1058,7 @@ function AnomaliCalendar({ filteredAnomalis, onEventClick }) {
                                                     <Link
                                                         href={route(
                                                             "dashboard.anomali.show",
-                                                            anomali.slug,
+                                                            anomali.slug
                                                         )}
                                                         className="text-cyan-700 hover:text-cyan-900 font-medium text-sm inline-flex items-center gap-1 transition-colors"
                                                     >
@@ -1099,7 +1106,7 @@ function AnomaliCalendar({ filteredAnomalis, onEventClick }) {
                                                 </div>
                                                 <div className="mt-0.5 text-slate-800 font-medium">
                                                     {formatDate(
-                                                        anomali.tanggal_mulai,
+                                                        anomali.tanggal_mulai
                                                     )}
                                                 </div>
                                             </div>
@@ -1110,7 +1117,7 @@ function AnomaliCalendar({ filteredAnomalis, onEventClick }) {
                                                 <div className="mt-0.5 text-slate-800 font-medium">
                                                     {anomali.tanggal_selesai
                                                         ? formatDate(
-                                                              anomali.tanggal_selesai,
+                                                              anomali.tanggal_selesai
                                                           )
                                                         : "-"}
                                                 </div>
@@ -1120,7 +1127,7 @@ function AnomaliCalendar({ filteredAnomalis, onEventClick }) {
                                             <Link
                                                 href={route(
                                                     "dashboard.anomali.show",
-                                                    anomali.slug,
+                                                    anomali.slug
                                                 )}
                                                 className="text-cyan-700 hover:text-cyan-900 font-medium text-sm inline-flex items-center gap-1 transition-colors"
                                             >
@@ -1159,7 +1166,7 @@ function AnomaliCalendar({ filteredAnomalis, onEventClick }) {
                                     type="button"
                                     onClick={() =>
                                         setListPage((p) =>
-                                            Math.min(listTotalPages, p + 1),
+                                            Math.min(listTotalPages, p + 1)
                                         )
                                     }
                                     disabled={listPage === listTotalPages}
@@ -1263,7 +1270,7 @@ export default function Anomali({ anomalis = [], auth = [], kategoris = [] }) {
         ultgQuery === ""
             ? ultgOptions
             : ultgOptions.filter((u) =>
-                  u.toLowerCase().includes(ultgQuery.toLowerCase()),
+                  u.toLowerCase().includes(ultgQuery.toLowerCase())
               );
 
     const garduOptions = useMemo(() => {
@@ -1275,18 +1282,18 @@ export default function Anomali({ anomalis = [], auth = [], kategoris = [] }) {
 
             if (wilayah === "ultg karawang") {
                 filteredAnomalies = anomalis.filter(
-                    (a) => (a.ultg || "").toLowerCase() === "ultg karawang",
+                    (a) => (a.ultg || "").toLowerCase() === "ultg karawang"
                 );
             } else if (wilayah === "ultg purwakarta") {
                 filteredAnomalies = anomalis.filter(
-                    (a) => (a.ultg || "").toLowerCase() === "ultg purwakarta",
+                    (a) => (a.ultg || "").toLowerCase() === "ultg purwakarta"
                 );
             }
             // Untuk 'upt karawang', tampilkan semua gardu induk (tidak ada filter)
         }
 
         const set = new Set(
-            filteredAnomalies.map((a) => a.gardu_induk?.name).filter(Boolean),
+            filteredAnomalies.map((a) => a.gardu_induk?.name).filter(Boolean)
         );
         return Array.from(set).sort();
     }, [anomalis, auth]);
@@ -1295,7 +1302,7 @@ export default function Anomali({ anomalis = [], auth = [], kategoris = [] }) {
     const filteredGarduOptions = useMemo(() => {
         if (!garduQuery) return garduOptions;
         return garduOptions.filter((g) =>
-            g.toLowerCase().includes(garduQuery.toLowerCase()),
+            g.toLowerCase().includes(garduQuery.toLowerCase())
         );
     }, [garduOptions, garduQuery]);
 
@@ -1307,7 +1314,7 @@ export default function Anomali({ anomalis = [], auth = [], kategoris = [] }) {
 
     const kategoriOptions = useMemo(() => {
         const set = new Set(
-            anomalis.map((a) => a.kategori?.name).filter(Boolean),
+            anomalis.map((a) => a.kategori?.name).filter(Boolean)
         );
         return Array.from(set).sort();
     }, [anomalis]);
@@ -1321,21 +1328,21 @@ export default function Anomali({ anomalis = [], auth = [], kategoris = [] }) {
     const filteredBagianOptions = useMemo(() => {
         if (!bagianQuery) return bagianOptions;
         return bagianOptions.filter((bagian) =>
-            bagian.toLowerCase().includes(bagianQuery.toLowerCase()),
+            bagian.toLowerCase().includes(bagianQuery.toLowerCase())
         );
     }, [bagianOptions, bagianQuery]);
 
     const filteredKategoriOptions = useMemo(() => {
         if (!kategoriQuery) return kategoriOptions;
         return kategoriOptions.filter((kategori) =>
-            kategori.toLowerCase().includes(kategoriQuery.toLowerCase()),
+            kategori.toLowerCase().includes(kategoriQuery.toLowerCase())
         );
     }, [kategoriOptions, kategoriQuery]);
 
     const filteredStatusOptions = useMemo(() => {
         if (!statusQuery) return statusOptions;
         return statusOptions.filter((status) =>
-            status.toLowerCase().includes(statusQuery.toLowerCase()),
+            status.toLowerCase().includes(statusQuery.toLowerCase())
         );
     }, [statusOptions, statusQuery]);
 
@@ -1414,11 +1421,11 @@ export default function Anomali({ anomalis = [], auth = [], kategoris = [] }) {
 
             if (wilayah === "ultg karawang") {
                 filtered = filtered.filter(
-                    (a) => (a.ultg || "").toLowerCase() === "ultg karawang",
+                    (a) => (a.ultg || "").toLowerCase() === "ultg karawang"
                 );
             } else if (wilayah === "ultg purwakarta") {
                 filtered = filtered.filter(
-                    (a) => (a.ultg || "").toLowerCase() === "ultg purwakarta",
+                    (a) => (a.ultg || "").toLowerCase() === "ultg purwakarta"
                 );
             }
             // For "upt karawang", show all data (no additional filtering)
@@ -1467,28 +1474,28 @@ export default function Anomali({ anomalis = [], auth = [], kategoris = [] }) {
         // Filter by gardu induk
         if (selectedGarduInduk) {
             filtered = filtered.filter(
-                (a) => (a.gardu_induk?.name || "") === selectedGarduInduk,
+                (a) => (a.gardu_induk?.name || "") === selectedGarduInduk
             );
         }
 
         // Filter by bagian
         if (selectedBagian) {
             filtered = filtered.filter(
-                (a) => (a.bagian || "") === selectedBagian,
+                (a) => (a.bagian || "") === selectedBagian
             );
         }
 
         // Filter by kategori
         if (selectedKategori) {
             filtered = filtered.filter(
-                (a) => (a.kategori?.name || "") === selectedKategori,
+                (a) => (a.kategori?.name || "") === selectedKategori
             );
         }
 
         // Filter by status
         if (selectedStatus) {
             filtered = filtered.filter(
-                (a) => (a.status || "") === selectedStatus,
+                (a) => (a.status || "") === selectedStatus
             );
         }
 
@@ -1522,16 +1529,16 @@ export default function Anomali({ anomalis = [], auth = [], kategoris = [] }) {
                     a.status.toLowerCase() === "new" &&
                     a.ultg &&
                     a.ultg.trim().toLowerCase() ===
-                        (auth.user.wilayah || "").trim().toLowerCase(),
+                        (auth.user.wilayah || "").trim().toLowerCase()
             )
             .slice(start, start + rowsPerPage);
     }, [filteredAnomalis, page, rowsPerPage]);
     const totalRowsReview = filteredAnomalis.filter(
-        (a) => a.status && a.status.toLowerCase() === "new",
+        (a) => a.status && a.status.toLowerCase() === "new"
     ).length;
     const totalPagesReview = Math.max(
         1,
-        Math.ceil(totalRowsReview / rowsPerPage),
+        Math.ceil(totalRowsReview / rowsPerPage)
     );
 
     const paginateDataAssign = useMemo(() => {
@@ -1543,7 +1550,7 @@ export default function Anomali({ anomalis = [], auth = [], kategoris = [] }) {
                     a.ultg.trim().toLowerCase() ===
                         (auth.user.wilayah || "").trim().toLowerCase() &&
                     auth.user.bidang &&
-                    a.bidang_assigned === auth.user.bidang,
+                    a.bidang_assigned === auth.user.bidang
             )
             .slice(start, start + rowsPerPage);
     }, [filteredAnomalis, page, rowsPerPage]);
@@ -1554,11 +1561,11 @@ export default function Anomali({ anomalis = [], auth = [], kategoris = [] }) {
             a.ultg.trim().toLowerCase() ===
                 (auth.user.wilayah || "").trim().toLowerCase() &&
             auth.user.bidang &&
-            a.bidang_assigned === auth.user.bidang,
+            a.bidang_assigned === auth.user.bidang
     ).length;
     const totalPagesAssign = Math.max(
         1,
-        Math.ceil(totalRowsAssign / rowsPerPage),
+        Math.ceil(totalRowsAssign / rowsPerPage)
     );
 
     const paginateDataRenev = useMemo(() => {
@@ -1569,7 +1576,7 @@ export default function Anomali({ anomalis = [], auth = [], kategoris = [] }) {
                     a.status &&
                     a.status.toLowerCase() === "open" &&
                     a.bidang_assigned &&
-                    a.bidang_assigned.toLowerCase() === "renev",
+                    a.bidang_assigned.toLowerCase() === "renev"
             )
             .slice(start, start + rowsPerPage);
     }, [filteredAnomalis, page, rowsPerPage]);
@@ -1578,11 +1585,11 @@ export default function Anomali({ anomalis = [], auth = [], kategoris = [] }) {
             a.status &&
             a.status.toLowerCase() === "open" &&
             a.bidang_assigned &&
-            a.bidang_assigned.toLowerCase() === "renev",
+            a.bidang_assigned.toLowerCase() === "renev"
     ).length;
     const totalPagesRenev = Math.max(
         1,
-        Math.ceil(totalRowsRenev / rowsPerPage),
+        Math.ceil(totalRowsRenev / rowsPerPage)
     );
 
     const handlePrev = () => setPage((p) => Math.max(1, p - 1));
@@ -1676,7 +1683,7 @@ export default function Anomali({ anomalis = [], auth = [], kategoris = [] }) {
                         {/* Headless UI Tabs */}
                         <Tab.Group
                             selectedIndex={tabs.findIndex(
-                                (t) => t.id === activeTab,
+                                (t) => t.id === activeTab
                             )}
                             onChange={(index) => setActiveTab(tabs[index].id)}
                         >
@@ -1729,7 +1736,7 @@ export default function Anomali({ anomalis = [], auth = [], kategoris = [] }) {
                                         <div className="flex items-center gap-3">
                                             <Link
                                                 href={route(
-                                                    "dashboard.anomali.create",
+                                                    "dashboard.anomali.create"
                                                 )}
                                             >
                                                 <button className="w-full md:w-auto bg-gradient-to-r from-cyan-600 to-sky-600 text-white px-4 sm:px-5 py-2 rounded-xl shadow hover:from-cyan-800 hover:to-sky-800 font-semibold flex transition-all duration-300 ease-in-out items-center justify-center gap-2 text-sm sm:text-base">
@@ -1756,7 +1763,7 @@ export default function Anomali({ anomalis = [], auth = [], kategoris = [] }) {
                                                         value={searchTerm}
                                                         onChange={(e) =>
                                                             handleSearch(
-                                                                e.target.value,
+                                                                e.target.value
                                                             )
                                                         }
                                                     />
@@ -1798,7 +1805,7 @@ export default function Anomali({ anomalis = [], auth = [], kategoris = [] }) {
                                                     <button
                                                         onClick={() =>
                                                             setShowExportModal(
-                                                                true,
+                                                                true
                                                             )
                                                         }
                                                         className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-700 text-sm font-medium hover:bg-emerald-100 transition-all whitespace-nowrap"
@@ -1844,7 +1851,7 @@ export default function Anomali({ anomalis = [], auth = [], kategoris = [] }) {
                                                                         50, 100,
                                                                     ].map(
                                                                         (
-                                                                            option,
+                                                                            option
                                                                         ) => (
                                                                             <Listbox.Option
                                                                                 key={
@@ -1868,7 +1875,11 @@ export default function Anomali({ anomalis = [], auth = [], kategoris = [] }) {
                                                                                 }) => (
                                                                                     <>
                                                                                         <span
-                                                                                            className={`block truncate ${selected ? "font-medium" : "font-normal"}`}
+                                                                                            className={`block truncate ${
+                                                                                                selected
+                                                                                                    ? "font-medium"
+                                                                                                    : "font-normal"
+                                                                                            }`}
                                                                                         >
                                                                                             {
                                                                                                 option
@@ -1886,7 +1897,7 @@ export default function Anomali({ anomalis = [], auth = [], kategoris = [] }) {
                                                                                     </>
                                                                                 )}
                                                                             </Listbox.Option>
-                                                                        ),
+                                                                        )
                                                                     )}
                                                                 </Listbox.Options>
                                                             </Transition>
@@ -1932,7 +1943,7 @@ export default function Anomali({ anomalis = [], auth = [], kategoris = [] }) {
                                                             onChange={(e) =>
                                                                 setDateFrom(
                                                                     e.target
-                                                                        .value,
+                                                                        .value
                                                                 )
                                                             }
                                                             className="block w-full rounded-xl border-slate-200 bg-slate-50 text-sm focus:border-cyan-500 focus:ring-cyan-500 focus:bg-white transition-all"
@@ -1948,7 +1959,7 @@ export default function Anomali({ anomalis = [], auth = [], kategoris = [] }) {
                                                             onChange={(e) =>
                                                                 setDateTo(
                                                                     e.target
-                                                                        .value,
+                                                                        .value
                                                                 )
                                                             }
                                                             className="block w-full rounded-xl border-slate-200 bg-slate-50 text-sm focus:border-cyan-500 focus:ring-cyan-500 focus:bg-white transition-all"
@@ -1972,18 +1983,18 @@ export default function Anomali({ anomalis = [], auth = [], kategoris = [] }) {
                                                                 <Combobox.Input
                                                                     className="block w-full rounded-xl border-slate-200 bg-slate-50 text-sm focus:border-cyan-500 focus:ring-cyan-500 focus:bg-white transition-all pl-3 pr-10"
                                                                     displayValue={(
-                                                                        gardu,
+                                                                        gardu
                                                                     ) =>
                                                                         gardu ||
                                                                         "Semua Gardu Induk"
                                                                     }
                                                                     onChange={(
-                                                                        event,
+                                                                        event
                                                                     ) =>
                                                                         setGarduQuery(
                                                                             event
                                                                                 .target
-                                                                                .value,
+                                                                                .value
                                                                         )
                                                                     }
                                                                     placeholder="Cari gardu induk..."
@@ -2001,7 +2012,11 @@ export default function Anomali({ anomalis = [], auth = [], kategoris = [] }) {
                                                                         className={({
                                                                             active,
                                                                         }) =>
-                                                                            `relative cursor-pointer select-none py-2 pl-10 pr-4 ${active ? "bg-sky-50 text-cyan-900" : "text-slate-900"}`
+                                                                            `relative cursor-pointer select-none py-2 pl-10 pr-4 ${
+                                                                                active
+                                                                                    ? "bg-sky-50 text-cyan-900"
+                                                                                    : "text-slate-900"
+                                                                            }`
                                                                         }
                                                                     >
                                                                         {({
@@ -2010,7 +2025,11 @@ export default function Anomali({ anomalis = [], auth = [], kategoris = [] }) {
                                                                         }) => (
                                                                             <>
                                                                                 <span
-                                                                                    className={`block truncate ${selected ? "font-medium" : "font-normal"}`}
+                                                                                    className={`block truncate ${
+                                                                                        selected
+                                                                                            ? "font-medium"
+                                                                                            : "font-normal"
+                                                                                    }`}
                                                                                 >
                                                                                     Semua
                                                                                     Gardu
@@ -2018,7 +2037,11 @@ export default function Anomali({ anomalis = [], auth = [], kategoris = [] }) {
                                                                                 </span>
                                                                                 {selected && (
                                                                                     <span
-                                                                                        className={`absolute inset-y-0 left-0 flex items-center pl-3 ${active ? "text-cyan-600" : "text-cyan-600"}`}
+                                                                                        className={`absolute inset-y-0 left-0 flex items-center pl-3 ${
+                                                                                            active
+                                                                                                ? "text-cyan-600"
+                                                                                                : "text-cyan-600"
+                                                                                        }`}
                                                                                     >
                                                                                         <FaCheck className="h-4 w-4" />
                                                                                     </span>
@@ -2028,7 +2051,7 @@ export default function Anomali({ anomalis = [], auth = [], kategoris = [] }) {
                                                                     </Combobox.Option>
                                                                     {filteredGarduOptions.map(
                                                                         (
-                                                                            gardu,
+                                                                            gardu
                                                                         ) => (
                                                                             <Combobox.Option
                                                                                 key={
@@ -2040,7 +2063,11 @@ export default function Anomali({ anomalis = [], auth = [], kategoris = [] }) {
                                                                                 className={({
                                                                                     active,
                                                                                 }) =>
-                                                                                    `relative cursor-pointer select-none py-2 pl-10 pr-4 ${active ? "bg-blue-50 text-cyan-900" : "text-slate-900"}`
+                                                                                    `relative cursor-pointer select-none py-2 pl-10 pr-4 ${
+                                                                                        active
+                                                                                            ? "bg-blue-50 text-cyan-900"
+                                                                                            : "text-slate-900"
+                                                                                    }`
                                                                                 }
                                                                             >
                                                                                 {({
@@ -2049,7 +2076,11 @@ export default function Anomali({ anomalis = [], auth = [], kategoris = [] }) {
                                                                                 }) => (
                                                                                     <>
                                                                                         <span
-                                                                                            className={`block truncate ${selected ? "font-medium" : "font-normal"}`}
+                                                                                            className={`block truncate ${
+                                                                                                selected
+                                                                                                    ? "font-medium"
+                                                                                                    : "font-normal"
+                                                                                            }`}
                                                                                         >
                                                                                             {
                                                                                                 gardu
@@ -2057,7 +2088,11 @@ export default function Anomali({ anomalis = [], auth = [], kategoris = [] }) {
                                                                                         </span>
                                                                                         {selected && (
                                                                                             <span
-                                                                                                className={`absolute inset-y-0 left-0 flex items-center pl-3 ${active ? "text-cyan-600" : "text-cyan-600"}`}
+                                                                                                className={`absolute inset-y-0 left-0 flex items-center pl-3 ${
+                                                                                                    active
+                                                                                                        ? "text-cyan-600"
+                                                                                                        : "text-cyan-600"
+                                                                                                }`}
                                                                                             >
                                                                                                 <FaCheck className="h-4 w-4" />
                                                                                             </span>
@@ -2065,7 +2100,7 @@ export default function Anomali({ anomalis = [], auth = [], kategoris = [] }) {
                                                                                     </>
                                                                                 )}
                                                                             </Combobox.Option>
-                                                                        ),
+                                                                        )
                                                                     )}
                                                                 </Combobox.Options>
                                                             </div>
@@ -2089,18 +2124,18 @@ export default function Anomali({ anomalis = [], auth = [], kategoris = [] }) {
                                                                 <Combobox.Input
                                                                     className="block w-full rounded-xl border-slate-200 bg-slate-50 text-sm focus:border-cyan-500 focus:ring-cyan-500 focus:bg-white transition-all pl-3 pr-10"
                                                                     displayValue={(
-                                                                        bagian,
+                                                                        bagian
                                                                     ) =>
                                                                         bagian ||
                                                                         "Semua Bagian"
                                                                     }
                                                                     onChange={(
-                                                                        event,
+                                                                        event
                                                                     ) =>
                                                                         setBagianQuery(
                                                                             event
                                                                                 .target
-                                                                                .value,
+                                                                                .value
                                                                         )
                                                                     }
                                                                     placeholder="Cari bagian..."
@@ -2118,7 +2153,11 @@ export default function Anomali({ anomalis = [], auth = [], kategoris = [] }) {
                                                                         className={({
                                                                             active,
                                                                         }) =>
-                                                                            `relative cursor-pointer select-none py-2 pl-10 pr-4 ${active ? "bg-sky-50 text-cyan-900" : "text-slate-900"}`
+                                                                            `relative cursor-pointer select-none py-2 pl-10 pr-4 ${
+                                                                                active
+                                                                                    ? "bg-sky-50 text-cyan-900"
+                                                                                    : "text-slate-900"
+                                                                            }`
                                                                         }
                                                                     >
                                                                         {({
@@ -2127,14 +2166,22 @@ export default function Anomali({ anomalis = [], auth = [], kategoris = [] }) {
                                                                         }) => (
                                                                             <>
                                                                                 <span
-                                                                                    className={`block truncate ${selected ? "font-medium" : "font-normal"}`}
+                                                                                    className={`block truncate ${
+                                                                                        selected
+                                                                                            ? "font-medium"
+                                                                                            : "font-normal"
+                                                                                    }`}
                                                                                 >
                                                                                     Semua
                                                                                     Bagian
                                                                                 </span>
                                                                                 {selected && (
                                                                                     <span
-                                                                                        className={`absolute inset-y-0 left-0 flex items-center pl-3 ${active ? "text-blue-600" : "text-blue-600"}`}
+                                                                                        className={`absolute inset-y-0 left-0 flex items-center pl-3 ${
+                                                                                            active
+                                                                                                ? "text-blue-600"
+                                                                                                : "text-blue-600"
+                                                                                        }`}
                                                                                     >
                                                                                         <FaCheck className="h-4 w-4" />
                                                                                     </span>
@@ -2144,7 +2191,7 @@ export default function Anomali({ anomalis = [], auth = [], kategoris = [] }) {
                                                                     </Combobox.Option>
                                                                     {filteredBagianOptions.map(
                                                                         (
-                                                                            bagian,
+                                                                            bagian
                                                                         ) => (
                                                                             <Combobox.Option
                                                                                 key={
@@ -2156,7 +2203,11 @@ export default function Anomali({ anomalis = [], auth = [], kategoris = [] }) {
                                                                                 className={({
                                                                                     active,
                                                                                 }) =>
-                                                                                    `relative cursor-pointer select-none py-2 pl-10 pr-4 ${active ? "bg-sky-50 text-cyan-900" : "text-slate-900"}`
+                                                                                    `relative cursor-pointer select-none py-2 pl-10 pr-4 ${
+                                                                                        active
+                                                                                            ? "bg-sky-50 text-cyan-900"
+                                                                                            : "text-slate-900"
+                                                                                    }`
                                                                                 }
                                                                             >
                                                                                 {({
@@ -2165,7 +2216,11 @@ export default function Anomali({ anomalis = [], auth = [], kategoris = [] }) {
                                                                                 }) => (
                                                                                     <>
                                                                                         <span
-                                                                                            className={`block truncate ${selected ? "font-medium" : "font-normal"}`}
+                                                                                            className={`block truncate ${
+                                                                                                selected
+                                                                                                    ? "font-medium"
+                                                                                                    : "font-normal"
+                                                                                            }`}
                                                                                         >
                                                                                             {
                                                                                                 bagian
@@ -2173,7 +2228,11 @@ export default function Anomali({ anomalis = [], auth = [], kategoris = [] }) {
                                                                                         </span>
                                                                                         {selected && (
                                                                                             <span
-                                                                                                className={`absolute inset-y-0 left-0 flex items-center pl-3 ${active ? "text-blue-600" : "text-blue-600"}`}
+                                                                                                className={`absolute inset-y-0 left-0 flex items-center pl-3 ${
+                                                                                                    active
+                                                                                                        ? "text-blue-600"
+                                                                                                        : "text-blue-600"
+                                                                                                }`}
                                                                                             >
                                                                                                 <FaCheck className="h-4 w-4" />
                                                                                             </span>
@@ -2181,7 +2240,7 @@ export default function Anomali({ anomalis = [], auth = [], kategoris = [] }) {
                                                                                     </>
                                                                                 )}
                                                                             </Combobox.Option>
-                                                                        ),
+                                                                        )
                                                                     )}
                                                                 </Combobox.Options>
                                                             </div>
@@ -2205,18 +2264,18 @@ export default function Anomali({ anomalis = [], auth = [], kategoris = [] }) {
                                                                 <Combobox.Input
                                                                     className="block w-full rounded-xl border-slate-200 bg-slate-50 text-sm focus:border-cyan-500 focus:ring-cyan-500 focus:bg-white transition-all pl-3 pr-10"
                                                                     displayValue={(
-                                                                        kategori,
+                                                                        kategori
                                                                     ) =>
                                                                         kategori ||
                                                                         "Semua Kategori"
                                                                     }
                                                                     onChange={(
-                                                                        event,
+                                                                        event
                                                                     ) =>
                                                                         setKategoriQuery(
                                                                             event
                                                                                 .target
-                                                                                .value,
+                                                                                .value
                                                                         )
                                                                     }
                                                                     placeholder="Cari kategori..."
@@ -2234,7 +2293,11 @@ export default function Anomali({ anomalis = [], auth = [], kategoris = [] }) {
                                                                         className={({
                                                                             active,
                                                                         }) =>
-                                                                            `relative cursor-pointer select-none py-2 pl-10 pr-4 ${active ? "bg-sky-50 text-cyan-900" : "text-slate-900"}`
+                                                                            `relative cursor-pointer select-none py-2 pl-10 pr-4 ${
+                                                                                active
+                                                                                    ? "bg-sky-50 text-cyan-900"
+                                                                                    : "text-slate-900"
+                                                                            }`
                                                                         }
                                                                     >
                                                                         {({
@@ -2243,14 +2306,22 @@ export default function Anomali({ anomalis = [], auth = [], kategoris = [] }) {
                                                                         }) => (
                                                                             <>
                                                                                 <span
-                                                                                    className={`block truncate ${selected ? "font-medium" : "font-normal"}`}
+                                                                                    className={`block truncate ${
+                                                                                        selected
+                                                                                            ? "font-medium"
+                                                                                            : "font-normal"
+                                                                                    }`}
                                                                                 >
                                                                                     Semua
                                                                                     Kategori
                                                                                 </span>
                                                                                 {selected && (
                                                                                     <span
-                                                                                        className={`absolute inset-y-0 left-0 flex items-center pl-3 ${active ? "text-cyan-600" : "text-cyan-600"}`}
+                                                                                        className={`absolute inset-y-0 left-0 flex items-center pl-3 ${
+                                                                                            active
+                                                                                                ? "text-cyan-600"
+                                                                                                : "text-cyan-600"
+                                                                                        }`}
                                                                                     >
                                                                                         <FaCheck className="h-4 w-4" />
                                                                                     </span>
@@ -2260,7 +2331,7 @@ export default function Anomali({ anomalis = [], auth = [], kategoris = [] }) {
                                                                     </Combobox.Option>
                                                                     {filteredKategoriOptions.map(
                                                                         (
-                                                                            kategori,
+                                                                            kategori
                                                                         ) => (
                                                                             <Combobox.Option
                                                                                 key={
@@ -2272,7 +2343,11 @@ export default function Anomali({ anomalis = [], auth = [], kategoris = [] }) {
                                                                                 className={({
                                                                                     active,
                                                                                 }) =>
-                                                                                    `relative cursor-pointer select-none py-2 pl-10 pr-4 ${active ? "bg-sky-50 text-cyan-900" : "text-slate-900"}`
+                                                                                    `relative cursor-pointer select-none py-2 pl-10 pr-4 ${
+                                                                                        active
+                                                                                            ? "bg-sky-50 text-cyan-900"
+                                                                                            : "text-slate-900"
+                                                                                    }`
                                                                                 }
                                                                             >
                                                                                 {({
@@ -2281,7 +2356,11 @@ export default function Anomali({ anomalis = [], auth = [], kategoris = [] }) {
                                                                                 }) => (
                                                                                     <>
                                                                                         <span
-                                                                                            className={`block truncate ${selected ? "font-medium" : "font-normal"}`}
+                                                                                            className={`block truncate ${
+                                                                                                selected
+                                                                                                    ? "font-medium"
+                                                                                                    : "font-normal"
+                                                                                            }`}
                                                                                         >
                                                                                             {
                                                                                                 kategori
@@ -2289,7 +2368,11 @@ export default function Anomali({ anomalis = [], auth = [], kategoris = [] }) {
                                                                                         </span>
                                                                                         {selected && (
                                                                                             <span
-                                                                                                className={`absolute inset-y-0 left-0 flex items-center pl-3 ${active ? "text-cyan-600" : "text-cyan-600"}`}
+                                                                                                className={`absolute inset-y-0 left-0 flex items-center pl-3 ${
+                                                                                                    active
+                                                                                                        ? "text-cyan-600"
+                                                                                                        : "text-cyan-600"
+                                                                                                }`}
                                                                                             >
                                                                                                 <FaCheck className="h-4 w-4" />
                                                                                             </span>
@@ -2297,7 +2380,7 @@ export default function Anomali({ anomalis = [], auth = [], kategoris = [] }) {
                                                                                     </>
                                                                                 )}
                                                                             </Combobox.Option>
-                                                                        ),
+                                                                        )
                                                                     )}
                                                                 </Combobox.Options>
                                                             </div>
@@ -2321,18 +2404,18 @@ export default function Anomali({ anomalis = [], auth = [], kategoris = [] }) {
                                                                 <Combobox.Input
                                                                     className="block w-full rounded-xl border-slate-200 bg-slate-50 text-sm focus:border-cyan-500 focus:ring-cyan-500 focus:bg-white transition-all pl-3 pr-10"
                                                                     displayValue={(
-                                                                        status,
+                                                                        status
                                                                     ) =>
                                                                         status ||
                                                                         "Semua Status"
                                                                     }
                                                                     onChange={(
-                                                                        event,
+                                                                        event
                                                                     ) =>
                                                                         setStatusQuery(
                                                                             event
                                                                                 .target
-                                                                                .value,
+                                                                                .value
                                                                         )
                                                                     }
                                                                     placeholder="Cari status..."
@@ -2350,7 +2433,11 @@ export default function Anomali({ anomalis = [], auth = [], kategoris = [] }) {
                                                                         className={({
                                                                             active,
                                                                         }) =>
-                                                                            `relative cursor-pointer select-none py-2 pl-10 pr-4 ${active ? "bg-sky-50 text-cyan-900" : "text-slate-900"}`
+                                                                            `relative cursor-pointer select-none py-2 pl-10 pr-4 ${
+                                                                                active
+                                                                                    ? "bg-sky-50 text-cyan-900"
+                                                                                    : "text-slate-900"
+                                                                            }`
                                                                         }
                                                                     >
                                                                         {({
@@ -2359,14 +2446,22 @@ export default function Anomali({ anomalis = [], auth = [], kategoris = [] }) {
                                                                         }) => (
                                                                             <>
                                                                                 <span
-                                                                                    className={`block truncate ${selected ? "font-medium" : "font-normal"}`}
+                                                                                    className={`block truncate ${
+                                                                                        selected
+                                                                                            ? "font-medium"
+                                                                                            : "font-normal"
+                                                                                    }`}
                                                                                 >
                                                                                     Semua
                                                                                     Status
                                                                                 </span>
                                                                                 {selected && (
                                                                                     <span
-                                                                                        className={`absolute inset-y-0 left-0 flex items-center pl-3 ${active ? "text-cyan-600" : "text-cyan-600"}`}
+                                                                                        className={`absolute inset-y-0 left-0 flex items-center pl-3 ${
+                                                                                            active
+                                                                                                ? "text-cyan-600"
+                                                                                                : "text-cyan-600"
+                                                                                        }`}
                                                                                     >
                                                                                         <FaCheck className="h-4 w-4" />
                                                                                     </span>
@@ -2376,7 +2471,7 @@ export default function Anomali({ anomalis = [], auth = [], kategoris = [] }) {
                                                                     </Combobox.Option>
                                                                     {filteredStatusOptions.map(
                                                                         (
-                                                                            status,
+                                                                            status
                                                                         ) => (
                                                                             <Combobox.Option
                                                                                 key={
@@ -2388,7 +2483,11 @@ export default function Anomali({ anomalis = [], auth = [], kategoris = [] }) {
                                                                                 className={({
                                                                                     active,
                                                                                 }) =>
-                                                                                    `relative cursor-pointer select-none py-2 pl-10 pr-4 ${active ? "bg-sky-50 text-cyan-900" : "text-slate-900"}`
+                                                                                    `relative cursor-pointer select-none py-2 pl-10 pr-4 ${
+                                                                                        active
+                                                                                            ? "bg-sky-50 text-cyan-900"
+                                                                                            : "text-slate-900"
+                                                                                    }`
                                                                                 }
                                                                             >
                                                                                 {({
@@ -2397,7 +2496,11 @@ export default function Anomali({ anomalis = [], auth = [], kategoris = [] }) {
                                                                                 }) => (
                                                                                     <>
                                                                                         <span
-                                                                                            className={`block truncate ${selected ? "font-medium" : "font-normal"}`}
+                                                                                            className={`block truncate ${
+                                                                                                selected
+                                                                                                    ? "font-medium"
+                                                                                                    : "font-normal"
+                                                                                            }`}
                                                                                         >
                                                                                             {
                                                                                                 status
@@ -2405,7 +2508,11 @@ export default function Anomali({ anomalis = [], auth = [], kategoris = [] }) {
                                                                                         </span>
                                                                                         {selected && (
                                                                                             <span
-                                                                                                className={`absolute inset-y-0 left-0 flex items-center pl-3 ${active ? "text-cyan-600" : "text-cyan-600"}`}
+                                                                                                className={`absolute inset-y-0 left-0 flex items-center pl-3 ${
+                                                                                                    active
+                                                                                                        ? "text-cyan-600"
+                                                                                                        : "text-cyan-600"
+                                                                                                }`}
                                                                                             >
                                                                                                 <FaCheck className="h-4 w-4" />
                                                                                             </span>
@@ -2413,7 +2520,7 @@ export default function Anomali({ anomalis = [], auth = [], kategoris = [] }) {
                                                                                     </>
                                                                                 )}
                                                                             </Combobox.Option>
-                                                                        ),
+                                                                        )
                                                                     )}
                                                                 </Combobox.Options>
                                                             </div>
@@ -2553,6 +2660,9 @@ export default function Anomali({ anomalis = [], auth = [], kategoris = [] }) {
                                                                     Peralatan
                                                                 </th>
                                                                 <th className="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                                                                    Bay
+                                                                </th>
+                                                                <th className="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">
                                                                     Penempatan
                                                                 </th>
                                                                 <th className="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider whitespace-nowrap">
@@ -2600,7 +2710,7 @@ export default function Anomali({ anomalis = [], auth = [], kategoris = [] }) {
                                                                 paginatedData.map(
                                                                     (
                                                                         anomali,
-                                                                        idx,
+                                                                        idx
                                                                     ) => (
                                                                         <tr
                                                                             key={
@@ -2682,6 +2792,18 @@ export default function Anomali({ anomalis = [], auth = [], kategoris = [] }) {
                                                                                 <div
                                                                                     className="line-clamp-1"
                                                                                     title={
+                                                                                        anomali.bay
+                                                                                    }
+                                                                                >
+                                                                                    {
+                                                                                        anomali.bay
+                                                                                    }
+                                                                                </div>
+                                                                            </td>
+                                                                            <td className="px-6 py-4 text-sm text-slate-600">
+                                                                                <div
+                                                                                    className="line-clamp-1"
+                                                                                    title={
                                                                                         anomali.penempatan_alat
                                                                                     }
                                                                                 >
@@ -2692,7 +2814,7 @@ export default function Anomali({ anomalis = [], auth = [], kategoris = [] }) {
                                                                             </td>
                                                                             <td className="px-6 py-4 text-sm text-slate-600 whitespace-nowrap">
                                                                                 {formatDate(
-                                                                                    anomali.tanggal_kejadian,
+                                                                                    anomali.tanggal_kejadian
                                                                                 )}
                                                                             </td>
                                                                             <td className="px-6 py-4 whitespace-nowrap">
@@ -2706,7 +2828,7 @@ export default function Anomali({ anomalis = [], auth = [], kategoris = [] }) {
                                                                                 <Link
                                                                                     href={route(
                                                                                         "dashboard.anomali.show",
-                                                                                        anomali.slug,
+                                                                                        anomali.slug
                                                                                     )}
                                                                                     className="text-blue-600 hover:text-blue-800 font-medium text-sm inline-flex items-center gap-1 transition-colors"
                                                                                 >
@@ -2715,7 +2837,7 @@ export default function Anomali({ anomalis = [], auth = [], kategoris = [] }) {
                                                                                 </Link>
                                                                             </td>
                                                                         </tr>
-                                                                    ),
+                                                                    )
                                                                 )
                                                             )}
                                                         </tbody>
@@ -2736,7 +2858,7 @@ export default function Anomali({ anomalis = [], auth = [], kategoris = [] }) {
                                                             {Math.min(
                                                                 page *
                                                                     rowsPerPage,
-                                                                totalRows,
+                                                                totalRows
                                                             )}
                                                         </span>{" "}
                                                         dari{" "}
@@ -2837,7 +2959,7 @@ export default function Anomali({ anomalis = [], auth = [], kategoris = [] }) {
                                                                         50,
                                                                     ].map(
                                                                         (
-                                                                            num,
+                                                                            num
                                                                         ) => (
                                                                             <Listbox.Option
                                                                                 key={
@@ -2860,7 +2982,11 @@ export default function Anomali({ anomalis = [], auth = [], kategoris = [] }) {
                                                                                     selected,
                                                                                 }) => (
                                                                                     <span
-                                                                                        className={`block truncate ${selected ? "font-medium" : "font-normal"}`}
+                                                                                        className={`block truncate ${
+                                                                                            selected
+                                                                                                ? "font-medium"
+                                                                                                : "font-normal"
+                                                                                        }`}
                                                                                     >
                                                                                         {
                                                                                             num
@@ -2868,7 +2994,7 @@ export default function Anomali({ anomalis = [], auth = [], kategoris = [] }) {
                                                                                     </span>
                                                                                 )}
                                                                             </Listbox.Option>
-                                                                        ),
+                                                                        )
                                                                     )}
                                                                 </Listbox.Options>
                                                             </Transition>
@@ -2974,7 +3100,7 @@ export default function Anomali({ anomalis = [], auth = [], kategoris = [] }) {
                                                                     </td>
                                                                     <td className="px-6 py-4 text-slate-600 whitespace-nowrap">
                                                                         {formatDate(
-                                                                            anomali.tanggal_kejadian,
+                                                                            anomali.tanggal_kejadian
                                                                         )}
                                                                     </td>
                                                                     <td className="px-6 py-4">
@@ -2988,7 +3114,7 @@ export default function Anomali({ anomalis = [], auth = [], kategoris = [] }) {
                                                                         <Link
                                                                             href={route(
                                                                                 "dashboard.anomali.review",
-                                                                                anomali.slug,
+                                                                                anomali.slug
                                                                             )}
                                                                         >
                                                                             <button className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-slate-600 text-xs font-medium hover:bg-slate-50 hover:text-blue-600 hover:border-blue-200 transition-all shadow-sm">
@@ -2998,7 +3124,7 @@ export default function Anomali({ anomalis = [], auth = [], kategoris = [] }) {
                                                                         </Link>
                                                                     </td>
                                                                 </tr>
-                                                            ),
+                                                            )
                                                         )
                                                     ) : (
                                                         <tr>
@@ -3138,7 +3264,11 @@ export default function Anomali({ anomalis = [], auth = [], kategoris = [] }) {
                                                                     }) => (
                                                                         <>
                                                                             <span
-                                                                                className={`block truncate ${selected ? "font-medium" : "font-normal"}`}
+                                                                                className={`block truncate ${
+                                                                                    selected
+                                                                                        ? "font-medium"
+                                                                                        : "font-normal"
+                                                                                }`}
                                                                             >
                                                                                 {
                                                                                     option
@@ -3228,7 +3358,7 @@ export default function Anomali({ anomalis = [], auth = [], kategoris = [] }) {
                                                             paginateDataAssign.map(
                                                                 (
                                                                     anomali,
-                                                                    idx,
+                                                                    idx
                                                                 ) => (
                                                                     <tr
                                                                         key={
@@ -3286,7 +3416,7 @@ export default function Anomali({ anomalis = [], auth = [], kategoris = [] }) {
                                                                         </td>
                                                                         <td className="px-6 py-4 text-sm text-slate-600 whitespace-nowrap">
                                                                             {formatDate(
-                                                                                anomali.tanggal_kejadian,
+                                                                                anomali.tanggal_kejadian
                                                                             )}
                                                                         </td>
                                                                         <td className="px-6 py-4 whitespace-nowrap">
@@ -3305,7 +3435,7 @@ export default function Anomali({ anomalis = [], auth = [], kategoris = [] }) {
                                                                                     <Link
                                                                                         href={route(
                                                                                             "dashboard.anomali.close",
-                                                                                            anomali.slug,
+                                                                                            anomali.slug
                                                                                         )}
                                                                                         target="_blank"
                                                                                         rel="noopener noreferrer"
@@ -3320,7 +3450,7 @@ export default function Anomali({ anomalis = [], auth = [], kategoris = [] }) {
                                                                                 <Link
                                                                                     href={route(
                                                                                         "dashboard.anomali.schedule",
-                                                                                        anomali.slug,
+                                                                                        anomali.slug
                                                                                     )}
                                                                                 >
                                                                                     <button className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl border border-blue-200 bg-blue-50 text-blue-600 text-xs font-medium hover:bg-blue-100 transition-colors">
@@ -3331,7 +3461,7 @@ export default function Anomali({ anomalis = [], auth = [], kategoris = [] }) {
                                                                             </div>
                                                                         </td>
                                                                     </tr>
-                                                                ),
+                                                                )
                                                             )
                                                         )}
                                                     </tbody>
@@ -3355,7 +3485,7 @@ export default function Anomali({ anomalis = [], auth = [], kategoris = [] }) {
                                                 <button
                                                     onClick={() =>
                                                         setPage((p) =>
-                                                            Math.max(1, p - 1),
+                                                            Math.max(1, p - 1)
                                                         )
                                                     }
                                                     disabled={page === 1}
@@ -3368,8 +3498,8 @@ export default function Anomali({ anomalis = [], auth = [], kategoris = [] }) {
                                                         setPage((p) =>
                                                             Math.min(
                                                                 totalPagesAssign,
-                                                                p + 1,
-                                                            ),
+                                                                p + 1
+                                                            )
                                                         )
                                                     }
                                                     disabled={
@@ -3440,7 +3570,7 @@ export default function Anomali({ anomalis = [], auth = [], kategoris = [] }) {
                                                                         50,
                                                                     ].map(
                                                                         (
-                                                                            num,
+                                                                            num
                                                                         ) => (
                                                                             <Listbox.Option
                                                                                 key={
@@ -3463,7 +3593,11 @@ export default function Anomali({ anomalis = [], auth = [], kategoris = [] }) {
                                                                                     selected,
                                                                                 }) => (
                                                                                     <span
-                                                                                        className={`block truncate ${selected ? "font-medium" : "font-normal"}`}
+                                                                                        className={`block truncate ${
+                                                                                            selected
+                                                                                                ? "font-medium"
+                                                                                                : "font-normal"
+                                                                                        }`}
                                                                                     >
                                                                                         {
                                                                                             num
@@ -3471,7 +3605,7 @@ export default function Anomali({ anomalis = [], auth = [], kategoris = [] }) {
                                                                                     </span>
                                                                                 )}
                                                                             </Listbox.Option>
-                                                                        ),
+                                                                        )
                                                                     )}
                                                                 </Listbox.Options>
                                                             </Transition>
@@ -3577,7 +3711,7 @@ export default function Anomali({ anomalis = [], auth = [], kategoris = [] }) {
                                                                     </td>
                                                                     <td className="px-6 py-4 text-slate-600 whitespace-nowrap">
                                                                         {formatDate(
-                                                                            anomali.tanggal_kejadian,
+                                                                            anomali.tanggal_kejadian
                                                                         )}
                                                                     </td>
                                                                     <td className="px-6 py-4">
@@ -3591,7 +3725,7 @@ export default function Anomali({ anomalis = [], auth = [], kategoris = [] }) {
                                                                         <Link
                                                                             href={route(
                                                                                 "dashboard.anomali.review",
-                                                                                anomali.slug,
+                                                                                anomali.slug
                                                                             )}
                                                                         >
                                                                             <button className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200 rounded-xl text-slate-600 text-xs font-medium hover:bg-slate-50 hover:text-blue-600 hover:border-blue-200 transition-all shadow-sm">
@@ -3601,7 +3735,7 @@ export default function Anomali({ anomalis = [], auth = [], kategoris = [] }) {
                                                                         </Link>
                                                                     </td>
                                                                 </tr>
-                                                            ),
+                                                            )
                                                         )
                                                     ) : (
                                                         <tr>
@@ -3648,7 +3782,7 @@ export default function Anomali({ anomalis = [], auth = [], kategoris = [] }) {
                                                 <button
                                                     onClick={() =>
                                                         setPage((p) =>
-                                                            Math.max(1, p - 1),
+                                                            Math.max(1, p - 1)
                                                         )
                                                     }
                                                     disabled={page === 1}
@@ -3661,8 +3795,8 @@ export default function Anomali({ anomalis = [], auth = [], kategoris = [] }) {
                                                         setPage((p) =>
                                                             Math.min(
                                                                 totalPagesRenev,
-                                                                p + 1,
-                                                            ),
+                                                                p + 1
+                                                            )
                                                         )
                                                     }
                                                     disabled={
@@ -3901,7 +4035,7 @@ export default function Anomali({ anomalis = [], auth = [], kategoris = [] }) {
                                             placeholder="Ketik untuk mencari bulan..."
                                             onChange={(event) =>
                                                 setMonthQuery(
-                                                    event.target.value,
+                                                    event.target.value
                                                 )
                                             }
                                             value={monthQuery}
@@ -3960,7 +4094,7 @@ export default function Anomali({ anomalis = [], auth = [], kategoris = [] }) {
                                                                                 monthNum,
                                                                             ] =
                                                                                 month.split(
-                                                                                    "-",
+                                                                                    "-"
                                                                                 );
                                                                             const monthNames =
                                                                                 [
@@ -3980,7 +4114,7 @@ export default function Anomali({ anomalis = [], auth = [], kategoris = [] }) {
                                                                             return `${
                                                                                 monthNames[
                                                                                     parseInt(
-                                                                                        monthNum,
+                                                                                        monthNum
                                                                                     ) -
                                                                                         1
                                                                                 ]
@@ -4004,7 +4138,7 @@ export default function Anomali({ anomalis = [], auth = [], kategoris = [] }) {
                                                                 </>
                                                             )}
                                                         </Combobox.Option>
-                                                    ),
+                                                    )
                                                 )
                                             )}
                                         </Combobox.Options>
@@ -4117,7 +4251,7 @@ export default function Anomali({ anomalis = [], auth = [], kategoris = [] }) {
                                     <p className="text-sm font-medium text-slate-800">
                                         {selectedEventAnomali.tanggal_kejadian
                                             ? formatDate(
-                                                  selectedEventAnomali.tanggal_kejadian,
+                                                  selectedEventAnomali.tanggal_kejadian
                                               )
                                             : "-"}
                                     </p>
@@ -4129,7 +4263,7 @@ export default function Anomali({ anomalis = [], auth = [], kategoris = [] }) {
                                     <p className="text-sm font-medium text-slate-800">
                                         {selectedEventAnomali.tanggal_mulai
                                             ? formatDate(
-                                                  selectedEventAnomali.tanggal_mulai,
+                                                  selectedEventAnomali.tanggal_mulai
                                               )
                                             : "-"}
                                     </p>
@@ -4141,7 +4275,7 @@ export default function Anomali({ anomalis = [], auth = [], kategoris = [] }) {
                                     <p className="text-sm font-medium text-slate-800">
                                         {selectedEventAnomali.tanggal_selesai
                                             ? formatDate(
-                                                  selectedEventAnomali.tanggal_selesai,
+                                                  selectedEventAnomali.tanggal_selesai
                                               )
                                             : "Belum dijadwalkan"}
                                     </p>
