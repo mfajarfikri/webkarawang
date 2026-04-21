@@ -40,6 +40,10 @@ class KategoriSeeder extends Seeder
                 'id' => 6,
                 'name' => 'Pentanahan'
             ),
+            6 => array(
+                'id' => 7,
+                'name' => 'Lain-Lain'
+            ),
         ));
     }
 }
