@@ -890,7 +890,7 @@ export default function Berita({ berita: initialBerita }) {
                                                     item.id ? (
                                                         <div
                                                             role="menu"
-                                                            className="absolute right-0 top-full mt-2 w-52 rounded-2xl border border-slate-200 bg-white shadow-lg overflow-hidden"
+                                                            className="absolute right-0 top-full mt-2 w-52 rounded-2xl border border-slate-200 bg-white shadow-lg overflow-hidden z-10"
                                                             onClick={(e) =>
                                                                 e.stopPropagation()
                                                             }

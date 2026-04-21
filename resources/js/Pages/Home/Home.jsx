@@ -226,15 +226,14 @@ export default function Home() {
                   id: item.id,
                   image: beritaImageUrl(item),
                   title: item.judul,
-                  description: item.content_json
-                      ? generateExcerpt(item.content_json, 150)
+                  description: item.excerpt
+                      ? item.excerpt
                       : item.excerpt ||
                         (item.isi ? item.isi.substring(0, 150) + "..." : ""),
                   buttonText: "Baca Selengkapnya",
                   buttonLink: `/berita/${item.slug}`,
               }))
             : [];
-
     useEffect(() => {
         let interval;
         if (!isHovering && carouselItems.length > 0) {
@@ -362,15 +361,6 @@ export default function Home() {
                                                                     }
                                                                     <FaArrowRight className="ml-2 h-3.5 w-3.5" />
                                                                 </ButtonLink>
-                                                                <Link
-                                                                    href={route(
-                                                                        "profil",
-                                                                    )}
-                                                                    className="inline-flex items-center justify-center rounded-2xl border border-white/30 bg-white/10 px-4 py-2 text-sm font-semibold text-white hover:bg-white/15 transition-colors"
-                                                                >
-                                                                    Profil
-                                                                    Perusahaan
-                                                                </Link>
                                                             </div>
                                                         </motion.div>
                                                     </div>
