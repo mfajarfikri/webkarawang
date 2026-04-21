@@ -70,7 +70,7 @@ class AnomaliController extends Controller
                 'message' => 'Tanda tangan belum diunggah. Silakan unggah tanda tangan terlebih dahulu pada menu Pengaturan.'
             ], 400);
         }
-        
+
         $validator = Validator::make($request->all(), [
             'judul' => 'required|string',
             'ultg' => 'required|string',
@@ -86,6 +86,7 @@ class AnomaliController extends Controller
             'kode_asset' => 'nullable|string',
             'tahun_operasi' => 'nullable|string',
             'tahun_buat' => 'nullable|string',
+            'bay' => 'nullable|string',
             'penempatan_alat' => 'required|string',
             'tanggal_kejadian' => 'required|date',
             'penyebab' => 'required|string',
@@ -128,6 +129,7 @@ class AnomaliController extends Controller
                 'kode_asset' => $data['kode_asset'] ?? null,
                 'tahun_operasi' => $data['tahun_operasi'] ?? null,
                 'tahun_buat' => $data['tahun_buat'] ?? null,
+                'bay' => $data['bay'] ?? null,
                 'penempatan_alat' => $data['penempatan_alat'],
                 'tanggal_kejadian' => $data['tanggal_kejadian'],
                 'penyebab' => $data['penyebab'],
@@ -148,7 +150,6 @@ class AnomaliController extends Controller
                 'message' => 'Anomali berhasil ditambahkan',
                 'anomali' => $anomali
             ], 200);
-
         } catch (\Exception $e) {
             return response()->json([
                 'type' => 'error',
@@ -198,15 +199,15 @@ class AnomaliController extends Controller
             $months = $request->get('months', '');
             $ultgs = $request->get('ultgs', '');
             $gardus = $request->get('gardus', '');
-            
+
             // Convert comma-separated strings to arrays
             $monthArray = $months ? explode(',', $months) : [];
             $ultgArray = $ultgs ? explode(',', $ultgs) : [];
             $garduArray = $gardus ? explode(',', $gardus) : [];
-            
+
             // Generate filename
             $filename = 'anomali_export_' . date('Y-m-d_H-i-s') . '.xlsx';
-            
+
             return Excel::download(
                 new AnomaliExport($monthArray, $ultgArray, $garduArray),
                 $filename
@@ -215,7 +216,7 @@ class AnomaliController extends Controller
             Log::error('Export error: ' . $e->getMessage(), [
                 'trace' => $e->getTraceAsString()
             ]);
-            
+
             return response()->json([
                 'error' => 'Export failed: ' . $e->getMessage()
             ], 500);
@@ -255,16 +256,15 @@ class AnomaliController extends Controller
                 'error' => 'Export PDF failed: ' . $e->getMessage()
             ], 500);
         }
-        
-
     }
 
-    public function review(Anomali $anomali) {
+    public function review(Anomali $anomali)
+    {
         $anomali->load(['gardu_induk', 'kategori', 'user', 'assignedUser', 'approvedBy']);
-        
+
         // Ambil daftar pengguna untuk dropdown assign
         $users = User::all(['id', 'name']);
-        
+
         return Inertia::render("Dashboard/Anomali/Review", [
             'anomalis' => $anomali,
             'users' => $users
@@ -272,13 +272,14 @@ class AnomaliController extends Controller
     }
 
 
-    
+
     /**
      * Approve or reject an anomaly
      */
-    public function approve(Request $request, Anomali $anomali) {
+    public function approve(Request $request, Anomali $anomali)
+    {
 
-        if (empty(Auth::user()->tanda_tangan_path)) {   
+        if (empty(Auth::user()->tanda_tangan_path)) {
             return response()->json([
                 'type' => 'error',
                 'message' => 'Tanda tangan belum diunggah. Silakan unggah tanda tangan terlebih dahulu pada menu Pengaturan.'
@@ -298,13 +299,13 @@ class AnomaliController extends Controller
         }
 
         try {
-            
+
             // Update status anomali
             $anomali->approve = $request->approve;
             $anomali->approve_by = Auth::user()->id;
             $anomali->tanda_tangan_approve = Auth::user()->tanda_tangan_path;
             $anomali->tanggal_approve = now();
-            
+
             if ($request->approve == 'Yes' || $request->approve == 1) {
                 $anomali->status = 'Open';
                 $anomali->bidang_assigned = $request->bidang;
@@ -312,9 +313,9 @@ class AnomaliController extends Controller
                 $anomali->status = 'Rejected';
                 $anomali->reject_reason = $request->reject_reason;
             }
-            
+
             $anomali->save();
-            
+
             // Add timeline entry for approval/rejection
             $timelineController = new AnomaliTimelineController();
             if ($request->approve == 'Yes' || $request->approve == 1) {
@@ -325,9 +326,9 @@ class AnomaliController extends Controller
             } else {
                 $timelineController->addApprovalEntry($anomali->id, false, $request->reject_reason);
             }
-            
+
             $message = ($request->approve == 'Yes' || $request->approve == 1) ? 'Anomali berhasil disetujui' : 'Anomali berhasil ditolak';
-            
+
             return response()->json([
                 'success' => true,
                 'message' => $message,

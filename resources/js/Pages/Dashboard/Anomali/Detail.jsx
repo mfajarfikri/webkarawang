@@ -43,6 +43,7 @@ import {
 } from "@/Components/Utils/formatDate";
 import { formatRupiah } from "@/utils/formatter";
 import PdfDownloadButton from "@/Components/Dashboard/Anomali/PdfDownloadButton";
+import { GiElectric } from "react-icons/gi";
 
 // Komponen untuk menampilkan item data dengan ikon
 const DataItem = ({ icon, label, value, className = "" }) => {
@@ -274,7 +275,7 @@ export default function Detail({ anomalis }) {
                                         <div className="flex items-center gap-2">
                                             <FaCalendarAlt className="text-blue-400" />
                                             {formatDate(
-                                                anomalis.tanggal_kejadian,
+                                                anomalis.tanggal_kejadian
                                             )}
                                         </div>
                                         <div className="w-1 h-1 rounded-full bg-slate-300"></div>
@@ -341,7 +342,11 @@ export default function Detail({ anomalis }) {
                                         }`}
                                     >
                                         <tab.icon
-                                            className={`mr-2.5 ${activeTab === tab.id ? "text-blue-500" : "text-slate-400"}`}
+                                            className={`mr-2.5 ${
+                                                activeTab === tab.id
+                                                    ? "text-blue-500"
+                                                    : "text-slate-400"
+                                            }`}
                                         />
                                         {tab.label}
                                     </button>
@@ -386,6 +391,11 @@ export default function Detail({ anomalis }) {
                                             value={anomalis.kategori?.name}
                                         />
                                         <DataItem
+                                            icon={GiElectric}
+                                            label="Bay"
+                                            value={anomalis.bay}
+                                        />
+                                        <DataItem
                                             icon={FaMapPin}
                                             label="Penempatan Alat"
                                             value={anomalis.penempatan_alat}
@@ -422,7 +432,7 @@ export default function Detail({ anomalis }) {
                                             value={
                                                 anomalis.harga
                                                     ? formatRupiah(
-                                                          anomalis.harga,
+                                                          anomalis.harga
                                                       )
                                                     : "-"
                                             }
@@ -516,7 +526,7 @@ export default function Detail({ anomalis }) {
                                                             className="relative group cursor-pointer"
                                                             onClick={() =>
                                                                 setSelectedImage(
-                                                                    `/storage/${foto}`,
+                                                                    `/storage/${foto}`
                                                                 )
                                                             }
                                                         >
@@ -533,7 +543,7 @@ export default function Detail({ anomalis }) {
                                                                 <FaSearch className="text-white text-2xl transform scale-50 group-hover:scale-100 transition-all duration-300" />
                                                             </div>
                                                         </div>
-                                                    ),
+                                                    )
                                                 )}
                                             </div>
                                         ) : (
@@ -569,7 +579,7 @@ export default function Detail({ anomalis }) {
                                                         className="absolute -top-12 right-0 md:-right-12 text-white/80 hover:text-white transition-colors bg-white/10 hover:bg-white/20 p-2 rounded-full backdrop-blur-md"
                                                         onClick={() =>
                                                             setSelectedImage(
-                                                                null,
+                                                                null
                                                             )
                                                         }
                                                     >
@@ -650,7 +660,7 @@ export default function Detail({ anomalis }) {
                                                         </div>
                                                         <div className="font-bold text-slate-800 text-lg pl-1">
                                                             {formatDate(
-                                                                anomalis.tanggal_approve,
+                                                                anomalis.tanggal_approve
                                                             )}
                                                         </div>
                                                     </div>
@@ -687,7 +697,7 @@ export default function Detail({ anomalis }) {
                                                         </div>
                                                         <div className="font-bold text-slate-800 text-lg pl-1">
                                                             {formatDate(
-                                                                anomalis.tanggal_mulai,
+                                                                anomalis.tanggal_mulai
                                                             )}
                                                         </div>
                                                     </div>
@@ -705,7 +715,7 @@ export default function Detail({ anomalis }) {
                                                         </div>
                                                         <div className="font-bold text-slate-800 text-lg pl-1">
                                                             {formatDate(
-                                                                anomalis.tanggal_selesai,
+                                                                anomalis.tanggal_selesai
                                                             )}
                                                         </div>
                                                     </div>
@@ -753,24 +763,24 @@ export default function Detail({ anomalis }) {
                                                                             "created"
                                                                                 ? "bg-green-100 text-green-600"
                                                                                 : timeline.event_type ===
-                                                                                    "status_changed"
-                                                                                  ? "bg-blue-100 text-blue-600"
-                                                                                  : timeline.event_type ===
-                                                                                      "assigned"
-                                                                                    ? "bg-yellow-100 text-yellow-600"
-                                                                                    : timeline.event_type ===
-                                                                                        "approved"
-                                                                                      ? "bg-emerald-100 text-emerald-600"
-                                                                                      : timeline.event_type ===
-                                                                                          "rejected"
-                                                                                        ? "bg-red-100 text-red-600"
-                                                                                        : timeline.event_type ===
-                                                                                            "completed"
-                                                                                          ? "bg-purple-100 text-purple-600"
-                                                                                          : timeline.event_type ===
-                                                                                              "scheduled"
-                                                                                            ? "bg-indigo-100 text-indigo-600"
-                                                                                            : "bg-slate-100 text-slate-600"
+                                                                                  "status_changed"
+                                                                                ? "bg-blue-100 text-blue-600"
+                                                                                : timeline.event_type ===
+                                                                                  "assigned"
+                                                                                ? "bg-yellow-100 text-yellow-600"
+                                                                                : timeline.event_type ===
+                                                                                  "approved"
+                                                                                ? "bg-emerald-100 text-emerald-600"
+                                                                                : timeline.event_type ===
+                                                                                  "rejected"
+                                                                                ? "bg-red-100 text-red-600"
+                                                                                : timeline.event_type ===
+                                                                                  "completed"
+                                                                                ? "bg-purple-100 text-purple-600"
+                                                                                : timeline.event_type ===
+                                                                                  "scheduled"
+                                                                                ? "bg-indigo-100 text-indigo-600"
+                                                                                : "bg-slate-100 text-slate-600"
                                                                         }`}
                                                                     >
                                                                         {timeline.event_type ===
@@ -810,7 +820,7 @@ export default function Detail({ anomalis }) {
                                                                             "completed",
                                                                             "scheduled",
                                                                         ].includes(
-                                                                            timeline.event_type,
+                                                                            timeline.event_type
                                                                         ) && (
                                                                             <FaInfoCircle />
                                                                         )}
@@ -828,7 +838,7 @@ export default function Detail({ anomalis }) {
                                                                             </h4>
                                                                             <span className="text-xs text-slate-500">
                                                                                 {formatDate(
-                                                                                    timeline.created_at,
+                                                                                    timeline.created_at
                                                                                 )}
                                                                             </span>
                                                                         </div>
@@ -846,7 +856,7 @@ export default function Detail({ anomalis }) {
                                                                                         }
                                                                                     >
                                                                                         {formatMaybeDateRange(
-                                                                                            timeline.old_value,
+                                                                                            timeline.old_value
                                                                                         )}
                                                                                     </span>
                                                                                     <span className="mx-2">
@@ -862,7 +872,7 @@ export default function Detail({ anomalis }) {
                                                                                         }
                                                                                     >
                                                                                         {formatMaybeDateRange(
-                                                                                            timeline.new_value,
+                                                                                            timeline.new_value
                                                                                         )}
                                                                                     </span>
                                                                                 </div>
@@ -893,7 +903,7 @@ export default function Detail({ anomalis }) {
                                                                 </div>
                                                             </div>
                                                         </div>
-                                                    ),
+                                                    )
                                                 )}
                                             </div>
                                         ) : (

@@ -213,37 +213,42 @@
       <table class="no-border content-table" style="width: 90%; border-collapse: collapse; margin-bottom: 10px; margin-left: 50px;">
 
           <tr>
-            <td style="width: 30%; padding: 3px 0; vertical-align: top; font-weight: normal;">2. PENEMPATAN PERALATAN</td>
+            <td style="width: 30%; padding: 3px 0; vertical-align: top; font-weight: normal;">2. BAY</td>
+            <td style="width: 5%; padding: 3px 0; vertical-align: top;">:</td>
+            <td style="width: 65%; padding: 3px 0; vertical-align: top;">{{ $anomali->bay ?? '-' }}</td>
+          </tr>
+          <tr>
+            <td style="width: 30%; padding: 3px 0; vertical-align: top; font-weight: normal;">3. PENEMPATAN PERALATAN</td>
             <td style="width: 5%; padding: 3px 0; vertical-align: top;">:</td>
             <td style="width: 65%; padding: 3px 0; vertical-align: top;">{{ $anomali->penempatan_alat ?? '-' }}</td>
           </tr>
           <tr>
-            <td style="width: 30%; padding: 3px 0; vertical-align: top; font-weight: normal;">3. TANGGAL KEJADIAN</td>
+            <td style="width: 30%; padding: 3px 0; vertical-align: top; font-weight: normal;">4. TANGGAL KEJADIAN</td>
             <td style="width: 5%; padding: 3px 0; vertical-align: top;">:</td>
             <td style="width: 65%; padding: 3px 0; vertical-align: top;">{{ \Carbon\Carbon::parse($anomali->tanggal_kejadian)->format('d F Y') ?? '-' }}</td>
           </tr>
           <tr>
-            <td style="width: 30%; padding: 3px 0; vertical-align: top; font-weight: normal;">4. JENIS KERUSAKAN</td>
+            <td style="width: 30%; padding: 3px 0; vertical-align: top; font-weight: normal;">5. JENIS KERUSAKAN</td>
             <td style="width: 5%; padding: 3px 0; vertical-align: top;">:</td>
             <td style="width: 65%; padding: 3px 0; vertical-align: top;">{{ $anomali->kategori->name ?? '-' }}</td>
           </tr>
           <tr>
-            <td style="width: 30%; padding: 3px 0; vertical-align: top; font-weight: normal;">5. PENYEBAB KERUSAKAN</td>
+            <td style="width: 30%; padding: 3px 0; vertical-align: top; font-weight: normal;">6. PENYEBAB KERUSAKAN</td>
             <td style="width: 5%; padding: 3px 0; vertical-align: top;">:</td>
             <td style="width: 65%; padding: 3px 0; vertical-align: top;">{{ $anomali->penyebab ?? '-' }}</td>
           </tr>
           <tr>
-            <td style="width: 30%; padding: 3px 0; vertical-align: top; font-weight: normal;">6. AKIBAT KERUSAKAN</td>
+            <td style="width: 30%; padding: 3px 0; vertical-align: top; font-weight: normal;">7. AKIBAT KERUSAKAN</td>
             <td style="width: 5%; padding: 3px 0; vertical-align: top;">:</td>
             <td style="width: 65%; padding: 3px 0; vertical-align: top;">{{ $anomali->akibat ?? '-' }}</td>
           </tr>
           <tr>
-            <td style="width: 30%; padding: 3px 0; vertical-align: top; font-weight: normal;">7. USUL DAN SARAN</td>
+            <td style="width: 30%; padding: 3px 0; vertical-align: top; font-weight: normal;">8. USUL DAN SARAN</td>
             <td style="width: 5%; padding: 3px 0; vertical-align: top;">:</td>
             <td style="width: 65%; padding: 3px 0; vertical-align: top;">{{ $anomali->usul_saran ?? '-' }}</td>
           </tr>
           <tr>
-            <td style="width: 30%; padding: 3px 0; vertical-align: top; font-weight: normal;">8. LAMPIRAN</td>
+            <td style="width: 30%; padding: 3px 0; vertical-align: top; font-weight: normal;">9. LAMPIRAN</td>
             <td style="width: 5%; padding: 3px 0; vertical-align: top;">:</td>
             <td style="width: 65%; padding: 3px 0; vertical-align: top; font-weight: bold;">
               @if($anomali->lampiran_foto && json_decode($anomali->lampiran_foto))
