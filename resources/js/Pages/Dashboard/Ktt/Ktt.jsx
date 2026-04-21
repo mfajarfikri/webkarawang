@@ -86,7 +86,7 @@ export default function Ktt({ ktts }) {
             .then((response) => {
                 toast.success(
                     `KTT ${data.name} berhasil ditambahkan`,
-                    toastConfig,
+                    toastConfig
                 );
                 handleClose();
                 reset();
@@ -109,14 +109,14 @@ export default function Ktt({ ktts }) {
                         Object.keys(validationErrors).forEach((key) => {
                             toast.error(
                                 `${key}: ${validationErrors[key][0]}`,
-                                toastConfig,
+                                toastConfig
                             );
                         });
                     } else {
                         toast.error(
                             error.response.data.message ||
                                 "Validation error occurred",
-                            toastConfig,
+                            toastConfig
                         );
                     }
                 } else {
@@ -124,7 +124,7 @@ export default function Ktt({ ktts }) {
                     toast.error(
                         error.response?.data?.message ||
                             "Gagal menambahkan KTT",
-                        toastConfig,
+                        toastConfig
                     );
                 }
             });
@@ -172,6 +172,28 @@ export default function Ktt({ ktts }) {
 
     const handlePrev = () => setPage((p) => Math.max(1, p - 1));
     const handleNext = () => setPage((p) => Math.min(totalPages, p + 1));
+
+    const stats = useMemo(() => {
+        const karawang = rows.filter((ktt) => ktt.lokasi === "Karawang");
+        const purwakarta = rows.filter((ktt) => ktt.lokasi === "Purwakarta");
+
+        return {
+            karawang: {
+                total: karawang.length,
+                kapasitas: karawang.reduce(
+                    (acc, curr) => acc + parseFloat(curr.kapasitas || 0),
+                    0
+                ),
+            },
+            purwakarta: {
+                total: purwakarta.length,
+                kapasitas: purwakarta.reduce(
+                    (acc, curr) => acc + parseFloat(curr.kapasitas || 0),
+                    0
+                ),
+            },
+        };
+    }, [rows]);
 
     return (
         <>
@@ -280,7 +302,7 @@ export default function Ktt({ ktts }) {
                                             Total KTT
                                         </p>
                                         <p className="text-2xl font-extrabold text-slate-900">
-                                            24 Unit
+                                            {stats.karawang.total} Unit
                                         </p>
                                     </div>
                                     <div className="relative overflow-hidden rounded-xl bg-white p-4 shadow-sm border border-slate-200">
@@ -289,7 +311,7 @@ export default function Ktt({ ktts }) {
                                             Kapasitas
                                         </p>
                                         <p className="text-2xl font-extrabold text-slate-900">
-                                            150 MVA
+                                            {stats.karawang.kapasitas} MVA
                                         </p>
                                     </div>
                                 </div>
@@ -351,7 +373,7 @@ export default function Ktt({ ktts }) {
                                             Total KTT
                                         </p>
                                         <p className="text-2xl font-extrabold text-slate-900">
-                                            24 Unit
+                                            {stats.purwakarta.total} Unit
                                         </p>
                                     </div>
                                     <div className="relative overflow-hidden rounded-xl bg-white p-4 shadow-sm border border-slate-200">
@@ -360,7 +382,7 @@ export default function Ktt({ ktts }) {
                                             Kapasitas
                                         </p>
                                         <p className="text-2xl font-extrabold text-slate-900">
-                                            150 MVA
+                                            {stats.purwakarta.kapasitas} MVA
                                         </p>
                                     </div>
                                 </div>
@@ -481,7 +503,7 @@ export default function Ktt({ ktts }) {
                                                                 </div>
                                                             </td>
                                                         </tr>
-                                                    ),
+                                                    )
                                                 )
                                             )}
                                         </tbody>
@@ -517,7 +539,13 @@ export default function Ktt({ ktts }) {
                                                                         active,
                                                                         selected,
                                                                     }) =>
-                                                                        `relative cursor-pointer select-none px-2 py-1 text-sm transition-colors ${active ? "bg-sky-50 text-sky-800" : selected ? "bg-slate-100 text-slate-900" : "text-slate-700"}`
+                                                                        `relative cursor-pointer select-none px-2 py-1 text-sm transition-colors ${
+                                                                            active
+                                                                                ? "bg-sky-50 text-sky-800"
+                                                                                : selected
+                                                                                ? "bg-slate-100 text-slate-900"
+                                                                                : "text-slate-700"
+                                                                        }`
                                                                     }
                                                                 >
                                                                     {({
@@ -525,7 +553,11 @@ export default function Ktt({ ktts }) {
                                                                     }) => (
                                                                         <div className="flex items-center">
                                                                             <span
-                                                                                className={`block truncate ${selected ? "font-semibold" : "font-normal"}`}
+                                                                                className={`block truncate ${
+                                                                                    selected
+                                                                                        ? "font-semibold"
+                                                                                        : "font-normal"
+                                                                                }`}
                                                                             >
                                                                                 {
                                                                                     option
@@ -542,7 +574,7 @@ export default function Ktt({ ktts }) {
                                                                         </div>
                                                                     )}
                                                                 </Listbox.Option>
-                                                            ),
+                                                            )
                                                         )}
                                                     </Listbox.Options>
                                                 </div>
@@ -572,7 +604,11 @@ export default function Ktt({ ktts }) {
                                         <button
                                             onClick={handlePrev}
                                             disabled={page === 1}
-                                            className={`px-3 py-2 rounded-l-md border border-r-0 text-sm flex items-center gap-1 font-semibold transition-colors ${page === 1 ? "bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed" : "bg-white text-slate-700 border-slate-300 hover:bg-slate-50"}`}
+                                            className={`px-3 py-2 rounded-l-md border border-r-0 text-sm flex items-center gap-1 font-semibold transition-colors ${
+                                                page === 1
+                                                    ? "bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed"
+                                                    : "bg-white text-slate-700 border-slate-300 hover:bg-slate-50"
+                                            }`}
                                             aria-label="Halaman sebelumnya"
                                         >
                                             <FaChevronLeft />
@@ -586,7 +622,11 @@ export default function Ktt({ ktts }) {
                                         <button
                                             onClick={handleNext}
                                             disabled={page === totalPages}
-                                            className={`px-3 py-2 rounded-r-md border border-l-0 text-sm flex items-center gap-1 font-semibold transition-colors ${page === totalPages ? "bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed" : "bg-white text-slate-700 border-slate-300 hover:bg-slate-50"}`}
+                                            className={`px-3 py-2 rounded-r-md border border-l-0 text-sm flex items-center gap-1 font-semibold transition-colors ${
+                                                page === totalPages
+                                                    ? "bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed"
+                                                    : "bg-white text-slate-700 border-slate-300 hover:bg-slate-50"
+                                            }`}
                                             aria-label="Halaman berikutnya"
                                         >
                                             <FaChevronRight />

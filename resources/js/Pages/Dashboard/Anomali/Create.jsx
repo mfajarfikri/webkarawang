@@ -48,31 +48,32 @@ export default function Create({
         fileName: "",
     });
     const [uploadProgress, setUploadProgress] = useState(null);
-    const { data, setData, errors, processing, reset } = useForm({
-        judul: "",
-        ultg: userWilayah || "",
-        gardu_id: defaultGarduId || "",
-        bagian: "",
-        tipe: "",
-        kategori_id: "",
-        user_id: users.id,
-        peralatan: "",
-        merek: "",
-        tipe_alat: "",
-        no_seri: "",
-        harga: "",
-        kode_asset: "",
-        tahun_operasi: "",
-        tahun_buat: "",
-        bay: "",
-        penempatan_alat: "",
-        penyebab: "",
-        akibat: "",
-        tanggal_kejadian: "",
-        deskripsi: "",
-        lampiran_foto: [],
-        usul_saran: "",
-    });
+    const { data, setData, errors, processing, reset, setError, clearErrors } =
+        useForm({
+            judul: "",
+            ultg: userWilayah || "",
+            gardu_id: defaultGarduId || "",
+            bagian: "",
+            tipe: "",
+            kategori_id: "",
+            user_id: users.id,
+            peralatan: "",
+            merek: "",
+            tipe_alat: "",
+            no_seri: "",
+            harga: "",
+            kode_asset: "",
+            tahun_operasi: "",
+            tahun_buat: "",
+            bay: "",
+            penempatan_alat: "",
+            penyebab: "",
+            akibat: "",
+            tanggal_kejadian: "",
+            deskripsi: "",
+            lampiran_foto: [],
+            usul_saran: "",
+        });
 
     const filteredGarduOptions = React.useMemo(() => {
         if (userWilayah === "UPT Karawang") {
@@ -226,21 +227,40 @@ export default function Create({
         const inputFiles = Array.from(e.target.files || []);
         e.target.value = "";
 
+        if (inputFiles.length === 0) return;
+
         const imageFiles = inputFiles.filter((file) =>
             file?.type?.startsWith("image/")
         );
 
-        const remainingSlots = Math.max(0, MAX_FILES - preview.length);
-        const candidates = imageFiles.slice(0, remainingSlots);
+        if (imageFiles.length < inputFiles.length) {
+            enqueueSnackbar(
+                `${
+                    inputFiles.length - imageFiles.length
+                } file diabaikan karena bukan gambar.`,
+                { variant: "warning" }
+            );
+        }
 
-        if (candidates.length === 0) {
-            if (inputFiles.length > 0 && preview.length >= MAX_FILES) {
-                enqueueSnackbar(`Maksimal ${MAX_FILES} file gambar.`, {
-                    variant: "error",
-                });
-            }
+        const remainingSlots = Math.max(0, MAX_FILES - preview.length);
+
+        if (remainingSlots === 0 && imageFiles.length > 0) {
+            enqueueSnackbar(`Maksimal ${MAX_FILES} file gambar tercapai.`, {
+                variant: "error",
+            });
             return;
         }
+
+        const candidates = imageFiles.slice(0, remainingSlots);
+
+        if (imageFiles.length > remainingSlots) {
+            enqueueSnackbar(
+                `Hanya ${remainingSlots} gambar pertama yang akan ditambahkan.`,
+                { variant: "info" }
+            );
+        }
+
+        if (candidates.length === 0) return;
 
         const needsCompression = candidates.some(
             (f) => f.size > MAX_IMAGE_BYTES
@@ -364,6 +384,8 @@ export default function Create({
 
         setIsSubmitting(true);
         setUploadProgress(0);
+        clearErrors();
+
         const formData = new FormData();
         Object.entries(data).forEach(([key, value]) => {
             if (key === "lampiran_foto") {
@@ -396,15 +418,34 @@ export default function Create({
             setPreview([]);
             router.get(route("dashboard.anomali.index"));
         } catch (error) {
-            let errorMsg = "Error |";
-            if (
-                error.response &&
-                error.response.data &&
-                error.response.data.message
-            ) {
-                errorMsg += " " + error.response.data.message;
+            let errorMsg = "Terjadi kesalahan.";
+
+            if (error.response) {
+                const { status, data: responseData } = error.response;
+
+                if (status === 422 && responseData.errors) {
+                    // Validation errors
+                    const firstErrorKey = Object.keys(responseData.errors)[0];
+                    const firstErrorMessage =
+                        responseData.errors[firstErrorKey][0];
+                    errorMsg = firstErrorMessage;
+
+                    // Sync errors to useForm
+                    Object.keys(responseData.errors).forEach((key) => {
+                        setError(key, responseData.errors[key][0]);
+                    });
+                } else if (status === 413) {
+                    errorMsg =
+                        "Ukuran file terlalu besar untuk diproses server (Limit Server).";
+                } else if (responseData.message) {
+                    errorMsg = responseData.message;
+                }
+            } else if (error.request) {
+                errorMsg =
+                    "Tidak ada respon dari server. Periksa koneksi internet Anda.";
             }
-            enqueueSnackbar(errorMsg, { variant: "error" });
+
+            enqueueSnackbar(`Error | ${errorMsg}`, { variant: "error" });
         } finally {
             setIsSubmitting(false);
             setUploadProgress(null);
@@ -1734,7 +1775,7 @@ export default function Create({
                                                 <div className="flex flex-col items-center justify-center mb-4 gap-1">
                                                     <span className="text-xs text-cyan-500 font-medium">
                                                         Maksimal {MAX_FILES}{" "}
-                                                        gambar
+                                                        gambar ukuran 2048kb
                                                     </span>
                                                     {compressionState.running ? (
                                                         <div className="mt-2 w-full max-w-md rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
@@ -1868,12 +1909,27 @@ export default function Create({
                                                         </div>
                                                     ))}
                                                 </div>
-                                                <InputError
-                                                    message={
-                                                        errors.lampiran_foto
-                                                    }
-                                                    className="mt-4"
-                                                />
+                                                <div className="mt-4 space-y-1">
+                                                    <InputError
+                                                        message={
+                                                            errors.lampiran_foto
+                                                        }
+                                                    />
+                                                    {Object.keys(errors)
+                                                        .filter((key) =>
+                                                            key.startsWith(
+                                                                "lampiran_foto."
+                                                            )
+                                                        )
+                                                        .map((key) => (
+                                                            <InputError
+                                                                key={key}
+                                                                message={
+                                                                    errors[key]
+                                                                }
+                                                            />
+                                                        ))}
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
@@ -1980,7 +2036,7 @@ export default function Create({
                                                 Detail Kejadian
                                             </h3>
                                             <dl className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
-                                                <div className="bg-slate-50 p-3 rounded-xl border border-slate-100 col-span-1 md:col-span-2">
+                                                <div className="bg-slate-50 p-3 rounded-xl border border-slate-100 col-span-1 md:col-span-1">
                                                     <dt className="text-xs font-medium text-slate-500 mb-1">
                                                         Bay
                                                     </dt>
