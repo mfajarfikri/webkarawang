@@ -15,6 +15,7 @@ import {
     FaChevronDown,
     FaMapMarkerAlt,
     FaSignOutAlt,
+    FaUserShield,
 } from "react-icons/fa";
 import ApplicationLogo from "@/Components/ApplicationLogo";
 import { SnackbarProvider, useSnackbar } from "notistack";
@@ -172,7 +173,7 @@ function HomeLayoutContent({ children }) {
                                             isScrolled
                                                 ? "text-black"
                                                 : "text-gray-700"
-                                        } hover:text-blue-700 transition-colors duration-200 ${
+                                        } hover:text-cyan-600 transition-colors duration-200 ${
                                             menu.submenu
                                                 ? "flex items-center"
                                                 : ""
@@ -192,7 +193,7 @@ function HomeLayoutContent({ children }) {
                                                         <Link
                                                             key={subIndex}
                                                             href={submenu.url}
-                                                            className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-blue-700"
+                                                            className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-cyan-600"
                                                         >
                                                             {submenu.title}
                                                         </Link>
@@ -217,10 +218,10 @@ function HomeLayoutContent({ children }) {
                                                     : "profile",
                                             )
                                         }
-                                        className="flex items-center gap-2 px-2 sm:px-4 py-2 rounded-lg text-gray-700 hover:text-blue-600 hover:bg-gray-50 transition-all duration-200"
+                                        className="flex items-center gap-2 px-2 sm:px-4 py-2 rounded-lg text-gray-700 hover:text-cyan-600 hover:bg-gray-50 transition-all duration-200"
                                     >
                                         <div className="flex items-center gap-1 sm:gap-2">
-                                            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full ring-2 ring-blue-800 bg-blue-100 flex items-center justify-center">
+                                            <div className="rounded-full ring-2 ring-cyan-600 border-[2px] border-white bg-white overflow-hidden">
                                                 {auth.user.foto_profil ? (
                                                     <img
                                                         src={
@@ -233,13 +234,9 @@ function HomeLayoutContent({ children }) {
                                                         className="h-8 w-8 rounded-full object-cover"
                                                     />
                                                 ) : (
-                                                    <svg
-                                                        className="h-8 w-8 text-blue-700"
-                                                        fill="currentColor"
-                                                        viewBox="0 0 24 24"
-                                                    >
-                                                        <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
-                                                    </svg>
+                                                    <div className="h-6 w-6 bg-cyan-50 flex items-center justify-center text-cyan-600">
+                                                        <FaUserShield className="h-4 w-4" />
+                                                    </div>
                                                 )}
                                             </div>
                                             <span className="font-medium text-sm sm:text-base hidden sm:block">
@@ -263,21 +260,6 @@ function HomeLayoutContent({ children }) {
                                         style={{ top: "110%" }}
                                     >
                                         <div className="px-4 py-2 border-b border-gray-100 flex items-center gap-2">
-                                            {auth?.user.foto_profil ? (
-                                                <img
-                                                    src={`/storage/${auth?.user.foto_profil}`}
-                                                    alt="Foto Profil"
-                                                    className="h-8 w-8 rounded-full object-cover border border-blue-200"
-                                                />
-                                            ) : (
-                                                <svg
-                                                    className="h-8 w-8 text-blue-700"
-                                                    fill="currentColor"
-                                                    viewBox="0 0 24 24"
-                                                >
-                                                    <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
-                                                </svg>
-                                            )}
                                             <div>
                                                 <div className="font-semibold text-gray-800 text-sm">
                                                     {auth?.user?.name}
@@ -289,28 +271,28 @@ function HomeLayoutContent({ children }) {
                                         </div>
                                         <Link
                                             href={route("dashboard.index")}
-                                            className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 transition rounded-md"
+                                            className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:text-cyan-600 transition rounded-md"
                                         >
-                                            <FaHome className="text-blue-500" />{" "}
+                                            <FaHome className="text-cyan-600" />{" "}
                                             Dashboard
                                         </Link>
                                         <Link
                                             href={route(
                                                 "dashboard.profile.edit",
                                             )}
-                                            className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 transition rounded-md"
+                                            className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:text-cyan-600 transition rounded-md"
                                         >
-                                            <FaCog className="text-blue-500" />{" "}
+                                            <FaCog className="text-cyan-600" />{" "}
                                             Profile
                                         </Link>
                                         <button
                                             onClick={() =>
                                                 setShowLogoutModal(true)
                                             }
-                                            className="flex items-center gap-2 w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition rounded-md"
+                                            className="flex items-center gap-2 w-full text-left px-4 py-2 text-sm text-rose-600 hover:bg-rose-50 transition rounded-md"
                                         >
                                             <svg
-                                                className="h-4 w-4 text-red-500"
+                                                className="h-4 w-4 text-rose-600"
                                                 fill="none"
                                                 stroke="currentColor"
                                                 strokeWidth={2}

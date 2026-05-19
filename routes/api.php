@@ -14,6 +14,7 @@ Route::get('/berita', [DataController::class, 'berita']);
 Route::get('/themes', [DataController::class, 'themes']);
 Route::get('/showberita', [DataController::class, 'ShowBerita']);
 Route::get('/gardu', [DataController::class, 'ShowGardu']);
+Route::get('/stats', [DataController::class, 'stats']);
 Route::post('/berita/{slug}/increment-read', [DataController::class, 'incrementReadCount']);
 Route::patch('/berita/{id}/homepage', [DataController::class, 'updateBeritaHomepage']);
 Route::delete('/berita/{berita}', [BeritaController::class, 'destroy']);

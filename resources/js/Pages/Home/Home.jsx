@@ -39,7 +39,7 @@ function parseGambarFirst(gambar) {
 
 function beritaImageUrl(news) {
     const fileName = parseGambarFirst(news?.gambar);
-    if (!fileName) return "/images/default-news.jpg";
+    if (!fileName) return "/img/news-default.jpeg";
     if (fileName.startsWith("http://") || fileName.startsWith("https://")) {
         return fileName;
     }
@@ -94,7 +94,7 @@ function NewsCard({ news }) {
                     loading="lazy"
                     decoding="async"
                     onError={(e) => {
-                        e.currentTarget.src = "/images/default-news.jpg";
+                        e.currentTarget.src = "/img/news-default.jpeg";
                     }}
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/35 via-black/10 to-transparent" />
@@ -153,42 +153,31 @@ export default function Home() {
     const [loading, setLoading] = useState(true);
     const [berita, setBerita] = useState([]);
     const [beritaTerbaru, setBeritaTerbaru] = useState([]);
-    const [ktt, setKtt] = useState([]);
-    const [garduInduk, setGarduInduk] = useState(0);
+    const [stats, setStats] = useState({
+        gardu_induk: 0,
+        trafo_tenaga: 0,
+        ktt: 0,
+        sdm: 0,
+    });
     const [isHovering, setIsHovering] = useState(false);
     const [animateStats, setAnimateStats] = useState(false);
     const [error, setError] = useState(null);
     const BeritaTerbaru = beritaTerbaru.slice(0, 3);
 
     useEffect(() => {
-        axios
-            .get(route("ktt.index"))
-            .then((response) => {
-                setKtt(response.data);
-                setLoading(false);
-            })
-            .catch((error) => {
-                console.error("Error Fetching Data Ktt", error);
-                setLoading(false);
-            });
-    }, []);
-
-    useEffect(() => {
-        const fetchGardu = async () => {
+        const fetchStats = async () => {
             try {
-                const response = await axios.get("/api/gardu");
-                const list = Array.isArray(response.data?.gardu)
-                    ? response.data.gardu
-                    : [];
-                setGarduInduk(list.length);
+                const response = await axios.get("/api/stats");
+                setStats(response.data);
             } catch (error) {
+                console.error("Error Fetching Stats", error);
                 setError(error);
             } finally {
                 setLoading(false);
             }
         };
 
-        fetchGardu();
+        fetchStats();
     }, []);
 
     useEffect(() => {
@@ -315,7 +304,7 @@ export default function Home() {
                                                     decoding="async"
                                                     onError={(e) => {
                                                         e.currentTarget.src =
-                                                            "/images/default-news.jpg";
+                                                            "/img/news-default.jpeg";
                                                     }}
                                                 />
                                                 <div className="absolute inset-0 bg-gradient-to-r from-slate-950/75 via-slate-900/35 to-transparent" />
@@ -438,7 +427,7 @@ export default function Home() {
                                     icon={FaBolt}
                                     tone="sky"
                                     title="Gardu Induk"
-                                    value={loading ? "—" : garduInduk}
+                                    value={loading ? "—" : stats.gardu_induk}
                                     unit="Unit"
                                     href={route("gardu-induk")}
                                 />
@@ -446,7 +435,7 @@ export default function Home() {
                                     icon={FaIndustry}
                                     tone="emerald"
                                     title="Trafo Tenaga"
-                                    value="1240"
+                                    value={loading ? "—" : stats.trafo_tenaga}
                                     unit="MVA"
                                     href="/asset/trafo-tenaga"
                                 />
@@ -454,7 +443,7 @@ export default function Home() {
                                     icon={FaBuilding}
                                     tone="violet"
                                     title="Pelanggan KTT"
-                                    value={loading ? "—" : ktt.length}
+                                    value={loading ? "—" : stats.ktt}
                                     unit="Pelanggan"
                                     href={route("ktt.index")}
                                 />
@@ -462,7 +451,7 @@ export default function Home() {
                                     icon={FaUsers}
                                     tone="amber"
                                     title="SDM PLN UPT"
-                                    value="128"
+                                    value={loading ? "—" : stats.sdm}
                                     unit="Pegawai"
                                     href="/asset/sdm"
                                 />

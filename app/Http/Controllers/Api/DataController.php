@@ -2,12 +2,14 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Models\Berita;
+use App\Http\Controllers\Controller;
 use App\Models\Anomali;
+use App\Models\Berita;
 use App\Models\GarduInduk;
+use App\Models\Ktt;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
-use App\Http\Controllers\Controller;
 
 class DataController extends Controller
 {
@@ -229,6 +231,16 @@ class DataController extends Controller
 
         return response()->json([
             'gardu' => $gardu
+        ]);
+    }
+
+    public function stats()
+    {
+        return response()->json([
+            'gardu_induk' => GarduInduk::count(),
+            'trafo_tenaga' => Ktt::sum('kapasitas'),
+            'ktt' => Ktt::count(),
+            'sdm' => User::count(),
         ]);
     }
 

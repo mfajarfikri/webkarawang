@@ -14,6 +14,7 @@ import {
     FaTools,
     FaSearch,
     FaTag,
+    FaChevronLeft,
     FaCheckCircle,
     FaClipboard,
 } from "react-icons/fa";
@@ -230,7 +231,7 @@ export default function Create({
         if (inputFiles.length === 0) return;
 
         const imageFiles = inputFiles.filter((file) =>
-            file?.type?.startsWith("image/")
+            file?.type?.startsWith("image/"),
         );
 
         if (imageFiles.length < inputFiles.length) {
@@ -238,7 +239,7 @@ export default function Create({
                 `${
                     inputFiles.length - imageFiles.length
                 } file diabaikan karena bukan gambar.`,
-                { variant: "warning" }
+                { variant: "warning" },
             );
         }
 
@@ -256,14 +257,14 @@ export default function Create({
         if (imageFiles.length > remainingSlots) {
             enqueueSnackbar(
                 `Hanya ${remainingSlots} gambar pertama yang akan ditambahkan.`,
-                { variant: "info" }
+                { variant: "info" },
             );
         }
 
         if (candidates.length === 0) return;
 
         const needsCompression = candidates.some(
-            (f) => f.size > MAX_IMAGE_BYTES
+            (f) => f.size > MAX_IMAGE_BYTES,
         );
         if (needsCompression) {
             setCompressionState({
@@ -306,7 +307,7 @@ export default function Create({
                         `Gagal mengompres "${
                             file.name
                         }" ke <= 2MB (hasil: ${formatBytes(processed.size)}).`,
-                        { variant: "error" }
+                        { variant: "error" },
                     );
                     continue;
                 }
@@ -333,7 +334,7 @@ export default function Create({
         if (skippedCount > 0) {
             enqueueSnackbar(
                 `${skippedCount} file tidak ditambahkan karena gagal kompres/validasi.`,
-                { variant: "warning" }
+                { variant: "warning" },
             );
         }
 
@@ -372,12 +373,12 @@ export default function Create({
         }
 
         const oversized = (data.lampiran_foto || []).find(
-            (f) => f?.size > MAX_IMAGE_BYTES
+            (f) => f?.size > MAX_IMAGE_BYTES,
         );
         if (oversized) {
             enqueueSnackbar(
                 `Ukuran file "${oversized.name}" melebihi 2MB. Hapus lalu upload ulang.`,
-                { variant: "error" }
+                { variant: "error" },
             );
             return;
         }
@@ -390,7 +391,7 @@ export default function Create({
         Object.entries(data).forEach(([key, value]) => {
             if (key === "lampiran_foto") {
                 value.forEach((file) =>
-                    formData.append("lampiran_foto[]", file)
+                    formData.append("lampiran_foto[]", file),
                 );
             } else {
                 formData.append(key, value);
@@ -411,7 +412,7 @@ export default function Create({
                         const pct = Math.round((evt.loaded / evt.total) * 100);
                         setUploadProgress(pct);
                     },
-                }
+                },
             );
             enqueueSnackbar("Anomali berhasil dibuat!", { variant: "success" });
             reset();
@@ -502,7 +503,7 @@ export default function Create({
         const lastDay = new Date(
             currentMonth.getFullYear(),
             currentMonth.getMonth() + 1,
-            0
+            0,
         );
 
         const days = [];
@@ -564,6 +565,13 @@ export default function Create({
             <DashboardLayout>
                 <div className="max-w-full bg-white mx-auto border rounded-xl shadow-md">
                     <div className="flex items-center gap-3 px-8 py-4 bg-gradient-to-r from-cyan-600 to-sky-600 rounded-t-xl">
+                        <button
+                            onClick={() => window.history.back()}
+                            className="flex-shrink-0 h-10 w-10 rounded-xl bg-transparent border border-slate-200 flex items-center justify-center text-slate-600 hover:bg-cyan-500 hover:text-white transition-all shadow-sm active:scale-95 group"
+                            title="Kembali"
+                        >
+                            <FaChevronLeft className="w-4 h-4 text-white group-hover:-translate-x-0.5 transition-transform" />
+                        </button>
                         <div className="flex items-center gap-2">
                             <ApplicationLogo className="h-8 w-8" />
                             <span className="text-white font-bold text-lg tracking-wide uppercase">
@@ -590,8 +598,8 @@ export default function Create({
                                                     step === item.id
                                                         ? "bg-cyan-600 border-cyan-600 text-white shadow-lg shadow-cyan-500/30 scale-110"
                                                         : step > item.id
-                                                        ? "bg-emerald-500 border-emerald-500 text-white shadow-md shadow-emerald-500/20"
-                                                        : "bg-white border-slate-200 text-slate-400 group-hover:border-slate-300"
+                                                          ? "bg-emerald-500 border-emerald-500 text-white shadow-md shadow-emerald-500/20"
+                                                          : "bg-white border-slate-200 text-slate-400 group-hover:border-slate-300"
                                                 }`}
                                             >
                                                 {step > item.id ? (
@@ -607,8 +615,8 @@ export default function Create({
                                                     step === item.id
                                                         ? "text-sky-700"
                                                         : step > item.id
-                                                        ? "text-emerald-600"
-                                                        : "text-slate-400"
+                                                          ? "text-emerald-600"
+                                                          : "text-slate-400"
                                                 }`}
                                             >
                                                 {item.label}
@@ -654,7 +662,7 @@ export default function Create({
                                                         onChange={(e) =>
                                                             setData(
                                                                 "judul",
-                                                                e.target.value
+                                                                e.target.value,
                                                             )
                                                         }
                                                         className="pl-10 block w-full rounded-xl border border-slate-200 focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 text-sm px-4 py-2.5 shadow-sm transition-all placeholder:text-slate-400"
@@ -694,7 +702,7 @@ export default function Create({
                                                             {ultgOptions.find(
                                                                 (opt) =>
                                                                     opt.id ===
-                                                                    data.ultg
+                                                                    data.ultg,
                                                             )?.name ||
                                                                 "Pilih ULTG"}
                                                             <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
@@ -756,7 +764,7 @@ export default function Create({
                                                                                 </>
                                                                             )}
                                                                         </Listbox.Option>
-                                                                    )
+                                                                    ),
                                                                 )}
                                                             </Listbox.Options>
                                                         </Transition>
@@ -778,7 +786,7 @@ export default function Create({
                                                         onChange={(val) =>
                                                             setData(
                                                                 "gardu_id",
-                                                                val
+                                                                val,
                                                             )
                                                         }
                                                     >
@@ -788,7 +796,7 @@ export default function Create({
                                                         >
                                                             {findById(
                                                                 gardus,
-                                                                data.gardu_id
+                                                                data.gardu_id,
                                                             )?.name ||
                                                                 "Pilih Gardu Induk"}
                                                             <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
@@ -873,7 +881,7 @@ export default function Create({
                                                         onChange={(val) =>
                                                             setData(
                                                                 "bagian",
-                                                                val
+                                                                val,
                                                             )
                                                         }
                                                     >
@@ -884,7 +892,7 @@ export default function Create({
                                                             {bagianOptions.find(
                                                                 (opt) =>
                                                                     opt.id ===
-                                                                    data.bagian
+                                                                    data.bagian,
                                                             )?.name ||
                                                                 "Pilih Bagian"}
                                                             <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
@@ -946,7 +954,7 @@ export default function Create({
                                                                                 </>
                                                                             )}
                                                                         </Listbox.Option>
-                                                                    )
+                                                                    ),
                                                                 )}
                                                             </Listbox.Options>
                                                         </Transition>
@@ -976,7 +984,7 @@ export default function Create({
                                                             {tipeOptions.find(
                                                                 (opt) =>
                                                                     opt.id ===
-                                                                    data.tipe
+                                                                    data.tipe,
                                                             )?.name ||
                                                                 "Pilih Tipe"}
                                                             <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
@@ -1061,7 +1069,7 @@ export default function Create({
                                                         onChange={(val) =>
                                                             setData(
                                                                 "kategori_id",
-                                                                val
+                                                                val,
                                                             )
                                                         }
                                                     >
@@ -1071,7 +1079,7 @@ export default function Create({
                                                         >
                                                             {findById(
                                                                 kategoris,
-                                                                data.kategori_id
+                                                                data.kategori_id,
                                                             )?.name ||
                                                                 "Pilih Kategori"}
                                                             <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
@@ -1161,7 +1169,7 @@ export default function Create({
                                                         onChange={(e) =>
                                                             setData(
                                                                 "bay",
-                                                                e.target.value
+                                                                e.target.value,
                                                             )
                                                         }
                                                         className="pl-10 block w-full rounded-xl border border-slate-200 focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 text-sm px-4 py-2.5 shadow-sm transition-all placeholder:text-slate-400"
@@ -1193,7 +1201,7 @@ export default function Create({
                                                         onChange={(e) =>
                                                             setData(
                                                                 "penempatan_alat",
-                                                                e.target.value
+                                                                e.target.value,
                                                             )
                                                         }
                                                         className="pl-10 block w-full rounded-xl border border-slate-200 focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 text-sm px-4 py-2.5 shadow-sm transition-all placeholder:text-slate-400"
@@ -1233,7 +1241,7 @@ export default function Create({
                                                     onChange={(e) =>
                                                         setData(
                                                             "peralatan",
-                                                            e.target.value
+                                                            e.target.value,
                                                         )
                                                     }
                                                     className="pl-10 mt-1 block w-full rounded-xl border-slate-200 focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 text-md px-4 py-2 shadow-sm transition-all"
@@ -1259,22 +1267,22 @@ export default function Create({
                                                 <div
                                                     onClick={() =>
                                                         setShowDatePicker(
-                                                            !showDatePicker
+                                                            !showDatePicker,
                                                         )
                                                     }
                                                     className={`pl-10 mt-1 block w-full rounded-xl border cursor-pointer ${
                                                         errors.tanggal_kejadian
                                                             ? "border-red-400 focus:ring-red-400 focus:border-red-400"
                                                             : data.tanggal_kejadian
-                                                            ? "border-green-400 focus:ring-green-400 focus:border-green-400"
-                                                            : "border-slate-200 focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
+                                                              ? "border-green-400 focus:ring-green-400 focus:border-green-400"
+                                                              : "border-slate-200 focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
                                                     } text-md px-4 py-2 shadow-sm transition-all bg-white hover:bg-slate-50`}
                                                 >
                                                     {data.tanggal_kejadian ? (
                                                         <span className="text-slate-900 flex items-center justify-between">
                                                             <span>
                                                                 {formatDisplayDate(
-                                                                    data.tanggal_kejadian
+                                                                    data.tanggal_kejadian,
                                                                 )}
                                                             </span>
                                                             <span className="text-green-600 text-xs">
@@ -1298,7 +1306,7 @@ export default function Create({
                                                                 type="button"
                                                                 onClick={() =>
                                                                     navigateMonth(
-                                                                        -1
+                                                                        -1,
                                                                     )
                                                                 }
                                                                 className="p-2 hover:bg-slate-100 rounded-xl transition-colors"
@@ -1326,21 +1334,21 @@ export default function Create({
                                                                           "MMMM yyyy",
                                                                           {
                                                                               locale: id,
-                                                                          }
+                                                                          },
                                                                       )
                                                                     : format(
                                                                           new Date(),
                                                                           "MMMM yyyy",
                                                                           {
                                                                               locale: id,
-                                                                          }
+                                                                          },
                                                                       )}
                                                             </h3>
                                                             <button
                                                                 type="button"
                                                                 onClick={() =>
                                                                     navigateMonth(
-                                                                        1
+                                                                        1,
                                                                     )
                                                                 }
                                                                 className="p-2 hover:bg-slate-100 rounded-xl transition-colors"
@@ -1387,7 +1395,7 @@ export default function Create({
                                                             {generateCalendarDays().map(
                                                                 (
                                                                     date,
-                                                                    index
+                                                                    index,
                                                                 ) => {
                                                                     const isCurrentMonth =
                                                                         date.getMonth() ===
@@ -1397,22 +1405,22 @@ export default function Create({
                                                                     const isToday =
                                                                         format(
                                                                             date,
-                                                                            "yyyy-MM-dd"
+                                                                            "yyyy-MM-dd",
                                                                         ) ===
                                                                         format(
                                                                             new Date(),
-                                                                            "yyyy-MM-dd"
+                                                                            "yyyy-MM-dd",
                                                                         );
                                                                     const isSelected =
                                                                         data.tanggal_kejadian &&
                                                                         format(
                                                                             date,
-                                                                            "yyyy-MM-dd"
+                                                                            "yyyy-MM-dd",
                                                                         ) ===
                                                                             data.tanggal_kejadian;
                                                                     const isValidDate =
                                                                         isDateValid(
-                                                                            date
+                                                                            date,
                                                                         );
 
                                                                     return (
@@ -1424,7 +1432,7 @@ export default function Create({
                                                                             onClick={() =>
                                                                                 isValidDate &&
                                                                                 handleDateSelect(
-                                                                                    date
+                                                                                    date,
                                                                                 )
                                                                             }
                                                                             disabled={
@@ -1434,11 +1442,11 @@ export default function Create({
                                                                                 isSelected
                                                                                     ? "bg-cyan-600 text-white font-semibold"
                                                                                     : isToday
-                                                                                    ? "bg-cyan-100 text-cyan-900 font-semibold"
-                                                                                    : isCurrentMonth &&
-                                                                                      isValidDate
-                                                                                    ? "text-slate-900 hover:bg-slate-100"
-                                                                                    : "text-slate-400"
+                                                                                      ? "bg-cyan-100 text-cyan-900 font-semibold"
+                                                                                      : isCurrentMonth &&
+                                                                                          isValidDate
+                                                                                        ? "text-slate-900 hover:bg-slate-100"
+                                                                                        : "text-slate-400"
                                                                             } ${
                                                                                 !isValidDate
                                                                                     ? "cursor-not-allowed opacity-50"
@@ -1448,7 +1456,7 @@ export default function Create({
                                                                             {date.getDate()}
                                                                         </button>
                                                                     );
-                                                                }
+                                                                },
                                                             )}
                                                         </div>
 
@@ -1461,7 +1469,7 @@ export default function Create({
                                                                         const today =
                                                                             new Date();
                                                                         handleDateSelect(
-                                                                            today
+                                                                            today,
                                                                         );
                                                                     }}
                                                                     className="text-xs text-cyan-600 hover:text-cyan-800 font-medium"
@@ -1474,10 +1482,10 @@ export default function Create({
                                                                         onClick={() => {
                                                                             setData(
                                                                                 "tanggal_kejadian",
-                                                                                ""
+                                                                                "",
                                                                             );
                                                                             setSelectedDate(
-                                                                                null
+                                                                                null,
                                                                             );
                                                                         }}
                                                                         className="text-xs text-red-600 hover:text-red-800 font-medium"
@@ -1490,7 +1498,7 @@ export default function Create({
                                                                 type="button"
                                                                 onClick={() =>
                                                                     setShowDatePicker(
-                                                                        false
+                                                                        false,
                                                                     )
                                                                 }
                                                                 className="text-xs text-slate-500 hover:text-slate-700"
@@ -1520,7 +1528,7 @@ export default function Create({
                                                     onChange={(e) =>
                                                         setData(
                                                             "merek",
-                                                            e.target.value
+                                                            e.target.value,
                                                         )
                                                     }
                                                     className="mt-1 block w-full rounded-xl border-slate-200 focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 text-md px-4 py-2 shadow-sm transition-all"
@@ -1543,7 +1551,7 @@ export default function Create({
                                                     onChange={(e) =>
                                                         setData(
                                                             "tipe_alat",
-                                                            e.target.value
+                                                            e.target.value,
                                                         )
                                                     }
                                                     className="mt-1 block w-full rounded-xl border-slate-200 focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 text-md px-4 py-2 shadow-sm transition-all"
@@ -1566,7 +1574,7 @@ export default function Create({
                                                     onChange={(e) =>
                                                         setData(
                                                             "no_seri",
-                                                            e.target.value
+                                                            e.target.value,
                                                         )
                                                     }
                                                     className="mt-1 block w-full rounded-xl border-slate-200 focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 text-md px-4 py-2 shadow-sm transition-all"
@@ -1589,7 +1597,7 @@ export default function Create({
                                                     onChange={(e) =>
                                                         setData(
                                                             "harga",
-                                                            e.target.value
+                                                            e.target.value,
                                                         )
                                                     }
                                                     className="mt-1 block w-full rounded-xl border-slate-200 focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 text-md px-4 py-2 shadow-sm transition-all"
@@ -1612,7 +1620,7 @@ export default function Create({
                                                     onChange={(e) =>
                                                         setData(
                                                             "kode_asset",
-                                                            e.target.value
+                                                            e.target.value,
                                                         )
                                                     }
                                                     className="mt-1 block w-full rounded-xl border-slate-200 focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 text-md px-4 py-2 shadow-sm transition-all"
@@ -1635,7 +1643,7 @@ export default function Create({
                                                     onChange={(e) =>
                                                         setData(
                                                             "tahun_operasi",
-                                                            e.target.value
+                                                            e.target.value,
                                                         )
                                                     }
                                                     className="mt-1 block w-full rounded-xl border-slate-200 focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 text-md px-4 py-2 shadow-sm transition-all"
@@ -1660,7 +1668,7 @@ export default function Create({
                                                     onChange={(e) =>
                                                         setData(
                                                             "tahun_buat",
-                                                            e.target.value
+                                                            e.target.value,
                                                         )
                                                     }
                                                     className="mt-1 block w-full rounded-xl border-slate-200 focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 text-md px-4 py-2 shadow-sm transition-all"
@@ -1691,7 +1699,7 @@ export default function Create({
                                                     onChange={(e) =>
                                                         setData(
                                                             "penyebab",
-                                                            e.target.value
+                                                            e.target.value,
                                                         )
                                                     }
                                                     className=" mt-1 block w-full rounded-xl border-slate-200 focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 text-md px-4 py-2 shadow-sm transition-all min-h-[60px]"
@@ -1717,7 +1725,7 @@ export default function Create({
                                                     onChange={(e) =>
                                                         setData(
                                                             "akibat",
-                                                            e.target.value
+                                                            e.target.value,
                                                         )
                                                     }
                                                     className=" mt-1 block w-full rounded-xl border-slate-200 focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 text-md px-4 py-2 shadow-sm transition-all min-h-[60px]"
@@ -1743,7 +1751,7 @@ export default function Create({
                                                     onChange={(e) =>
                                                         setData(
                                                             "usul_saran",
-                                                            e.target.value
+                                                            e.target.value,
                                                         )
                                                     }
                                                     className=" mt-1 block w-full rounded-xl border-slate-200 focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 text-md px-4 py-2 shadow-sm transition-all min-h-[60px]"
@@ -1804,9 +1812,9 @@ export default function Create({
                                                                             (compressionState.current /
                                                                                 Math.max(
                                                                                     1,
-                                                                                    compressionState.total
+                                                                                    compressionState.total,
                                                                                 )) *
-                                                                                100
+                                                                                100,
                                                                         )}%`,
                                                                     }}
                                                                 />
@@ -1878,7 +1886,7 @@ export default function Create({
                                                                     type="button"
                                                                     onClick={() =>
                                                                         handleRemoveImage(
-                                                                            i
+                                                                            i,
                                                                         )
                                                                     }
                                                                     className="bg-white/90 hover:bg-red-600 text-red-600 hover:text-white rounded-full p-1 shadow transition"
@@ -1891,14 +1899,14 @@ export default function Create({
                                                                 type="button"
                                                                 className="absolute inset-0 bg-slate-900/30 opacity-0 group-hover:opacity-100 rounded-xl transition-all duration-200 flex items-center justify-center text-base text-white font-semibold tracking-wide backdrop-blur-sm"
                                                                 onClick={(
-                                                                    e
+                                                                    e,
                                                                 ) => {
                                                                     e.stopPropagation();
                                                                     setPreviewIndex(
-                                                                        i
+                                                                        i,
                                                                     );
                                                                     setPreviewModal(
-                                                                        true
+                                                                        true,
                                                                     );
                                                                 }}
                                                             >
@@ -1918,8 +1926,8 @@ export default function Create({
                                                     {Object.keys(errors)
                                                         .filter((key) =>
                                                             key.startsWith(
-                                                                "lampiran_foto."
-                                                            )
+                                                                "lampiran_foto.",
+                                                            ),
                                                         )
                                                         .map((key) => (
                                                             <InputError
@@ -2060,7 +2068,7 @@ export default function Create({
                                                     <dd className="text-sm font-semibold text-slate-900">
                                                         {data.tanggal_kejadian
                                                             ? formatDate(
-                                                                  data.tanggal_kejadian
+                                                                  data.tanggal_kejadian,
                                                               )
                                                             : "-"}
                                                     </dd>
@@ -2073,7 +2081,7 @@ export default function Create({
                                                         {kategoris?.find(
                                                             (k) =>
                                                                 k.id ==
-                                                                data.kategori_id
+                                                                data.kategori_id,
                                                         )?.name || "-"}
                                                     </dd>
                                                 </div>
@@ -2145,7 +2153,7 @@ export default function Create({
                                                                         className="w-full h-24 object-cover hover:scale-105 transition-transform duration-300"
                                                                     />
                                                                 </div>
-                                                            )
+                                                            ),
                                                         )}
                                                     </div>
                                                 ) : (

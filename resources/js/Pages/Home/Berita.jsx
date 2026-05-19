@@ -153,7 +153,7 @@ export default function Berita() {
             <Head title="Berita" />
             <HomeLayout>
                 {/* Hero Section */}
-                <div className="relative bg-gradient-to-r from-blue-900 to-indigo-800 overflow-hidden">
+                <div className="relative bg-gradient-to-b from-sky-700 to-cyan-900 overflow-hidden">
                     <div className="absolute inset-0">
                         <img
                             src={`/img/heroBerita.jpg`}
@@ -162,7 +162,7 @@ export default function Berita() {
                             loading="eager"
                             fetchPriority="high"
                         />
-                        <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-blue-900/40 to-indigo-900/50"></div>
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-sky-600/40 to-cyan-800/50"></div>
                         <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiMyMjIiIGZpbGwtb3BhY2l0eT0iLjA1Ij48cGF0aCBkPSJNMzYgMzRoLTJ2LTRoMnY0em0wLTZ2LTRoLTJ2NGgyek0zMCAzNGgtMnYtNGgydjR6bTAtNnYtNGgtMnY0aDJ6TTI0IDM0aC0ydi00aDJ2NHptMC02di00aC0ydjRoMnoiLz48L2c+PC9nPjwvc3ZnPg==')] opacity-10"></div>
                     </div>
                     <div className="relative z-10 max-w-7xl mx-auto px-4 py-24 sm:px-6 lg:px-8">
