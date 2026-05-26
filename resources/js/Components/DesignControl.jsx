@@ -43,7 +43,17 @@ export default function DesignControl() {
       if (next.typography?.baseSize && (next.typography.baseSize < 12 || next.typography.baseSize > 18)) {
         next.typography.baseSize = 15;
       }
-      setConfig((prev) => ({ ...prev, ...next }));
+      setConfig((prev) => {
+        const result = { ...prev };
+        for (const key in next) {
+          if (next[key] && typeof next[key] === "object" && !Array.isArray(next[key])) {
+            result[key] = { ...prev[key], ...next[key] };
+          } else {
+            result[key] = next[key];
+          }
+        }
+        return result;
+      });
     } catch (e) {
       setError(e?.message || "Gagal mem-parsing konfigurasi");
     }

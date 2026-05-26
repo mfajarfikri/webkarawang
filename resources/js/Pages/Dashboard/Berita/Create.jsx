@@ -262,7 +262,7 @@ export default function Create({ temas = [], flash }) {
                     linkTool: {
                         class: LinkTool,
                         config: {
-                            endpoint: "/dashboard/berita/fetch-url",
+                            endpoint: route("dashboard.berita.fetch-url"),
                         },
                     },
                 },

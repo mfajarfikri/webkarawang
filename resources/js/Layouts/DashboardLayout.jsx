@@ -16,6 +16,7 @@ import {
     FaUserShield,
     FaKey,
     FaSignOutAlt,
+    FaNetworkWired,
 } from "react-icons/fa";
 import { useSnackbar } from "notistack";
 
@@ -91,67 +92,29 @@ export default function DashboardLayout({ children, title = "Dashboard" }) {
             <Head title={title} />
             <div className="min-h-screen bg-gray-100">
                 {/* Fixed Header */}
-                <header className="fixed top-0 left-0 right-0 z-30 bg-white shadow-sm border-b border-gray-200">
-                    <div
-                        className={`transition-all duration-300 w-full ${
-                            collapsedSidebar ? "pl-0 md:pl-20" : "pl-0 md:pl-72"
-                        }`}
-                    >
-                        <div className="flex justify-between h-16 px-4 sm:px-6 lg:px-8">
-                            <div className="flex items-center gap-2 sm:gap-4">
-                                {/* Mobile menu button */}
-                                <button
-                                    onClick={() => setSidebarOpen(true)}
-                                    className="md:hidden p-2 -ml-2 rounded-md text-cyan-600 hover:bg-sky-50 focus:outline-none transition-colors duration-200"
-                                >
-                                    <FaBars className="h-6 w-6" />
-                                </button>
+                <header
+                    className={`fixed top-0 right-0 z-20 bg-white shadow-sm border-b border-gray-200 transition-all duration-300 left-0 ${
+                        collapsedSidebar ? "md:left-20" : "md:left-72"
+                    }`}
+                >
+                    <div className="flex justify-between h-16 px-4 sm:px-6 lg:px-8 w-full">
+                        <div className="flex items-center gap-2 sm:gap-4">
+                            {/* Mobile menu button */}
+                            <button
+                                onClick={() => setSidebarOpen(true)}
+                                className="md:hidden p-2 -ml-2 rounded-md text-cyan-600 hover:bg-sky-50 focus:outline-none transition-colors duration-200"
+                            >
+                                <FaBars className="h-6 w-6" />
+                            </button>
 
-                                {/* Desktop sidebar toggle button */}
-                                <button
-                                    onClick={toggleSidebar}
-                                    className="hidden md:flex p-2 rounded-md text-cyan-600 hover:text-cyan-700 hover:bg-sky-50 focus:outline-none transition-colors duration-200"
-                                >
-                                    {collapsedSidebar ? (
-                                        <svg
-                                            className="h-6 w-6"
-                                            xmlns="http://www.w3.org/2000/svg"
-                                            fill="none"
-                                            viewBox="0 0 24 24"
-                                            stroke="currentColor"
-                                        >
-                                            <path
-                                                strokeLinecap="round"
-                                                strokeLinejoin="round"
-                                                strokeWidth={2}
-                                                d="M13 5l7 7-7 7M5 5l7 7-7 7"
-                                            />
-                                        </svg>
-                                    ) : (
-                                        <svg
-                                            className="h-6 w-6"
-                                            xmlns="http://www.w3.org/2000/svg"
-                                            fill="none"
-                                            viewBox="0 0 24 24"
-                                            stroke="currentColor"
-                                        >
-                                            <path
-                                                strokeLinecap="round"
-                                                strokeLinejoin="round"
-                                                strokeWidth={2}
-                                                d="M11 19l-7-7 7-7m8 14l-7-7 7-7"
-                                            />
-                                        </svg>
-                                    )}
-                                </button>
-                            </div>
-
-                            {/* Right side elements */}
-                            <div className="flex items-center space-x-2 sm:space-x-4">
-                                {/* Time display */}
-                                <div className="hidden md:flex items-center text-sm text-gray-500">
+                            {/* Desktop sidebar toggle button */}
+                            <button
+                                onClick={toggleSidebar}
+                                className="hidden md:flex p-2 rounded-md text-cyan-600 hover:text-cyan-700 hover:bg-sky-50 focus:outline-none transition-colors duration-200"
+                            >
+                                {collapsedSidebar ? (
                                     <svg
-                                        className="h-4 w-4 mr-1"
+                                        className="h-6 w-6"
                                         xmlns="http://www.w3.org/2000/svg"
                                         fill="none"
                                         viewBox="0 0 24 24"
@@ -161,129 +124,163 @@ export default function DashboardLayout({ children, title = "Dashboard" }) {
                                             strokeLinecap="round"
                                             strokeLinejoin="round"
                                             strokeWidth={2}
-                                            d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                                            d="M13 5l7 7-7 7M5 5l7 7-7 7"
                                         />
                                     </svg>
-                                    {currentTime.toLocaleTimeString([], {
-                                        hour: "2-digit",
-                                        minute: "2-digit",
-                                    })}
+                                ) : (
+                                    <svg
+                                        className="h-6 w-6"
+                                        xmlns="http://www.w3.org/2000/svg"
+                                        fill="none"
+                                        viewBox="0 0 24 24"
+                                        stroke="currentColor"
+                                    >
+                                        <path
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                            strokeWidth={2}
+                                            d="M11 19l-7-7 7-7m8 14l-7-7 7-7"
+                                        />
+                                    </svg>
+                                )}
+                            </button>
+                        </div>
+
+                        {/* Right side elements */}
+                        <div className="flex items-center space-x-2 sm:space-x-4">
+                            {/* Time display */}
+                            <div className="hidden md:flex items-center text-sm text-gray-500">
+                                <svg
+                                    className="h-4 w-4 mr-1"
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                    stroke="currentColor"
+                                >
+                                    <path
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        strokeWidth={2}
+                                        d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                                    />
+                                </svg>
+                                {currentTime.toLocaleTimeString([], {
+                                    hour: "2-digit",
+                                    minute: "2-digit",
+                                })}
+                            </div>
+
+                            {/* Notifications */}
+                            <button className="p-1 rounded-full text-cyan-600 hover:text-cyan-700 hover:bg-sky-50 focus:outline-none transition-colors duration-200">
+                                <span className="sr-only">
+                                    View notifications
+                                </span>
+                                <div className="relative">
+                                    <svg
+                                        className="h-6 w-6"
+                                        xmlns="http://www.w3.org/2000/svg"
+                                        fill="none"
+                                        viewBox="0 0 24 24"
+                                        stroke="currentColor"
+                                    >
+                                        <path
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                            strokeWidth={2}
+                                            d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
+                                        />
+                                    </svg>
+                                    <span className="absolute top-0 right-0 h-2 w-2 rounded-full bg-red-500"></span>
                                 </div>
+                            </button>
 
-                                {/* Notifications */}
-                                <button className="p-1 rounded-full text-cyan-600 hover:text-cyan-700 hover:bg-sky-50 focus:outline-none transition-colors duration-200">
-                                    <span className="sr-only">
-                                        View notifications
-                                    </span>
-                                    <div className="relative">
-                                        <svg
-                                            className="h-6 w-6"
-                                            xmlns="http://www.w3.org/2000/svg"
-                                            fill="none"
-                                            viewBox="0 0 24 24"
-                                            stroke="currentColor"
-                                        >
-                                            <path
-                                                strokeLinecap="round"
-                                                strokeLinejoin="round"
-                                                strokeWidth={2}
-                                                d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
-                                            />
-                                        </svg>
-                                        <span className="absolute top-0 right-0 h-2 w-2 rounded-full bg-red-500"></span>
+                            {/* User profile dropdown - Simple & Clean Design */}
+                            <div className="ml-3 relative">
+                                <div className="flex items-center gap-3">
+                                    <div className="hidden md:block text-right">
+                                        <div className="text-sm font-semibold text-gray-700 leading-tight">
+                                            {userName}
+                                        </div>
+                                        <div className="text-xs text-gray-500 mt-0.5">
+                                            {auth.user.role}
+                                        </div>
                                     </div>
-                                </button>
 
-                                {/* User profile dropdown - Simple & Clean Design */}
-                                <div className="ml-3 relative">
-                                    <div className="flex items-center gap-3">
-                                        <div className="hidden md:block text-right">
-                                            <div className="text-sm font-semibold text-gray-700 leading-tight">
-                                                {userName}
-                                            </div>
-                                            <div className="text-xs text-gray-500 mt-0.5">
-                                                {auth.user.role}
-                                            </div>
+                                    <button
+                                        onClick={() =>
+                                            setActiveDropdown(
+                                                activeDropdown === "profile"
+                                                    ? null
+                                                    : "profile",
+                                            )
+                                        }
+                                        className="relative flex rounded-full text-sm outline-none ring-sky-500 ring-offset-2 p-[2px] bg-gradient-to-r from-cyan-600 to-sky-600 transition-all duration-300 hover:shadow-[0_0_15px_-3px_rgba(8,145,178,0.4)]"
+                                    >
+                                        <span className="sr-only">
+                                            Open user menu
+                                        </span>
+                                        <div className="rounded-full border-[2px] border-white bg-white overflow-hidden">
+                                            {userFotoProfil ? (
+                                                <img
+                                                    className="h-9 w-9 object-cover transition-all duration-300 hover:blur-[2px]"
+                                                    src={`/storage/${userFotoProfil}`}
+                                                    alt=""
+                                                />
+                                            ) : (
+                                                <div className="h-9 w-9 bg-cyan-50 flex items-center justify-center text-cyan-600">
+                                                    <FaUserShield className="h-4 w-4" />
+                                                </div>
+                                            )}
+                                        </div>
+                                    </button>
+
+                                    {/* Dropdown Menu */}
+                                    <div
+                                        className={`absolute right-0 mt-2 w-56 origin-top-right rounded-lg bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none transition-all duration-200 z-50 ${
+                                            activeDropdown === "profile"
+                                                ? "opacity-100 scale-100 translate-y-0"
+                                                : "opacity-0 scale-95 -translate-y-2 pointer-events-none"
+                                        }`}
+                                        style={{ top: "100%" }}
+                                    >
+                                        <div className="px-4 py-3 border-b border-gray-100">
+                                            <p className="text-sm font-medium text-gray-900 truncate">
+                                                {auth?.user?.email}
+                                            </p>
+                                            <p className="text-xs text-gray-500 mt-0.5">
+                                                {auth.user.wilayah}
+                                            </p>
                                         </div>
 
-                                        <button
-                                            onClick={() =>
-                                                setActiveDropdown(
-                                                    activeDropdown === "profile"
-                                                        ? null
-                                                        : "profile",
-                                                )
-                                            }
-                                            className="relative flex rounded-full text-sm outline-none ring-sky-500 ring-offset-2 p-[2px] bg-gradient-to-r from-cyan-600 to-sky-600 transition-all duration-300 hover:shadow-[0_0_15px_-3px_rgba(8,145,178,0.4)]"
-                                        >
-                                            <span className="sr-only">
-                                                Open user menu
-                                            </span>
-                                            <div className="rounded-full border-[2px] border-white bg-white overflow-hidden">
-                                                {userFotoProfil ? (
-                                                    <img
-                                                        className="h-9 w-9 object-cover transition-all duration-300 hover:blur-[2px]"
-                                                        src={`/storage/${userFotoProfil}`}
-                                                        alt=""
-                                                    />
-                                                ) : (
-                                                    <div className="h-9 w-9 bg-cyan-50 flex items-center justify-center text-cyan-600">
-                                                        <FaUserShield className="h-4 w-4" />
-                                                    </div>
+                                        <div className="py-1">
+                                            <Link
+                                                href={route("dashboard.index")}
+                                                className="group flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-cyan-600 transition-colors"
+                                            >
+                                                <FaHome className="mr-3 h-4 w-4 text-gray-400 group-hover:text-cyan-500 transition-colors" />
+                                                Dashboard
+                                            </Link>
+                                            <Link
+                                                href={route(
+                                                    "dashboard.profile.edit",
                                                 )}
-                                            </div>
-                                        </button>
+                                                className="group flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-cyan-600 transition-colors"
+                                            >
+                                                <FaCog className="mr-3 h-4 w-4 text-gray-400 group-hover:text-cyan-500 transition-colors" />
+                                                Settings
+                                            </Link>
+                                        </div>
 
-                                        {/* Dropdown Menu */}
-                                        <div
-                                            className={`absolute right-0 mt-2 w-56 origin-top-right rounded-lg bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none transition-all duration-200 z-50 ${
-                                                activeDropdown === "profile"
-                                                    ? "opacity-100 scale-100 translate-y-0"
-                                                    : "opacity-0 scale-95 -translate-y-2 pointer-events-none"
-                                            }`}
-                                            style={{ top: "100%" }}
-                                        >
-                                            <div className="px-4 py-3 border-b border-gray-100">
-                                                <p className="text-sm font-medium text-gray-900 truncate">
-                                                    {auth?.user?.email}
-                                                </p>
-                                                <p className="text-xs text-gray-500 mt-0.5">
-                                                    {auth.user.wilayah}
-                                                </p>
-                                            </div>
-
-                                            <div className="py-1">
-                                                <Link
-                                                    href={route(
-                                                        "dashboard.index",
-                                                    )}
-                                                    className="group flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-cyan-600 transition-colors"
-                                                >
-                                                    <FaHome className="mr-3 h-4 w-4 text-gray-400 group-hover:text-cyan-500 transition-colors" />
-                                                    Dashboard
-                                                </Link>
-                                                <Link
-                                                    href={route(
-                                                        "dashboard.profile.edit",
-                                                    )}
-                                                    className="group flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-cyan-600 transition-colors"
-                                                >
-                                                    <FaCog className="mr-3 h-4 w-4 text-gray-400 group-hover:text-cyan-500 transition-colors" />
-                                                    Settings
-                                                </Link>
-                                            </div>
-
-                                            <div className="py-1 border-t border-gray-100">
-                                                <button
-                                                    onClick={() =>
-                                                        setShowLogoutModal(true)
-                                                    }
-                                                    className="group flex w-full items-center px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
-                                                >
-                                                    <FaSignOutAlt className="mr-3 h-4 w-4 text-red-400 group-hover:text-red-500 transition-colors" />
-                                                    Sign out
-                                                </button>
-                                            </div>
+                                        <div className="py-1 border-t border-gray-100">
+                                            <button
+                                                onClick={() =>
+                                                    setShowLogoutModal(true)
+                                                }
+                                                className="group flex w-full items-center px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                                            >
+                                                <FaSignOutAlt className="mr-3 h-4 w-4 text-red-400 group-hover:text-red-500 transition-colors" />
+                                                Sign out
+                                            </button>
                                         </div>
                                     </div>
                                 </div>
@@ -516,6 +513,9 @@ function SidebarMenu({ collapsed = false, onLinkClick }) {
 
     // Fungsi untuk memeriksa apakah rute saat ini aktif
     const isActive = (path) => {
+        if (path === "/dashboard") {
+            return url === "/dashboard" || url === "/dashboard/";
+        }
         return url.startsWith(path);
     };
 
@@ -531,7 +531,7 @@ function SidebarMenu({ collapsed = false, onLinkClick }) {
             collapsed ? "justify-center" : ""
         }`;
         const activeClasses =
-            "bg-gradient-to-r from-cyan-600 to-sky-600 text-white shadow-lg shadow-cyan-500/30";
+            "bg-gradient-to-r from-cyan-600 to-sky-600 text-white shadow-lg shadow-cyan-500/30 active-nav-item";
         const inactiveClasses =
             "text-gray-600 hover:bg-sky-50 hover:text-sky-700";
 
@@ -547,7 +547,7 @@ function SidebarMenu({ collapsed = false, onLinkClick }) {
 
     const SectionHeader = ({ title }) =>
         !collapsed && (
-            <div className="px-4 mb-2">
+            <div className="px-4 mb-2 mt-4 first:mt-0">
                 <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">
                     {title}
                 </p>
@@ -557,7 +557,7 @@ function SidebarMenu({ collapsed = false, onLinkClick }) {
     return (
         <>
             <Link
-                href="/dashboard"
+                href={route("dashboard.index")}
                 onClick={handleClick}
                 className={getLinkClasses("/dashboard")}
             >
@@ -707,7 +707,7 @@ function SidebarMenu({ collapsed = false, onLinkClick }) {
                 )}
             </Link>
             <Link
-                href={"/dashboard/permission"}
+                href={route("permission.index")}
                 onClick={handleClick}
                 className={getLinkClasses("/dashboard/permission")}
             >
@@ -723,7 +723,43 @@ function SidebarMenu({ collapsed = false, onLinkClick }) {
                 )}
             </Link>
 
+            <SectionHeader title="Sistem" />
+
+            <Link
+                href={route("dashboard.monitoring.index")}
+                onClick={handleClick}
+                className={getLinkClasses("/dashboard/monitoring")}
+            >
+                <FaNetworkWired
+                    className={getIconClasses("/dashboard/monitoring")}
+                    aria-label="Monitoring Jaringan"
+                    title="Monitoring Jaringan"
+                />
+                {!collapsed && (
+                    <span className="font-semibold tracking-tight">
+                        Monitoring Jaringan
+                    </span>
+                )}
+            </Link>
+
             <SectionHeader title="Website" />
+
+            <Link
+                href={route("dashboard.menu.index")}
+                onClick={handleClick}
+                className={getLinkClasses("/dashboard/menu")}
+            >
+                <FaBars
+                    className={getIconClasses("/dashboard/menu")}
+                    aria-label="Manajemen Menu"
+                    title="Manajemen Menu"
+                />
+                {!collapsed && (
+                    <span className="font-semibold tracking-tight">
+                        Manajemen Menu
+                    </span>
+                )}
+            </Link>
 
             <Link
                 href={route("home")}

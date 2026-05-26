@@ -15,6 +15,8 @@ use App\Http\Controllers\PermissionController;
 use App\Http\Middleware\AutoPermission;
 use App\Http\Controllers\Auth\SocialiteController;
 use App\Http\Controllers\Dashboard\CompanyProfileController;
+use App\Http\Controllers\Dashboard\MenuController;
+use App\Http\Controllers\Dashboard\NetworkMonitoringController;
 
 Route::controller(HomeController::class)->group(function () {
     Route::get('/', 'index')->name('home');
@@ -98,6 +100,21 @@ Route::middleware(['auth'])->prefix('dashboard')->group(function () {
 
     Route::get('role/{id}/permissions', [RoleController::class, 'editPermissions'])->name('role.permissions.edit');
     Route::post('role/{id}/permissions', [RoleController::class, 'updatePermissions'])->name('role.permissions.update');
+
+    // Menu management routes
+    Route::get('menu', [MenuController::class, 'index'])->name('dashboard.menu.index');
+    Route::post('menu', [MenuController::class, 'store'])->name('dashboard.menu.store');
+    Route::put('menu/{menu}', [MenuController::class, 'update'])->name('dashboard.menu.update');
+    Route::delete('menu/{menu}', [MenuController::class, 'destroy'])->name('dashboard.menu.destroy');
+    Route::post('menu/reorder', [MenuController::class, 'reorder'])->name('dashboard.menu.reorder');
+
+    // Network Monitoring Routes
+    Route::get('monitoring', [NetworkMonitoringController::class, 'index'])->name('dashboard.monitoring.index');
+    Route::post('monitoring/device', [NetworkMonitoringController::class, 'storeDevice'])->name('dashboard.monitoring.device.store');
+    Route::delete('monitoring/device/{device}', [NetworkMonitoringController::class, 'destroyDevice'])->name('dashboard.monitoring.device.destroy');
+    Route::post('monitoring/connection', [NetworkMonitoringController::class, 'storeConnection'])->name('dashboard.monitoring.connection.store');
+    Route::get('api/monitoring/topology', [NetworkMonitoringController::class, 'getTopology'])->name('dashboard.monitoring.topology');
+    Route::get('api/monitoring/scan', [NetworkMonitoringController::class, 'scanStatus'])->name('dashboard.monitoring.scan');
 
     Route::get('company-profile', [CompanyProfileController::class, 'edit'])->name('dashboard.company-profile.edit');
     Route::post('company-profile/draft', [CompanyProfileController::class, 'saveDraft'])->name('dashboard.company-profile.draft');

@@ -135,7 +135,7 @@ class AnomaliController extends Controller
                 'penyebab' => $data['penyebab'],
                 'akibat' => $data['akibat'],
                 'usul_saran' => $data['usul_saran'],
-                'lampiran_foto' => json_encode($photos),
+                'lampiran_foto' => $photos,
                 'status' => 'New',
                 'user_id' => Auth::id(),
                 'tanda_tangan_pemilik' => Auth::user()->tanda_tangan_path,

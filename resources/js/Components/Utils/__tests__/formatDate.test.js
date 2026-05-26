@@ -12,12 +12,12 @@ describe("formatDate utils", () => {
     });
 
     it("formatDateDMY konsisten dd/MM/yyyy", () => {
-        expect(formatDateDMY("2026-02-10")).toBe("10/02/2026");
+        expect(formatDateDMY("2026-02-10")).toBe("Selasa, 10 Februari 2026");
     });
 
     it("formatMaybeDateRange memformat range YYYY-MM-DD - YYYY-MM-DD", () => {
         expect(formatMaybeDateRange("2026-02-10 - 2026-02-20")).toBe(
-            "10/02/2026 - 20/02/2026",
+            "Selasa, 10 Februari 2026 - Jumat, 20 Februari 2026",
         );
     });
 

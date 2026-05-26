@@ -73,10 +73,6 @@ export default function RuangRapat() {
             });
 
             // 🔧 Optional: kirim ke backend pakai axios/fetch kalau ingin disimpan
-            console.log("Updated schedule:", {
-                id: schedule.id,
-                ...changes,
-            });
         });
     }, []);
 

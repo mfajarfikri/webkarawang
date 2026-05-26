@@ -251,7 +251,10 @@
             <td style="width: 30%; padding: 3px 0; vertical-align: top; font-weight: normal;">9. LAMPIRAN</td>
             <td style="width: 5%; padding: 3px 0; vertical-align: top;">:</td>
             <td style="width: 65%; padding: 3px 0; vertical-align: top; font-weight: bold;">
-              @if($anomali->lampiran_foto && json_decode($anomali->lampiran_foto))
+              @php
+                $lampiran = is_array($anomali->lampiran_foto) ? $anomali->lampiran_foto : json_decode($anomali->lampiran_foto, true);
+              @endphp
+              @if($lampiran && count($lampiran) > 0)
                 Terlampir Foto Pendukung
               @else
                 -
@@ -301,7 +304,7 @@
   </div>
 
   @php
-    $lampiran = json_decode($anomali->lampiran_foto);
+    $lampiran = is_array($anomali->lampiran_foto) ? $anomali->lampiran_foto : json_decode($anomali->lampiran_foto, true);
   @endphp
   @if($lampiran && is_array($lampiran) && count($lampiran) > 0)
     <div style="page-break-before: always;"></div>

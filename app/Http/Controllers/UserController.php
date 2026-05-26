@@ -23,7 +23,7 @@ class UserController extends Controller
                 'name' => $user->name,
                 'email' => $user->email,
                 'bidang' => $user->bidang,
-                'foto_profil' => $user->foto_profil ? Storage::url($user->foto_profil) : null,
+                'foto_profil' => $user->foto_profil ? asset('storage/' . $user->foto_profil) : null,
                 'role' => $user->roles->pluck('name')->implode(', '),
                 'wilayah' => $user->wilayah,
                 'gardu_induk_ids' => $user->gardu_induk_ids,
@@ -132,15 +132,15 @@ class UserController extends Controller
         return redirect()->route('dashboard.user.index')->with('success', 'User berhasil dihapus.');
     }
 
-    public function showAssignRoleForm($id)
+    public function showAssignRoleForm(Request $request, $id)
     {
         $user = User::findOrFail($id);
         $roles = Role::all(['id', 'name']);
         $userRoles = $user->roles->pluck('name')->toArray();
-        $ultg = $user->ultg;
+        $ultg = $user->wilayah; // User model uses 'wilayah' instead of 'ultg'
         $gardu_induk_ids = $user->gardu_induk_ids;
         $gardu_induks = $gardu_induk_ids ? \App\Models\GarduInduk::whereIn('id', $gardu_induk_ids)->get(['id','name','ultg']) : [];
-        if (request()->has('modal')) {
+        if ($request->has('modal')) {
             return response()->json([
                 'roles' => $roles,
                 'userRoles' => $userRoles,

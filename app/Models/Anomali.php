@@ -15,6 +15,14 @@ class Anomali extends Model
         'id'
     ];
 
+    protected $casts = [
+        'lampiran_foto' => 'array',
+        'tanggal_kejadian' => 'date',
+        'tanggal_mulai' => 'date',
+        'tanggal_selesai' => 'date',
+        'tanggal_approve' => 'datetime',
+    ];
+
     public function gardu_induk()
     {
         return $this->belongsTo(GarduInduk::class, 'gardu_id');

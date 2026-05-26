@@ -12,10 +12,10 @@ class RoleController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
         $roles = Role::with('permissions')->get(['id', 'name']);
-        if (request()->has('modal')) {
+        if ($request->has('modal')) {
             return response()->json([
                 'roles' => $roles
             ]);
@@ -88,12 +88,12 @@ class RoleController extends Controller
         return redirect()->back();
     }
 
-    public function editPermissions($id)
+    public function editPermissions(Request $request, $id)
     {
         $role = Role::findOrFail($id);
         $permissions = Permission::all(['id', 'name', 'description']);
         $rolePermissions = $role->permissions->pluck('id')->toArray();
-        if (request()->has('modal')) {
+        if ($request->has('modal')) {
             return response()->json([
                 'permissions' => $permissions,
                 'rolePermissions' => $rolePermissions,

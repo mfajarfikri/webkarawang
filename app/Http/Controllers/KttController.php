@@ -12,12 +12,12 @@ class KttController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
         $ktts = Ktt::latest()->get();
 
         // Return Inertia view for web requests
-        if (request()->wantsJson()) {
+        if ($request->wantsJson()) {
             return response()->json($ktts);
         }
 

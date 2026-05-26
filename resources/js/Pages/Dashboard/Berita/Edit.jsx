@@ -295,7 +295,7 @@ export default function Edit({ berita, temas = [], flash }) {
                     linkTool: {
                         class: LinkTool,
                         config: {
-                            endpoint: "/dashboard/berita/fetch-url",
+                            endpoint: route("dashboard.berita.fetch-url"),
                         },
                     },
                 },

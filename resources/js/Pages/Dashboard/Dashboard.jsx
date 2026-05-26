@@ -50,6 +50,7 @@ import {
     FaEye,
     FaChevronLeft,
     FaChevronRight,
+    FaSync,
 } from "react-icons/fa";
 
 ChartJS.register(
@@ -72,6 +73,8 @@ export default function Dashboard({ apiUrl }) {
     const [anomaliData, setAnomaliData] = useState([]);
     const [loading, setLoading] = useState(true);
     const [loadingBerita, setLoadingBerita] = useState(true);
+    const [isSyncing, setIsSyncing] = useState(false);
+    const [lastUpdated, setLastUpdated] = useState(new Date());
     const [error, setError] = useState(null);
     const [dateFilter, setDateFilter] = useState({
         startDate: "",
@@ -102,30 +105,63 @@ export default function Dashboard({ apiUrl }) {
         debouncedSearch(query);
     };
 
-    useEffect(() => {
-        const fetchDataBerita = async () => {
-            try {
+    // Global fetch function for real-time updates
+    const fetchAllData = useCallback(async (isInitial = false) => {
+        try {
+            if (isInitial) {
+                setLoading(true);
                 setLoadingBerita(true);
-                const response = await fetch("/api/berita");
-                if (!response.ok) {
-                    throw new Error("Failed to fetch data");
-                }
-                const data = await response.json();
-                const normalized = (data.berita || []).map((b) => ({
-                    ...b,
-                    enabled: !!b.enabled,
-                }));
-                setBeritaData(normalized);
-                setLoadingBerita(false);
-            } catch (err) {
-                setError(err.message);
-            } finally {
-                setLoadingBerita(false);
+            } else {
+                setIsSyncing(true);
             }
-        };
 
-        fetchDataBerita();
+            // Fetch in parallel for better performance
+            const [beritaRes, anomaliRes] = await Promise.all([
+                fetch("/api/berita"),
+                fetch("/api/anomali"),
+            ]);
+
+            if (!beritaRes.ok || !anomaliRes.ok) {
+                throw new Error("Gagal mengambil data terbaru");
+            }
+
+            const [beritaJson, anomaliJson] = await Promise.all([
+                beritaRes.json(),
+                anomaliRes.json(),
+            ]);
+
+            // Update Berita
+            const normalizedBerita = (beritaJson.berita || []).map((b) => ({
+                ...b,
+                enabled: !!b.enabled,
+            }));
+            setBeritaData(normalizedBerita);
+
+            // Update Anomali
+            setAnomaliData(anomaliJson.anomalis || []);
+
+            setLastUpdated(new Date());
+            setError(null);
+        } catch (err) {
+            console.error("Sync error:", err);
+            setError(err.message);
+        } finally {
+            setLoading(false);
+            setLoadingBerita(false);
+            setIsSyncing(false);
+        }
     }, []);
+
+    // Initial fetch and Polling (Real-time updates every 30 seconds)
+    useEffect(() => {
+        fetchAllData(true);
+
+        const intervalId = setInterval(() => {
+            fetchAllData(false);
+        }, 30000); // Poll every 30 seconds
+
+        return () => clearInterval(intervalId);
+    }, [fetchAllData]);
 
     const handleToggleHomepage = async (id, currentEnabled) => {
         const nextEnabled = !currentEnabled;
@@ -143,6 +179,8 @@ export default function Dashboard({ apiUrl }) {
             if (!resp.ok) {
                 throw new Error("failed");
             }
+            // Silent sync after update to ensure data consistency
+            fetchAllData(false);
         } catch (e) {
             setBeritaData((prev) =>
                 prev.map((b) =>
@@ -151,27 +189,6 @@ export default function Dashboard({ apiUrl }) {
             );
         }
     };
-
-    // Fetch anomali data from API
-    useEffect(() => {
-        const fetchDataAnomali = async () => {
-            try {
-                setLoading(true);
-                const response = await fetch("/api/anomali");
-                if (!response.ok) {
-                    throw new Error("Failed to fetch data");
-                }
-                const data = await response.json();
-                setAnomaliData(data.anomalis || []);
-            } catch (err) {
-                setError(err.message);
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        fetchDataAnomali();
-    }, []);
 
     // Determine available ULTG options based on user's wilayah
     const availableUltgOptions = useMemo(() => {
@@ -816,8 +833,34 @@ export default function Dashboard({ apiUrl }) {
         <DashboardLayout>
             <Head title="Dashboard Anomali" />
 
+            {/* Real-time Sync Indicator */}
+            <div className="fixed top-20 right-4 sm:right-8 z-40 pointer-events-none">
+                <div
+                    className={`flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/90 backdrop-blur-md shadow-lg border border-blue-50 transition-all duration-500 ${
+                        isSyncing
+                            ? "opacity-100 translate-y-0"
+                            : "opacity-0 -translate-y-4"
+                    }`}
+                >
+                    <div className="relative flex h-2 w-2">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
+                    </div>
+                    <span className="text-[10px] font-bold text-blue-600 uppercase tracking-widest">
+                        Sinkronisasi...
+                    </span>
+                </div>
+            </div>
+
             {/* Corporate Background */}
             <div className="min-h-auto bg-gray-50">
+                <div className="flex justify-between items-center mb-4 px-1">
+                    <h2 className="text-sm font-medium text-gray-500 flex items-center gap-2">
+                        <FaClock className="text-xs" />
+                        Terakhir diperbarui:{" "}
+                        {lastUpdated.toLocaleTimeString("id-ID")}
+                    </h2>
+                </div>
                 {/* Corporate Header Section */}
 
                 <div className="max-w-full bg-white rounded-xl shadow">

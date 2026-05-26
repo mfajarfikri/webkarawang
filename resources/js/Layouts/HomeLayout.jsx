@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import axios from "axios";
 import { Link, usePage, router } from "@inertiajs/react";
 import {
@@ -16,13 +16,14 @@ import {
     FaMapMarkerAlt,
     FaSignOutAlt,
     FaUserShield,
+    FaSync,
 } from "react-icons/fa";
 import ApplicationLogo from "@/Components/ApplicationLogo";
 import { SnackbarProvider, useSnackbar } from "notistack";
 import PrimaryButton from "@/Components/PrimaryButton";
 
 function HomeLayoutContent({ children }) {
-    const { auth } = usePage().props;
+    const { auth, navMenus: dynamicNavMenus } = usePage().props;
     const [isScrolled, setIsScrolled] = useState(false);
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [loading, setLoading] = useState(true);
@@ -30,24 +31,44 @@ function HomeLayoutContent({ children }) {
     const [showLogoutModal, setShowLogoutModal] = useState(false);
     const [berita, setBerita] = useState([]);
     const [error, setError] = useState(null);
+    const [isSyncing, setIsSyncing] = useState(false);
     const beritaTerbaru = berita.slice(0, 3);
     const { enqueueSnackbar } = useSnackbar();
 
-    useEffect(() => {
-        const fetchBerita = async () => {
-            try {
-                const response = await axios.get("/api/berita");
-                setBerita(response.data.berita || []);
-            } catch (error) {
-                setError(error);
-                console.error("Error Fetching berita:", error);
-            } finally {
-                setLoading(false);
-            }
-        };
+    const fetchBerita = useCallback(async (isInitial = false) => {
+        try {
+            if (isInitial) setLoading(true);
+            else setIsSyncing(true);
 
-        fetchBerita();
+            const response = await axios.get("/api/berita");
+            setBerita(response.data.berita || []);
+        } catch (error) {
+            setError(error);
+            console.error("Error Fetching berita:", error);
+        } finally {
+            setLoading(false);
+            setIsSyncing(false);
+        }
     }, []);
+
+    const fetchNavMenus = useCallback(() => {
+        setIsSyncing(true);
+        router.reload({
+            only: ["navMenus"],
+            onFinish: () => setIsSyncing(false),
+        });
+    }, []);
+
+    useEffect(() => {
+        fetchBerita(true);
+
+        const interval = setInterval(() => {
+            fetchBerita(false);
+            fetchNavMenus();
+        }, 60000); // Sinkronisasi setiap 1 menit untuk home/guest
+
+        return () => clearInterval(interval);
+    }, [fetchBerita, fetchNavMenus]);
 
     // Deteksi scroll untuk mengubah navbar
     useEffect(() => {
@@ -74,44 +95,8 @@ function HomeLayoutContent({ children }) {
         }
     };
 
-    // Data menu navbar
-    const navMenus = [
-        {
-            title: "Beranda",
-            url: route("home"),
-        },
-        {
-            title: "Tentang Kami",
-            url: "#",
-            submenu: [
-                { title: "Profil Perusahaan", url: route("profil") },
-                { title: "Visi & Misi", url: `${route("profil")}#visi-misi` },
-                {
-                    title: "Struktur Organisasi",
-                    url: route("struktur-organisasi"),
-                },
-                { title: "Sejarah", url: `${route("profil")}#sejarah` },
-            ],
-        },
-        {
-            title: "Informasi",
-            url: "#",
-            submenu: [
-                { title: "Berita", url: "/berita" },
-                { title: "Gardu Induk", url: route("gardu-induk") },
-                { title: "KTT", url: "/ktt" },
-                { title: "Anomali", url: "/anomali" },
-            ],
-        },
-        {
-            title: "Galeri",
-            url: route("gallery"),
-        },
-        {
-            title: "Kontak",
-            url: "/kontak",
-        },
-    ];
+    // Gunakan menu dari database jika ada, jika tidak gunakan fallback kosong
+    const navMenus = dynamicNavMenus || [];
 
     // Fungsi handle logout
     const handleLogout = () => {
@@ -134,8 +119,61 @@ function HomeLayoutContent({ children }) {
         setShowLogoutModal(false);
     };
 
+    // Helper untuk mendeteksi link eksternal
+    const isExternalUrl = (url) => {
+        if (!url) return false;
+        const trimmedUrl = url.trim();
+        return (
+            trimmedUrl.startsWith("http://") ||
+            trimmedUrl.startsWith("https://") ||
+            trimmedUrl.startsWith("//")
+        );
+    };
+
+    const NavLink = ({ menu, className, children, onClick }) => {
+        const url = menu.url ? menu.url.trim() : "";
+
+        if (isExternalUrl(url)) {
+            return (
+                <a
+                    href={url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={className}
+                    onClick={onClick}
+                >
+                    {children}
+                </a>
+            );
+        }
+        return (
+            <Link href={url} className={className} onClick={onClick}>
+                {children}
+            </Link>
+        );
+    };
+
     return (
         <div className="min-h-screen flex flex-col bg-gray-50">
+            {/* Real-time Sync Indicator */}
+            <div className="fixed top-20 right-4 sm:right-8 z-[60] pointer-events-none">
+                <div
+                    className={`flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/90 backdrop-blur-md shadow-lg border border-cyan-50 transition-all duration-500 ${
+                        isSyncing
+                            ? "opacity-100 translate-y-0"
+                            : "opacity-0 -translate-y-4"
+                    }`}
+                >
+                    <div className="relative flex h-2 w-2">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-2 w-2 bg-cyan-500"></span>
+                    </div>
+                    <span className="text-[10px] font-bold text-cyan-600 uppercase tracking-widest">
+                        Sinkronisasi...
+                    </span>
+                </div>
+            </div>
+
             {/* Main Navbar */}
             <header
                 className={`sticky top-0 z-50 transition-all duration-300 ${
@@ -167,41 +205,44 @@ function HomeLayoutContent({ children }) {
                         <nav className="hidden lg:flex items-center space-x-1">
                             {navMenus.map((menu, index) => (
                                 <div key={index} className="relative group">
-                                    <Link
-                                        href={menu.url}
+                                    <NavLink
+                                        menu={menu}
                                         className={`px-3 xl:px-4 py-2 text-sm font-medium ${
                                             isScrolled
                                                 ? "text-black"
                                                 : "text-gray-700"
                                         } hover:text-cyan-600 transition-colors duration-200 ${
-                                            menu.submenu
+                                            menu.submenus &&
+                                            menu.submenus.length > 0
                                                 ? "flex items-center"
                                                 : ""
                                         }`}
                                     >
                                         {menu.title}
-                                        {menu.submenu && (
-                                            <FaChevronDown className="ml-1 h-2.5 w-2.5 opacity-70" />
-                                        )}
-                                    </Link>
+                                        {menu.submenus &&
+                                            menu.submenus.length > 0 && (
+                                                <FaChevronDown className="ml-1 h-2.5 w-2.5 opacity-70" />
+                                            )}
+                                    </NavLink>
 
-                                    {menu.submenu && (
-                                        <div className="absolute left-0 mt-1 w-56 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 transform origin-top scale-95 group-hover:scale-100">
-                                            <div className="py-1">
-                                                {menu.submenu.map(
-                                                    (submenu, subIndex) => (
-                                                        <Link
-                                                            key={subIndex}
-                                                            href={submenu.url}
-                                                            className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-cyan-600"
-                                                        >
-                                                            {submenu.title}
-                                                        </Link>
-                                                    ),
-                                                )}
+                                    {menu.submenus &&
+                                        menu.submenus.length > 0 && (
+                                            <div className="absolute left-0 mt-1 w-56 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 transform origin-top scale-95 group-hover:scale-100">
+                                                <div className="py-1">
+                                                    {menu.submenus.map(
+                                                        (submenu, subIndex) => (
+                                                            <NavLink
+                                                                key={subIndex}
+                                                                menu={submenu}
+                                                                className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-cyan-600"
+                                                            >
+                                                                {submenu.title}
+                                                            </NavLink>
+                                                        ),
+                                                    )}
+                                                </div>
                                             </div>
-                                        </div>
-                                    )}
+                                        )}
                                 </div>
                             ))}
                         </nav>
@@ -380,7 +421,8 @@ function HomeLayoutContent({ children }) {
                                     key={index}
                                     className="border-b border-gray-100 pb-2"
                                 >
-                                    {menu.submenu ? (
+                                    {menu.submenus &&
+                                    menu.submenus.length > 0 ? (
                                         <>
                                             <button
                                                 className="w-full flex items-center justify-between py-2 text-gray-700 font-medium hover:text-blue-700"
@@ -405,11 +447,11 @@ function HomeLayoutContent({ children }) {
                                                         : "hidden"
                                                 }`}
                                             >
-                                                {menu.submenu.map(
+                                                {menu.submenus.map(
                                                     (submenu, subIndex) => (
-                                                        <Link
+                                                        <NavLink
                                                             key={subIndex}
-                                                            href={submenu.url}
+                                                            menu={submenu}
                                                             className="block py-2 text-sm text-gray-600 hover:text-blue-700"
                                                             onClick={() =>
                                                                 setMobileMenuOpen(
@@ -418,21 +460,21 @@ function HomeLayoutContent({ children }) {
                                                             }
                                                         >
                                                             {submenu.title}
-                                                        </Link>
+                                                        </NavLink>
                                                     ),
                                                 )}
                                             </div>
                                         </>
                                     ) : (
-                                        <Link
-                                            href={menu.url}
+                                        <NavLink
+                                            menu={menu}
                                             className="block py-2 text-gray-700 font-medium hover:text-blue-700"
                                             onClick={() =>
                                                 setMobileMenuOpen(false)
                                             }
                                         >
                                             {menu.title}
-                                        </Link>
+                                        </NavLink>
                                     )}
                                 </div>
                             ))}

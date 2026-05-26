@@ -10,9 +10,11 @@ import {
     FaTimes,
     FaChevronLeft,
     FaChevronRight,
+    FaSync,
+    FaClock,
 } from "react-icons/fa";
 import { GiSecurityGate } from "react-icons/gi";
-import { useState, Fragment } from "react";
+import { useState, Fragment, useEffect, useCallback } from "react";
 import { router } from "@inertiajs/react";
 import React from "react";
 import ErrorBoundary from "@/Components/ErrorBoundary";
@@ -167,6 +169,31 @@ export default function User() {
     const [roleModalWilayah, setRoleModalWilayah] = useState("");
     const [roleModalGarduIndukIds, setRoleModalGarduIndukIds] = useState([]);
 
+    // Real-time sync state
+    const [isSyncing, setIsSyncing] = useState(false);
+    const [lastUpdated, setLastUpdated] = useState(new Date());
+
+    const fetchUsers = useCallback(() => {
+        setIsSyncing(true);
+        router.reload({
+            only: ["users"],
+            preserveScroll: true,
+            preserveState: true,
+            onFinish: () => {
+                setIsSyncing(false);
+                setLastUpdated(new Date());
+            },
+        });
+    }, []);
+
+    useEffect(() => {
+        const interval = setInterval(() => {
+            fetchUsers();
+        }, 30000); // Sinkronisasi setiap 30 detik
+
+        return () => clearInterval(interval);
+    }, [fetchUsers]);
+
     const openRoleModal = async (user) => {
         setRoleModalUser(user);
         setRoleModalOpen(true);
@@ -225,7 +252,7 @@ export default function User() {
                     autoHideDuration: 4000,
                 },
             );
-            router.reload({ only: ["users"] });
+            fetchUsers();
         } catch (error) {
             if (
                 error.response &&
@@ -330,7 +357,7 @@ export default function User() {
                         autoHideDuration: 4000,
                     },
                 );
-                router.reload({ only: ["user"] });
+                fetchUsers();
             },
             onError: () => {
                 enqueueSnackbar(
@@ -373,7 +400,7 @@ export default function User() {
                     autoHideDuration: 4000,
                 },
             );
-            router.reload({ only: ["users"] });
+            fetchUsers();
         } catch (error) {
             if (
                 error.response &&
@@ -427,7 +454,32 @@ export default function User() {
         <>
             <Head title="User" />
             <DashboardLayout>
+                <div className="fixed top-20 right-4 sm:right-8 z-40 pointer-events-none">
+                    <div
+                        className={`flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/90 backdrop-blur-md shadow-lg border border-sky-50 transition-all duration-500 ${
+                            isSyncing
+                                ? "opacity-100 translate-y-0"
+                                : "opacity-0 -translate-y-4"
+                        }`}
+                    >
+                        <div className="relative flex h-2 w-2">
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-sky-400 opacity-75"></span>
+                            <span className="relative inline-flex rounded-full h-2 w-2 bg-sky-500"></span>
+                        </div>
+                        <span className="text-[10px] font-bold text-sky-600 uppercase tracking-widest">
+                            Sinkronisasi...
+                        </span>
+                    </div>
+                </div>
+
                 <div className="w-full mx-auto bg-white p-4 md:p-8 rounded-2xl space-y-6">
+                    <div className="flex justify-between items-center px-1">
+                        <h2 className="text-[11px] font-medium text-gray-400 flex items-center gap-1.5 uppercase tracking-wider">
+                            <FaClock className="text-[10px]" />
+                            Terakhir diperbarui:{" "}
+                            {lastUpdated.toLocaleTimeString("id-ID")}
+                        </h2>
+                    </div>
                     {/* Header Section */}
                     <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
                         <div className="flex items-center gap-3">

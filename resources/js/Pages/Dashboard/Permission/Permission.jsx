@@ -5,8 +5,6 @@ import { FaShieldAlt, FaKey } from "react-icons/fa";
 export default function Permission() {
     const { permissions } = usePage().props;
 
-    console.log(permissions);
-
     return (
         <DashboardLayout title="Permission">
             <div className="min-h-screen bg-white rounded-2xl py-10">

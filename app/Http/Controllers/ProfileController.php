@@ -26,9 +26,9 @@ class ProfileController extends Controller
             'mustVerifyEmail' => $user instanceof MustVerifyEmail,
             'status' => session('status'),
             // Tambahkan url foto profil
-            'foto_profil_url' => $user->foto_profil ? Storage::url($user->foto_profil) : null,
+            'foto_profil_url' => $user->foto_profil ? asset('storage/' . $user->foto_profil) : null,
             // Tambahkan url tanda tangan
-            'tanda_tangan_url' => $user->tanda_tangan_path ? Storage::url($user->tanda_tangan_path) : null,
+            'tanda_tangan_url' => $user->tanda_tangan_path ? asset('storage/' . $user->tanda_tangan_path) : null,
         ]);
     }
 
@@ -91,7 +91,7 @@ class ProfileController extends Controller
         // Selalu return JSON response
         return response()->json([
             'success' => true,
-            'foto_profil_url' => Storage::url($path),
+            'foto_profil_url' => asset('storage/' . $path),
             'message' => 'Foto profil berhasil diunggah.'
         ]);
     }
@@ -146,7 +146,7 @@ class ProfileController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Tanda tangan berhasil disimpan.',
-                'signature_url' => Storage::url($path)
+                'signature_url' => asset('storage/' . $path)
             ]);
 
         } catch (\Exception $e) {

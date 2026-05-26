@@ -26,7 +26,8 @@ class DatabaseSeeder extends Seeder
         $this->call([
             UserSeeder::class,
             KategoriSeeder::class,
-            GarduIndukSeeder::class
+            GarduIndukSeeder::class,
+            MenuSeeder::class,
         ]);
         // Anomali::factory(50)->create();
         // Berita::factory(10)->create();

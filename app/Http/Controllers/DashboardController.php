@@ -14,7 +14,7 @@ class DashboardController extends Controller
         $user = Auth::user();
 
         return Inertia::render('Dashboard/Dashboard', [
-            'foto_profil' => $user->foto_profil ? Storage::url($user->foto_profil) : null,
+            'foto_profil' => $user->foto_profil ? asset('storage/' . $user->foto_profil) : null,
             'apiUrl' => url('/api/anomali')
         ]);
     }

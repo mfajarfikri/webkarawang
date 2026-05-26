@@ -43,32 +43,46 @@ class BeritaController extends Controller
                 throw new Exception('Invalid URL format');
             }
 
-            $response = Http::timeout(10)->get($url);
+            // Use a real User-Agent to avoid being blocked by some sites
+            $response = Http::withHeaders([
+                'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+            ])->timeout(10)->get($url);
             
             if (!$response->successful()) {
-                throw new Exception('Failed to fetch URL');
+                throw new Exception('Gagal mengambil data dari URL (Status: ' . $response->status() . ')');
             }
 
             $html = $response->body();
             
-            // Basic parsing for OpenGraph tags
-            preg_match('/<meta property="og:title" content="(.*?)"/i', $html, $titleMatches);
-            preg_match('/<meta property="og:description" content="(.*?)"/i', $html, $descriptionMatches);
-            preg_match('/<meta property="og:image" content="(.*?)"/i', $html, $imageMatches);
-            
-            // Fallback to standard meta tags or title tag
-            if (empty($titleMatches[1])) {
-                preg_match('/<title>(.*?)<\/title>/i', $html, $titleMatches);
+            // Improved parsing for OpenGraph and Meta tags
+            $title = '';
+            $description = '';
+            $imageUrl = '';
+
+            // Title
+            if (preg_match('/<meta[^>]+property=["\']og:title["\'][^>]+content=["\'](.*?)["\']/i', $html, $matches)) {
+                $title = $matches[1];
+            } elseif (preg_match('/<title>(.*?)<\/title>/i', $html, $matches)) {
+                $title = $matches[1];
             }
-            if (empty($descriptionMatches[1])) {
-                preg_match('/<meta name="description" content="(.*?)"/i', $html, $descriptionMatches);
+
+            // Description
+            if (preg_match('/<meta[^>]+property=["\']og:description["\'][^>]+content=["\'](.*?)["\']/i', $html, $matches)) {
+                $description = $matches[1];
+            } elseif (preg_match('/<meta[^>]+name=["\']description["\'][^>]+content=["\'](.*?)["\']/i', $html, $matches)) {
+                $description = $matches[1];
+            }
+
+            // Image
+            if (preg_match('/<meta[^>]+property=["\']og:image["\'][^>]+content=["\'](.*?)["\']/i', $html, $matches)) {
+                $imageUrl = $matches[1];
             }
 
             $meta = [
-                  'title' => $titleMatches[1] ?? $url,
-                  'description' => $descriptionMatches[1] ?? '',
+                  'title' => html_entity_decode($title ?: $url),
+                  'description' => html_entity_decode($description),
                   'image' => [
-                      'url' => $imageMatches[1] ?? ''
+                      'url' => $imageUrl
                   ],
                   'url' => $url
               ];
@@ -162,7 +176,7 @@ class BeritaController extends Controller
                 'isi' => $request->isi,
                 'content_json' => $request->content_json ? json_decode($request->content_json) : null,
                 'tema_id' => $temaId,
-                'gambar' => json_encode($photos),  // Simpan array gambar dalam bentuk JSON
+                'gambar' => $photos,  // Eloquent handles serialization because of 'array' cast
             ]);
 
             return response()->json([
@@ -249,7 +263,7 @@ class BeritaController extends Controller
             if (is_array($oldPhotos)) {
                 $removedPhotos = array_diff($oldPhotos, $keptPhotos);
                 foreach ($removedPhotos as $photo) {
-                    Storage::delete('public/berita/' . $photo);
+                    Storage::disk('public')->delete('berita/' . $photo);
                 }
             }
 
@@ -278,7 +292,7 @@ class BeritaController extends Controller
                 'isi' => $request->isi,
                 'content_json' => $request->content_json ? json_decode($request->content_json) : null,
                 'tema_id' => $temaId,
-                'gambar' => json_encode($finalPhotos),
+                'gambar' => $finalPhotos,
             ]);
 
             return response()->json([
