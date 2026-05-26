@@ -387,6 +387,10 @@ export default function Dashboard({ apiUrl }) {
                 selector: "edge.down",
                 style: {
                     "line-style": "dashed",
+                    "line-dash-pattern": [8, 10],
+                    "underlay-color": "data(color)",
+                    "underlay-opacity": 0.08,
+                    "underlay-padding": 1,
                     opacity: 0.6,
                 },
             },
@@ -1407,7 +1411,9 @@ export default function Dashboard({ apiUrl }) {
                                                         next,
                                                     );
                                                     activeCy
-                                                        .$("edge.flow")
+                                                        .$(
+                                                            "edge.flow, edge.down",
+                                                        )
                                                         .style(
                                                             "line-dash-offset",
                                                             -next,
