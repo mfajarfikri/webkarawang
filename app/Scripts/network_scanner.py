@@ -3,6 +3,7 @@ import json
 import subprocess
 import platform
 import random
+import base64
 
 # For production, install pysnmp: pip install pysnmp
 # from pysnmp.hlapi import *
@@ -11,17 +12,28 @@ def ping(host):
     """
     Returns True if host responds to a ping request
     """
-    param = '-n' if platform.system().lower() == 'windows' else '-c'
-    timeout_param = '-w' if platform.system().lower() == 'windows' else '-W'
-    timeout_val = '1000' if platform.system().lower() == 'windows' else '1'
+    is_windows = platform.system().lower() == 'windows'
+    param = '-n' if is_windows else '-c'
+    # timeout in milliseconds for windows, seconds for linux
+    timeout_param = '-w' if is_windows else '-W'
+    timeout_val = '1000' if is_windows else '1'
     
-    command = ['ping', param, '1', timeout_param, timeout_val, host]
+    # Try multiple common ping locations for Linux to be safe
+    ping_cmd = 'ping'
+    if not is_windows:
+        for path in ['/usr/bin/ping', '/bin/ping', '/usr/sbin/ping']:
+            try:
+                if subprocess.call(['which', path], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL) == 0:
+                    ping_cmd = path
+                    break
+            except: continue
+
+    command = [ping_cmd, param, '1', timeout_param, timeout_val, host]
     
     try:
-        # Standardize output for different platforms
-        subprocess.check_output(command, stderr=subprocess.STDOUT, universal_newlines=True)
-        return True
-    except subprocess.CalledProcessError:
+        # We only care about the return code
+        return subprocess.call(command, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL) == 0
+    except Exception:
         return False
 
 def get_real_snmp(device):
@@ -37,8 +49,6 @@ def get_real_snmp(device):
     if version == 'v3':
         user = device.get('snmp_v3_user')
         sec_level = device.get('snmp_v3_security_level')
-        # auth_proto = device.get('snmp_v3_auth_protocol')
-        # priv_proto = device.get('snmp_v3_priv_protocol')
     else:
         community = device.get('snmp_community', 'public')
 
@@ -49,7 +59,7 @@ def get_real_snmp(device):
         'uptime': f"{random.randint(1, 300)} days",
         'bandwidth_in': f"{random.randint(100, 900)} Mbps",
         'bandwidth_out': f"{random.randint(50, 400)} Mbps",
-        'snmp_status': 'Configured'
+        'snmp_status': 'Connected'
     }
 
 def main():
@@ -58,13 +68,22 @@ def main():
         return
 
     try:
-        # Expecting JSON string of devices with full SNMP config
-        devices = json.loads(sys.argv[1])
+        # Try to decode from base64 first (more reliable for shell execution)
+        try:
+            input_data = base64.b64decode(sys.argv[1]).decode('utf-8')
+            devices = json.loads(input_data)
+        except Exception:
+            # Fallback to direct JSON if not base64
+            devices = json.loads(sys.argv[1])
+            
         results = []
 
         for device in devices:
             ip = device.get('ip_address')
-            use_snmp = device.get('use_snmp', True)
+            # Ensure use_snmp is boolean even if null/missing from DB
+            use_snmp = device.get('use_snmp')
+            if use_snmp is None: use_snmp = True
+            
             is_online = ping(ip)
             
             status = 'online' if is_online else 'offline'

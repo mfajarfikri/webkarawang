@@ -252,49 +252,64 @@ export default function NetworkMonitoring() {
             );
             const updatedDevices = response.data;
 
-            updatedDevices.forEach((device) => {
-                const oldDevice = topologyData.nodes.find(
-                    (n) => n.id === device.id,
-                );
-                if (
-                    oldDevice &&
-                    oldDevice.status === "online" &&
-                    device.status === "offline"
-                ) {
-                    enqueueSnackbar(
-                        `PERINGATAN: Perangkat ${device.name} terputus!`,
-                        {
-                            variant: "error",
-                            autoHideDuration: 10000,
-                        },
+            if (Array.isArray(updatedDevices)) {
+                updatedDevices.forEach((device) => {
+                    const oldDevice = topologyData.nodes.find(
+                        (n) => n.id === device.id,
                     );
-                }
-            });
-
-            setTopologyData((prev) => ({
-                ...prev,
-                nodes: prev.nodes.map((n) => {
-                    const update = updatedDevices.find((d) => d.id === n.id);
-                    if (update) {
-                        return {
-                            ...n,
-                            status: update.status,
-                            snmp_data: update.snmp_data,
-                            last_seen: update.last_seen,
-                            color:
-                                update.status === "online"
-                                    ? "#10b981"
-                                    : update.status === "offline"
-                                      ? "#ef4444"
-                                      : "#94a3b8",
-                        };
+                    if (
+                        oldDevice &&
+                        oldDevice.status === "online" &&
+                        device.status === "offline"
+                    ) {
+                        enqueueSnackbar(
+                            `PERINGATAN: Perangkat ${device.name} terputus!`,
+                            {
+                                variant: "error",
+                                autoHideDuration: 10000,
+                            },
+                        );
                     }
-                    return n;
-                }),
-            }));
-            setLastScanTime(new Date());
+                });
+
+                setTopologyData((prev) => ({
+                    ...prev,
+                    nodes: prev.nodes.map((n) => {
+                        const update = updatedDevices.find(
+                            (d) => d.id === n.id,
+                        );
+                        if (update) {
+                            return {
+                                ...n,
+                                status: update.status,
+                                snmp_data: update.snmp_data,
+                                last_seen: update.last_seen,
+                                color:
+                                    update.status === "online"
+                                        ? "#10b981"
+                                        : update.status === "offline"
+                                          ? "#ef4444"
+                                          : "#94a3b8",
+                            };
+                        }
+                        return n;
+                    }),
+                }));
+                setLastScanTime(new Date());
+            }
         } catch (error) {
             console.error("Error scanning status:", error);
+            const errorMsg =
+                error.response?.data?.error ||
+                "Gagal melakukan pemindaian status";
+            const details = error.response?.data?.details || "";
+
+            enqueueSnackbar(
+                `${errorMsg}. ${details ? "Cek log server." : ""}`,
+                {
+                    variant: "error",
+                },
+            );
         } finally {
             setIsScanning(false);
         }

@@ -97,22 +97,26 @@ class NetworkMonitoringController extends Controller
         
         // Execute Python script
         $scriptPath = base_path('app/Scripts/network_scanner.py');
-        $devicesJson = json_encode($devices);
+        // Use base64 to avoid shell escaping issues with JSON double quotes
+        $devicesBase64 = base64_encode(json_encode($devices));
         
-        // Try 'python3' first, fallback to 'python'
-        $command = "python3 \"$scriptPath\" \"$devicesJson\"";
-        $process = Process::run($command);
+        // Try 'python3' first
+        $process = Process::run(['python3', $scriptPath, $devicesBase64]);
         
         if (!$process->successful()) {
-            // Fallback to python
-            $command = "python \"$scriptPath\" \"$devicesJson\"";
-            $process = Process::run($command);
+            // Fallback to 'python'
+            $process = Process::run(['python', $scriptPath, $devicesBase64]);
         }
         
         if (!$process->successful()) {
+            $errorOutput = $process->errorOutput();
+            $exitCode = $process->exitCode();
+            
             return response()->json([
-                'error' => 'Gagal menjalankan scanner Python. Pastikan Python3 sudah terinstall di server.',
-                'output' => $process->errorOutput()
+                'error' => 'Gagal menjalankan scanner Python.',
+                'details' => $errorOutput,
+                'exit_code' => $exitCode,
+                'suggestion' => 'Pastikan Python3 dan pip sudah terinstall di server.'
             ], 500);
         }
 
