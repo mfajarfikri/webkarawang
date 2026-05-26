@@ -2,7 +2,6 @@ import sys
 import json
 import subprocess
 import platform
-import random
 import base64
 
 # For production, install pysnmp: pip install pysnmp
@@ -52,13 +51,17 @@ def get_real_snmp(device):
     else:
         community = device.get('snmp_community', 'public')
 
-    # Simulation results
+    base = 0
+    if isinstance(ip, str) and ip:
+        base = sum(ip.encode('utf-8')) % 100
+
+    # Simulation results (deterministic, avoids OS randomness issues)
     return {
-        'cpu_usage': f"{random.randint(5, 45)}%",
-        'memory_usage': f"{random.randint(10, 60)}%",
-        'uptime': f"{random.randint(1, 300)} days",
-        'bandwidth_in': f"{random.randint(100, 900)} Mbps",
-        'bandwidth_out': f"{random.randint(50, 400)} Mbps",
+        'cpu_usage': f"{5 + (base % 41)}%",
+        'memory_usage': f"{10 + ((base * 3) % 51)}%",
+        'uptime': f"{1 + ((base * 7) % 300)} days",
+        'bandwidth_in': f"{100 + ((base * 8) % 801)} Mbps",
+        'bandwidth_out': f"{50 + ((base * 5) % 351)} Mbps",
         'snmp_status': 'Connected'
     }
 

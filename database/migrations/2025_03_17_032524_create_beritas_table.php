@@ -17,8 +17,14 @@ return new class extends Migration
             $table->string('slug')->unique();
             $table->text('excerpt');
             $table->longText('isi');
+            $table->json('content_json')->nullable();
             $table->json('gambar');
+            $table->unsignedBigInteger('read_count')->default(0);
+            $table->boolean('enabled')->default(false)->index();
             $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
+            $table->unsignedBigInteger('created_by')->nullable();
+            $table->foreign('created_by')->references('id')->on('users')->onDelete('set null');
+            $table->foreignId('tema_id')->nullable()->constrained('temas')->nullOnDelete();
             $table->timestamps();
             $table->softDeletes();
         });

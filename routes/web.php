@@ -113,6 +113,8 @@ Route::middleware(['auth'])->prefix('dashboard')->group(function () {
     Route::post('monitoring/device', [NetworkMonitoringController::class, 'storeDevice'])->name('dashboard.monitoring.device.store');
     Route::delete('monitoring/device/{device}', [NetworkMonitoringController::class, 'destroyDevice'])->name('dashboard.monitoring.device.destroy');
     Route::post('monitoring/connection', [NetworkMonitoringController::class, 'storeConnection'])->name('dashboard.monitoring.connection.store');
+    Route::put('monitoring/connection/{connection}', [NetworkMonitoringController::class, 'updateConnection'])->name('dashboard.monitoring.connection.update');
+    Route::delete('monitoring/connection/{connection}', [NetworkMonitoringController::class, 'destroyConnection'])->name('dashboard.monitoring.connection.destroy');
     Route::get('api/monitoring/topology', [NetworkMonitoringController::class, 'getTopology'])->name('dashboard.monitoring.topology');
     Route::get('api/monitoring/scan', [NetworkMonitoringController::class, 'scanStatus'])->name('dashboard.monitoring.scan');
 

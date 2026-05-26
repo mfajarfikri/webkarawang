@@ -36,10 +36,11 @@ class NetworkMonitoringController extends Controller
     {
         $validated = $request->validate([
             'id' => 'nullable|exists:network_devices,id',
-            'gardu_induk_id' => 'required|exists:gardu_induks,id',
+            'gardu_induk_id' => 'nullable|exists:gardu_induks,id',
             'name' => 'required|string|max:255',
             'ip_address' => 'required|string|max:255',
             'type' => 'required|string',
+            'icon_key' => 'nullable|string|in:router,switch,cloud,server,pc,gateway,database,firewall',
             'use_snmp' => 'required|boolean',
             'snmp_version' => 'nullable|required_if:use_snmp,true|in:v1,v2c,v3',
             'snmp_community' => 'nullable|required_if:snmp_version,v1,v2c|string',
@@ -72,11 +73,33 @@ class NetworkMonitoringController extends Controller
             'source_id' => 'required|exists:network_devices,id',
             'target_id' => 'required|exists:network_devices,id',
             'type' => 'required|string',
+            'status' => 'nullable|in:active,down',
         ]);
 
         NetworkConnection::create($validated);
 
         return redirect()->back()->with('success', 'Koneksi berhasil ditambahkan');
+    }
+
+    public function updateConnection(Request $request, NetworkConnection $connection)
+    {
+        $validated = $request->validate([
+            'source_id' => 'required|exists:network_devices,id',
+            'target_id' => 'required|exists:network_devices,id',
+            'type' => 'required|string',
+            'status' => 'required|in:active,down',
+        ]);
+
+        $connection->update($validated);
+
+        return redirect()->back()->with('success', 'Koneksi berhasil diperbarui');
+    }
+
+    public function destroyConnection(NetworkConnection $connection)
+    {
+        $connection->delete();
+
+        return redirect()->back()->with('success', 'Koneksi berhasil dihapus');
     }
 
     public function destroyDevice(NetworkDevice $device)
@@ -99,24 +122,39 @@ class NetworkMonitoringController extends Controller
         $scriptPath = base_path('app/Scripts/network_scanner.py');
         // Use base64 to avoid shell escaping issues with JSON double quotes
         $devicesBase64 = base64_encode(json_encode($devices));
-        
-        // Try 'python3' first
-        $process = Process::run(['python3', $scriptPath, $devicesBase64]);
-        
-        if (!$process->successful()) {
-            // Fallback to 'python'
-            $process = Process::run(['python', $scriptPath, $devicesBase64]);
+        $pythonCandidates = PHP_OS_FAMILY === 'Windows'
+            ? ['python']
+            : ['python3', 'python'];
+
+        $process = null;
+        $startErrors = [];
+        $commandTried = null;
+
+        foreach ($pythonCandidates as $pythonBin) {
+            try {
+                $commandTried = [$pythonBin, $scriptPath, $devicesBase64];
+                $process = Process::timeout(60)->env([
+                    'PYTHONHASHSEED' => '0',
+                ])->run($commandTried);
+
+                if ($process->successful()) {
+                    break;
+                }
+            } catch (\Throwable $e) {
+                $startErrors[] = $pythonBin . ': ' . $e->getMessage();
+                $process = null;
+            }
         }
-        
-        if (!$process->successful()) {
-            $errorOutput = $process->errorOutput();
-            $exitCode = $process->exitCode();
-            
+
+        if (!$process || !$process->successful()) {
+            $errorOutput = $process ? $process->errorOutput() : '';
+            $exitCode = $process ? $process->exitCode() : null;
+
             return response()->json([
                 'error' => 'Gagal menjalankan scanner Python.',
-                'details' => $errorOutput,
+                'details' => $errorOutput ?: implode(' | ', $startErrors),
                 'exit_code' => $exitCode,
-                'suggestion' => 'Pastikan Python3 dan pip sudah terinstall di server.'
+                'suggestion' => 'Pastikan Python terinstall dan tersedia di PATH (Windows: python).',
             ], 500);
         }
 

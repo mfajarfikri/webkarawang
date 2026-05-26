@@ -11,8 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('network_devices', function (Blueprint $table) {
-            $table->boolean('use_snmp')->default(true)->after('type');
+        Schema::create('temas', function (Blueprint $table) {
+            $table->id();
+            $table->string('nama')->unique();
+            $table->string('slug')->unique();
+            $table->timestamps();
         });
     }
 
@@ -21,8 +24,7 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('network_devices', function (Blueprint $table) {
-            $table->dropColumn('use_snmp');
-        });
+        Schema::dropIfExists('temas');
     }
 };
+

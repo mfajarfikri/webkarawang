@@ -14,17 +14,41 @@ return new class extends Migration
         $teams = config('permission.teams');
         $tableNames = config('permission.table_names');
         $columnNames = config('permission.column_names');
-        $pivotRole = $columnNames['role_pivot_key'] ?? 'role_id';
-        $pivotPermission = $columnNames['permission_pivot_key'] ?? 'permission_id';
 
-        throw_if(empty($tableNames), new Exception('Error: config/permission.php not loaded. Run [php artisan config:clear] and try again.'));
-        throw_if($teams && empty($columnNames['team_foreign_key'] ?? null), new Exception('Error: team_foreign_key on config/permission.php not loaded. Run [php artisan config:clear] and try again.'));
+        if (!is_array($tableNames)) {
+            $tableNames = [];
+        }
+
+        if (!is_array($columnNames)) {
+            $columnNames = [];
+        }
+
+        $tableNames = array_merge([
+            'permissions' => 'permissions',
+            'roles' => 'roles',
+            'model_has_permissions' => 'model_has_permissions',
+            'model_has_roles' => 'model_has_roles',
+            'role_has_permissions' => 'role_has_permissions',
+        ], $tableNames);
+
+        $columnNames = array_merge([
+            'role_pivot_key' => 'role_id',
+            'permission_pivot_key' => 'permission_id',
+            'model_morph_key' => 'model_id',
+            'team_foreign_key' => 'team_id',
+        ], $columnNames);
+
+        $pivotRole = $columnNames['role_pivot_key'] ?: 'role_id';
+        $pivotPermission = $columnNames['permission_pivot_key'] ?: 'permission_id';
+        $columnNames['model_morph_key'] = $columnNames['model_morph_key'] ?: 'model_id';
+        $columnNames['team_foreign_key'] = $columnNames['team_foreign_key'] ?: 'team_id';
 
         Schema::create($tableNames['permissions'], static function (Blueprint $table) {
             // $table->engine('InnoDB');
             $table->bigIncrements('id'); // permission id
             $table->string('name');       // For MyISAM use string('name', 225); // (or 166 for InnoDB with Redundant/Compact row format)
             $table->string('guard_name'); // For MyISAM use string('guard_name', 25);
+            $table->text('description')->nullable();
             $table->timestamps();
 
             $table->unique(['name', 'guard_name']);

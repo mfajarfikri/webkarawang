@@ -14,6 +14,7 @@ return new class extends Migration
         Schema::create('anomalis', function (Blueprint $table) {
             $table->bigIncrements('id');
             $table->string('judul');
+            $table->string('slug')->unique();
             $table->enum('ultg', ['ULTG Karawang', 'ULTG Purwakarta']);
             $table->unsignedBigInteger('gardu_id');
             $table->enum('bagian', ['Banghal', 'Hargi', 'Harjar', 'Harpro', 'K3L']);
@@ -47,6 +48,7 @@ return new class extends Migration
             $table->unsignedBigInteger('approve_by')->nullable();
             $table->text('reject_reason')->nullable();
             $table->unsignedBigInteger('assign_to')->nullable();
+            $table->enum('bidang_assigned', ['Master', 'MULTG', 'Renev', 'Hargi', 'Harjar', 'Harpro', 'K3', 'GI'])->nullable();
             $table->date('tanggal_approve')->nullable();
             $table->date('tanggal_mulai')->nullable();
             $table->date('tanggal_selesai')->nullable();
