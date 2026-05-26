@@ -88,7 +88,7 @@ class NetworkMonitoringController extends Controller
     public function scanStatus(Request $request)
     {
         $devices = NetworkDevice::all([
-            'id', 'ip_address', 'snmp_version', 'snmp_community', 
+            'id', 'ip_address', 'use_snmp', 'snmp_version', 'snmp_community', 
             'snmp_port', 'snmp_timeout', 'snmp_v3_user', 
             'snmp_v3_security_level', 'snmp_v3_auth_protocol', 
             'snmp_v3_auth_passphrase', 'snmp_v3_priv_protocol', 
@@ -99,14 +99,19 @@ class NetworkMonitoringController extends Controller
         $scriptPath = base_path('app/Scripts/network_scanner.py');
         $devicesJson = json_encode($devices);
         
-        // Use 'python' or 'python3' depending on environment
-        $command = "python \"$scriptPath\" \"$devicesJson\"";
-        
+        // Try 'python3' first, fallback to 'python'
+        $command = "python3 \"$scriptPath\" \"$devicesJson\"";
         $process = Process::run($command);
         
         if (!$process->successful()) {
+            // Fallback to python
+            $command = "python \"$scriptPath\" \"$devicesJson\"";
+            $process = Process::run($command);
+        }
+        
+        if (!$process->successful()) {
             return response()->json([
-                'error' => 'Gagal menjalankan scanner Python',
+                'error' => 'Gagal menjalankan scanner Python. Pastikan Python3 sudah terinstall di server.',
                 'output' => $process->errorOutput()
             ], 500);
         }

@@ -518,41 +518,81 @@ export default function NetworkMonitoring() {
                                 linkDirectionalParticleSpeed={0.01}
                                 nodeCanvasObject={(node, ctx, globalScale) => {
                                     const label = node.name;
-                                    const fontSize = 11 / globalScale;
-                                    ctx.font = `${fontSize}px Inter, sans-serif`;
+                                    const fontSize = 12 / globalScale;
+                                    ctx.font = `bold ${fontSize}px Inter, sans-serif`;
                                     ctx.textAlign = "center";
                                     ctx.textBaseline = "middle";
 
+                                    // Node Circle with Glow
+                                    const radius = 10;
                                     if (node.status === "online") {
-                                        ctx.shadowBlur = 15;
+                                        ctx.shadowBlur = 20 / globalScale;
                                         ctx.shadowColor = node.color;
                                     }
 
-                                    ctx.fillStyle = node.color;
+                                    // Draw Outer Ring
                                     ctx.beginPath();
                                     ctx.arc(
                                         node.x,
                                         node.y,
-                                        7,
+                                        radius + 2,
+                                        0,
+                                        2 * Math.PI,
+                                        false,
+                                    );
+                                    ctx.fillStyle = "#ffffff";
+                                    ctx.fill();
+                                    ctx.strokeStyle = node.color;
+                                    ctx.lineWidth = 2 / globalScale;
+                                    ctx.stroke();
+
+                                    // Draw Inner Circle
+                                    ctx.beginPath();
+                                    ctx.arc(
+                                        node.x,
+                                        node.y,
+                                        radius,
+                                        0,
+                                        2 * Math.PI,
+                                        false,
+                                    );
+                                    ctx.fillStyle = node.color;
+                                    ctx.fill();
+
+                                    ctx.shadowBlur = 0;
+
+                                    // Draw Type Icon (Simplified)
+                                    ctx.fillStyle = "#ffffff";
+                                    ctx.font = `${10 / globalScale}px "Font Awesome 5 Free"`;
+                                    // Use a simple circle for the icon background if font not loaded
+                                    ctx.beginPath();
+                                    ctx.arc(
+                                        node.x,
+                                        node.y,
+                                        4,
                                         0,
                                         2 * Math.PI,
                                         false,
                                     );
                                     ctx.fill();
 
-                                    ctx.shadowBlur = 0;
-
+                                    // Main Label (Device Name)
+                                    ctx.font = `bold ${11 / globalScale}px Inter, sans-serif`;
                                     ctx.fillStyle = "#1e293b";
-                                    ctx.fillText(label, node.x, node.y + 14);
+                                    ctx.fillText(
+                                        label,
+                                        node.x,
+                                        node.y + radius + 12,
+                                    );
 
-                                    // Location label
-                                    if (globalScale > 1.5) {
-                                        ctx.font = `${8 / globalScale}px Inter, sans-serif`;
+                                    // Location label (Only if zoomed in)
+                                    if (globalScale > 1.2) {
+                                        ctx.font = `${9 / globalScale}px Inter, sans-serif`;
                                         ctx.fillStyle = "#64748b";
                                         ctx.fillText(
-                                            node.gardu_induk?.name || "",
+                                            node.gardu_induk?.name || "Global",
                                             node.x,
-                                            node.y + 22,
+                                            node.y + radius + 22,
                                         );
                                     }
                                 }}
