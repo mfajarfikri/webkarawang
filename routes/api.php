@@ -6,9 +6,13 @@ use App\Http\Controllers\Api\DataController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
+use App\Http\Controllers\Api\WebhookController;
+
 Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
 });
+
+Route::post('/webhook/google-sheet', [WebhookController::class, 'handleGoogleSheet']);
 
 Route::get('/berita', [DataController::class, 'berita']);
 Route::get('/themes', [DataController::class, 'themes']);

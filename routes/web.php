@@ -16,7 +16,8 @@ use App\Http\Middleware\AutoPermission;
 use App\Http\Controllers\Auth\SocialiteController;
 use App\Http\Controllers\Dashboard\CompanyProfileController;
 use App\Http\Controllers\Dashboard\MenuController;
-use App\Http\Controllers\Dashboard\NetworkMonitoringController;
+
+use App\Http\Controllers\Dashboard\KinerjaController;
 
 Route::controller(HomeController::class)->group(function () {
     Route::get('/', 'index')->name('home');
@@ -108,15 +109,7 @@ Route::middleware(['auth'])->prefix('dashboard')->group(function () {
     Route::delete('menu/{menu}', [MenuController::class, 'destroy'])->name('dashboard.menu.destroy');
     Route::post('menu/reorder', [MenuController::class, 'reorder'])->name('dashboard.menu.reorder');
 
-    // Network Monitoring Routes
-    Route::get('monitoring', [NetworkMonitoringController::class, 'index'])->name('dashboard.monitoring.index');
-    Route::post('monitoring/device', [NetworkMonitoringController::class, 'storeDevice'])->name('dashboard.monitoring.device.store');
-    Route::delete('monitoring/device/{device}', [NetworkMonitoringController::class, 'destroyDevice'])->name('dashboard.monitoring.device.destroy');
-    Route::post('monitoring/connection', [NetworkMonitoringController::class, 'storeConnection'])->name('dashboard.monitoring.connection.store');
-    Route::put('monitoring/connection/{connection}', [NetworkMonitoringController::class, 'updateConnection'])->name('dashboard.monitoring.connection.update');
-    Route::delete('monitoring/connection/{connection}', [NetworkMonitoringController::class, 'destroyConnection'])->name('dashboard.monitoring.connection.destroy');
-    Route::get('api/monitoring/topology', [NetworkMonitoringController::class, 'getTopology'])->name('dashboard.monitoring.topology');
-    Route::get('api/monitoring/scan', [NetworkMonitoringController::class, 'scanStatus'])->name('dashboard.monitoring.scan');
+
 
     Route::get('company-profile', [CompanyProfileController::class, 'edit'])->name('dashboard.company-profile.edit');
     Route::post('company-profile/draft', [CompanyProfileController::class, 'saveDraft'])->name('dashboard.company-profile.draft');
@@ -124,6 +117,9 @@ Route::middleware(['auth'])->prefix('dashboard')->group(function () {
     Route::post('company-profile/publish/{version}', [CompanyProfileController::class, 'publishVersion'])->name('dashboard.company-profile.publish-version');
     Route::post('company-profile/restore/{version}', [CompanyProfileController::class, 'restore'])->name('dashboard.company-profile.restore');
     Route::post('company-profile/upload', [CompanyProfileController::class, 'upload'])->name('dashboard.company-profile.upload');
+
+    Route::get('kinerja', [KinerjaController::class, 'index'])->name('dashboard.kinerja.index');
+    Route::get('kinerja/data', [KinerjaController::class, 'fetchData'])->name('dashboard.kinerja.data');
 });
 
 Route::get('auth/{provider}', [SocialiteController::class, 'redirect'])->name('socialite.redirect');

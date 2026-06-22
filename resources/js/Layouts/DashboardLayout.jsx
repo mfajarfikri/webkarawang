@@ -11,6 +11,8 @@ import {
     FaBars,
     FaGlobe,
     FaBuilding,
+    FaChartLine,
+    FaChartBar,
     FaFileAlt,
     FaUsers,
     FaUserShield,
@@ -726,18 +728,18 @@ function SidebarMenu({ collapsed = false, onLinkClick }) {
             <SectionHeader title="Sistem" />
 
             <Link
-                href={route("dashboard.monitoring.index")}
+                href={route("dashboard.kinerja.index")}
                 onClick={handleClick}
-                className={getLinkClasses("/dashboard/monitoring")}
+                className={getLinkClasses("/dashboard/kinerja")}
             >
-                <FaNetworkWired
-                    className={getIconClasses("/dashboard/monitoring")}
-                    aria-label="Monitoring Jaringan"
-                    title="Monitoring Jaringan"
+                <FaChartBar
+                    className={getIconClasses("/dashboard/kinerja")}
+                    aria-label="Dashboard Kinerja"
+                    title="Dashboard Kinerja"
                 />
                 {!collapsed && (
                     <span className="font-semibold tracking-tight">
-                        Monitoring Jaringan
+                        Dashboard Kinerja
                     </span>
                 )}
             </Link>
