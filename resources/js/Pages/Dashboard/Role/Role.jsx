@@ -1,4 +1,5 @@
 import DashboardLayout from "@/Layouts/DashboardLayout";
+import PageHeader, { HeaderStat } from "@/Components/Dashboard/PageHeader";
 import { usePage } from "@inertiajs/react";
 import { router as Inertia } from "@inertiajs/react";
 import { useState, Fragment } from "react";
@@ -164,42 +165,23 @@ export default function Role() {
 
     return (
         <DashboardLayout title="Manajemen Role">
-            <div className="min-h-screen bg-white rounded-2xl py-10">
-                <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-8">
-                    {/* Header Section */}
-                    <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
-                        <div className="flex items-center gap-3">
-                            <div className="h-12 w-12 rounded-2xl bg-gradient-to-br from-sky-500 via-sky-400 to-cyan-400 flex items-center justify-center text-white shadow-md">
-                                <FaUserShield className="w-6 h-6" />
-                            </div>
-                            <div>
-                                <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
-                                    Manajemen Role
-                                </h1>
-                                <p className="text-sm md:text-base text-gray-600 mt-1">
-                                    Kelola peran dan hak akses pengguna dalam
-                                    sistem.
-                                </p>
-                            </div>
-                        </div>
-                        <div className="flex items-center gap-3">
-                            <div className="hidden sm:flex items-center gap-2 px-3 py-2 rounded-xl bg-white/80 backdrop-blur border border-blue-100 shadow-sm">
-                                <div className="flex h-7 w-7 items-center justify-center rounded-full bg-blue-50 text-blue-600">
-                                    <FaUsers className="w-3.5 h-3.5" />
-                                </div>
-                                <div className="text-xs text-gray-600">
-                                    <div className="font-semibold text-gray-800">
-                                        {roles ? roles.length : 0} roles
-                                    </div>
-                                    <div>Terdaftar dalam sistem</div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+            <div className="min-h-full">
+                <div className="max-w-full">
+                    <PageHeader
+                        icon={FaUserShield}
+                        title="Manajemen Role"
+                        description="Kelola peran dan hak akses pengguna dalam sistem."
+                    >
+                        <HeaderStat
+                            icon={FaUsers}
+                            value={`${roles ? roles.length : 0} role`}
+                            label="Terdaftar dalam sistem"
+                        />
+                    </PageHeader>
 
                     {/* Add Role Card */}
-                    <div className="bg-white/95 backdrop-blur-sm rounded-2xl shadow-sm border border-gray-100 overflow-hidden mb-8">
-                        <div className="px-6 py-4 border-b border-gray-100 bg-gradient-to-r from-gray-50/80 via-white to-gray-50/80">
+                    <div className="surface overflow-hidden mb-8">
+                        <div className="px-6 py-4 border-b border-gray-100">
                             <h2 className="text-base md:text-lg font-semibold text-gray-900 flex items-center gap-2">
                                 <FaPlus className="text-blue-600 w-4 h-4" />
                                 Tambah Role Baru
@@ -243,8 +225,8 @@ export default function Role() {
                     </div>
 
                     {/* Roles Table Card */}
-                    <div className="bg-white/95 backdrop-blur-sm rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-                        <div className="px-6 py-4 border-b border-gray-100 bg-gradient-to-r from-gray-50/80 via-white to-gray-50/80">
+                    <div className="surface overflow-hidden">
+                        <div className="px-6 py-4 border-b border-gray-100">
                             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                                 <div>
                                     <h2 className="text-base md:text-lg font-semibold text-gray-900">

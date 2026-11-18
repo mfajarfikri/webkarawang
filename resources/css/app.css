@@ -2,6 +2,101 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ---------- Design foundation ---------- */
+@layer base {
+    html {
+        scroll-behavior: smooth;
+        -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+        @apply bg-slate-50 text-slate-700;
+        font-feature-settings: "cv11", "ss01";
+        text-rendering: optimizeLegibility;
+    }
+
+    h1,
+    h2,
+    h3 {
+        @apply font-display tracking-tight;
+    }
+
+    ::selection {
+        background: rgba(11, 165, 236, 0.22);
+    }
+
+    a:focus-visible,
+    button:focus-visible {
+        outline: 2px solid #0ba5ec;
+        outline-offset: 2px;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        *,
+        *::before,
+        *::after {
+            animation-duration: 0.01ms !important;
+            transition-duration: 0.01ms !important;
+            scroll-behavior: auto !important;
+        }
+    }
+}
+
+@layer components {
+    /* Label kecil di atas judul section */
+    .eyebrow {
+        @apply inline-flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-brand-700;
+    }
+
+    .eyebrow::before {
+        content: "";
+        @apply h-px w-6 bg-brand-500;
+    }
+
+    /* Tombol */
+    .btn {
+        @apply inline-flex items-center justify-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold transition duration-200 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50;
+    }
+
+    .btn-primary {
+        @apply btn bg-ink-900 text-white shadow-soft hover:bg-brand-700;
+    }
+
+    .btn-brand {
+        @apply btn bg-brand-600 text-white shadow-soft hover:bg-brand-700;
+    }
+
+    .btn-ghost {
+        @apply btn border border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50;
+    }
+
+    /* Permukaan kartu */
+    .surface {
+        @apply rounded-2xl border border-slate-200/80 bg-white shadow-soft;
+    }
+
+    /* Latar grid halus untuk permukaan gelap */
+    .bg-grid-ink {
+        background-color: #0c1424;
+        background-image:
+            radial-gradient(
+                60% 60% at 85% 0%,
+                rgba(11, 165, 236, 0.28) 0%,
+                transparent 60%
+            ),
+            linear-gradient(rgba(255, 255, 255, 0.045) 1px, transparent 1px),
+            linear-gradient(
+                90deg,
+                rgba(255, 255, 255, 0.045) 1px,
+                transparent 1px
+            );
+        background-size:
+            100% 100%,
+            44px 44px,
+            44px 44px;
+    }
+}
+
 /* Aspect ratio utilities */
 .aspect-w-1 {
     position: relative;
@@ -98,44 +193,26 @@
     transform: translateX(4px);
 }
 
-/* Custom Scrollbar Styling */
+/* Scrollbar tipis & netral */
 ::-webkit-scrollbar {
     width: 10px;
     height: 10px;
 }
 
 ::-webkit-scrollbar-track {
-    background: rgba(241, 241, 241, 0.1);
-    border-radius: 10px;
-}
-
-.dark ::-webkit-scrollbar-track {
-    background: rgba(45, 45, 45, 0.2);
+    background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
-    background: linear-gradient(45deg, #999, #777);
+    background: #cbd5e1;
     border-radius: 10px;
-    border: 2px solid transparent;
-    background-clip: content-box;
-    transition: all 0.3s ease;
-}
-
-.dark ::-webkit-scrollbar-thumb {
-    background: linear-gradient(45deg, #666, #444);
-    border: 2px solid transparent;
+    border: 3px solid transparent;
     background-clip: content-box;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-    background: linear-gradient(45deg, #777, #555);
-    border: 2px solid transparent;
-    background-clip: content-box;
-}
-
-.dark ::-webkit-scrollbar-thumb:hover {
-    background: linear-gradient(45deg, #555, #333);
-    border: 2px solid transparent;
+    background: #94a3b8;
+    border: 3px solid transparent;
     background-clip: content-box;
 }
 
@@ -533,27 +610,25 @@ blockquote {
     animation: cardPop 0.7s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* Custom scrollbar for .custom-scrollbar - corporate & modern style */
+/* Scrollbar tipis netral: aman di permukaan terang maupun gelap */
 .custom-scrollbar::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
+    width: 6px;
+    height: 6px;
 }
 .custom-scrollbar::-webkit-scrollbar-thumb {
-    background: #2563eb; /* corporate blue */
-    border-radius: 8px;
-    border: 2px solid #f3f4f6; /* subtle border for modern look */
+    background: rgba(148, 163, 184, 0.45);
+    border: 0;
+    border-radius: 6px;
 }
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-    background: #1e40af; /* darker blue on hover */
+    background: rgba(148, 163, 184, 0.7);
 }
 .custom-scrollbar::-webkit-scrollbar-track {
-    background: #f3f4f6; /* light neutral background */
-    border-radius: 8px;
+    background: transparent;
 }
-/* Firefox */
 .custom-scrollbar {
     scrollbar-width: thin;
-    scrollbar-color: #2563eb #f3f4f6;
+    scrollbar-color: rgba(148, 163, 184, 0.45) transparent;
 }
 
 /* Calendar Base */

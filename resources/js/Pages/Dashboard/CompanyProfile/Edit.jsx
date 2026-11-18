@@ -1623,7 +1623,7 @@ function EditContent({ profile, versions = [], flash }) {
             <Head title="Kelola Profil Perusahaan" />
 
             <div
-                className="max-w-full mx-auto px-4 sm:px-6 lg:px-8 pt-24 pb-10"
+                className="max-w-full pb-10"
                 style={vars}
             >
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">

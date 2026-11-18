@@ -1,6 +1,7 @@
 import React, { useState, Fragment, useEffect } from "react";
 import { Head, usePage, router, useForm } from "@inertiajs/react";
 import DashboardLayout from "../../../Layouts/DashboardLayout";
+import PageHeader, { HeaderStat } from "@/Components/Dashboard/PageHeader";
 import {
     FaPlus,
     FaEdit,
@@ -356,31 +357,19 @@ export default function MenuManagement() {
     };
 
     return (
-        <DashboardLayout>
+        <DashboardLayout title="Manajemen Menu">
             <Head title="Manajemen Menu" />
 
-            <div className="p-4 sm:p-8 max-w-5xl mx-auto">
-                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-10">
-                    <div>
-                        <div className="flex items-center gap-3 mb-1">
-                            <div className="p-2.5 bg-cyan-600 rounded-2xl shadow-lg shadow-cyan-200">
-                                <FaBars className="text-white" />
-                            </div>
-                            <h1 className="text-2xl font-black text-slate-800 tracking-tight">
-                                Manajemen Menu
-                            </h1>
-                        </div>
-                        <p className="text-slate-500 text-sm font-medium">
-                            Susun navigasi website dengan struktur tak terbatas dan antarmuka drag-and-drop.
-                        </p>
-                    </div>
-                    <button
-                        onClick={() => openModal()}
-                        className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-3 bg-cyan-600 hover:bg-cyan-700 text-white rounded-2xl shadow-xl shadow-cyan-100 transition-all duration-300 font-bold text-sm active:scale-95"
-                    >
-                        <FaPlus /> Tambah Menu Utama
+            <div className="max-w-5xl mx-auto">
+                <PageHeader
+                    icon={FaBars}
+                    title="Manajemen Menu"
+                    description="Susun navigasi website dengan struktur tak terbatas dan antarmuka drag-and-drop."
+                >
+                    <button onClick={() => openModal()} className="btn-brand">
+                        <FaPlus className="h-3.5 w-3.5" /> Tambah Menu Utama
                     </button>
-                </div>
+                </PageHeader>
 
                 <div className="space-y-2">
                     {menus.length > 0 ? (

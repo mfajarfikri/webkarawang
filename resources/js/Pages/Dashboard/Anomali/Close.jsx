@@ -174,7 +174,7 @@ export default function Close({ anomalis }) {
 
             <div className="min-h-screen bg-slate-50">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                    <div className="rounded-3xl border border-slate-200 bg-gradient-to-r from-sky-600 to-cyan-600 p-1 shadow-sm">
+                    <div className="rounded-3xl border border-slate-200 bg-brand-600 p-1 shadow-sm">
                         <div className="rounded-[22px] bg-white/95 backdrop-blur-sm px-6 py-5">
                             <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
                                 <div className="flex items-start gap-3">
@@ -492,7 +492,7 @@ export default function Close({ anomalis }) {
                                                     <div className="flex-1">
                                                         <div className="h-2 w-full rounded-full bg-slate-200 overflow-hidden">
                                                             <div
-                                                                className="h-full bg-gradient-to-r from-sky-600 to-cyan-600 transition-all"
+                                                                className="h-full bg-brand-600 transition-all"
                                                                 style={{
                                                                     width: `${uploadProgress}%`,
                                                                 }}

@@ -286,7 +286,7 @@ export default function Berita({ berita: initialBerita }) {
                     ) : (
                         <Link
                             href={route("dashboard.berita.create")}
-                            className="inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-sky-600 to-cyan-600 px-5 py-3 text-sm font-bold text-white shadow-sm hover:from-sky-700 hover:to-cyan-700 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/30"
+                            className="inline-flex items-center justify-center gap-2 rounded-2xl bg-brand-600 px-5 py-3 text-sm font-bold text-white shadow-sm hover:bg-brand-700 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/30"
                         >
                             <FaPlus className="h-4 w-4" aria-hidden="true" />
                             Buat Berita Pertama
@@ -423,15 +423,15 @@ export default function Berita({ berita: initialBerita }) {
     }, []);
 
     return (
-        <DashboardLayout>
+        <DashboardLayout title="Berita">
             <Head title="Berita" />
 
-            <div className="w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <div className="w-full">
                 <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
                     <div className="p-6 sm:p-8 border-b border-slate-100">
                         <div className="flex flex-col gap-5 md:flex-row md:items-start md:justify-between">
                             <div className="flex items-start gap-4">
-                                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-sky-600 to-cyan-600 text-white shadow-sm">
+                                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-ink-900 text-volt shadow-soft">
                                     <FaNewspaper
                                         className="text-lg"
                                         aria-hidden="true"
@@ -463,7 +463,7 @@ export default function Berita({ berita: initialBerita }) {
 
                             <Link
                                 href={route("dashboard.berita.create")}
-                                className="inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-sky-600 to-cyan-600 px-5 py-3 text-sm font-bold text-white shadow-sm hover:from-sky-700 hover:to-cyan-700 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/30"
+                                className="inline-flex items-center justify-center gap-2 rounded-2xl bg-brand-600 px-5 py-3 text-sm font-bold text-white shadow-sm hover:bg-brand-700 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/30"
                             >
                                 <FaPlus
                                     className="h-4 w-4"

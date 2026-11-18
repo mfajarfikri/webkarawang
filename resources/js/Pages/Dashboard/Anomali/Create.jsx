@@ -562,20 +562,20 @@ export default function Create({
     return (
         <>
             <Head title="Anomali" />
-            <DashboardLayout>
-                <div className="max-w-full bg-white mx-auto border rounded-xl shadow-md">
-                    <div className="flex items-center gap-3 px-8 py-4 bg-gradient-to-r from-cyan-600 to-sky-600 rounded-t-xl">
+            <DashboardLayout title="Lapor Anomali">
+                <div className="max-w-full surface overflow-hidden">
+                    <div className="flex items-center gap-3 px-6 py-4 bg-ink-900">
                         <button
                             onClick={() => window.history.back()}
-                            className="flex-shrink-0 h-10 w-10 rounded-xl bg-transparent border border-slate-200 flex items-center justify-center text-slate-600 hover:bg-cyan-500 hover:text-white transition-all shadow-sm active:scale-95 group"
+                            className="flex-shrink-0 h-10 w-10 rounded-full bg-transparent border border-white/20 flex items-center justify-center text-slate-600 hover:bg-white/10 hover:text-white transition-all shadow-sm active:scale-95 group"
                             title="Kembali"
                         >
                             <FaChevronLeft className="w-4 h-4 text-white group-hover:-translate-x-0.5 transition-transform" />
                         </button>
                         <div className="flex items-center gap-2">
                             <ApplicationLogo className="h-8 w-8" />
-                            <span className="text-white font-bold text-lg tracking-wide uppercase">
-                                UPT Karawang
+                            <span className="font-display text-white font-bold text-lg tracking-tight">
+                                Lapor Anomali Baru
                             </span>
                         </div>
                     </div>
@@ -1806,7 +1806,7 @@ export default function Create({
                                                             </div>
                                                             <div className="mt-2 h-2 w-full rounded-full bg-slate-100 overflow-hidden">
                                                                 <div
-                                                                    className="h-full bg-gradient-to-r from-cyan-600 to-sky-600 transition-all"
+                                                                    className="h-full bg-brand-600 transition-all"
                                                                     style={{
                                                                         width: `${Math.round(
                                                                             (compressionState.current /
@@ -2185,7 +2185,7 @@ export default function Create({
                                     <button
                                         type="button"
                                         onClick={nextStep}
-                                        className="w-full md:w-auto bg-gradient-to-r from-cyan-600 to-sky-600 text-white px-4 sm:px-5 py-2 rounded-xl shadow hover:from-cyan-800 hover:to-sky-800 font-semibold flex transition-all duration-300 ease-in-out items-center justify-center gap-2 text-sm sm:text-base"
+                                        className="w-full md:w-auto bg-brand-600 text-white px-4 sm:px-5 py-2 rounded-xl shadow hover:bg-brand-700 font-semibold flex transition-all duration-300 ease-in-out items-center justify-center gap-2 text-sm sm:text-base"
                                     >
                                         Next
                                     </button>

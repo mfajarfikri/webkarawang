@@ -110,7 +110,7 @@ export default function Ktt() {
         <>
             <Head title="KTT" />
             <HomeLayout>
-                <div className="min-h-screen bg-white">
+                <div className="min-h-screen bg-slate-50">
                     <div className="container mx-auto px-4 sm:px-6 py-10 sm:py-12 space-y-6">
                         <Section
                             id="ktt-header"

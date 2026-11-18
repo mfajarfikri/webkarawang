@@ -880,18 +880,25 @@ export default function Dashboard({ apiUrl }) {
             </div>
 
             {/* Corporate Background */}
-            <div className="min-h-auto bg-gray-50">
-                <div className="flex justify-between items-center mb-4 px-1">
-                    <h2 className="text-sm font-medium text-gray-500 flex items-center gap-2">
-                        <FaClock className="text-xs" />
-                        Terakhir diperbarui:{" "}
-                        {lastUpdated.toLocaleTimeString("id-ID")}
-                    </h2>
+            <div className="min-h-auto">
+                <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+                    <div>
+                        <div className="eyebrow">Ringkasan operasional</div>
+                        <h1 className="mt-3 text-2xl font-extrabold text-ink-900 sm:text-3xl">
+                            Selamat datang, {auth?.user?.name || "Admin"}
+                        </h1>
+                        <p className="mt-1 text-sm text-slate-600">
+                            Pantau berita dan anomali terbaru dalam satu
+                            layar.
+                        </p>
+                    </div>
+                    <span className="inline-flex w-fit items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 shadow-soft">
+                        <FaClock className="h-3 w-3 text-slate-400" />
+                        Diperbarui {lastUpdated.toLocaleTimeString("id-ID")}
+                    </span>
                 </div>
 
-                {/* Corporate Header Section */}
-
-                <div className="max-w-full bg-white rounded-xl shadow">
+                <div className="max-w-full surface overflow-hidden">
                     <Disclosure as="div" className="border-b">
                         {({ open }) => (
                             <>
@@ -1380,7 +1387,7 @@ export default function Dashboard({ apiUrl }) {
                                                     : ""
                                             }`}
                                         >
-                                            <div className="w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                                            <div className="w-full">
                                                 <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 md:p-8 transition-all hover:shadow-md">
                                                     <div className="flex items-center space-x-4 mb-8">
                                                         <div className="bg-blue-50 p-3 rounded-xl">
@@ -1873,7 +1880,7 @@ export default function Dashboard({ apiUrl }) {
                                                 </div>
                                             </div>
                                             {/* Corporate Statistics Cards */}
-                                            <div className="w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                                            <div className="w-full">
                                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6 mb-10">
                                                     {/* Total Card */}
                                                     <div className="bg-white rounded-2xl p-6 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 border border-gray-100 group relative overflow-hidden">

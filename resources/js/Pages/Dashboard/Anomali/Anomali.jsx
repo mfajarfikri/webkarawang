@@ -1,4 +1,5 @@
 import DashboardLayout from "@/Layouts/DashboardLayout";
+import PageHeader, { HeaderStat } from "@/Components/Dashboard/PageHeader";
 import { Head, Link } from "@inertiajs/react";
 import { VscPreview } from "react-icons/vsc";
 import {
@@ -1646,46 +1647,29 @@ export default function Anomali({ anomalis = [], auth = [], kategoris = [] }) {
                     />
                 </Head>
 
-                <div className="min-h-screen bg-white rounded-2xl py-10">
-                    <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-8">
-                        {/* Header Section */}
-                        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
-                            <div className="flex items-center gap-3">
+                <div className="min-h-full">
+                    <div className="max-w-full">
+                        <PageHeader
+                            icon={MdOutlineReportProblem}
+                            title="Manajemen Anomali"
+                            description="Kelola dan pantau anomali sistem kelistrikan."
+                            leading={
                                 <button
                                     onClick={() => window.history.back()}
-                                    className="flex-shrink-0 h-10 w-10 rounded-xl bg-white border border-slate-200 flex items-center justify-center text-slate-600 hover:bg-slate-50 hover:text-blue-600 transition-all shadow-sm active:scale-95 group"
+                                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 transition hover:bg-slate-100 hover:text-ink-900"
                                     title="Kembali"
+                                    aria-label="Kembali"
                                 >
-                                    <FaChevronLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />
+                                    <FaChevronLeft className="h-3.5 w-3.5" />
                                 </button>
-                                <div className="h-12 w-12 rounded-2xl bg-gradient-to-br from-blue-500 via-blue-400 to-indigo-400 flex items-center justify-center text-white shadow-md">
-                                    <MdOutlineReportProblem className="w-6 h-6" />
-                                </div>
-                                <div>
-                                    <h1 className="text-2xl md:text-3xl font-bold text-slate-900">
-                                        Management Anomali
-                                    </h1>
-                                    <p className="text-sm md:text-base text-slate-600 mt-1">
-                                        Kelola dan pantau anomali sistem
-                                        kelistrikan.
-                                    </p>
-                                </div>
-                            </div>
-                            {/* Stat Card */}
-                            <div className="flex items-center gap-3">
-                                <div className="hidden sm:flex items-center gap-2 px-3 py-2 rounded-xl bg-white/80 backdrop-blur border border-blue-100 shadow-sm">
-                                    <div className="flex h-7 w-7 items-center justify-center rounded-full bg-cyan-50 text-sky-600">
-                                        <MdOutlineReportProblem className="w-3.5 h-3.5" />
-                                    </div>
-                                    <div className="text-xs text-slate-600">
-                                        <div className="font-semibold text-slate-800">
-                                            {totalRows} Anomali
-                                        </div>
-                                        <div>Terdata di sistem</div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+                            }
+                        >
+                            <HeaderStat
+                                icon={MdOutlineReportProblem}
+                                value={`${totalRows} anomali`}
+                                label="Terdata di sistem"
+                            />
+                        </PageHeader>
 
                         {/* Headless UI Tabs */}
                         <Tab.Group
@@ -1746,7 +1730,7 @@ export default function Anomali({ anomalis = [], auth = [], kategoris = [] }) {
                                                     "dashboard.anomali.create",
                                                 )}
                                             >
-                                                <button className="w-full md:w-auto bg-gradient-to-r from-cyan-600 to-sky-600 text-white px-4 sm:px-5 py-2 rounded-xl shadow hover:from-cyan-800 hover:to-sky-800 font-semibold flex transition-all duration-300 ease-in-out items-center justify-center gap-2 text-sm sm:text-base">
+                                                <button className="w-full md:w-auto bg-brand-600 text-white px-4 sm:px-5 py-2 rounded-xl shadow hover:bg-brand-700 font-semibold flex transition-all duration-300 ease-in-out items-center justify-center gap-2 text-sm sm:text-base">
                                                     <FaPlusCircle />
                                                     <span>Buat Anomali</span>
                                                 </button>
@@ -2610,7 +2594,7 @@ export default function Anomali({ anomalis = [], auth = [], kategoris = [] }) {
                                                 <button
                                                     type="button"
                                                     onClick={handleApplyFilters}
-                                                    className="w-full md:w-auto bg-gradient-to-r from-cyan-600 to-sky-600 text-white px-4 sm:px-5 py-2 rounded-xl shadow hover:from-cyan-800 hover:to-sky-800 font-semibold flex transition-all duration-300 ease-in-out items-center justify-center gap-2 text-sm sm:text-base"
+                                                    className="w-full md:w-auto bg-brand-600 text-white px-4 sm:px-5 py-2 rounded-xl shadow hover:bg-brand-700 font-semibold flex transition-all duration-300 ease-in-out items-center justify-center gap-2 text-sm sm:text-base"
                                                 >
                                                     Terapkan Filter
                                                 </button>

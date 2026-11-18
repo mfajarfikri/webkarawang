@@ -1,5 +1,6 @@
 import { Head, usePage } from "@inertiajs/react";
 import DashboardLayout from "../../../Layouts/DashboardLayout";
+import PageHeader, { HeaderStat } from "@/Components/Dashboard/PageHeader";
 import {
     FaUsers,
     FaPlus,
@@ -453,7 +454,7 @@ export default function User() {
     return (
         <>
             <Head title="User" />
-            <DashboardLayout>
+            <DashboardLayout title="User">
                 <div className="fixed top-20 right-4 sm:right-8 z-40 pointer-events-none">
                     <div
                         className={`flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/90 backdrop-blur-md shadow-lg border border-sky-50 transition-all duration-500 ${
@@ -472,7 +473,7 @@ export default function User() {
                     </div>
                 </div>
 
-                <div className="w-full mx-auto bg-white p-4 md:p-8 rounded-2xl space-y-6">
+                <div className="w-full space-y-6">
                     <div className="flex justify-between items-center px-1">
                         <h2 className="text-[11px] font-medium text-gray-400 flex items-center gap-1.5 uppercase tracking-wider">
                             <FaClock className="text-[10px]" />
@@ -480,36 +481,21 @@ export default function User() {
                             {lastUpdated.toLocaleTimeString("id-ID")}
                         </h2>
                     </div>
-                    {/* Header Section */}
-                    <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
-                        <div className="flex items-center gap-3">
-                            <div className="h-12 w-12 rounded-2xl bg-gradient-to-br from-sky-500 via-sky-400 to-cyan-400 flex items-center justify-center text-white shadow-md">
-                                <FaUsers className="w-6 h-6" />
-                            </div>
-                            <div>
-                                <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
-                                    Manajemen User
-                                </h1>
-                                <p className="text-sm md:text-base text-gray-600 mt-1">
-                                    Kelola data user dan hak akses sistem.
-                                </p>
-                            </div>
-                        </div>
-                        <div className="flex items-center gap-3">
-                            <button
-                                onClick={openCreateModal}
-                                className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-blue-600 text-white font-medium hover:bg-blue-700 shadow-sm transition-all active:scale-95"
-                            >
-                                <FaPlus className="w-4 h-4" />
-                                <span>Tambah User</span>
-                            </button>
-                        </div>
-                    </div>
+                    <PageHeader
+                        icon={FaUsers}
+                        title="Manajemen User"
+                        description="Kelola data user dan hak akses sistem."
+                    >
+                        <button onClick={openCreateModal} className="btn-brand">
+                            <FaPlus className="h-3.5 w-3.5" />
+                            <span>Tambah User</span>
+                        </button>
+                    </PageHeader>
 
                     {/* Main Card */}
-                    <div className="bg-white/95 backdrop-blur-sm rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                    <div className="surface overflow-hidden">
                         {/* Toolbar */}
-                        <div className="px-6 py-4 border-b border-gray-100 bg-gradient-to-r from-gray-50/80 via-white to-gray-50/80 flex flex-col sm:flex-row gap-4 justify-between items-center">
+                        <div className="px-6 py-4 border-b border-gray-100 flex flex-col sm:flex-row gap-4 justify-between items-center">
                             <div className="flex items-center gap-3 w-full sm:w-auto">
                                 <button
                                     onClick={() => setFilterOpen(true)}

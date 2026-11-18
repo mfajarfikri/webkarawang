@@ -240,7 +240,7 @@ function ScheduleContent({ anomalis, users }) {
 
     if (!anomalis) {
         return (
-            <DashboardLayout>
+            <DashboardLayout title="Jadwal Anomali">
                 <div className="p-8 text-center text-slate-500 bg-white rounded-xl shadow-sm border border-slate-200">
                     <FaExclamationCircle className="mx-auto text-4xl text-slate-400 mb-4" />
                     <h3 className="text-xl font-semibold mb-2 text-slate-900">
@@ -381,7 +381,7 @@ function ScheduleContent({ anomalis, users }) {
         <>
             <style>{calendarStyles}</style>
             <Head title={`Jadwal Pekerjaan - ${anomalis.judul || ""}`} />
-            <DashboardLayout>
+            <DashboardLayout title="Jadwal Anomali">
                 <div className="container bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
                     {/* Header */}
                     <div className="relative bg-white rounded-2xl shadow-[0_20px_50px_-12px_rgba(0,0,0,0.1)] border border-slate-100 p-8 mb-8 overflow-hidden">
@@ -391,7 +391,7 @@ function ScheduleContent({ anomalis, users }) {
 
                         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-8">
                             <div className="flex items-start gap-5">
-                                <div className="bg-gradient-to-br from-blue-500 to-indigo-600 p-4 rounded-2xl shadow-lg shadow-blue-500/30 text-white shrink-0">
+                                <div className="bg-ink-900 p-4 rounded-2xl shadow-soft text-volt shrink-0">
                                     <FaCalendarCheck className="text-2xl" />
                                 </div>
                                 <div>
@@ -643,7 +643,7 @@ function ScheduleContent({ anomalis, users }) {
                                             !dateRange?.from ||
                                             !dateRange?.to
                                                 ? "bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed"
-                                                : "bg-gradient-to-br from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white shadow-lg shadow-blue-500/30 hover:shadow-blue-500/40 hover:-translate-y-0.5"
+                                                : "bg-brand-600 hover:bg-brand-700 text-white shadow-lg shadow-blue-500/30 hover:shadow-blue-500/40 hover:-translate-y-0.5"
                                         } w-full py-4 px-6 rounded-xl transition-all duration-300 flex items-center justify-center font-bold text-lg group`}
                                     >
                                         {isSubmitting ? (

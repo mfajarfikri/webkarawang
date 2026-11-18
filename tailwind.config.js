@@ -1,5 +1,30 @@
 import defaultTheme from "tailwindcss/defaultTheme";
 import forms from "@tailwindcss/forms";
+import colors from "tailwindcss/colors";
+
+// Palet brand tunggal: biru-elektrik PLN. `sky`, `cyan`, dan `blue` di-alias
+// ke palet ini supaya seluruh halaman lama otomatis konsisten satu warna.
+const brand = {
+    50: "#f0f9ff",
+    100: "#e0f2fe",
+    200: "#b9e6fe",
+    300: "#7cd4fd",
+    400: "#36bffa",
+    500: "#0ba5ec",
+    600: "#0086c9",
+    700: "#026aa2",
+    800: "#065986",
+    900: "#0b4a6f",
+    950: "#062c41",
+};
+
+// Netral gelap untuk permukaan "ink" (hero, sidebar, footer).
+const ink = {
+    700: "#1c2740",
+    800: "#131c31",
+    900: "#0c1424",
+    950: "#070d19",
+};
 
 /** @type {import('tailwindcss').Config} */
 export default {
@@ -12,8 +37,27 @@ export default {
 
     theme: {
         extend: {
+            colors: {
+                brand,
+                ink,
+                sky: brand,
+                cyan: brand,
+                blue: brand,
+                gray: colors.slate,
+                volt: "#ffd60a",
+            },
+            boxShadow: {
+                soft: "0 1px 2px rgba(12,20,36,0.04), 0 8px 24px -12px rgba(12,20,36,0.12)",
+                lift: "0 2px 4px rgba(12,20,36,0.04), 0 24px 48px -20px rgba(12,20,36,0.22)",
+                glow: "0 0 0 1px rgba(11,165,236,0.25), 0 12px 32px -12px rgba(11,165,236,0.45)",
+            },
             fontFamily: {
-                sans: ["Figtree", ...defaultTheme.fontFamily.sans],
+                sans: ["Inter", ...defaultTheme.fontFamily.sans],
+                display: [
+                    '"Plus Jakarta Sans"',
+                    "Inter",
+                    ...defaultTheme.fontFamily.sans,
+                ],
                 inter: ["Inter", ...defaultTheme.fontFamily.sans],
                 merriweather: ["Merriweather", ...defaultTheme.fontFamily.sans],
                 lato: ["Lato", ...defaultTheme.fontFamily.sans],

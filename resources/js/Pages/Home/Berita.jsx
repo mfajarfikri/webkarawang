@@ -153,68 +153,51 @@ export default function Berita() {
             <Head title="Berita" />
             <HomeLayout>
                 {/* Hero Section */}
-                <div className="relative bg-gradient-to-b from-sky-700 to-cyan-900 overflow-hidden">
-                    <div className="absolute inset-0">
-                        <img
-                            src={`/img/heroBerita.jpg`}
-                            alt="Hero Background"
-                            className="w-full h-full object-cover object-center opacity-60 mix-blend-overlay"
-                            loading="eager"
-                            fetchPriority="high"
-                        />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-sky-600/40 to-cyan-800/50"></div>
-                        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiMyMjIiIGZpbGwtb3BhY2l0eT0iLjA1Ij48cGF0aCBkPSJNMzYgMzRoLTJ2LTRoMnY0em0wLTZ2LTRoLTJ2NGgyek0zMCAzNGgtMnYtNGgydjR6bTAtNnYtNGgtMnY0aDJ6TTI0IDM0aC0ydi00aDJ2NHptMC02di00aC0ydjRoMnoiLz48L2c+PC9nPjwvc3ZnPg==')] opacity-10"></div>
-                    </div>
-                    <div className="relative z-10 max-w-7xl mx-auto px-4 py-24 sm:px-6 lg:px-8">
-                        <div className="text-center">
-                            <div className="inline-block mb-4 px-3 py-1 bg-blue-500/20 backdrop-blur-sm rounded-full text-blue-100 text-sm font-medium">
-                                PLN UPT Karawang
-                            </div>
-                            <h1 className="text-5xl font-extrabold tracking-tight text-white sm:text-6xl lg:text-7xl drop-shadow-lg bg-clip-text text-transparent bg-gradient-to-r from-white to-blue-200">
-                                Berita Terkini
-                            </h1>
-                            <p className="mt-6 max-w-3xl mx-auto text-xl md:text-2xl text-blue-100 drop-shadow-md font-light">
-                                Temukan informasi terbaru seputar PLN UPT
-                                Karawang dan perkembangan industri kelistrikan
-                            </p>
+                <section className="bg-grid-ink">
+                    <div className="container mx-auto px-4 pb-28 pt-16 sm:px-6 sm:pt-20">
+                        <div className="eyebrow !text-brand-300">
+                            PLN UPT Karawang
                         </div>
+                        <h1 className="mt-4 max-w-3xl text-4xl font-extrabold leading-[1.1] text-white sm:text-5xl lg:text-6xl">
+                            Berita <span className="text-volt">terkini</span>
+                        </h1>
+                        <p className="mt-5 max-w-2xl text-base leading-relaxed text-slate-300 sm:text-lg">
+                            Informasi terbaru seputar PLN UPT Karawang dan
+                            perkembangan industri kelistrikan.
+                        </p>
                     </div>
-                </div>
+                </section>
 
                 {/* Search and Filter Section */}
-                <div className="bg-white shadow-md relative z-20 -mt-8 rounded-xl mx-4 sm:mx-auto max-w-4xl">
-                    <div className="px-6 py-6">
-                        <div className="flex flex-col md:flex-row md:items-center md:space-x-4">
-                            <div className="relative flex-1">
-                                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                                    <FaSearch className="h-5 w-5 text-blue-500" />
-                                </div>
-                                <input
-                                    type="text"
-                                    className="block w-full pl-12 pr-4 py-3 border-0 bg-gray-50 rounded-xl focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all duration-200 shadow-inner text-gray-700"
-                                    placeholder="Cari berita atau informasi..."
-                                    value={searchQuery}
-                                    onChange={(e) => {
-                                        setSearchQuery(e.target.value);
-                                        // Reset to page 1 when searching
-                                        if (pagination.current_page !== 1) {
-                                            fetchBerita(1);
-                                        }
-                                    }}
-                                    aria-label="Cari berita"
-                                />
-                            </div>
+                <div className="container relative z-20 mx-auto -mt-9 px-4 sm:px-6">
+                    <div className="relative max-w-3xl rounded-2xl border border-slate-200/80 bg-white p-2 shadow-lift">
+                        <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-6">
+                            <FaSearch className="h-4 w-4 text-slate-400" />
                         </div>
+                        <input
+                            type="text"
+                            className="block w-full rounded-xl border-0 bg-transparent py-3.5 pl-12 pr-4 text-[15px] text-ink-900 placeholder:text-slate-400 focus:ring-2 focus:ring-brand-500/30"
+                            placeholder="Cari berita atau informasi..."
+                            value={searchQuery}
+                            onChange={(e) => {
+                                setSearchQuery(e.target.value);
+                                // Reset to page 1 when searching
+                                if (pagination.current_page !== 1) {
+                                    fetchBerita(1);
+                                }
+                            }}
+                            aria-label="Cari berita"
+                        />
                     </div>
                 </div>
 
                 {/* News Grid */}
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
                     <div className="mb-12">
-                        <h2 className="text-3xl font-bold text-gray-900 mb-2">
-                            Informasi Terbaru
+                        <div className="eyebrow">Arsip</div>
+                        <h2 className="mt-3 text-2xl font-extrabold text-ink-900 sm:text-3xl">
+                            Informasi terbaru
                         </h2>
-                        <div className="w-20 h-1.5 bg-blue-600 rounded-full"></div>
                     </div>
 
                     {filteredBerita.length === 0 ? (
@@ -234,7 +217,7 @@ export default function Berita() {
                             {filteredBerita.map((news) => (
                                 <article
                                     key={news.id}
-                                    className="group bg-white rounded-2xl shadow-sm hover:shadow-2xl transition-all duration-500 overflow-hidden border border-gray-100 flex flex-col h-full transform hover:-translate-y-2"
+                                    className="group bg-white rounded-2xl shadow-soft hover:shadow-lift transition duration-300 overflow-hidden border border-slate-200/80 flex flex-col h-full hover:-translate-y-0.5"
                                 >
                                     {/* Image Container */}
                                     <div className="relative h-64 overflow-hidden">
@@ -255,12 +238,9 @@ export default function Berita() {
                                                             : null;
                                                     }
                                                     return null;
-                                                } catch (e) {
-                                                    console.error(
-                                                        "Error parsing news image:",
-                                                        e,
-                                                    );
-                                                    return null;
+                                                } catch {
+                                                    // `gambar` bisa berupa nama file polos (bukan JSON).
+                                                    return `/storage/berita/${news.gambar}`;
                                                 }
                                             })()}
                                             alt={news.judul}

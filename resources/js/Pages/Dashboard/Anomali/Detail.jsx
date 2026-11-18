@@ -205,7 +205,7 @@ export default function Detail({ anomalis }) {
 
     if (!anomalis) {
         return (
-            <DashboardLayout>
+            <DashboardLayout title="Detail Anomali">
                 <div className="p-8 text-center text-slate-500 bg-white rounded-xl shadow-sm border border-slate-200">
                     <FaExclamationCircle className="mx-auto text-4xl text-slate-400 mb-4" />
                     <h3 className="text-xl font-semibold mb-2">
@@ -248,7 +248,7 @@ export default function Detail({ anomalis }) {
     return (
         <>
             <Head title={`Detail Anomali - ${anomalis.judul || ""}`} />
-            <DashboardLayout>
+            <DashboardLayout title="Detail Anomali">
                 <div className="container mx-auto px-4 py-8">
                     {/* Header */}
                     <div className="relative bg-white rounded-2xl shadow-[0_20px_50px_-12px_rgba(0,0,0,0.1)] border border-slate-100 p-8 mb-8 overflow-hidden">
@@ -258,7 +258,7 @@ export default function Detail({ anomalis }) {
 
                         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-8">
                             <div className="flex items-start gap-5">
-                                <div className="bg-gradient-to-br from-blue-500 to-indigo-600 p-4 rounded-2xl shadow-lg shadow-blue-500/30 text-white shrink-0">
+                                <div className="bg-ink-900 p-4 rounded-2xl shadow-soft text-volt shrink-0">
                                     <FaFileAlt className="text-2xl" />
                                 </div>
                                 <div>

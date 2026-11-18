@@ -1,12 +1,7 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import { Head, Link } from "@inertiajs/react";
 import HomeLayout from "@/Layouts/HomeLayout";
-import {
-    ButtonLink,
-    IconBadge,
-    Section,
-    classNames,
-} from "@/Components/Home/HomeUi";
+import { Section, classNames } from "@/Components/Home/HomeUi";
 import {
     FaArrowRight,
     FaUsers,
@@ -17,10 +12,13 @@ import {
     FaChevronRight,
 } from "react-icons/fa";
 import { motion, AnimatePresence } from "framer-motion";
-import { generateExcerpt } from "@/utils/editorParser";
 import axios from "axios";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
+
+const SLIDE_INTERVAL_MS = 6000;
+const LATEST_NEWS_LIMIT = 3;
+const FALLBACK_IMAGE = "/img/news-default.jpeg";
 
 function parseGambarFirst(gambar) {
     if (!gambar) return "";
@@ -39,470 +37,486 @@ function parseGambarFirst(gambar) {
 
 function beritaImageUrl(news) {
     const fileName = parseGambarFirst(news?.gambar);
-    if (!fileName) return "/img/news-default.jpeg";
+    if (!fileName) return FALLBACK_IMAGE;
     if (fileName.startsWith("http://") || fileName.startsWith("https://")) {
         return fileName;
     }
     return `${window.location.origin}/storage/berita/${fileName}`;
 }
 
-function StatCard({ icon, tone, title, value, unit, href }) {
-    return (
-        <div className="rounded-2xl border border-slate-200 bg-white shadow-sm p-5">
-            <div className="flex items-start justify-between gap-4">
-                <div className="min-w-0">
-                    <div className="text-sm font-semibold text-slate-900">
-                        {title}
-                    </div>
-                    <div className="mt-3 flex items-end gap-2">
-                        <div className="text-3xl font-extrabold tracking-tight text-slate-900">
-                            {value}
-                        </div>
-                        {unit ? (
-                            <div className="text-sm font-semibold text-slate-500">
-                                {unit}
-                            </div>
-                        ) : null}
-                    </div>
-                </div>
-                <IconBadge icon={icon} tone={tone} />
+function handleImageError(e) {
+    e.currentTarget.src = FALLBACK_IMAGE;
+}
+
+function formatDate(value) {
+    return value ? format(new Date(value), "dd MMM yyyy", { locale: id }) : "";
+}
+
+function FeaturedCarousel({ items }) {
+    const [currentSlide, setCurrentSlide] = useState(0);
+    const [isPaused, setIsPaused] = useState(false);
+    const count = items.length;
+    const activeIndex = count ? currentSlide % count : 0;
+    const active = items[activeIndex];
+
+    useEffect(() => {
+        if (isPaused || count < 2) return undefined;
+        const interval = setInterval(
+            () => setCurrentSlide((prev) => (prev + 1) % count),
+            SLIDE_INTERVAL_MS,
+        );
+        return () => clearInterval(interval);
+    }, [count, isPaused]);
+
+    const goTo = (offset) =>
+        setCurrentSlide((prev) => (prev + offset + count) % count);
+
+    if (!active) {
+        return (
+            <div className="flex aspect-[4/3] items-center justify-center rounded-3xl border border-white/10 bg-white/5 text-sm text-slate-400">
+                Belum ada berita pilihan.
             </div>
-            {href ? (
-                <div className="mt-5">
-                    <Link
-                        href={href}
-                        className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors"
+        );
+    }
+
+    return (
+        <div
+            className="relative"
+            onMouseEnter={() => setIsPaused(true)}
+            onMouseLeave={() => setIsPaused(false)}
+            onFocus={() => setIsPaused(true)}
+            onBlur={() => setIsPaused(false)}
+        >
+            <div className="relative aspect-[4/3] overflow-hidden rounded-3xl border border-white/10 bg-ink-800 shadow-lift">
+                <AnimatePresence initial={false} mode="wait">
+                    <motion.div
+                        key={active.id}
+                        className="absolute inset-0"
+                        initial={{ opacity: 0, scale: 1.03 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.5 }}
                     >
-                        Detail
-                        <FaArrowRight className="h-3.5 w-3.5 text-slate-400" />
-                    </Link>
+                        <img
+                            src={beritaImageUrl(active)}
+                            alt={active.judul}
+                            className="h-full w-full object-cover"
+                            loading="eager"
+                            decoding="async"
+                            onError={handleImageError}
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-ink-950 via-ink-950/40 to-transparent" />
+                        <div className="absolute inset-x-0 bottom-0 p-6 sm:p-7">
+                            <span className="inline-flex items-center gap-2 rounded-full bg-volt px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider text-ink-950">
+                                Berita pilihan
+                            </span>
+                            <h2 className="mt-3 line-clamp-2 text-xl font-bold text-white sm:text-2xl">
+                                <Link
+                                    href={`/berita/${active.slug}`}
+                                    className="after:absolute after:inset-0"
+                                >
+                                    {active.judul}
+                                </Link>
+                            </h2>
+                            {active.excerpt ? (
+                                <p className="mt-2 line-clamp-2 text-sm text-slate-300">
+                                    {active.excerpt}
+                                </p>
+                            ) : null}
+                        </div>
+                    </motion.div>
+                </AnimatePresence>
+            </div>
+
+            {count > 1 && (
+                <div className="mt-4 flex items-center justify-between">
+                    <div className="flex gap-1.5">
+                        {items.map((item, index) => (
+                            <button
+                                type="button"
+                                key={item.id}
+                                onClick={() => setCurrentSlide(index)}
+                                aria-label={`Ke berita ${index + 1}`}
+                                aria-current={index === activeIndex}
+                                className={classNames(
+                                    "h-1.5 rounded-full transition-all duration-300",
+                                    index === activeIndex
+                                        ? "w-8 bg-brand-400"
+                                        : "w-1.5 bg-white/25 hover:bg-white/50",
+                                )}
+                            />
+                        ))}
+                    </div>
+                    <div className="flex gap-2">
+                        <button
+                            type="button"
+                            onClick={() => goTo(-1)}
+                            aria-label="Berita sebelumnya"
+                            className="flex h-9 w-9 items-center justify-center rounded-full border border-white/15 text-white transition hover:bg-white/10"
+                        >
+                            <FaChevronLeft className="h-3 w-3" />
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => goTo(1)}
+                            aria-label="Berita berikutnya"
+                            className="flex h-9 w-9 items-center justify-center rounded-full border border-white/15 text-white transition hover:bg-white/10"
+                        >
+                            <FaChevronRight className="h-3 w-3" />
+                        </button>
+                    </div>
                 </div>
-            ) : null}
+            )}
         </div>
     );
 }
 
-function NewsCard({ news }) {
-    const imageSrc = beritaImageUrl(news);
+function StatCard({ icon: Icon, title, value, unit, href, isLoading }) {
     return (
-        <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden group hover:shadow-md transition-shadow">
-            <div className="relative aspect-[16/9] bg-slate-100 overflow-hidden">
-                <img
-                    src={imageSrc}
-                    alt={news?.judul || "Berita"}
-                    className="absolute inset-0 h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
-                    loading="lazy"
-                    decoding="async"
-                    onError={(e) => {
-                        e.currentTarget.src = "/img/news-default.jpeg";
-                    }}
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/35 via-black/10 to-transparent" />
-                <div className="absolute top-4 left-4">
-                    <span className="inline-flex items-center rounded-full border border-white/30 bg-white/15 px-3 py-1 text-xs font-semibold text-white backdrop-blur">
-                        {news?.tema?.nama || "Berita"}
+        <Link
+            href={href}
+            className="group relative flex flex-col justify-between gap-8 bg-white p-6 transition-colors duration-200 hover:bg-brand-50/60 sm:p-7"
+        >
+            <div className="flex items-center justify-between">
+                <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-ink-900 text-volt">
+                    <Icon className="h-4 w-4" aria-hidden="true" />
+                </span>
+                <FaArrowRight className="h-3.5 w-3.5 -translate-x-1 text-slate-300 transition duration-200 group-hover:translate-x-0 group-hover:text-brand-600" />
+            </div>
+            <div>
+                <div className="flex items-baseline gap-2">
+                    {isLoading ? (
+                        <span className="h-10 w-20 animate-pulse rounded-lg bg-slate-100" />
+                    ) : (
+                        <span className="font-display text-4xl font-extrabold tracking-tight text-ink-900 tabular-nums sm:text-5xl">
+                            {value}
+                        </span>
+                    )}
+                    <span className="text-sm font-semibold text-slate-500">
+                        {unit}
                     </span>
                 </div>
-            </div>
-
-            <div className="p-5">
-                <div className="flex items-center justify-between gap-3 text-xs text-slate-500">
-                    <div className="flex items-center gap-2 min-w-0">
-                        <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-2 py-1 text-[11px] font-semibold text-slate-700">
-                            <FaUsers className="h-3 w-3 text-slate-400" />
-                            <span className="truncate">
-                                {news?.user?.name || "Admin"}
-                            </span>
-                        </span>
-                    </div>
-                    {news?.created_at ? (
-                        <div className="shrink-0">
-                            {format(new Date(news.created_at), "dd MMM yyyy", {
-                                locale: id,
-                            })}
-                        </div>
-                    ) : null}
+                <div className="mt-2 text-sm font-medium text-slate-600">
+                    {title}
                 </div>
+            </div>
+        </Link>
+    );
+}
 
-                <h3 className="mt-3 text-base font-bold text-slate-900 tracking-tight line-clamp-2 group-hover:text-sky-700 transition-colors">
-                    <Link href={route("berita.detail", news.slug)}>
+function NewsMeta({ news }) {
+    return (
+        <div className="flex items-center gap-2 text-xs text-slate-500">
+            <span className="font-semibold text-brand-700">
+                {news?.tema?.nama || "Berita"}
+            </span>
+            <span aria-hidden="true">·</span>
+            <span>{formatDate(news?.created_at)}</span>
+        </div>
+    );
+}
+
+function NewsCard({ news, isFeatured = false, isWide = false }) {
+    return (
+        <article
+            className={classNames(
+                "group relative flex overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-soft transition duration-300 hover:-translate-y-0.5 hover:shadow-lift",
+                isWide
+                    ? "flex-col lg:flex-row"
+                    : isFeatured
+                      ? "flex-col"
+                      : "flex-col sm:flex-row",
+            )}
+        >
+            <div
+                className={classNames(
+                    "relative shrink-0 overflow-hidden bg-slate-100",
+                    isWide
+                        ? "aspect-[16/10] lg:aspect-auto lg:min-h-[22rem] lg:w-1/2"
+                        : isFeatured
+                          ? "aspect-[16/10]"
+                          : "aspect-[16/10] sm:aspect-auto sm:w-2/5",
+                )}
+            >
+                <img
+                    src={beritaImageUrl(news)}
+                    alt=""
+                    className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                    loading="lazy"
+                    decoding="async"
+                    onError={handleImageError}
+                />
+            </div>
+            <div
+                className={classNames(
+                    "flex flex-1 flex-col p-5 sm:p-6",
+                    isWide ? "lg:justify-center lg:p-10" : "",
+                )}
+            >
+                <NewsMeta news={news} />
+                <h3
+                    className={classNames(
+                        "mt-2 font-bold text-ink-900 transition-colors group-hover:text-brand-700",
+                        isFeatured
+                            ? "line-clamp-3 text-xl sm:text-2xl"
+                            : "line-clamp-2 text-base",
+                    )}
+                >
+                    <Link
+                        href={route("berita.detail", news.slug)}
+                        className="after:absolute after:inset-0"
+                    >
                         {news?.judul}
                     </Link>
                 </h3>
-                <p className="mt-2 text-sm text-slate-600 line-clamp-3">
+                <p
+                    className={classNames(
+                        "mt-2 text-sm leading-relaxed text-slate-600",
+                        isFeatured ? "line-clamp-3" : "line-clamp-2",
+                    )}
+                >
                     {news?.excerpt}
                 </p>
-
-                <div className="mt-4">
-                    <Link
-                        href={route("berita.detail", news.slug)}
-                        className="inline-flex items-center gap-2 rounded-xl bg-sky-700 px-4 py-2 text-sm font-semibold text-white hover:bg-sky-800 transition-colors"
-                    >
-                        Baca Selengkapnya
-                        <FaArrowRight className="h-3.5 w-3.5" />
-                    </Link>
+                <div
+                    className={classNames(
+                        "flex items-center justify-between pt-5 text-xs text-slate-500",
+                        isWide ? "" : "mt-auto",
+                    )}
+                >
+                    <span className="truncate">
+                        Oleh {news?.user?.name || "Admin"}
+                    </span>
+                    <span className="inline-flex items-center gap-1.5 font-semibold text-ink-900">
+                        Baca
+                        <FaArrowRight className="h-3 w-3 transition-transform group-hover:translate-x-0.5" />
+                    </span>
                 </div>
             </div>
+        </article>
+    );
+}
+
+function NewsSkeleton() {
+    return (
+        <div className="grid grid-cols-1 gap-5 lg:grid-cols-2 lg:grid-rows-2">
+            {Array.from({ length: LATEST_NEWS_LIMIT }).map((_, i) => (
+                <div
+                    key={i}
+                    className={classNames(
+                        "overflow-hidden rounded-2xl border border-slate-200/80 bg-white",
+                        i === 0 ? "lg:row-span-2" : "",
+                    )}
+                >
+                    <div className="aspect-[16/10] animate-pulse bg-slate-100" />
+                    <div className="space-y-3 p-6">
+                        <div className="h-3 w-32 animate-pulse rounded bg-slate-100" />
+                        <div className="h-4 w-5/6 animate-pulse rounded bg-slate-100" />
+                    </div>
+                </div>
+            ))}
         </div>
     );
 }
 
 export default function Home() {
-    const carouselRef = useRef(null);
-    const [currentSlide, setCurrentSlide] = useState(0);
-    const [loading, setLoading] = useState(true);
-    const [berita, setBerita] = useState([]);
-    const [beritaTerbaru, setBeritaTerbaru] = useState([]);
-    const [stats, setStats] = useState({
-        gardu_induk: 0,
-        trafo_tenaga: 0,
-        ktt: 0,
-        sdm: 0,
-    });
-    const [isHovering, setIsHovering] = useState(false);
-    const [animateStats, setAnimateStats] = useState(false);
-    const [error, setError] = useState(null);
-    const BeritaTerbaru = beritaTerbaru.slice(0, 3);
+    const [featured, setFeatured] = useState([]);
+    const [latest, setLatest] = useState([]);
+    const [stats, setStats] = useState(null);
+    const [isNewsLoading, setIsNewsLoading] = useState(true);
+    const [hasError, setHasError] = useState(false);
 
     useEffect(() => {
-        const fetchStats = async () => {
-            try {
-                const response = await axios.get("/api/stats");
-                setStats(response.data);
-            } catch (error) {
-                console.error("Error Fetching Stats", error);
-                setError(error);
-            } finally {
-                setLoading(false);
-            }
-        };
+        let isActive = true;
 
-        fetchStats();
-    }, []);
+        axios
+            .get("/api/stats")
+            .then((res) => isActive && setStats(res.data))
+            .catch(() => isActive && setHasError(true));
 
-    useEffect(() => {
-        const fetchBerita = async () => {
-            try {
-                const response = await axios.get("/api/showberita");
-                setBerita(response.data.berita || []);
-            } catch (error) {
-                setError(error);
-            } finally {
-                setLoading(false);
-            }
-        };
+        axios
+            .get("/api/showberita")
+            .then((res) => isActive && setFeatured(res.data.berita || []))
+            .catch(() => isActive && setHasError(true));
 
-        fetchBerita();
-    }, []);
-
-    useEffect(() => {
-        const fetchBeritaTerbaru = async () => {
-            try {
-                const response = await axios.get("/api/berita");
-                setBeritaTerbaru(response.data.berita || []);
-            } catch (error) {
-                setError(error);
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        fetchBeritaTerbaru();
-    }, []);
-    const carouselItems =
-        berita.length > 0
-            ? berita.map((item) => ({
-                  id: item.id,
-                  image: beritaImageUrl(item),
-                  title: item.judul,
-                  description: item.excerpt
-                      ? item.excerpt
-                      : item.excerpt ||
-                        (item.isi ? item.isi.substring(0, 150) + "..." : ""),
-                  buttonText: "Baca Selengkapnya",
-                  buttonLink: `/berita/${item.slug}`,
-              }))
-            : [];
-    useEffect(() => {
-        let interval;
-        if (!isHovering && carouselItems.length > 0) {
-            interval = setInterval(() => {
-                setCurrentSlide(
-                    (prevSlide) => (prevSlide + 1) % carouselItems.length,
-                );
-            }, 6000);
-        }
-        return () => clearInterval(interval);
-    }, [carouselItems.length, isHovering]);
-
-    useEffect(() => {
-        const observer = new IntersectionObserver(
-            (entries) => {
-                if (entries[0].isIntersecting) {
-                    setAnimateStats(true);
-                }
-            },
-            { threshold: 0.3 },
-        );
-
-        const statsSection = document.querySelector(".stats-section");
-        if (statsSection) {
-            observer.observe(statsSection);
-        }
+        axios
+            .get("/api/berita")
+            .then((res) => isActive && setLatest(res.data.berita || []))
+            .catch(() => isActive && setHasError(true))
+            .finally(() => isActive && setIsNewsLoading(false));
 
         return () => {
-            if (statsSection) {
-                observer.unobserve(statsSection);
-            }
+            isActive = false;
         };
     }, []);
 
-    const goToSlide = (index) => {
-        setCurrentSlide(index);
-    };
+    const latestNews = latest.slice(0, LATEST_NEWS_LIMIT);
+    const hasFullNewsGrid = latestNews.length >= LATEST_NEWS_LIMIT;
+    const isStatsLoading = stats === null && !hasError;
 
-    const goToNextSlide = () => {
-        setCurrentSlide((prev) => (prev + 1) % carouselItems.length);
-    };
-
-    const goToPrevSlide = () => {
-        setCurrentSlide(
-            (prev) => (prev - 1 + carouselItems.length) % carouselItems.length,
-        );
-    };
+    const statItems = [
+        {
+            icon: FaBolt,
+            title: "Gardu Induk dikelola",
+            value: stats?.gardu_induk ?? "—",
+            unit: "Unit",
+            href: route("gardu-induk"),
+        },
+        {
+            icon: FaIndustry,
+            title: "Kapasitas Trafo Tenaga",
+            value: stats?.trafo_tenaga ?? "—",
+            unit: "MVA",
+            href: "/asset/trafo-tenaga",
+        },
+        {
+            icon: FaBuilding,
+            title: "Konsumen Tegangan Tinggi",
+            value: stats?.ktt ?? "—",
+            unit: "Pelanggan",
+            href: route("ktt.index"),
+        },
+        {
+            icon: FaUsers,
+            title: "SDM PLN UPT Karawang",
+            value: stats?.sdm ?? "—",
+            unit: "Pegawai",
+            href: "/asset/sdm",
+        },
+    ];
 
     return (
         <HomeLayout>
             <Head title="Beranda" />
 
-            <div className="bg-white">
-                <div className="container mx-auto px-4 sm:px-6 py-10 sm:py-12 space-y-6">
-                    <div
-                        className="rounded-3xl border border-sky-100 bg-white/70 backdrop-blur shadow-sm overflow-hidden"
-                        ref={carouselRef}
-                        onMouseEnter={() => setIsHovering(true)}
-                        onMouseLeave={() => setIsHovering(false)}
+            {/* Hero */}
+            <section className="bg-grid-ink">
+                <div className="container mx-auto grid grid-cols-1 items-center gap-12 px-4 pb-32 pt-14 sm:px-6 sm:pt-20 lg:grid-cols-12 lg:gap-10 lg:pb-40">
+                    <motion.div
+                        className="lg:col-span-6"
+                        initial={{ opacity: 0, y: 16 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.5 }}
                     >
-                        <div className="relative min-h-[450px]">
-                            <AnimatePresence initial={false} mode="wait">
-                                {carouselItems.map(
-                                    (item, index) =>
-                                        index === currentSlide && (
-                                            <motion.div
-                                                key={item.id}
-                                                className="absolute inset-0"
-                                                initial={{ opacity: 0 }}
-                                                animate={{ opacity: 1 }}
-                                                exit={{ opacity: 0 }}
-                                                transition={{ duration: 0.45 }}
-                                            >
-                                                <img
-                                                    src={item.image}
-                                                    alt={item.title}
-                                                    className="absolute inset-0 h-full w-full object-cover"
-                                                    loading="eager"
-                                                    decoding="async"
-                                                    onError={(e) => {
-                                                        e.currentTarget.src =
-                                                            "/img/news-default.jpeg";
-                                                    }}
-                                                />
-                                                <div className="absolute inset-0 bg-gradient-to-r from-slate-950/75 via-slate-900/35 to-transparent" />
-
-                                                <div className="relative z-10 h-full flex items-center">
-                                                    <div className="container mx-auto px-6 sm:px-10">
-                                                        <motion.div
-                                                            className="max-w-2xl"
-                                                            initial={{
-                                                                opacity: 0,
-                                                                y: 12,
-                                                            }}
-                                                            animate={{
-                                                                opacity: 1,
-                                                                y: 0,
-                                                            }}
-                                                            transition={{
-                                                                duration: 0.35,
-                                                                delay: 0.05,
-                                                            }}
-                                                        >
-                                                            <div className="text-[11px] font-semibold uppercase tracking-widest text-white/70">
-                                                                Berita Pilihan
-                                                            </div>
-                                                            <h1 className="mt-2 text-2xl sm:text-4xl font-extrabold tracking-tight text-white">
-                                                                {item.title}
-                                                            </h1>
-                                                            <p className="mt-3 text-sm sm:text-base text-white/80 leading-relaxed max-w-xl line-clamp-3">
-                                                                {
-                                                                    item.description
-                                                                }
-                                                            </p>
-                                                            <div className="mt-6 flex flex-wrap gap-3">
-                                                                <ButtonLink
-                                                                    as={Link}
-                                                                    href={
-                                                                        item.buttonLink
-                                                                    }
-                                                                    className="bg-sky-600 text-slate-900 hover:bg-sky-700/90"
-                                                                >
-                                                                    {
-                                                                        item.buttonText
-                                                                    }
-                                                                    <FaArrowRight className="ml-2 h-3.5 w-3.5" />
-                                                                </ButtonLink>
-                                                            </div>
-                                                        </motion.div>
-                                                    </div>
-                                                </div>
-                                            </motion.div>
-                                        ),
-                                )}
-                            </AnimatePresence>
-
-                            <div className="absolute inset-y-0 left-0 z-20 flex items-center px-3">
-                                <button
-                                    type="button"
-                                    onClick={goToPrevSlide}
-                                    className="h-10 w-10 rounded-2xl border border-white/30 bg-white/10 text-white backdrop-blur hover:bg-white/15 transition-colors"
-                                    aria-label="Slide sebelumnya"
-                                >
-                                    <FaChevronLeft className="mx-auto h-4 w-4" />
-                                </button>
-                            </div>
-                            <div className="absolute inset-y-0 right-0 z-20 flex items-center px-3">
-                                <button
-                                    type="button"
-                                    onClick={goToNextSlide}
-                                    className="h-10 w-10 rounded-2xl border border-white/30 bg-white/10 text-white backdrop-blur hover:bg-white/15 transition-colors"
-                                    aria-label="Slide berikutnya"
-                                >
-                                    <FaChevronRight className="mx-auto h-4 w-4" />
-                                </button>
-                            </div>
-
-                            {carouselItems.length ? (
-                                <div className="absolute bottom-4 left-0 right-0 z-20 flex justify-center gap-2">
-                                    {carouselItems.map((_, index) => (
-                                        <button
-                                            type="button"
-                                            key={index}
-                                            onClick={() => goToSlide(index)}
-                                            className={classNames(
-                                                "h-2 rounded-full transition-all",
-                                                index === currentSlide
-                                                    ? "bg-white w-10"
-                                                    : "bg-white/50 w-2 hover:bg-white/70",
-                                            )}
-                                            aria-label={`Ke slide ${index + 1}`}
-                                        />
-                                    ))}
-                                </div>
-                            ) : null}
-                        </div>
-                    </div>
-
-                    <div className="stats-section">
-                        <Section
-                            id="asset"
-                            eyebrow="Ringkasan"
-                            title="Asset PLN UPT Karawang"
-                            subtitle="Informasi ringkas terkait infrastruktur dan layanan."
-                        >
-                            {error ? (
-                                <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-800">
-                                    Gagal memuat sebagian data. Silakan refresh.
-                                </div>
-                            ) : null}
-                            <motion.div
-                                initial={{ opacity: 0, y: 12 }}
-                                animate={
-                                    animateStats
-                                        ? { opacity: 1, y: 0 }
-                                        : { opacity: 0, y: 12 }
-                                }
-                                transition={{ duration: 0.35 }}
-                                className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"
-                            >
-                                <StatCard
-                                    icon={FaBolt}
-                                    tone="sky"
-                                    title="Gardu Induk"
-                                    value={loading ? "—" : stats.gardu_induk}
-                                    unit="Unit"
-                                    href={route("gardu-induk")}
-                                />
-                                <StatCard
-                                    icon={FaIndustry}
-                                    tone="emerald"
-                                    title="Trafo Tenaga"
-                                    value={loading ? "—" : stats.trafo_tenaga}
-                                    unit="MVA"
-                                    href="/asset/trafo-tenaga"
-                                />
-                                <StatCard
-                                    icon={FaBuilding}
-                                    tone="violet"
-                                    title="Pelanggan KTT"
-                                    value={loading ? "—" : stats.ktt}
-                                    unit="Pelanggan"
-                                    href={route("ktt.index")}
-                                />
-                                <StatCard
-                                    icon={FaUsers}
-                                    tone="amber"
-                                    title="SDM PLN UPT"
-                                    value={loading ? "—" : stats.sdm}
-                                    unit="Pegawai"
-                                    href="/asset/sdm"
-                                />
-                            </motion.div>
-                        </Section>
-                    </div>
-
-                    <Section
-                        id="berita"
-                        eyebrow="Update"
-                        title="Berita Terbaru"
-                        subtitle="Informasi dan pembaruan terkini dari PLN UPT Karawang."
-                        action={
+                        <span className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-3 py-1.5 text-xs font-medium text-slate-200">
+                            <span className="relative flex h-2 w-2">
+                                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+                                <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400" />
+                            </span>
+                            Unit Pelaksana Transmisi Karawang
+                        </span>
+                        <h1 className="mt-6 text-4xl font-extrabold leading-[1.08] text-white sm:text-5xl lg:text-6xl">
+                            Menjaga listrik tetap{" "}
+                            <span className="text-volt">andal</span>, setiap
+                            saat.
+                        </h1>
+                        <p className="mt-6 max-w-xl text-base leading-relaxed text-slate-300 sm:text-lg">
+                            Portal informasi PLN UPT Karawang: aset transmisi,
+                            gardu induk, pelanggan tegangan tinggi, dan kabar
+                            terbaru dari lapangan — dalam satu tempat.
+                        </p>
+                        <div className="mt-8 flex flex-wrap gap-3">
                             <Link
-                                href="/berita"
-                                className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors"
+                                href={route("gardu-induk")}
+                                className="btn bg-white text-ink-900 hover:bg-volt"
                             >
-                                Lihat Semua
-                                <FaArrowRight className="h-3.5 w-3.5 text-slate-400" />
+                                Jelajahi Gardu Induk
+                                <FaArrowRight className="h-3 w-3" />
                             </Link>
-                        }
+                            <a
+                                href="#berita"
+                                className="btn border border-white/20 text-white hover:bg-white/10"
+                            >
+                                Berita terbaru
+                            </a>
+                        </div>
+                    </motion.div>
+
+                    <motion.div
+                        className="lg:col-span-6"
+                        initial={{ opacity: 0, y: 24 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.6, delay: 0.1 }}
                     >
-                        {loading && !BeritaTerbaru.length ? (
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                {Array.from({ length: 3 }).map((_, i) => (
-                                    <div
-                                        key={i}
-                                        className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden"
-                                    >
-                                        <div className="aspect-[16/9] bg-slate-100 animate-pulse" />
-                                        <div className="p-5 space-y-3">
-                                            <div className="h-3 w-32 bg-slate-100 rounded animate-pulse" />
-                                            <div className="h-4 w-5/6 bg-slate-100 rounded animate-pulse" />
-                                            <div className="h-4 w-4/6 bg-slate-100 rounded animate-pulse" />
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        ) : BeritaTerbaru.length ? (
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                {BeritaTerbaru.map((news) => (
-                                    <NewsCard key={news.id} news={news} />
-                                ))}
-                            </div>
-                        ) : (
-                            <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-6 text-sm text-slate-600">
-                                Belum ada berita untuk ditampilkan.
-                            </div>
-                        )}
-                    </Section>
+                        <FeaturedCarousel items={featured} />
+                    </motion.div>
                 </div>
+            </section>
+
+            {/* Statistik: menumpang di atas batas hero */}
+            <section
+                id="asset"
+                aria-label="Ringkasan aset"
+                className="container relative z-10 mx-auto -mt-20 scroll-mt-28 px-4 sm:px-6 lg:-mt-24"
+            >
+                <motion.div
+                    initial={{ opacity: 0, y: 16 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true, amount: 0.3 }}
+                    transition={{ duration: 0.45 }}
+                    className="grid grid-cols-1 gap-px overflow-hidden rounded-3xl border border-slate-200/80 bg-slate-200/80 shadow-lift sm:grid-cols-2 lg:grid-cols-4"
+                >
+                    {statItems.map((item) => (
+                        <StatCard
+                            key={item.title}
+                            {...item}
+                            isLoading={isStatsLoading}
+                        />
+                    ))}
+                </motion.div>
+                {hasError ? (
+                    <p
+                        role="alert"
+                        className="mt-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800"
+                    >
+                        Sebagian data gagal dimuat. Silakan muat ulang halaman.
+                    </p>
+                ) : null}
+            </section>
+
+            {/* Berita */}
+            <div className="container mx-auto px-4 py-16 sm:px-6 sm:py-24">
+                <Section
+                    id="berita"
+                    variant="plain"
+                    eyebrow="Kabar terbaru"
+                    title="Berita dari PLN UPT Karawang"
+                    subtitle="Informasi dan pembaruan terkini seputar kegiatan operasi, pemeliharaan, dan lingkungan kerja."
+                    action={
+                        <Link href="/berita" className="btn-ghost">
+                            Lihat semua
+                            <FaArrowRight className="h-3 w-3 text-slate-400" />
+                        </Link>
+                    }
+                >
+                    {isNewsLoading ? (
+                        <NewsSkeleton />
+                    ) : latestNews.length ? (
+                        <div
+                            className={classNames(
+                                "grid grid-cols-1 gap-5",
+                                latestNews.length > 1 ? "lg:grid-cols-2" : "",
+                                hasFullNewsGrid
+                                    ? "lg:grid-rows-2 lg:[&>*:first-child]:row-span-2"
+                                    : "",
+                            )}
+                        >
+                            {latestNews.map((news, index) => (
+                                <NewsCard
+                                    key={news.id}
+                                    news={news}
+                                    isFeatured={
+                                        index === 0 || !hasFullNewsGrid
+                                    }
+                                    isWide={latestNews.length === 1}
+                                />
+                            ))}
+                        </div>
+                    ) : (
+                        <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-10 text-center text-sm text-slate-600">
+                            Belum ada berita untuk ditampilkan.
+                        </div>
+                    )}
+                </Section>
             </div>
         </HomeLayout>
     );

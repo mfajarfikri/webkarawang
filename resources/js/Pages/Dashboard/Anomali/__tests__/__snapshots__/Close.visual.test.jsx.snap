@@ -12,7 +12,7 @@ exports[`Close (visual) > snapshot layout 1`] = `
         class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8"
       >
         <div
-          class="rounded-3xl border border-slate-200 bg-gradient-to-r from-sky-600 to-cyan-600 p-1 shadow-sm"
+          class="rounded-3xl border border-slate-200 bg-brand-600 p-1 shadow-sm"
         >
           <div
             class="rounded-[22px] bg-white/95 backdrop-blur-sm px-6 py-5"

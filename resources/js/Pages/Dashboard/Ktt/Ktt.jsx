@@ -198,9 +198,9 @@ export default function Ktt({ ktts }) {
     return (
         <>
             <Head title="Ktt" />
-            <DashboardLayout>
+            <DashboardLayout title="KTT">
                 <ToastContainer />
-                <div className="py-6 w-full mx-auto px-4 sm:px-6 lg:px-8">
+                <div className="w-full">
                     <div className="mb-8 rounded-2xl border border-slate-200 bg-white shadow-sm">
                         <div className="px-6 py-6 md:px-8 md:py-8">
                             <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">

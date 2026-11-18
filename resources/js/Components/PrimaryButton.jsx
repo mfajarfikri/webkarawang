@@ -7,11 +7,7 @@ export default function PrimaryButton({
     return (
         <button
             {...props}
-            className={
-                `inline-flex items-center rounded-lg bg-gradient-to-r from-blue-600 to-blue-400 text-white font-semibold shadow hover:from-blue-700 hover:to-blue-500 disabled:opacity-50 px-6 py-2 text-base transition ${
-                    disabled ? "opacity-50 cursor-not-allowed" : ""
-                } ` + className
-            }
+            className={`inline-flex items-center justify-center gap-2 rounded-full bg-ink-900 px-5 py-2.5 text-sm font-semibold text-white shadow-soft transition duration-200 hover:bg-brand-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 ${className}`}
             disabled={disabled}
         >
             {children}

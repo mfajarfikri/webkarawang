@@ -119,7 +119,7 @@ export default function Detail({ berita }) {
     return (
         <>
             <Head title={`Berita - ${berita.judul}`} />
-            <DashboardLayout>
+            <DashboardLayout title="Detail Berita">
                 <div className="py-8 px-4 sm:px-6 lg:px-8 max-w-5xl mx-auto">
                     {/* Title */}
                     <h1 className="text-3xl md:text-4xl font-bold text-center text-gray-800 mb-8">

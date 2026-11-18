@@ -14,12 +14,12 @@ export default function Edit({
     tanda_tangan_url,
 }) {
     return (
-        <DashboardLayout>
+        <DashboardLayout title="Pengaturan">
             <Head title="Profile" />
-            <div className="min-h-screen bg-white rounded-2xl py-10">
-                <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-8 space-y-10">
-                    <div className="bg-white/95 backdrop-blur-sm rounded-2xl shadow-sm border border-gray-100 overflow-hidden w-full">
-                        <div className="px-6 py-4 border-b border-gray-100 bg-gradient-to-r from-gray-50/80 via-white to-gray-50/80">
+            <div className="min-h-full">
+                <div className="max-w-full space-y-6">
+                    <div className="surface overflow-hidden w-full">
+                        <div className="px-6 py-4 border-b border-gray-100">
                             <div className="flex items-center gap-3">
                                 <div className="h-11 w-11 rounded-2xl bg-blue-50 flex items-center justify-center border border-blue-100">
                                     <svg
@@ -55,8 +55,8 @@ export default function Edit({
                         </div>
                     </div>
 
-                    <div className="bg-white/95 backdrop-blur-sm rounded-2xl shadow-sm border border-gray-100 overflow-hidden w-full">
-                        <div className="px-6 py-4 border-b border-gray-100 bg-gradient-to-r from-gray-50/80 via-white to-gray-50/80">
+                    <div className="surface overflow-hidden w-full">
+                        <div className="px-6 py-4 border-b border-gray-100">
                             <div className="flex items-center gap-3">
                                 <div className="h-11 w-11 rounded-2xl bg-blue-50 flex items-center justify-center border border-blue-100">
                                     <FaSignature className="text-blue-500 text-xl" />
@@ -81,8 +81,8 @@ export default function Edit({
                         </div>
                     </div>
 
-                    <div className="bg-white/95 backdrop-blur-sm rounded-2xl shadow-sm border border-gray-100 overflow-hidden w-full">
-                        <div className="px-6 py-4 border-b border-gray-100 bg-gradient-to-r from-gray-50/80 via-white to-gray-50/80">
+                    <div className="surface overflow-hidden w-full">
+                        <div className="px-6 py-4 border-b border-gray-100">
                             <div className="flex items-center gap-3">
                                 <div className="h-11 w-11 rounded-2xl bg-blue-50 flex items-center justify-center border border-blue-100">
                                     <svg
@@ -113,7 +113,7 @@ export default function Edit({
                         </div>
                     </div>
 
-                    <div className="bg-white/95 backdrop-blur-sm rounded-2xl shadow-sm border border-gray-100 overflow-hidden w-full">
+                    <div className="surface overflow-hidden w-full">
                         <div className="px-6 py-4 border-b border-gray-100 bg-gradient-to-r from-red-50 via-white to-red-50">
                             <div className="flex items-center gap-3">
                                 <div className="h-11 w-11 rounded-2xl bg-red-50 flex items-center justify-center border border-red-100">

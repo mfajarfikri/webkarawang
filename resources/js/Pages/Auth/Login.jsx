@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Head, Link, useForm, router } from "@inertiajs/react";
 import { FaEnvelope, FaLock, FaEye, FaEyeSlash } from "react-icons/fa";
-import ApplicationLogo from "@/Components/ApplicationLogo";
+import BrandMark from "@/Components/BrandMark";
 import { FcGoogle } from "react-icons/fc";
 import axios from "axios";
 import { useSnackbar } from "notistack";
@@ -42,7 +42,7 @@ export default function Login({ status, canResetPassword }) {
 
     // Perubahan signifikan: gunakan token class (Tailwind) agar konsisten & mudah dirawat.
     const labelCls =
-        "block text-xs font-semibold uppercase tracking-wider text-slate-600";
+        "block text-sm font-semibold text-slate-700";
     const inputBaseCls =
         "block w-full rounded-xl border bg-white px-10 py-3 text-[15px] text-slate-900 shadow-sm placeholder:text-slate-400 transition focus:outline-none focus-visible:ring-2";
     const inputNormalCls =
@@ -118,307 +118,296 @@ export default function Login({ status, canResetPassword }) {
     };
 
     return (
-        <div className="min-h-screen bg-slate-50">
+        <div className="grid min-h-screen grid-cols-1 bg-white lg:grid-cols-2">
             <Head title="Login" />
-            <div className="mx-auto w-full max-w-6xl px-4 sm:px-6 lg:px-2 py-10 sm:py-12">
-                {/* Perubahan signifikan: layout 2-kolom (brand panel + card) agar konsisten dengan halaman dashboard/home */}
-                <div className="grid grid-cols-1 lg:grid-cols-10 gap-8 items-center min-h-[calc(100vh-8rem)] justify-between">
-                    <div className="lg:col-span-5">
-                        <div className="motion-safe:animate-fadeInUp">
-                            <Link
-                                href={route("home")}
-                                className="inline-flex items-center gap-3 rounded-2xl border border-slate-200 bg-white/70 backdrop-blur px-4 py-3 shadow-sm hover:bg-white transition focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/30"
-                            >
-                                <span className="bg-white rounded-2xl p-2 shadow-sm border border-slate-100">
-                                    <ApplicationLogo className="w-10 h-10" />
-                                </span>
-                                <span className="min-w-0">
-                                    <span className="block text-xs font-semibold uppercase tracking-widest text-slate-500">
-                                        PLN UPT Karawang
-                                    </span>
-                                    <span className="block text-sm font-bold text-slate-900">
-                                        Dashboard Operasional
-                                    </span>
-                                </span>
-                            </Link>
 
-                            <h1 className="mt-8 text-3xl sm:text-4xl font-extrabold tracking-tight text-slate-900">
-                                Masuk untuk melanjutkan
-                            </h1>
-                            <p className="mt-3 text-sm sm:text-base text-slate-600 max-w-xl">
-                                Gunakan kredensial akun Anda untuk mengakses
-                                fitur dashboard dan laporan.
-                            </p>
+            {/* Panel brand */}
+            <aside className="relative hidden flex-col justify-between bg-grid-ink p-12 lg:flex xl:p-16">
+                <Link
+                    href={route("home")}
+                    className="w-fit rounded-xl focus:outline-none"
+                >
+                    <BrandMark tone="dark" />
+                </Link>
 
-                            <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-                                    <div className="text-[11px] font-semibold uppercase tracking-widest text-slate-500">
-                                        Keamanan
-                                    </div>
-                                    <div className="mt-2 text-sm font-bold text-slate-900">
-                                        Autentikasi terproteksi
-                                    </div>
-                                    <div className="mt-1 text-sm text-slate-600">
-                                        Session aman dan akses terkontrol.
-                                    </div>
-                                </div>
-                                <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-                                    <div className="text-[11px] font-semibold uppercase tracking-widest text-slate-500">
-                                        Produktivitas
-                                    </div>
-                                    <div className="mt-2 text-sm font-bold text-slate-900">
-                                        Daftar Tugas dan Sistem GTD
-                                    </div>
-                                    <div className="mt-1 text-sm text-slate-600">
-                                        Memudahkan To Do List Anda.
-                                    </div>
-                                </div>
-                            </div>
+                <div className="motion-safe:animate-fadeInUp">
+                    <h1 className="max-w-md text-4xl font-extrabold leading-[1.1] text-white xl:text-5xl">
+                        Satu dashboard untuk operasional{" "}
+                        <span className="text-volt">UPT Karawang</span>.
+                    </h1>
+                    <p className="mt-5 max-w-md text-base leading-relaxed text-slate-300">
+                        Pantau anomali, kelola aset gardu induk, dan terbitkan
+                        berita dari satu tempat.
+                    </p>
+                    <dl className="mt-10 grid max-w-md grid-cols-2 gap-px overflow-hidden rounded-2xl border border-white/10 bg-white/10">
+                        <div className="bg-ink-900/80 p-5">
+                            <dt className="text-[11px] font-semibold uppercase tracking-[0.18em] text-brand-300">
+                                Keamanan
+                            </dt>
+                            <dd className="mt-2 text-sm text-slate-200">
+                                Session aman dan akses terkontrol per peran.
+                            </dd>
                         </div>
-                    </div>
-
-                    <div className="lg:col-span-5">
-                        <div className="motion-safe:animate-fadeInUp rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
-                            <div className="p-6 sm:p-8 border-b border-slate-100">
-                                <div className="text-[11px] font-semibold uppercase tracking-widest text-slate-500">
-                                    Autentikasi
-                                </div>
-                                <div className="mt-1 text-lg font-bold text-slate-900">
-                                    Masuk
-                                </div>
-                                <div className="mt-1 text-sm text-slate-600">
-                                    Masukkan email dan kata sandi Anda.
-                                </div>
-                            </div>
-
-                            <div className="p-6 sm:p-8">
-                                {loginError ? (
-                                    <div
-                                        id={formErrorId}
-                                        role="alert"
-                                        aria-live="assertive"
-                                        className="mb-5 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800"
-                                    >
-                                        {loginError}
-                                    </div>
-                                ) : null}
-
-                                <form className="space-y-5" onSubmit={submit}>
-                                    <div>
-                                        <label
-                                            htmlFor="email"
-                                            className={labelCls}
-                                        >
-                                            Email
-                                        </label>
-                                        <div className="mt-2 relative">
-                                            <span
-                                                className={`${iconCls} ${
-                                                    errors.email
-                                                        ? iconErrorCls
-                                                        : ""
-                                                }`}
-                                                aria-hidden="true"
-                                            >
-                                                <FaEnvelope className="h-4 w-4" />
-                                            </span>
-                                            <input
-                                                ref={emailRef}
-                                                id="email"
-                                                name="email"
-                                                type="email"
-                                                autoComplete="email"
-                                                required
-                                                value={data.email}
-                                                onChange={(e) =>
-                                                    setData(
-                                                        "email",
-                                                        e.target.value,
-                                                    )
-                                                }
-                                                aria-invalid={
-                                                    errors.email
-                                                        ? "true"
-                                                        : "false"
-                                                }
-                                                aria-describedby={
-                                                    errors.email
-                                                        ? emailErrorId
-                                                        : undefined
-                                                }
-                                                className={`${inputBaseCls} ${
-                                                    errors.email
-                                                        ? inputErrorCls
-                                                        : inputNormalCls
-                                                }`}
-                                                placeholder="nama@pln.co.id"
-                                            />
-                                        </div>
-                                        {errors.email ? (
-                                            <p
-                                                id={emailErrorId}
-                                                className="mt-2 text-sm text-rose-700 font-semibold"
-                                            >
-                                                {errors.email}
-                                            </p>
-                                        ) : null}
-                                    </div>
-
-                                    <div>
-                                        <label
-                                            htmlFor="password"
-                                            className={labelCls}
-                                        >
-                                            Kata Sandi
-                                        </label>
-                                        <div className="mt-2 relative">
-                                            <span
-                                                className={`${iconCls} ${
-                                                    errors.password
-                                                        ? iconErrorCls
-                                                        : ""
-                                                }`}
-                                                aria-hidden="true"
-                                            >
-                                                <FaLock className="h-4 w-4" />
-                                            </span>
-                                            <input
-                                                ref={passwordRef}
-                                                id="password"
-                                                name="password"
-                                                type={
-                                                    showPassword
-                                                        ? "text"
-                                                        : "password"
-                                                }
-                                                autoComplete="current-password"
-                                                required
-                                                value={data.password}
-                                                onChange={(e) =>
-                                                    setData(
-                                                        "password",
-                                                        e.target.value,
-                                                    )
-                                                }
-                                                aria-invalid={
-                                                    errors.password
-                                                        ? "true"
-                                                        : "false"
-                                                }
-                                                aria-describedby={
-                                                    errors.password
-                                                        ? passwordErrorId
-                                                        : undefined
-                                                }
-                                                className={`${inputBaseCls} pr-11 ${
-                                                    errors.password
-                                                        ? inputErrorCls
-                                                        : inputNormalCls
-                                                }`}
-                                                placeholder="Masukkan kata sandi"
-                                            />
-                                            <button
-                                                type="button"
-                                                onClick={() =>
-                                                    setShowPassword((v) => !v)
-                                                }
-                                                className="absolute right-2 top-1/2 -translate-y-1/2 inline-flex h-10 w-10 items-center justify-center rounded-xl text-slate-400 hover:text-sky-600 hover:bg-sky-50 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/30"
-                                                aria-label={
-                                                    showPassword
-                                                        ? "Sembunyikan kata sandi"
-                                                        : "Tampilkan kata sandi"
-                                                }
-                                            >
-                                                {showPassword ? (
-                                                    <FaEyeSlash className="h-4 w-4" />
-                                                ) : (
-                                                    <FaEye className="h-4 w-4" />
-                                                )}
-                                            </button>
-                                        </div>
-                                        {errors.password ? (
-                                            <p
-                                                id={passwordErrorId}
-                                                className="mt-2 text-sm text-rose-700 font-semibold"
-                                            >
-                                                {errors.password}
-                                            </p>
-                                        ) : null}
-                                    </div>
-
-                                    <div className="flex items-center justify-between gap-3">
-                                        <label className="inline-flex items-center gap-2 text-sm text-slate-700">
-                                            <input
-                                                id="remember"
-                                                name="remember"
-                                                type="checkbox"
-                                                checked={data.remember}
-                                                onChange={(e) =>
-                                                    setData(
-                                                        "remember",
-                                                        e.target.checked,
-                                                    )
-                                                }
-                                                className="h-4 w-4 rounded border-slate-300 text-sky-600 focus:ring-sky-500"
-                                            />
-                                            Ingat saya
-                                        </label>
-
-                                        {canResetPassword ? (
-                                            <Link
-                                                href={route("password.request")}
-                                                className="text-sm font-semibold text-sky-700 hover:text-sky-800 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/30 rounded"
-                                            >
-                                                Lupa kata sandi?
-                                            </Link>
-                                        ) : null}
-                                    </div>
-
-                                    <button
-                                        type="submit"
-                                        disabled={processing || loading}
-                                        aria-busy={
-                                            processing || loading
-                                                ? "true"
-                                                : "false"
-                                        }
-                                        className="w-full inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-sky-600 to-cyan-600 px-5 py-3 text-white text-sm font-bold shadow-sm hover:from-sky-700 hover:to-cyan-700 transition disabled:opacity-60 disabled:cursor-not-allowed focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/30"
-                                    >
-                                        {processing || loading ? (
-                                            <span className="inline-flex items-center gap-2">
-                                                <span className="h-4 w-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />
-                                                Memproses...
-                                            </span>
-                                        ) : (
-                                            "Masuk"
-                                        )}
-                                    </button>
-                                </form>
-
-                                <div className="my-6 flex items-center">
-                                    <div className="flex-1 border-t border-slate-200" />
-                                    <span className="mx-4 text-[11px] font-semibold uppercase tracking-widest text-slate-400">
-                                        atau
-                                    </span>
-                                    <div className="flex-1 border-t border-slate-200" />
-                                </div>
-
-                                <a
-                                    href="/auth/google"
-                                    className="w-full inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-bold text-slate-700 shadow-sm hover:bg-slate-50 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/30"
-                                >
-                                    <FcGoogle className="h-5 w-5" />
-                                    <span>Masuk dengan Google</span>
-                                </a>
-                            </div>
+                        <div className="bg-ink-900/80 p-5">
+                            <dt className="text-[11px] font-semibold uppercase tracking-[0.18em] text-brand-300">
+                                Produktivitas
+                            </dt>
+                            <dd className="mt-2 text-sm text-slate-200">
+                                Daftar tugas dan tindak lanjut dalam satu alur.
+                            </dd>
                         </div>
-
-                        <div className="mt-6 text-center text-xs text-slate-500">
-                            © {new Date().getFullYear()} PLN UPT Karawang.
-                        </div>
-                    </div>
+                    </dl>
                 </div>
-            </div>
+
+                <p className="text-xs text-slate-500">
+                    © {new Date().getFullYear()} PLN UPT Karawang
+                </p>
+            </aside>
+
+            {/* Panel form */}
+            <main className="flex items-center justify-center px-4 py-10 sm:px-8">
+                <div className="w-full max-w-md motion-safe:animate-fadeInUp">
+                    <Link
+                        href={route("home")}
+                        className="mb-10 inline-block rounded-xl lg:hidden"
+                    >
+                        <BrandMark />
+                    </Link>
+
+                    <div className="eyebrow">Autentikasi</div>
+                    <h2 className="mt-3 text-3xl font-extrabold text-ink-900">
+                        Selamat datang kembali
+                    </h2>
+                    <p className="mt-2 text-sm text-slate-600">
+                        Masukkan email dan kata sandi akun Anda.
+                    </p>
+
+                    <div className="mt-8">
+                    {loginError ? (
+                        <div
+                            id={formErrorId}
+                            role="alert"
+                            aria-live="assertive"
+                            className="mb-5 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800"
+                        >
+                            {loginError}
+                        </div>
+                    ) : null}
+
+                    <form className="space-y-5" onSubmit={submit}>
+                        <div>
+                            <label
+                                htmlFor="email"
+                                className={labelCls}
+                            >
+                                Email
+                            </label>
+                            <div className="mt-2 relative">
+                                <span
+                                    className={`${iconCls} ${
+                                        errors.email
+                                            ? iconErrorCls
+                                            : ""
+                                    }`}
+                                    aria-hidden="true"
+                                >
+                                    <FaEnvelope className="h-4 w-4" />
+                                </span>
+                                <input
+                                    ref={emailRef}
+                                    id="email"
+                                    name="email"
+                                    type="email"
+                                    autoComplete="email"
+                                    required
+                                    value={data.email}
+                                    onChange={(e) =>
+                                        setData(
+                                            "email",
+                                            e.target.value,
+                                        )
+                                    }
+                                    aria-invalid={
+                                        errors.email
+                                            ? "true"
+                                            : "false"
+                                    }
+                                    aria-describedby={
+                                        errors.email
+                                            ? emailErrorId
+                                            : undefined
+                                    }
+                                    className={`${inputBaseCls} ${
+                                        errors.email
+                                            ? inputErrorCls
+                                            : inputNormalCls
+                                    }`}
+                                    placeholder="nama@pln.co.id"
+                                />
+                            </div>
+                            {errors.email ? (
+                                <p
+                                    id={emailErrorId}
+                                    className="mt-2 text-sm text-rose-700 font-semibold"
+                                >
+                                    {errors.email}
+                                </p>
+                            ) : null}
+                        </div>
+
+                        <div>
+                            <label
+                                htmlFor="password"
+                                className={labelCls}
+                            >
+                                Kata Sandi
+                            </label>
+                            <div className="mt-2 relative">
+                                <span
+                                    className={`${iconCls} ${
+                                        errors.password
+                                            ? iconErrorCls
+                                            : ""
+                                    }`}
+                                    aria-hidden="true"
+                                >
+                                    <FaLock className="h-4 w-4" />
+                                </span>
+                                <input
+                                    ref={passwordRef}
+                                    id="password"
+                                    name="password"
+                                    type={
+                                        showPassword
+                                            ? "text"
+                                            : "password"
+                                    }
+                                    autoComplete="current-password"
+                                    required
+                                    value={data.password}
+                                    onChange={(e) =>
+                                        setData(
+                                            "password",
+                                            e.target.value,
+                                        )
+                                    }
+                                    aria-invalid={
+                                        errors.password
+                                            ? "true"
+                                            : "false"
+                                    }
+                                    aria-describedby={
+                                        errors.password
+                                            ? passwordErrorId
+                                            : undefined
+                                    }
+                                    className={`${inputBaseCls} pr-11 ${
+                                        errors.password
+                                            ? inputErrorCls
+                                            : inputNormalCls
+                                    }`}
+                                    placeholder="Masukkan kata sandi"
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() =>
+                                        setShowPassword((v) => !v)
+                                    }
+                                    className="absolute right-2 top-1/2 -translate-y-1/2 inline-flex h-10 w-10 items-center justify-center rounded-xl text-slate-400 hover:text-sky-600 hover:bg-sky-50 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/30"
+                                    aria-label={
+                                        showPassword
+                                            ? "Sembunyikan kata sandi"
+                                            : "Tampilkan kata sandi"
+                                    }
+                                >
+                                    {showPassword ? (
+                                        <FaEyeSlash className="h-4 w-4" />
+                                    ) : (
+                                        <FaEye className="h-4 w-4" />
+                                    )}
+                                </button>
+                            </div>
+                            {errors.password ? (
+                                <p
+                                    id={passwordErrorId}
+                                    className="mt-2 text-sm text-rose-700 font-semibold"
+                                >
+                                    {errors.password}
+                                </p>
+                            ) : null}
+                        </div>
+
+                        <div className="flex items-center justify-between gap-3">
+                            <label className="inline-flex items-center gap-2 text-sm text-slate-700">
+                                <input
+                                    id="remember"
+                                    name="remember"
+                                    type="checkbox"
+                                    checked={data.remember}
+                                    onChange={(e) =>
+                                        setData(
+                                            "remember",
+                                            e.target.checked,
+                                        )
+                                    }
+                                    className="h-4 w-4 rounded border-slate-300 text-sky-600 focus:ring-sky-500"
+                                />
+                                Ingat saya
+                            </label>
+
+                            {canResetPassword ? (
+                                <Link
+                                    href={route("password.request")}
+                                    className="text-sm font-semibold text-sky-700 hover:text-sky-800 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/30 rounded"
+                                >
+                                    Lupa kata sandi?
+                                </Link>
+                            ) : null}
+                        </div>
+
+                        <button
+                            type="submit"
+                            disabled={processing || loading}
+                            aria-busy={
+                                processing || loading
+                                    ? "true"
+                                    : "false"
+                            }
+                            className="w-full inline-flex items-center justify-center gap-2 rounded-full bg-ink-900 px-5 py-3 text-white text-sm font-semibold shadow-soft hover:bg-brand-700 transition active:scale-[0.99] disabled:opacity-60 disabled:cursor-not-allowed focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/30"
+                        >
+                            {processing || loading ? (
+                                <span className="inline-flex items-center gap-2">
+                                    <span className="h-4 w-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />
+                                    Memproses...
+                                </span>
+                            ) : (
+                                "Masuk"
+                            )}
+                        </button>
+                    </form>
+
+                    <div className="my-6 flex items-center">
+                        <div className="flex-1 border-t border-slate-200" />
+                        <span className="mx-4 text-[11px] font-semibold uppercase tracking-widest text-slate-400">
+                            atau
+                        </span>
+                        <div className="flex-1 border-t border-slate-200" />
+                    </div>
+
+                    <a
+                        href="/auth/google"
+                        className="w-full inline-flex items-center justify-center gap-2 rounded-full border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 hover:border-slate-300 hover:bg-slate-50 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/30"
+                    >
+                        <FcGoogle className="h-5 w-5" />
+                        <span>Masuk dengan Google</span>
+                    </a>
+                    </div>
+
+                    <p className="mt-10 text-center text-xs text-slate-500 lg:hidden">
+                        © {new Date().getFullYear()} PLN UPT Karawang
+                    </p>
+                </div>
+            </main>
         </div>
     );
 }

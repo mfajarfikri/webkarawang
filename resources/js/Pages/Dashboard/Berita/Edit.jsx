@@ -438,7 +438,7 @@ export default function Edit({ berita, temas = [], flash }) {
     };
 
     return (
-        <DashboardLayout>
+        <DashboardLayout title="Edit Berita">
             <Head title={`Edit Berita - ${berita.judul}`} />
 
             <div className="min-h-screen bg-slate-50 py-8 px-4 sm:px-6 lg:px-8">

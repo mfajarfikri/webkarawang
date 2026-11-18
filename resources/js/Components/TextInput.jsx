@@ -20,7 +20,10 @@ export default forwardRef(function TextInput(
         <input
             {...props}
             type={type}
-            className={"rounded-md border-gray-300 shadow-sm  " + className}
+            className={
+                "rounded-xl border-slate-200 text-sm text-slate-900 shadow-sm transition placeholder:text-slate-400 hover:border-slate-300 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 " +
+                className
+            }
             ref={localRef}
         />
     );

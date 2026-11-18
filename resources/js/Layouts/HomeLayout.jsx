@@ -3,760 +3,566 @@ import axios from "axios";
 import { Link, usePage, router } from "@inertiajs/react";
 import {
     FaPhoneAlt,
-    FaHome,
-    FaCog,
     FaEnvelope,
     FaFacebookF,
     FaTwitter,
     FaInstagram,
     FaYoutube,
-    FaLock,
     FaBars,
+    FaTimes,
     FaChevronDown,
     FaMapMarkerAlt,
     FaSignOutAlt,
     FaUserShield,
-    FaSync,
+    FaArrowRight,
+    FaThLarge,
+    FaCog,
 } from "react-icons/fa";
-import ApplicationLogo from "@/Components/ApplicationLogo";
+import BrandMark from "@/Components/BrandMark";
+import LogoutModal from "@/Components/LogoutModal";
 import { SnackbarProvider, useSnackbar } from "notistack";
-import PrimaryButton from "@/Components/PrimaryButton";
+
+const SYNC_INTERVAL_MS = 60000;
+const SCROLL_THRESHOLD_PX = 12;
+const FOOTER_NEWS_LIMIT = 3;
+
+const SOCIAL_LINKS = [
+    { label: "Facebook", icon: FaFacebookF, href: "#" },
+    { label: "Twitter", icon: FaTwitter, href: "#" },
+    {
+        label: "Instagram",
+        icon: FaInstagram,
+        href: "https://www.instagram.com/plnuptkarawang",
+    },
+    { label: "YouTube", icon: FaYoutube, href: "#" },
+];
+
+function isExternalUrl(url) {
+    if (!url) return false;
+    const trimmed = url.trim();
+    return (
+        trimmed.startsWith("http://") ||
+        trimmed.startsWith("https://") ||
+        trimmed.startsWith("//")
+    );
+}
+
+function hasSubmenus(menu) {
+    return Array.isArray(menu.submenus) && menu.submenus.length > 0;
+}
+
+function MenuLink({ menu, className, children, onClick }) {
+    const url = menu.url ? menu.url.trim() : "";
+
+    if (isExternalUrl(url)) {
+        return (
+            <a
+                href={url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={className}
+                onClick={onClick}
+            >
+                {children}
+            </a>
+        );
+    }
+    return (
+        <Link href={url} className={className} onClick={onClick}>
+            {children}
+        </Link>
+    );
+}
+
+function UserAvatar({ user, size = "h-8 w-8" }) {
+    if (user.foto_profil) {
+        return (
+            <img
+                src={`/storage/${user.foto_profil}`}
+                alt=""
+                className={`${size} rounded-full object-cover`}
+            />
+        );
+    }
+    return (
+        <span
+            className={`${size} flex items-center justify-center rounded-full bg-brand-50 text-brand-700`}
+        >
+            <FaUserShield className="h-4 w-4" aria-hidden="true" />
+        </span>
+    );
+}
+
+function DesktopNav({ menus }) {
+    return (
+        <nav
+            aria-label="Navigasi utama"
+            className="hidden items-center gap-0.5 lg:flex"
+        >
+            {menus.map((menu, index) => (
+                <div key={menu.id ?? index} className="group relative">
+                    <MenuLink
+                        menu={menu}
+                        className="flex items-center gap-1.5 rounded-full px-3.5 py-2 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-100 hover:text-ink-900"
+                    >
+                        {menu.title}
+                        {hasSubmenus(menu) && (
+                            <FaChevronDown className="h-2.5 w-2.5 text-slate-400 transition-transform duration-200 group-hover:rotate-180" />
+                        )}
+                    </MenuLink>
+
+                    {hasSubmenus(menu) && (
+                        <div className="invisible absolute left-0 top-full z-50 w-64 translate-y-1 pt-2 opacity-0 transition duration-200 group-focus-within:visible group-focus-within:translate-y-0 group-focus-within:opacity-100 group-hover:visible group-hover:translate-y-0 group-hover:opacity-100">
+                            <div className="rounded-2xl border border-slate-200/80 bg-white p-1.5 shadow-lift">
+                                {menu.submenus.map((submenu, subIndex) => (
+                                    <MenuLink
+                                        key={submenu.id ?? subIndex}
+                                        menu={submenu}
+                                        className="group/item flex items-center justify-between rounded-xl px-3 py-2.5 text-sm font-medium text-slate-700 transition-colors hover:bg-brand-50 hover:text-brand-800"
+                                    >
+                                        {submenu.title}
+                                        <FaArrowRight className="h-3 w-3 -translate-x-1 text-brand-600 opacity-0 transition group-hover/item:translate-x-0 group-hover/item:opacity-100" />
+                                    </MenuLink>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+                </div>
+            ))}
+        </nav>
+    );
+}
+
+function ProfileMenu({ user, isOpen, onToggle, onLogout }) {
+    return (
+        <div className="relative">
+            <button
+                type="button"
+                onClick={onToggle}
+                aria-expanded={isOpen}
+                className="flex items-center gap-2 rounded-full border border-slate-200 bg-white py-1 pl-1 pr-3 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50"
+            >
+                <UserAvatar user={user} />
+                <span className="hidden max-w-[9rem] truncate sm:block">
+                    {user.name}
+                </span>
+                <FaChevronDown
+                    className={`h-2.5 w-2.5 text-slate-400 transition-transform duration-200 ${
+                        isOpen ? "rotate-180" : ""
+                    }`}
+                />
+            </button>
+            <div
+                className={`absolute right-0 top-full z-50 mt-2 w-64 origin-top-right rounded-2xl border border-slate-200/80 bg-white p-1.5 shadow-lift transition-[opacity,transform,visibility] duration-200 ${
+                    isOpen
+                        ? "scale-100 opacity-100"
+                        : "pointer-events-none invisible scale-95 opacity-0"
+                }`}
+            >
+                <div className="px-3 py-2.5">
+                    <div className="truncate text-sm font-semibold text-ink-900">
+                        {user.name}
+                    </div>
+                    <div className="truncate text-xs text-slate-500">
+                        {user.email}
+                    </div>
+                </div>
+                <div className="my-1 h-px bg-slate-100" />
+                <Link
+                    href={route("dashboard.index")}
+                    className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-100"
+                >
+                    <FaThLarge className="h-3.5 w-3.5 text-slate-400" />
+                    Dashboard
+                </Link>
+                <Link
+                    href={route("dashboard.profile.edit")}
+                    className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-100"
+                >
+                    <FaCog className="h-3.5 w-3.5 text-slate-400" />
+                    Pengaturan profil
+                </Link>
+                <button
+                    type="button"
+                    onClick={onLogout}
+                    className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-medium text-rose-600 transition-colors hover:bg-rose-50"
+                >
+                    <FaSignOutAlt className="h-3.5 w-3.5" />
+                    Keluar
+                </button>
+            </div>
+        </div>
+    );
+}
+
+function MobileDrawer({ isOpen, onClose, menus, isGuest }) {
+    const [openIndex, setOpenIndex] = useState(null);
+
+    return (
+        <div
+            className={`fixed inset-0 z-[70] bg-ink-950/60 backdrop-blur-sm transition-[opacity,visibility] duration-300 lg:hidden ${
+                isOpen
+                    ? "opacity-100"
+                    : "pointer-events-none invisible opacity-0"
+            }`}
+            onClick={onClose}
+        >
+            <div
+                className={`absolute right-0 top-0 flex h-full w-[85%] max-w-sm flex-col bg-white shadow-lift transition-transform duration-300 ease-out ${
+                    isOpen ? "translate-x-0" : "translate-x-full"
+                }`}
+                onClick={(e) => e.stopPropagation()}
+            >
+                <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
+                    <BrandMark />
+                    <button
+                        type="button"
+                        aria-label="Tutup menu"
+                        className="flex h-9 w-9 items-center justify-center rounded-full text-slate-500 transition hover:bg-slate-100"
+                        onClick={onClose}
+                    >
+                        <FaTimes className="h-4 w-4" />
+                    </button>
+                </div>
+                <nav
+                    aria-label="Navigasi mobile"
+                    className="flex-1 space-y-1 overflow-y-auto px-3 py-4"
+                >
+                    {menus.map((menu, index) =>
+                        hasSubmenus(menu) ? (
+                            <div key={menu.id ?? index}>
+                                <button
+                                    type="button"
+                                    aria-expanded={openIndex === index}
+                                    className="flex w-full items-center justify-between rounded-xl px-3 py-3 text-[15px] font-semibold text-ink-900 transition hover:bg-slate-100"
+                                    onClick={() =>
+                                        setOpenIndex(
+                                            openIndex === index ? null : index,
+                                        )
+                                    }
+                                >
+                                    {menu.title}
+                                    <FaChevronDown
+                                        className={`h-3 w-3 text-slate-400 transition-transform duration-200 ${
+                                            openIndex === index
+                                                ? "rotate-180"
+                                                : ""
+                                        }`}
+                                    />
+                                </button>
+                                {openIndex === index && (
+                                    <div className="ml-3 space-y-0.5 border-l border-slate-200 pl-3">
+                                        {menu.submenus.map(
+                                            (submenu, subIndex) => (
+                                                <MenuLink
+                                                    key={submenu.id ?? subIndex}
+                                                    menu={submenu}
+                                                    className="block rounded-lg px-3 py-2.5 text-sm font-medium text-slate-600 transition hover:bg-brand-50 hover:text-brand-800"
+                                                    onClick={onClose}
+                                                >
+                                                    {submenu.title}
+                                                </MenuLink>
+                                            ),
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+                        ) : (
+                            <MenuLink
+                                key={menu.id ?? index}
+                                menu={menu}
+                                className="block rounded-xl px-3 py-3 text-[15px] font-semibold text-ink-900 transition hover:bg-slate-100"
+                                onClick={onClose}
+                            >
+                                {menu.title}
+                            </MenuLink>
+                        ),
+                    )}
+                </nav>
+                {isGuest && (
+                    <div className="border-t border-slate-100 p-4">
+                        <Link
+                            href={route("login")}
+                            className="btn-primary w-full"
+                            onClick={onClose}
+                        >
+                            Masuk ke dashboard
+                            <FaArrowRight className="h-3 w-3" />
+                        </Link>
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+}
+
+function SiteFooter({ menus, news }) {
+    return (
+        <footer className="bg-grid-ink text-slate-300">
+            <div className="container mx-auto px-4 sm:px-6">
+                <div className="grid grid-cols-1 gap-10 py-14 sm:grid-cols-2 lg:grid-cols-12 lg:gap-8">
+                    <div className="lg:col-span-4">
+                        <BrandMark tone="dark" />
+                        <p className="mt-5 max-w-xs text-sm leading-relaxed text-slate-400">
+                            Menjadi Perusahaan Global Top 500 dan #1 Pilihan
+                            Pelanggan untuk Solusi Energi.
+                        </p>
+                        <div className="mt-6 flex gap-2">
+                            {SOCIAL_LINKS.map(({ label, icon: Icon, href }) => (
+                                <a
+                                    key={label}
+                                    href={href}
+                                    aria-label={label}
+                                    {...(isExternalUrl(href)
+                                        ? {
+                                              target: "_blank",
+                                              rel: "noopener noreferrer",
+                                          }
+                                        : {})}
+                                    className="flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-white/5 text-slate-300 transition hover:border-brand-400 hover:bg-brand-500 hover:text-white"
+                                >
+                                    <Icon className="h-3.5 w-3.5" />
+                                </a>
+                            ))}
+                        </div>
+                    </div>
+
+                    <div className="lg:col-span-2">
+                        <h3 className="text-xs font-semibold uppercase tracking-[0.18em] text-white">
+                            Jelajahi
+                        </h3>
+                        <ul className="mt-4 space-y-2.5 text-sm">
+                            {menus.map((menu, index) => (
+                                <li key={menu.id ?? index}>
+                                    <MenuLink
+                                        menu={menu}
+                                        className="text-slate-400 transition-colors hover:text-white"
+                                    >
+                                        {menu.title}
+                                    </MenuLink>
+                                </li>
+                            ))}
+                        </ul>
+                    </div>
+
+                    <div className="lg:col-span-3">
+                        <h3 className="text-xs font-semibold uppercase tracking-[0.18em] text-white">
+                            Berita terbaru
+                        </h3>
+                        <ul className="mt-4 space-y-3 text-sm">
+                            {news.map((item, index) => (
+                                <li key={item.id ?? index}>
+                                    <Link
+                                        href={route("berita.detail", item.slug)}
+                                        className="line-clamp-2 text-slate-400 transition-colors hover:text-white"
+                                    >
+                                        {item.judul}
+                                    </Link>
+                                </li>
+                            ))}
+                        </ul>
+                    </div>
+
+                    <div className="lg:col-span-3">
+                        <h3 className="text-xs font-semibold uppercase tracking-[0.18em] text-white">
+                            Kontak
+                        </h3>
+                        <ul className="mt-4 space-y-3 text-sm text-slate-400">
+                            <li className="flex items-start gap-3">
+                                <FaMapMarkerAlt className="mt-1 h-3.5 w-3.5 shrink-0 text-brand-400" />
+                                <span>
+                                    Jl. Raya Kosambi Klari No.1, RT.2/RW.7,
+                                    Pancawati, Karawang, Jawa Barat 41371
+                                </span>
+                            </li>
+                            <li className="flex items-center gap-3">
+                                <FaPhoneAlt className="h-3.5 w-3.5 shrink-0 text-brand-400" />
+                                <span>123-456-789</span>
+                            </li>
+                            <li className="flex items-center gap-3">
+                                <FaEnvelope className="h-3.5 w-3.5 shrink-0 text-brand-400" />
+                                <a
+                                    href="mailto:galleryuptkrwg@gmail.com"
+                                    className="transition-colors hover:text-white"
+                                >
+                                    galleryuptkrwg@gmail.com
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div className="flex flex-col items-center justify-between gap-3 border-t border-white/10 py-6 text-xs text-slate-500 sm:flex-row">
+                    <p>
+                        &copy; {new Date().getFullYear()} PLN UPT Karawang. Hak
+                        Cipta Dilindungi.
+                    </p>
+                    <ul className="flex gap-5">
+                        <li>
+                            <a href="#" className="hover:text-white">
+                                Kebijakan Privasi
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#" className="hover:text-white">
+                                Syarat &amp; Ketentuan
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </footer>
+    );
+}
 
 function HomeLayoutContent({ children }) {
-    const { auth, navMenus: dynamicNavMenus } = usePage().props;
+    const { auth, navMenus } = usePage().props;
+    const menus = navMenus || [];
     const [isScrolled, setIsScrolled] = useState(false);
-    const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-    const [loading, setLoading] = useState(true);
-    const [activeDropdown, setActiveDropdown] = useState(null);
-    const [showLogoutModal, setShowLogoutModal] = useState(false);
+    const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+    const [isProfileOpen, setIsProfileOpen] = useState(false);
+    const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
     const [berita, setBerita] = useState([]);
-    const [error, setError] = useState(null);
     const [isSyncing, setIsSyncing] = useState(false);
-    const beritaTerbaru = berita.slice(0, 3);
     const { enqueueSnackbar } = useSnackbar();
 
-    const fetchBerita = useCallback(async (isInitial = false) => {
+    const fetchBerita = useCallback(async () => {
         try {
-            if (isInitial) setLoading(true);
-            else setIsSyncing(true);
-
             const response = await axios.get("/api/berita");
             setBerita(response.data.berita || []);
-        } catch (error) {
-            setError(error);
-            console.error("Error Fetching berita:", error);
-        } finally {
-            setLoading(false);
-            setIsSyncing(false);
+        } catch {
+            // Berita di footer hanya pelengkap: bila gagal dimuat, daftar
+            // terakhir dipertahankan tanpa mengganggu halaman.
         }
     }, []);
 
-    const fetchNavMenus = useCallback(() => {
-        setIsSyncing(true);
-        router.reload({
-            only: ["navMenus"],
-            onFinish: () => setIsSyncing(false),
-        });
-    }, []);
-
     useEffect(() => {
-        fetchBerita(true);
+        fetchBerita();
 
         const interval = setInterval(() => {
-            fetchBerita(false);
-            fetchNavMenus();
-        }, 60000); // Sinkronisasi setiap 1 menit untuk home/guest
+            setIsSyncing(true);
+            fetchBerita();
+            router.reload({
+                only: ["navMenus"],
+                onFinish: () => setIsSyncing(false),
+            });
+        }, SYNC_INTERVAL_MS);
 
         return () => clearInterval(interval);
-    }, [fetchBerita, fetchNavMenus]);
+    }, [fetchBerita]);
 
-    // Deteksi scroll untuk mengubah navbar
     useEffect(() => {
-        const handleScroll = () => {
-            if (window.scrollY > 50) {
-                setIsScrolled(true);
-            } else {
-                setIsScrolled(false);
-            }
-        };
+        const handleScroll = () =>
+            setIsScrolled(window.scrollY > SCROLL_THRESHOLD_PX);
 
-        window.addEventListener("scroll", handleScroll);
-        return () => {
-            window.removeEventListener("scroll", handleScroll);
-        };
+        handleScroll();
+        window.addEventListener("scroll", handleScroll, { passive: true });
+        return () => window.removeEventListener("scroll", handleScroll);
     }, []);
 
-    // Toggle dropdown menu
-    const toggleDropdown = (index) => {
-        if (activeDropdown === index) {
-            setActiveDropdown(null);
-        } else {
-            setActiveDropdown(index);
-        }
-    };
-
-    // Gunakan menu dari database jika ada, jika tidak gunakan fallback kosong
-    const navMenus = dynamicNavMenus || [];
-
-    // Fungsi handle logout
     const handleLogout = () => {
         router.post(
             route("logout"),
             {},
             {
-                onSuccess: () => {
-                    enqueueSnackbar("👋 Anda berhasil logout!", {
+                onSuccess: () =>
+                    enqueueSnackbar("Anda berhasil logout.", {
                         variant: "success",
-                    });
-                },
-                onError: () => {
-                    enqueueSnackbar("❌ Gagal melakukan logout!", {
+                    }),
+                onError: () =>
+                    enqueueSnackbar("Gagal melakukan logout.", {
                         variant: "error",
-                    });
-                },
+                    }),
             },
         );
-        setShowLogoutModal(false);
-    };
-
-    // Helper untuk mendeteksi link eksternal
-    const isExternalUrl = (url) => {
-        if (!url) return false;
-        const trimmedUrl = url.trim();
-        return (
-            trimmedUrl.startsWith("http://") ||
-            trimmedUrl.startsWith("https://") ||
-            trimmedUrl.startsWith("//")
-        );
-    };
-
-    const NavLink = ({ menu, className, children, onClick }) => {
-        const url = menu.url ? menu.url.trim() : "";
-
-        if (isExternalUrl(url)) {
-            return (
-                <a
-                    href={url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className={className}
-                    onClick={onClick}
-                >
-                    {children}
-                </a>
-            );
-        }
-        return (
-            <Link href={url} className={className} onClick={onClick}>
-                {children}
-            </Link>
-        );
+        setIsLogoutModalOpen(false);
     };
 
     return (
-        <div className="min-h-screen flex flex-col bg-gray-50">
-            {/* Real-time Sync Indicator */}
-            <div className="fixed top-20 right-4 sm:right-8 z-[60] pointer-events-none">
-                <div
-                    className={`flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/90 backdrop-blur-md shadow-lg border border-cyan-50 transition-all duration-500 ${
-                        isSyncing
-                            ? "opacity-100 translate-y-0"
-                            : "opacity-0 -translate-y-4"
-                    }`}
-                >
-                    <div className="relative flex h-2 w-2">
-                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
-                        <span className="relative inline-flex rounded-full h-2 w-2 bg-cyan-500"></span>
-                    </div>
-                    <span className="text-[10px] font-bold text-cyan-600 uppercase tracking-widest">
-                        Sinkronisasi...
-                    </span>
-                </div>
-            </div>
-
-            {/* Main Navbar */}
-            <header
-                className={`sticky top-0 z-50 transition-all duration-300 ${
-                    isScrolled
-                        ? "bg-white/10 backdrop-blur-xl shadow-sm"
-                        : "bg-white"
+        <div className="flex min-h-screen flex-col bg-slate-50">
+            <div
+                aria-live="polite"
+                className={`pointer-events-none fixed bottom-5 right-5 z-[60] flex items-center gap-2 rounded-full border border-slate-200 bg-white/95 px-3 py-1.5 shadow-soft backdrop-blur transition duration-500 ${
+                    isSyncing
+                        ? "translate-y-0 opacity-100"
+                        : "translate-y-3 opacity-0"
                 }`}
             >
-                <div className="container mx-auto px-4 sm:px-6">
-                    <div className="flex justify-between items-center h-16 md:h-20">
-                        {/* Logo */}
-                        <div className="flex-shrink-0">
-                            <Link href="/">
-                                <div className="flex items-center">
-                                    <ApplicationLogo className="h-8 w-8 sm:h-10 sm:w-10" />
-                                    <div className="ml-2">
-                                        <h1 className="text-lg sm:text-xl font-bold text-blue-900">
-                                            PLN
-                                        </h1>
-                                        <p className="text-[8px] sm:text-[10px] text-blue-700 font-medium tracking-wide">
-                                            UPT KARAWANG
-                                        </p>
-                                    </div>
-                                </div>
+                <span className="relative flex h-2 w-2">
+                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-brand-400 opacity-75" />
+                    <span className="relative inline-flex h-2 w-2 rounded-full bg-brand-500" />
+                </span>
+                <span className="text-[11px] font-semibold text-slate-600">
+                    Menyinkronkan
+                </span>
+            </div>
+
+            <header
+                className={`sticky top-0 z-50 border-b transition duration-300 ${
+                    isScrolled
+                        ? "border-slate-200/80 bg-white/80 shadow-soft backdrop-blur-xl"
+                        : "border-transparent bg-white"
+                }`}
+            >
+                <div className="container mx-auto flex h-16 items-center justify-between gap-4 px-4 sm:px-6 lg:h-[72px]">
+                    <Link href="/" aria-label="Beranda PLN UPT Karawang">
+                        <BrandMark />
+                    </Link>
+
+                    <DesktopNav menus={menus} />
+
+                    <div className="flex items-center gap-2">
+                        {auth?.user ? (
+                            <ProfileMenu
+                                user={auth.user}
+                                isOpen={isProfileOpen}
+                                onToggle={() => setIsProfileOpen((v) => !v)}
+                                onLogout={() => {
+                                    setIsProfileOpen(false);
+                                    setIsLogoutModalOpen(true);
+                                }}
+                            />
+                        ) : (
+                            <Link
+                                href={route("login")}
+                                className="btn-primary hidden sm:inline-flex"
+                            >
+                                Masuk
+                                <FaArrowRight className="h-3 w-3" />
                             </Link>
-                        </div>
+                        )}
 
-                        {/* Desktop Navigation */}
-                        <nav className="hidden lg:flex items-center space-x-1">
-                            {navMenus.map((menu, index) => (
-                                <div key={index} className="relative group">
-                                    <NavLink
-                                        menu={menu}
-                                        className={`px-3 xl:px-4 py-2 text-sm font-medium ${
-                                            isScrolled
-                                                ? "text-black"
-                                                : "text-gray-700"
-                                        } hover:text-cyan-600 transition-colors duration-200 ${
-                                            menu.submenus &&
-                                            menu.submenus.length > 0
-                                                ? "flex items-center"
-                                                : ""
-                                        }`}
-                                    >
-                                        {menu.title}
-                                        {menu.submenus &&
-                                            menu.submenus.length > 0 && (
-                                                <FaChevronDown className="ml-1 h-2.5 w-2.5 opacity-70" />
-                                            )}
-                                    </NavLink>
-
-                                    {menu.submenus &&
-                                        menu.submenus.length > 0 && (
-                                            <div className="absolute left-0 mt-1 w-56 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 transform origin-top scale-95 group-hover:scale-100">
-                                                <div className="py-1">
-                                                    {menu.submenus.map(
-                                                        (submenu, subIndex) => (
-                                                            <NavLink
-                                                                key={subIndex}
-                                                                menu={submenu}
-                                                                className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-cyan-600"
-                                                            >
-                                                                {submenu.title}
-                                                            </NavLink>
-                                                        ),
-                                                    )}
-                                                </div>
-                                            </div>
-                                        )}
-                                </div>
-                            ))}
-                        </nav>
-
-                        {/* Right Side Actions */}
-                        <div className="flex items-center">
-                            {auth?.user ? (
-                                <div className="relative">
-                                    <button
-                                        onClick={() =>
-                                            setActiveDropdown(
-                                                activeDropdown === "profile"
-                                                    ? null
-                                                    : "profile",
-                                            )
-                                        }
-                                        className="flex items-center gap-2 px-2 sm:px-4 py-2 rounded-lg text-gray-700 hover:text-cyan-600 hover:bg-gray-50 transition-all duration-200"
-                                    >
-                                        <div className="flex items-center gap-1 sm:gap-2">
-                                            <div className="rounded-full ring-2 ring-cyan-600 border-[2px] border-white bg-white overflow-hidden">
-                                                {auth.user.foto_profil ? (
-                                                    <img
-                                                        src={
-                                                            auth.user
-                                                                .foto_profil
-                                                                ? `/storage/${auth.user.foto_profil}`
-                                                                : ""
-                                                        }
-                                                        alt="Foto Profile"
-                                                        className="h-8 w-8 rounded-full object-cover"
-                                                    />
-                                                ) : (
-                                                    <div className="h-6 w-6 bg-cyan-50 flex items-center justify-center text-cyan-600">
-                                                        <FaUserShield className="h-4 w-4" />
-                                                    </div>
-                                                )}
-                                            </div>
-                                            <span className="font-medium text-sm sm:text-base hidden sm:block">
-                                                {auth.user.name}
-                                            </span>
-                                        </div>
-                                        <FaChevronDown
-                                            className={`h-3 w-3 sm:h-4 sm:w-4 transition-transform duration-200 text-gray-400 ${
-                                                activeDropdown === "profile"
-                                                    ? "rotate-180"
-                                                    : ""
-                                            }`}
-                                        />
-                                    </button>
-                                    <div
-                                        className={`absolute right-0 mt-2 min-w-[180px] bg-white rounded-xl shadow-2xl py-2 z-50 border border-gray-100 transition-all duration-200 ${
-                                            activeDropdown === "profile"
-                                                ? "opacity-100 scale-100 pointer-events-auto"
-                                                : "opacity-0 scale-95 pointer-events-none"
-                                        }`}
-                                        style={{ top: "110%" }}
-                                    >
-                                        <div className="px-4 py-2 border-b border-gray-100 flex items-center gap-2">
-                                            <div>
-                                                <div className="font-semibold text-gray-800 text-sm">
-                                                    {auth?.user?.name}
-                                                </div>
-                                                <div className="text-xs text-gray-500">
-                                                    {auth?.user?.email}
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <Link
-                                            href={route("dashboard.index")}
-                                            className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:text-cyan-600 transition rounded-md"
-                                        >
-                                            <FaHome className="text-cyan-600" />{" "}
-                                            Dashboard
-                                        </Link>
-                                        <Link
-                                            href={route(
-                                                "dashboard.profile.edit",
-                                            )}
-                                            className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:text-cyan-600 transition rounded-md"
-                                        >
-                                            <FaCog className="text-cyan-600" />{" "}
-                                            Profile
-                                        </Link>
-                                        <button
-                                            onClick={() =>
-                                                setShowLogoutModal(true)
-                                            }
-                                            className="flex items-center gap-2 w-full text-left px-4 py-2 text-sm text-rose-600 hover:bg-rose-50 transition rounded-md"
-                                        >
-                                            <svg
-                                                className="h-4 w-4 text-rose-600"
-                                                fill="none"
-                                                stroke="currentColor"
-                                                strokeWidth={2}
-                                                viewBox="0 0 24 24"
-                                            >
-                                                <path
-                                                    strokeLinecap="round"
-                                                    strokeLinejoin="round"
-                                                    d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a2 2 0 01-2 2H7a2 2 0 01-2-2V7a2 2 0 012-2h4a2 2 0 012 2v1"
-                                                />
-                                            </svg>
-                                            Logout
-                                        </button>
-                                    </div>
-                                </div>
-                            ) : (
-                                <div className="flex items-center">
-                                    <Link
-                                        href={route("login")}
-                                        className="text-gray-700 hover:text-blue-600"
-                                    >
-                                        <PrimaryButton className="flex items-center gap-2">
-                                            <FaLock />
-                                            <span>Login</span>
-                                        </PrimaryButton>
-                                    </Link>
-                                </div>
-                            )}
-
-                            <button
-                                className="lg:hidden ml-1 p-2 rounded-full text-gray-500 hover:text-blue-600 hover:bg-gray-100 transition-colors duration-200"
-                                onClick={() =>
-                                    setMobileMenuOpen(!mobileMenuOpen)
-                                }
-                            >
-                                <FaBars className="h-5 w-5" />
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Mobile Navigation */}
-                <div
-                    className={`lg:hidden fixed inset-0 z-40 bg-black bg-opacity-50 transition-opacity duration-300 ${
-                        mobileMenuOpen
-                            ? "opacity-100"
-                            : "opacity-0 pointer-events-none"
-                    }`}
-                    onClick={() => setMobileMenuOpen(false)}
-                >
-                    <div
-                        className={`absolute right-0 top-0 h-full w-64 sm:w-80 bg-white shadow-xl transform transition-transform duration-300 ease-in-out overflow-y-auto ${
-                            mobileMenuOpen
-                                ? "translate-x-0"
-                                : "translate-x-full"
-                        }`}
-                        onClick={(e) => e.stopPropagation()}
-                    >
-                        <div className="p-5 border-b border-gray-200 flex justify-between items-center">
-                            <h3 className="text-lg font-medium text-gray-900">
-                                Menu
-                            </h3>
-                            <button
-                                className="text-gray-400 hover:text-gray-500"
-                                onClick={() => setMobileMenuOpen(false)}
-                            >
-                                <svg
-                                    className="h-6 w-6"
-                                    fill="none"
-                                    viewBox="0 0 24 24"
-                                    stroke="currentColor"
-                                >
-                                    <path
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                        strokeWidth={2}
-                                        d="M6 18L18 6M6 6l12 12"
-                                    />
-                                </svg>
-                            </button>
-                        </div>
-                        <div className="p-4 space-y-3 overflow-y-auto max-h-screen pb-20">
-                            {navMenus.map((menu, index) => (
-                                <div
-                                    key={index}
-                                    className="border-b border-gray-100 pb-2"
-                                >
-                                    {menu.submenus &&
-                                    menu.submenus.length > 0 ? (
-                                        <>
-                                            <button
-                                                className="w-full flex items-center justify-between py-2 text-gray-700 font-medium hover:text-blue-700"
-                                                onClick={() =>
-                                                    toggleDropdown(index)
-                                                }
-                                            >
-                                                <span>{menu.title}</span>
-                                                <FaChevronDown
-                                                    className={`h-3 w-3 transition-transform duration-200 ${
-                                                        activeDropdown === index
-                                                            ? "transform rotate-180"
-                                                            : ""
-                                                    }`}
-                                                />
-                                            </button>
-
-                                            <div
-                                                className={`mt-1 space-y-1 pl-4 ${
-                                                    activeDropdown === index
-                                                        ? "block"
-                                                        : "hidden"
-                                                }`}
-                                            >
-                                                {menu.submenus.map(
-                                                    (submenu, subIndex) => (
-                                                        <NavLink
-                                                            key={subIndex}
-                                                            menu={submenu}
-                                                            className="block py-2 text-sm text-gray-600 hover:text-blue-700"
-                                                            onClick={() =>
-                                                                setMobileMenuOpen(
-                                                                    false,
-                                                                )
-                                                            }
-                                                        >
-                                                            {submenu.title}
-                                                        </NavLink>
-                                                    ),
-                                                )}
-                                            </div>
-                                        </>
-                                    ) : (
-                                        <NavLink
-                                            menu={menu}
-                                            className="block py-2 text-gray-700 font-medium hover:text-blue-700"
-                                            onClick={() =>
-                                                setMobileMenuOpen(false)
-                                            }
-                                        >
-                                            {menu.title}
-                                        </NavLink>
-                                    )}
-                                </div>
-                            ))}
-
-                            {/* Login button in mobile menu */}
-                            {!auth?.user && (
-                                <div className="pt-4">
-                                    <Link
-                                        href={route("login")}
-                                        className="block w-full text-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-md transition-colors duration-200"
-                                        onClick={() => setMobileMenuOpen(false)}
-                                    >
-                                        Login
-                                    </Link>
-                                </div>
-                            )}
-                        </div>
+                        <button
+                            type="button"
+                            aria-label="Buka menu"
+                            className="flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 text-slate-700 transition hover:bg-slate-100 lg:hidden"
+                            onClick={() => setIsMobileMenuOpen(true)}
+                        >
+                            <FaBars className="h-4 w-4" />
+                        </button>
                     </div>
                 </div>
             </header>
 
-            {/* Main Content */}
+            <MobileDrawer
+                isOpen={isMobileMenuOpen}
+                onClose={() => setIsMobileMenuOpen(false)}
+                menus={menus}
+                isGuest={!auth?.user}
+            />
+
             <main className="flex-grow">{children}</main>
 
-            {/* Footer */}
-            <footer className="bg-gray-900 text-white">
-                <div className="container mx-auto px-4 py-6">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                        <div>
-                            <div className="flex items-center mb-3">
-                                <ApplicationLogo className="h-7 w-7" />
-                                <div className="ml-2">
-                                    <h1 className="text-base font-bold text-white">
-                                        PLN
-                                    </h1>
-                                    <p className="text-[8px] text-blue-300 font-medium tracking-wide">
-                                        UPT KARAWANG
-                                    </p>
-                                </div>
-                            </div>
-                            <p className="text-gray-400 text-xs mb-3 leading-relaxed">
-                                Menjadi Perusahaan Global Top 500 dan #1 Pilihan
-                                Pelanggan untuk Solusi Energi.
-                            </p>
-                            <div className="flex space-x-2">
-                                <a
-                                    href="#"
-                                    className="bg-gray-800 hover:bg-blue-600 h-6 w-6 rounded-full flex items-center justify-center transition-colors duration-200"
-                                >
-                                    <FaFacebookF className="h-3 w-3" />
-                                </a>
-                                <a
-                                    href="#"
-                                    className="bg-gray-800 hover:bg-blue-600 h-6 w-6 rounded-full flex items-center justify-center transition-colors duration-200"
-                                >
-                                    <FaTwitter className="h-3 w-3" />
-                                </a>
-                                <a
-                                    href="https://www.instagram.com/plnuptkarawang"
-                                    target="_blank"
-                                    className="bg-gray-800 hover:bg-blue-600 h-6 w-6 rounded-full flex items-center justify-center transition-colors duration-200"
-                                >
-                                    <FaInstagram className="h-3 w-3" />
-                                </a>
-                                <a
-                                    href="#"
-                                    className="bg-gray-800 hover:bg-blue-600 h-6 w-6 rounded-full flex items-center justify-center transition-colors duration-200"
-                                >
-                                    <FaYoutube className="h-3 w-3" />
-                                </a>
-                            </div>
-                        </div>
+            <SiteFooter
+                menus={menus}
+                news={berita.slice(0, FOOTER_NEWS_LIMIT)}
+            />
 
-                        <div>
-                            <h3 className="text-sm font-semibold mb-2 text-white">
-                                Tautan Cepat
-                            </h3>
-                            <ul className="space-y-1 text-xs">
-                                <li>
-                                    <a
-                                        href="#"
-                                        className="text-gray-400 hover:text-white transition-colors duration-200"
-                                    >
-                                        Beranda
-                                    </a>
-                                </li>
-                                <li>
-                                    <a
-                                        href="#"
-                                        className="text-gray-400 hover:text-white transition-colors duration-200"
-                                    >
-                                        Tentang Kami
-                                    </a>
-                                </li>
-                                <li>
-                                    <a
-                                        href="#"
-                                        className="text-gray-400 hover:text-white transition-colors duration-200"
-                                    >
-                                        Layanan
-                                    </a>
-                                </li>
-                                <li>
-                                    <a
-                                        href="#"
-                                        className="text-gray-400 hover:text-white transition-colors duration-200"
-                                    >
-                                        Berita
-                                    </a>
-                                </li>
-                                <li>
-                                    <a
-                                        href="#"
-                                        className="text-gray-400 hover:text-white transition-colors duration-200"
-                                    >
-                                        Kontak
-                                    </a>
-                                </li>
-                            </ul>
-                        </div>
-
-                        <div>
-                            <h3 className="text-sm font-semibold mb-2 text-white">
-                                Berita
-                            </h3>
-                            <ul className="space-y-1 text-xs">
-                                {beritaTerbaru.map((b, index) => (
-                                    <li key={b.id ? b.id : index}>
-                                        <Link
-                                            href={route(
-                                                "berita.detail",
-                                                b.slug,
-                                            )}
-                                            className="text-gray-400 hover:text-blue-600"
-                                        >
-                                            {b.judul}
-                                        </Link>
-                                    </li>
-                                ))}
-                            </ul>
-                        </div>
-
-                        <div>
-                            <h3 className="text-sm font-semibold mb-2 text-white">
-                                Kontak Kami
-                            </h3>
-                            <ul className="space-y-1 text-xs">
-                                <li className="flex items-start">
-                                    <FaMapMarkerAlt className="h-4 w-4 mr-2 mt-0.5 text-blue-400 flex-shrink-0" />
-                                    <span className="text-gray-400">
-                                        Jl. Raya Kosambi Klari No.1, RT.2/RW.7,
-                                        Pancawati, Karawang, Jawa Barat 41371
-                                    </span>
-                                </li>
-                                <li className="flex items-center">
-                                    <FaPhoneAlt className="h-3 w-3 mr-2 text-blue-400 flex-shrink-0" />
-                                    <span className="text-gray-400">
-                                        123-456-789
-                                    </span>
-                                </li>
-                                <li className="flex items-center">
-                                    <FaEnvelope className="h-3 w-3 mr-2 text-blue-400 flex-shrink-0" />
-                                    <span className="text-gray-400">
-                                        galleryuptkrwg@gmail.com
-                                    </span>
-                                </li>
-                            </ul>
-                        </div>
-                    </div>
-                </div>
-
-                <div className="border-t border-gray-800 py-3">
-                    <div className="container mx-auto px-4">
-                        <div className="flex flex-col sm:flex-row justify-between items-center">
-                            <p className="text-gray-500 text-xs">
-                                &copy; {new Date().getFullYear()} PLN. Hak Cipta
-                                Dilindungi.
-                            </p>
-                            <div className="mt-2 sm:mt-0">
-                                <ul className="flex space-x-4 text-[10px]">
-                                    <li>
-                                        <a
-                                            href="#"
-                                            className="text-gray-500 hover:text-white transition-colors duration-200"
-                                        >
-                                            Kebijakan Privasi
-                                        </a>
-                                    </li>
-                                    <li>
-                                        <a
-                                            href="#"
-                                            className="text-gray-500 hover:text-white transition-colors duration-200"
-                                        >
-                                            Syarat & Ketentuan
-                                        </a>
-                                    </li>
-                                    <li>
-                                        <a
-                                            href="#"
-                                            className="text-gray-500 hover:text-white transition-colors duration-200"
-                                        >
-                                            Peta Situs
-                                        </a>
-                                    </li>
-                                </ul>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </footer>
-
-            {/* Modal Konfirmasi Logout */}
-            {showLogoutModal && (
-                <div className="fixed inset-0 z-50 overflow-y-auto">
-                    <div className="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-                        <div
-                            className="fixed inset-0 transition-opacity"
-                            aria-hidden="true"
-                            onClick={() => setShowLogoutModal(false)}
-                        >
-                            <div className="absolute inset-0 bg-gray-800 opacity-75 "></div>
-                        </div>
-
-                        <span
-                            className="hidden sm:inline-block sm:align-middle sm:h-screen"
-                            aria-hidden="true"
-                        >
-                            &#8203;
-                        </span>
-
-                        <div
-                            className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full"
-                            onClick={(e) => e.stopPropagation()}
-                        >
-                            <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
-                                <div className="sm:flex sm:items-start">
-                                    <div className="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-red-100 sm:mx-0 sm:h-10 sm:w-10">
-                                        <FaSignOutAlt
-                                            className="h-6 w-6 text-red-600"
-                                            aria-hidden="true"
-                                        />
-                                    </div>
-                                    <div className="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
-                                        <h3
-                                            className="text-lg leading-6 font-medium text-gray-900"
-                                            id="modal-title"
-                                        >
-                                            Konfirmasi Logout
-                                        </h3>
-                                        <div className="mt-2">
-                                            <p className="text-sm text-gray-500">
-                                                Apakah Anda yakin ingin keluar
-                                                dari sistem? Anda perlu login
-                                                kembali untuk mengakses
-                                                dashboard.
-                                            </p>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
-                                <button
-                                    type="button"
-                                    className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-red-600 text-base font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 sm:ml-3 sm:w-auto sm:text-sm"
-                                    onClick={handleLogout}
-                                >
-                                    Logout
-                                </button>
-                                <button
-                                    type="button"
-                                    className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
-                                    onClick={() => setShowLogoutModal(false)}
-                                >
-                                    Batal
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* Notistack SnackbarProvider dibungkus di komponen utama */}
+            <LogoutModal
+                show={isLogoutModalOpen}
+                onClose={() => setIsLogoutModalOpen(false)}
+                onConfirm={handleLogout}
+            />
         </div>
     );
 }

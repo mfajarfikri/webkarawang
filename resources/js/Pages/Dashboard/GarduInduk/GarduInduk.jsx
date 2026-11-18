@@ -1,4 +1,5 @@
 import DashboardLayout from "@/Layouts/DashboardLayout";
+import PageHeader, { HeaderStat } from "@/Components/Dashboard/PageHeader";
 import { Head, useForm } from "@inertiajs/react";
 import { GiElectric } from "react-icons/gi";
 import {
@@ -62,38 +63,25 @@ export default function GarduInduk({ garduInduks = [] }) {
     return (
         <DashboardLayout title="Manajemen Gardu Induk">
             <Head title="Gardu Induk" />
-            <div className="min-h-screen bg-white rounded-2xl py-10">
-                <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-8">
-                    {/* Header Section */}
-                    <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
-                        <div className="flex items-center gap-3">
-                            <div className="h-12 w-12 rounded-2xl bg-gradient-to-br from-blue-500 via-blue-400 to-indigo-400 flex items-center justify-center text-white shadow-md">
-                                <GiElectric className="w-6 h-6" />
-                            </div>
-                            <div>
-                                <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
-                                    Manajemen Gardu Induk
-                                </h1>
-                                <p className="text-sm md:text-base text-gray-600 mt-1">
-                                    Kelola data gardu induk dan lokasi
-                                    operasional kelistrikan.
-                                </p>
-                            </div>
-                        </div>
-                        <div className="flex items-center gap-3">
-                            <button
-                                onClick={() => setShowTambahGardu(true)}
-                                className="bg-blue-600 text-white px-5 py-2.5 rounded-xl shadow-sm hover:bg-blue-700 font-medium transition-all duration-200 flex items-center gap-2"
-                            >
-                                <FaPlus className="w-4 h-4" />
-                                <span>Tambah Gardu</span>
-                            </button>
-                        </div>
-                    </div>
+            <div className="min-h-full">
+                <div className="max-w-full">
+                    <PageHeader
+                        icon={GiElectric}
+                        title="Manajemen Gardu Induk"
+                        description="Kelola data gardu induk dan lokasi operasional kelistrikan."
+                    >
+                        <button
+                            onClick={() => setShowTambahGardu(true)}
+                            className="btn-brand"
+                        >
+                            <FaPlus className="h-3.5 w-3.5" />
+                            <span>Tambah Gardu</span>
+                        </button>
+                    </PageHeader>
 
                     {/* Table Card */}
-                    <div className="bg-white/95 backdrop-blur-sm rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-                        <div className="px-6 py-4 border-b border-gray-100 bg-gradient-to-r from-gray-50/80 via-white to-gray-50/80">
+                    <div className="surface overflow-hidden">
+                        <div className="px-6 py-4 border-b border-gray-100">
                             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                                 <div>
                                     <h2 className="text-base md:text-lg font-semibold text-gray-900">
