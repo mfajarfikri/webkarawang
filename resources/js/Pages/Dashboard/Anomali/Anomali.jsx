@@ -1,5 +1,12 @@
 import DashboardLayout from "@/Layouts/DashboardLayout";
-import PageHeader, { HeaderStat } from "@/Components/Dashboard/PageHeader";
+import PageHeader from "@/Components/Dashboard/PageHeader";
+import ProcessPipeline from "@/Components/Anomali/ProcessPipeline";
+import AnomaliTable from "@/Components/Anomali/AnomaliTable";
+import {
+    buildMyQueue,
+    countByStage,
+    deriveStage,
+} from "@/Components/Anomali/anomaliWorkflow";
 import { Head, Link } from "@inertiajs/react";
 import { VscPreview } from "react-icons/vsc";
 import {
@@ -19,6 +26,8 @@ import {
     FaEdit,
     FaMapMarkerAlt,
     FaBuilding,
+    FaInbox,
+    FaCheckCircle,
 } from "react-icons/fa";
 import ErrorBoundary from "@/Components/ErrorBoundary";
 import { useState, useMemo, useEffect, useRef, Fragment } from "react";
@@ -1184,6 +1193,72 @@ function AnomaliCalendar({ filteredAnomalis, onEventClick }) {
     );
 }
 
+const VIEW_STORAGE_KEY = "anomaliView";
+const VIEWS = [
+    { id: "mine", label: "Perlu tindakan saya", icon: FaInbox },
+    { id: "all", label: "Semua anomali", icon: FaTable },
+    { id: "calendar", label: "Kalender", icon: FaCalendarAlt },
+];
+
+function readStoredView() {
+    try {
+        const saved = localStorage.getItem(VIEW_STORAGE_KEY);
+        return VIEWS.some((v) => v.id === saved) ? saved : null;
+    } catch {
+        return null;
+    }
+}
+
+function writeStoredView(view) {
+    try {
+        if (view) localStorage.setItem(VIEW_STORAGE_KEY, view);
+    } catch {
+        // Preferensi tampilan tidak tersimpan (mis. mode privat); abaikan.
+    }
+}
+
+function viewCountClass(id, isActive) {
+    if (!isActive) return "bg-slate-100 text-slate-600";
+    return id === "mine" ? "bg-volt text-ink-950" : "bg-white/15 text-white";
+}
+
+function ViewSwitch({ activeView, counts, onSelect }) {
+    return (
+        <div
+            role="group"
+            aria-label="Tampilan anomali"
+            className="inline-flex flex-wrap gap-1 rounded-full border border-slate-200 bg-white p-1 shadow-soft"
+        >
+            {VIEWS.map(({ id, label, icon: Icon }) => {
+                const isActive = activeView === id;
+                return (
+                    <button
+                        key={id}
+                        type="button"
+                        aria-pressed={isActive}
+                        onClick={() => onSelect(id)}
+                        className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition ${
+                            isActive
+                                ? "bg-ink-900 text-white shadow-soft"
+                                : "text-slate-600 hover:bg-slate-100 hover:text-ink-900"
+                        }`}
+                    >
+                        <Icon className="h-3.5 w-3.5" aria-hidden="true" />
+                        {label}
+                        {counts[id] !== undefined ? (
+                            <span
+                                className={`rounded-full px-2 py-0.5 text-[11px] tabular-nums ${viewCountClass(id, isActive)}`}
+                            >
+                                {counts[id]}
+                            </span>
+                        ) : null}
+                    </button>
+                );
+            })}
+        </div>
+    );
+}
+
 export default function Anomali({ anomalis = [], auth = [], kategoris = [] }) {
     const [rowsPerPage, setRowsPerPage] = useState(10);
     const [searchTerm, setSearchTerm] = useState("");
@@ -1192,16 +1267,20 @@ export default function Anomali({ anomalis = [], auth = [], kategoris = [] }) {
     const [monthQuery, setMonthQuery] = useState("");
     const [exportUltgs, setExportUltgs] = useState([]);
     const [exportGardus, setExportGardus] = useState([]);
-    const [activeTab, setActiveTab] = useState(() => {
-        // Mengambil nilai activeTab dari localStorage jika ada
-        const savedTab = localStorage.getItem("anomaliActiveTab");
-        return savedTab || "tabel";
-    });
+    // Tampilan awal ditetapkan sekali dari antrean penuh, supaya tidak
+    // berpindah sendiri saat pengguna mencari atau menyaring.
+    const [view, setView] = useState(
+        () =>
+            readStoredView() ??
+            (buildMyQueue(anomalis, auth?.user ?? null).length > 0
+                ? "mine"
+                : "all"),
+    );
+    const [stageFilter, setStageFilter] = useState(null);
 
-    // Update localStorage when activeTab changes
     useEffect(() => {
-        localStorage.setItem("anomaliActiveTab", activeTab);
-    }, [activeTab]);
+        writeStoredView(view);
+    }, [view]);
     const [garduQuery, setGarduQuery] = useState("");
     const [ultgQuery, setUltgQuery] = useState("");
     const [forceUpdate, setForceUpdate] = useState(0);
@@ -1350,11 +1429,6 @@ export default function Anomali({ anomalis = [], auth = [], kategoris = [] }) {
     useEffect(() => {
         setMonthQuery("");
     }, [exportMonths]);
-
-    // Menyimpan activeTab ke localStorage setiap kali berubah
-    useEffect(() => {
-        localStorage.setItem("anomaliActiveTab", activeTab);
-    }, [activeTab]);
 
     const handleExport = () => {
         const params = new URLSearchParams();
@@ -1513,121 +1587,90 @@ export default function Anomali({ anomalis = [], auth = [], kategoris = [] }) {
         selectedStatus,
     ]);
 
-    const totalRows = filteredAnomalis.length;
+    const user = auth?.user ?? null;
+    const today = useMemo(() => new Date(), []);
+    const canCreate = (user?.permissions ?? []).includes("View Anomali Create");
+
+    const myQueue = useMemo(
+        () => buildMyQueue(filteredAnomalis, user, today),
+        [filteredAnomalis, user, today],
+    );
+    const stageCounts = useMemo(
+        () => countByStage(filteredAnomalis, today),
+        [filteredAnomalis, today],
+    );
+    const activeView = view;
+
+    const stageFilteredAnomalis = useMemo(() => {
+        if (!stageFilter) return filteredAnomalis;
+        return filteredAnomalis.filter((a) => deriveStage(a) === stageFilter);
+    }, [filteredAnomalis, stageFilter]);
+
+    const visibleRows = useMemo(() => {
+        if (activeView !== "mine") return stageFilteredAnomalis;
+        if (!stageFilter) return myQueue;
+        return myQueue.filter((a) => deriveStage(a) === stageFilter);
+    }, [activeView, myQueue, stageFilteredAnomalis, stageFilter]);
+
+    const totalRows = visibleRows.length;
     const totalPages = Math.max(1, Math.ceil(totalRows / rowsPerPage));
 
     const paginatedData = useMemo(() => {
         const start = (page - 1) * rowsPerPage;
-        return filteredAnomalis.slice(start, start + rowsPerPage);
-    }, [filteredAnomalis, page, rowsPerPage]);
+        return visibleRows.slice(start, start + rowsPerPage);
+    }, [visibleRows, page, rowsPerPage]);
 
-    const paginatedDataReview = useMemo(() => {
-        const start = (page - 1) * rowsPerPage;
-        return filteredAnomalis
-            .filter(
-                (a) =>
-                    a.status &&
-                    a.status.toLowerCase() === "new" &&
-                    a.ultg &&
-                    a.ultg.trim().toLowerCase() ===
-                        (auth.user.wilayah || "").trim().toLowerCase(),
-            )
-            .slice(start, start + rowsPerPage);
-    }, [filteredAnomalis, page, rowsPerPage]);
-    const totalRowsReview = filteredAnomalis.filter(
-        (a) => a.status && a.status.toLowerCase() === "new",
-    ).length;
-    const totalPagesReview = Math.max(
-        1,
-        Math.ceil(totalRowsReview / rowsPerPage),
-    );
+    useEffect(() => {
+        if (page > totalPages) setPage(totalPages);
+    }, [page, totalPages]);
 
-    const paginateDataAssign = useMemo(() => {
-        const start = (page - 1) * rowsPerPage;
-        return filteredAnomalis
-            .filter(
-                (a) =>
-                    a.ultg &&
-                    a.ultg.trim().toLowerCase() ===
-                        (auth.user.wilayah || "").trim().toLowerCase() &&
-                    auth.user.bidang &&
-                    a.bidang_assigned === auth.user.bidang,
-            )
-            .slice(start, start + rowsPerPage);
-    }, [filteredAnomalis, page, rowsPerPage]);
+    const handleSelectStage = (stage) => {
+        setStageFilter(stage);
+        setPage(1);
+    };
 
-    const totalRowsAssign = filteredAnomalis.filter(
-        (a) =>
-            a.ultg &&
-            a.ultg.trim().toLowerCase() ===
-                (auth.user.wilayah || "").trim().toLowerCase() &&
-            auth.user.bidang &&
-            a.bidang_assigned === auth.user.bidang,
-    ).length;
-    const totalPagesAssign = Math.max(
-        1,
-        Math.ceil(totalRowsAssign / rowsPerPage),
-    );
+    const handleSelectView = (next) => {
+        setView(next);
+        setPage(1);
+    };
 
-    const paginateDataRenev = useMemo(() => {
-        const start = (page - 1) * rowsPerPage;
-        return filteredAnomalis
-            .filter(
-                (a) =>
-                    a.status &&
-                    a.status.toLowerCase() === "open" &&
-                    a.bidang_assigned &&
-                    a.bidang_assigned.toLowerCase() === "renev",
-            )
-            .slice(start, start + rowsPerPage);
-    }, [filteredAnomalis, page, rowsPerPage]);
-    const totalRowsRenev = filteredAnomalis.filter(
-        (a) =>
-            a.status &&
-            a.status.toLowerCase() === "open" &&
-            a.bidang_assigned &&
-            a.bidang_assigned.toLowerCase() === "renev",
-    ).length;
-    const totalPagesRenev = Math.max(
-        1,
-        Math.ceil(totalRowsRenev / rowsPerPage),
-    );
+    const handlePageChange = (next) =>
+        setPage(Math.min(Math.max(1, next), totalPages));
 
-    const handlePrev = () => setPage((p) => Math.max(1, p - 1));
-    const handleNext = () => setPage((p) => Math.min(totalPages, p + 1));
-
-    // Define tabs configuration
-    const tabs = useMemo(() => {
-        const list = [
-            { id: "tabel", name: "Anomali", icon: FaTable },
-            { id: "kalender", name: "Jadwal Anomali", icon: FaCalendarAlt },
-        ];
-
-        const bidang = auth.user.bidang?.toLowerCase();
-
-        if (bidang === "multg") {
-            list.push({
-                id: "approval",
-                name: "Review Anomali",
-                icon: VscPreview,
-                count: totalRowsReview,
-            });
-        } else if (["hargi", "harjar", "harpro", "k3"].includes(bidang)) {
-            list.push({
-                id: "assign",
-                name: "Assign Anomali",
-                icon: MdOutlineReportProblem,
-            });
-        } else if (bidang === "renev") {
-            list.push({
-                id: "renev",
-                name: "Assign ke Renev",
-                icon: FaClipboard,
-            });
-        }
-
-        return list;
-    }, [auth.user.bidang, totalRowsReview]);
+    const emptyState =
+        activeView === "mine" ? (
+            <>
+                <span className="flex h-12 w-12 items-center justify-center rounded-full bg-emerald-50 text-emerald-600 ring-1 ring-inset ring-emerald-100">
+                    <FaCheckCircle className="h-5 w-5" aria-hidden="true" />
+                </span>
+                <h3 className="mt-4 text-lg font-bold text-ink-900">
+                    Tidak ada yang menunggu tindakan Anda
+                </h3>
+                <p className="mt-1 max-w-sm text-sm text-slate-600">
+                    Anomali yang perlu Anda review, jadwalkan, atau tutup akan
+                    muncul di sini.
+                </p>
+                <button
+                    type="button"
+                    onClick={() => handleSelectView("all")}
+                    className="btn-ghost mt-5"
+                >
+                    Lihat semua anomali
+                </button>
+            </>
+        ) : (
+            <>
+                <span className="flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 text-slate-500">
+                    <FaClipboardList className="h-5 w-5" aria-hidden="true" />
+                </span>
+                <h3 className="mt-4 text-lg font-bold text-ink-900">
+                    Tidak ada anomali yang cocok
+                </h3>
+                <p className="mt-1 max-w-sm text-sm text-slate-600">
+                    Ubah pencarian, filter, atau tahap yang dipilih.
+                </p>
+            </>
+        );
 
     return (
         <>
@@ -1648,97 +1691,40 @@ export default function Anomali({ anomalis = [], auth = [], kategoris = [] }) {
                 </Head>
 
                 <div className="min-h-full">
-                    <div className="max-w-full">
-                        <PageHeader
-                            icon={MdOutlineReportProblem}
-                            title="Manajemen Anomali"
-                            description="Kelola dan pantau anomali sistem kelistrikan."
-                            leading={
-                                <button
-                                    onClick={() => window.history.back()}
-                                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 transition hover:bg-slate-100 hover:text-ink-900"
-                                    title="Kembali"
-                                    aria-label="Kembali"
-                                >
-                                    <FaChevronLeft className="h-3.5 w-3.5" />
-                                </button>
-                            }
-                        >
-                            <HeaderStat
-                                icon={MdOutlineReportProblem}
-                                value={`${totalRows} anomali`}
-                                label="Terdata di sistem"
-                            />
-                        </PageHeader>
+                    <PageHeader
+                        icon={MdOutlineReportProblem}
+                        title="Anomali Peralatan"
+                        description="Laporkan, review, jadwalkan, dan tutup anomali dalam satu alur."
+                    >
+                        {canCreate ? (
+                            <Link
+                                href={route("dashboard.anomali.create")}
+                                className="btn-brand"
+                            >
+                                <FaPlusCircle className="h-3.5 w-3.5" />
+                                Laporkan anomali
+                            </Link>
+                        ) : null}
+                    </PageHeader>
 
-                        {/* Headless UI Tabs */}
-                        <Tab.Group
-                            selectedIndex={tabs.findIndex(
-                                (t) => t.id === activeTab,
-                            )}
-                            onChange={(index) => setActiveTab(tabs[index].id)}
-                        >
-                            <Tab.List className="flex space-x-1 rounded-xl bg-slate-100/80 p-1 mb-6 max-w-fit border border-slate-200">
-                                {tabs.map((tab) => (
-                                    <Tab
-                                        key={tab.id}
-                                        className={({ selected }) =>
-                                            `w-auto min-w-[120px] rounded-lg py-2.5 px-4 text-sm font-medium leading-5 transition-all
-                                         focus:outline-none focus:ring-2 ring-offset-2 ring-sky-400
-                                         flex items-center justify-center gap-2
-                                         ${
-                                             selected
-                                                 ? "bg-white text-cyan-700 shadow-sm"
-                                                 : "text-slate-600 hover:bg-white/[0.5] hover:text-slate-800"
-                                         }
-                                        `
-                                        }
-                                    >
-                                        <tab.icon className="text-lg" />
-                                        <span>{tab.name}</span>
-                                        {tab.count > 0 && (
-                                            <span className="ml-2 rounded-full bg-red-500 px-2 py-0.5 text-xs font-bold text-white shadow-sm">
-                                                {tab.count > 99
-                                                    ? "99+"
-                                                    : tab.count}
-                                            </span>
-                                        )}
-                                    </Tab>
-                                ))}
-                            </Tab.List>
-                        </Tab.Group>
+                    <ProcessPipeline
+                        counts={stageCounts}
+                        activeStage={stageFilter}
+                        onSelect={handleSelectStage}
+                    />
 
-                        {/* Content Container */}
-                        <div className="bg-white/95 backdrop-blur-sm">
-                            {/* Tab Content */}
+                    <div className="mb-4">
+                        <ViewSwitch
+                            activeView={activeView}
+                            counts={{
+                                mine: myQueue.length,
+                                all: filteredAnomalis.length,
+                            }}
+                            onSelect={handleSelectView}
+                        />
+                    </div>
 
-                            {activeTab === "tabel" ? (
-                                <>
-                                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6 px-4 sm:px-0 mt-4">
-                                        <div>
-                                            <h1 className="text-2xl font-bold text-slate-900 tracking-tight">
-                                                Management Anomali
-                                            </h1>
-                                            <p className="text-slate-500 mt-1 text-sm">
-                                                Pantau dan kelola data anomali
-                                                sistem kelistrikan
-                                            </p>
-                                        </div>
-                                        <div className="flex items-center gap-3">
-                                            <Link
-                                                href={route(
-                                                    "dashboard.anomali.create",
-                                                )}
-                                            >
-                                                <button className="w-full md:w-auto bg-brand-600 text-white px-4 sm:px-5 py-2 rounded-xl shadow hover:bg-brand-700 font-semibold flex transition-all duration-300 ease-in-out items-center justify-center gap-2 text-sm sm:text-base">
-                                                    <FaPlusCircle />
-                                                    <span>Buat Anomali</span>
-                                                </button>
-                                            </Link>
-                                        </div>
-                                    </div>
-
-                                    <div className="px-0 sm:px-0 pb-6">
+                    <div className="pb-6">
                                         {/* Modern Toolbar */}
                                         <div className="bg-white p-2 rounded-2xl border border-slate-200 shadow-sm mb-6">
                                             <div className="flex flex-col lg:flex-row gap-3">
@@ -2616,1202 +2602,27 @@ export default function Anomali({ anomalis = [], auth = [], kategoris = [] }) {
                                             </div>
                                         </Modal>
 
-                                        <ErrorBoundary>
-                                            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-                                                <div className="overflow-x-auto">
-                                                    <table className="w-full min-w-[1000px]">
-                                                        <thead>
-                                                            <tr className="bg-slate-50 border-b border-slate-200">
-                                                                <th className="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider whitespace-nowrap">
-                                                                    No
-                                                                </th>
-                                                                <th className="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                                                                    Judul
-                                                                </th>
-                                                                {auth.user
-                                                                    .wilayah ===
-                                                                    "UPT Karawang" && (
-                                                                    <th className="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider whitespace-nowrap">
-                                                                        ULTG
-                                                                    </th>
-                                                                )}
-                                                                <th className="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                                                                    Gardu Induk
-                                                                </th>
-                                                                <th className="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                                                                    Bagian
-                                                                </th>
-                                                                <th className="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider whitespace-nowrap">
-                                                                    Tipe
-                                                                </th>
-                                                                <th className="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                                                                    Kategori
-                                                                </th>
-                                                                <th className="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                                                                    Peralatan
-                                                                </th>
-                                                                <th className="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                                                                    Bay
-                                                                </th>
-                                                                <th className="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                                                                    Penempatan
-                                                                </th>
-                                                                <th className="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider whitespace-nowrap">
-                                                                    Tanggal
-                                                                </th>
-                                                                <th className="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider whitespace-nowrap">
-                                                                    Status
-                                                                </th>
-                                                                <th className="px-6 py-4 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider whitespace-nowrap">
-                                                                    Aksi
-                                                                </th>
-                                                            </tr>
-                                                        </thead>
-                                                        <tbody className="divide-y divide-slate-100 bg-white">
-                                                            {paginatedData.length ===
-                                                            0 ? (
-                                                                <tr>
-                                                                    <td
-                                                                        colSpan={
-                                                                            12
-                                                                        }
-                                                                        className="px-6 py-12 text-center text-slate-400"
-                                                                    >
-                                                                        <div className="flex flex-col items-center justify-center">
-                                                                            <FaClipboardList className="text-4xl mb-3 text-slate-300" />
-                                                                            <p className="text-base font-medium">
-                                                                                Tidak
-                                                                                ada
-                                                                                data
-                                                                                anomali
-                                                                                ditemukan
-                                                                            </p>
-                                                                            <p className="text-sm mt-1">
-                                                                                Coba
-                                                                                sesuaikan
-                                                                                filter
-                                                                                atau
-                                                                                pencarian
-                                                                                Anda
-                                                                            </p>
-                                                                        </div>
-                                                                    </td>
-                                                                </tr>
-                                                            ) : (
-                                                                paginatedData.map(
-                                                                    (
-                                                                        anomali,
-                                                                        idx,
-                                                                    ) => (
-                                                                        <tr
-                                                                            key={
-                                                                                anomali.id
-                                                                            }
-                                                                            className="hover:bg-slate-50/80 transition-colors"
-                                                                        >
-                                                                            <td className="px-6 py-4 text-sm text-slate-500 whitespace-nowrap">
-                                                                                {(page -
-                                                                                    1) *
-                                                                                    rowsPerPage +
-                                                                                    idx +
-                                                                                    1}
-                                                                            </td>
-                                                                            <td className="px-6 py-4">
-                                                                                <div
-                                                                                    className="text-sm font-medium text-slate-900 line-clamp-2"
-                                                                                    title={
-                                                                                        anomali.judul
-                                                                                    }
-                                                                                >
-                                                                                    {
-                                                                                        anomali.judul
-                                                                                    }
-                                                                                </div>
-                                                                            </td>
-                                                                            {auth
-                                                                                .user
-                                                                                .wilayah ===
-                                                                                "UPT Karawang" && (
-                                                                                <td className="px-6 py-4 whitespace-nowrap">
-                                                                                    <UltgBadge
-                                                                                        ultg={
-                                                                                            anomali.ultg ===
-                                                                                            "ULTG Karawang"
-                                                                                                ? "Karawang"
-                                                                                                : "Purwakarta"
-                                                                                        }
-                                                                                    />
-                                                                                </td>
-                                                                            )}
-                                                                            <td className="px-6 py-4 text-sm text-slate-600">
-                                                                                {anomali
-                                                                                    .gardu_induk
-                                                                                    ?.name ??
-                                                                                    "-"}
-                                                                            </td>
-                                                                            <td className="px-6 py-4 text-sm text-slate-600">
-                                                                                {
-                                                                                    anomali.bagian
-                                                                                }
-                                                                            </td>
-                                                                            <td className="px-6 py-4 whitespace-nowrap">
-                                                                                <TipeBadge
-                                                                                    tipe={
-                                                                                        anomali.tipe
-                                                                                    }
-                                                                                />
-                                                                            </td>
-                                                                            <td className="px-6 py-4 text-sm text-slate-600">
-                                                                                {anomali
-                                                                                    .kategori
-                                                                                    ?.name ??
-                                                                                    "-"}
-                                                                            </td>
-                                                                            <td className="px-6 py-4 text-sm text-slate-600">
-                                                                                <div
-                                                                                    className="line-clamp-1"
-                                                                                    title={
-                                                                                        anomali.peralatan
-                                                                                    }
-                                                                                >
-                                                                                    {
-                                                                                        anomali.peralatan
-                                                                                    }
-                                                                                </div>
-                                                                            </td>
-                                                                            <td className="px-6 py-4 text-sm text-slate-600">
-                                                                                <div
-                                                                                    className="line-clamp-1"
-                                                                                    title={
-                                                                                        anomali.bay
-                                                                                    }
-                                                                                >
-                                                                                    {
-                                                                                        anomali.bay
-                                                                                    }
-                                                                                </div>
-                                                                            </td>
-                                                                            <td className="px-6 py-4 text-sm text-slate-600">
-                                                                                <div
-                                                                                    className="line-clamp-1"
-                                                                                    title={
-                                                                                        anomali.penempatan_alat
-                                                                                    }
-                                                                                >
-                                                                                    {
-                                                                                        anomali.penempatan_alat
-                                                                                    }
-                                                                                </div>
-                                                                            </td>
-                                                                            <td className="px-6 py-4 text-sm text-slate-600 whitespace-nowrap">
-                                                                                {formatDate(
-                                                                                    anomali.tanggal_kejadian,
-                                                                                )}
-                                                                            </td>
-                                                                            <td className="px-6 py-4 whitespace-nowrap">
-                                                                                <StatusBadge
-                                                                                    status={
-                                                                                        anomali.status
-                                                                                    }
-                                                                                />
-                                                                            </td>
-                                                                            <td className="px-6 py-4 text-right whitespace-nowrap">
-                                                                                <Link
-                                                                                    href={route(
-                                                                                        "dashboard.anomali.show",
-                                                                                        anomali.slug,
-                                                                                    )}
-                                                                                    className="text-blue-600 hover:text-blue-800 font-medium text-sm inline-flex items-center gap-1 transition-colors"
-                                                                                >
-                                                                                    Detail{" "}
-                                                                                    <FaChevronRight className="text-xs" />
-                                                                                </Link>
-                                                                            </td>
-                                                                        </tr>
-                                                                    ),
-                                                                )
-                                                            )}
-                                                        </tbody>
-                                                    </table>
-                                                </div>
-
-                                                {/* Pagination Footer */}
-                                                <div className="px-6 py-4 bg-slate-50 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-4">
-                                                    <div className="text-sm text-slate-500">
-                                                        Menampilkan{" "}
-                                                        <span className="font-medium text-slate-900">
-                                                            {(page - 1) *
-                                                                rowsPerPage +
-                                                                1}
-                                                        </span>{" "}
-                                                        sampai{" "}
-                                                        <span className="font-medium text-slate-900">
-                                                            {Math.min(
-                                                                page *
-                                                                    rowsPerPage,
-                                                                totalRows,
-                                                            )}
-                                                        </span>{" "}
-                                                        dari{" "}
-                                                        <span className="font-medium text-slate-900">
-                                                            {totalRows}
-                                                        </span>{" "}
-                                                        data
-                                                    </div>
-                                                    <div className="flex items-center gap-2">
-                                                        <button
-                                                            onClick={handlePrev}
-                                                            disabled={
-                                                                page === 1
-                                                            }
-                                                            className="p-2 rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-                                                        >
-                                                            <FaChevronLeft className="h-4 w-4" />
-                                                        </button>
-                                                        <div className="flex items-center gap-1">
-                                                            <span className="px-3 py-1 rounded-lg bg-blue-50 text-blue-700 font-medium text-sm border border-blue-100">
-                                                                {page}
-                                                            </span>
-                                                            <span className="text-slate-400 text-sm">
-                                                                /
-                                                            </span>
-                                                            <span className="px-2 text-sm text-slate-600">
-                                                                {totalPages}
-                                                            </span>
-                                                        </div>
-                                                        <button
-                                                            onClick={handleNext}
-                                                            disabled={
-                                                                page ===
-                                                                totalPages
-                                                            }
-                                                            className="p-2 rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-                                                        >
-                                                            <FaChevronRight className="h-4 w-4" />
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </ErrorBoundary>
-                                    </div>
-                                </>
-                            ) : activeTab === "approval" &&
-                              auth.user.bidang &&
-                              auth.user.bidang.toLowerCase() === "multg" ? (
-                                <>
-                                    <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-                                        {/* Header & Controls */}
-                                        <div className="px-6 py-5 border-b border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                                            <div>
-                                                <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
-                                                    <FaClipboard className="text-blue-500" />
-                                                    Approval Anomali
-                                                </h2>
-                                                <p className="text-slate-500 text-sm mt-1">
-                                                    Kelola persetujuan anomali
-                                                    yang menunggu review
-                                                </p>
-                                            </div>
-
-                                            <div className="flex items-center gap-2">
-                                                <span className="text-sm text-slate-500">
-                                                    Baris:
-                                                </span>
-                                                <div className="w-20">
-                                                    <Listbox
-                                                        value={rowsPerPage}
-                                                        onChange={
-                                                            handleRowsPerPageChange
-                                                        }
-                                                    >
-                                                        <div className="relative">
-                                                            <Listbox.Button className="relative w-full cursor-pointer rounded-xl bg-slate-50 py-2 pl-3 pr-8 text-left border border-slate-200 focus:outline-none focus-visible:border-blue-500 focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-opacity-75 sm:text-sm hover:bg-slate-100 transition-colors">
-                                                                <span className="block truncate text-slate-700 font-medium">
-                                                                    {
-                                                                        rowsPerPage
-                                                                    }
-                                                                </span>
-                                                                <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2">
-                                                                    <FaChevronDown
-                                                                        className="h-3 w-3 text-slate-400"
-                                                                        aria-hidden="true"
-                                                                    />
-                                                                </span>
-                                                            </Listbox.Button>
-                                                            <Transition
-                                                                as={Fragment}
-                                                                leave="transition ease-in duration-100"
-                                                                leaveFrom="opacity-100"
-                                                                leaveTo="opacity-0"
-                                                            >
-                                                                <Listbox.Options className="absolute mt-1 max-h-60 w-full overflow-auto rounded-xl bg-white py-1 text-base shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm z-50">
-                                                                    {[
-                                                                        10, 20,
-                                                                        50,
-                                                                    ].map(
-                                                                        (
-                                                                            num,
-                                                                        ) => (
-                                                                            <Listbox.Option
-                                                                                key={
-                                                                                    num
-                                                                                }
-                                                                                className={({
-                                                                                    active,
-                                                                                }) =>
-                                                                                    `relative cursor-default select-none py-2 pl-3 pr-4 ${
-                                                                                        active
-                                                                                            ? "bg-blue-50 text-blue-900"
-                                                                                            : "text-slate-900"
-                                                                                    }`
-                                                                                }
-                                                                                value={
-                                                                                    num
-                                                                                }
-                                                                            >
-                                                                                {({
-                                                                                    selected,
-                                                                                }) => (
-                                                                                    <span
-                                                                                        className={`block truncate ${
-                                                                                            selected
-                                                                                                ? "font-medium"
-                                                                                                : "font-normal"
-                                                                                        }`}
-                                                                                    >
-                                                                                        {
-                                                                                            num
-                                                                                        }
-                                                                                    </span>
-                                                                                )}
-                                                                            </Listbox.Option>
-                                                                        ),
-                                                                    )}
-                                                                </Listbox.Options>
-                                                            </Transition>
-                                                        </div>
-                                                    </Listbox>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        {/* Table */}
-                                        <div className="overflow-x-auto">
-                                            <table className="w-full text-sm text-left">
-                                                <thead className="text-xs text-slate-500 uppercase bg-slate-50 border-b border-slate-100">
-                                                    <tr>
-                                                        <th className="px-6 py-4 font-semibold">
-                                                            No
-                                                        </th>
-                                                        <th className="px-6 py-4 font-semibold">
-                                                            Judul
-                                                        </th>
-                                                        <th className="px-6 py-4 font-semibold">
-                                                            Gardu Induk
-                                                        </th>
-                                                        <th className="px-6 py-4 font-semibold">
-                                                            Bagian
-                                                        </th>
-                                                        <th className="px-6 py-4 font-semibold">
-                                                            Tipe
-                                                        </th>
-                                                        <th className="px-6 py-4 font-semibold">
-                                                            Kategori
-                                                        </th>
-                                                        <th className="px-6 py-4 font-semibold">
-                                                            Peralatan
-                                                        </th>
-                                                        <th className="px-6 py-4 font-semibold">
-                                                            Tanggal
-                                                        </th>
-                                                        <th className="px-6 py-4 font-semibold">
-                                                            Status
-                                                        </th>
-                                                        <th className="px-6 py-4 font-semibold">
-                                                            Aksi
-                                                        </th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody className="divide-y divide-slate-100">
-                                                    {paginatedDataReview.length >
-                                                    0 ? (
-                                                        paginatedDataReview.map(
-                                                            (anomali, idx) => (
-                                                                <tr
-                                                                    key={
-                                                                        anomali.id
-                                                                    }
-                                                                    className="bg-white hover:bg-slate-50 transition-colors"
-                                                                >
-                                                                    <td className="px-6 py-4 font-medium text-slate-900">
-                                                                        {(page -
-                                                                            1) *
-                                                                            rowsPerPage +
-                                                                            idx +
-                                                                            1}
-                                                                    </td>
-                                                                    <td
-                                                                        className="px-6 py-4 text-slate-700 max-w-xs truncate"
-                                                                        title={
-                                                                            anomali.judul
-                                                                        }
-                                                                    >
-                                                                        {
-                                                                            anomali.judul
-                                                                        }
-                                                                    </td>
-                                                                    <td className="px-6 py-4 text-slate-600">
-                                                                        {anomali
-                                                                            .gardu_induk
-                                                                            ?.name ??
-                                                                            "-"}
-                                                                    </td>
-                                                                    <td className="px-6 py-4 text-slate-600">
-                                                                        {
-                                                                            anomali.bagian
-                                                                        }
-                                                                    </td>
-                                                                    <td className="px-6 py-4">
-                                                                        <TipeBadge
-                                                                            tipe={
-                                                                                anomali.tipe
-                                                                            }
-                                                                        />
-                                                                    </td>
-                                                                    <td className="px-6 py-4 text-slate-600">
-                                                                        {anomali
-                                                                            .kategori
-                                                                            ?.name ??
-                                                                            "-"}
-                                                                    </td>
-                                                                    <td className="px-6 py-4 text-slate-600">
-                                                                        {
-                                                                            anomali.peralatan
-                                                                        }
-                                                                    </td>
-                                                                    <td className="px-6 py-4 text-slate-600 whitespace-nowrap">
-                                                                        {formatDate(
-                                                                            anomali.tanggal_kejadian,
-                                                                        )}
-                                                                    </td>
-                                                                    <td className="px-6 py-4">
-                                                                        <StatusBadge
-                                                                            status={
-                                                                                anomali.status
-                                                                            }
-                                                                        />
-                                                                    </td>
-                                                                    <td className="px-6 py-4">
-                                                                        <Link
-                                                                            href={route(
-                                                                                "dashboard.anomali.review",
-                                                                                anomali.slug,
-                                                                            )}
-                                                                        >
-                                                                            <button className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-slate-600 text-xs font-medium hover:bg-slate-50 hover:text-blue-600 hover:border-blue-200 transition-all shadow-sm">
-                                                                                <FaEdit />
-                                                                                Review
-                                                                            </button>
-                                                                        </Link>
-                                                                    </td>
-                                                                </tr>
-                                                            ),
-                                                        )
-                                                    ) : (
-                                                        <tr>
-                                                            <td
-                                                                colSpan="10"
-                                                                className="px-6 py-12 text-center text-slate-500"
-                                                            >
-                                                                <div className="flex flex-col items-center justify-center">
-                                                                    <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mb-4">
-                                                                        <FaClipboardList className="text-slate-300 text-2xl" />
-                                                                    </div>
-                                                                    <p className="text-lg font-medium text-slate-900">
-                                                                        Tidak
-                                                                        ada data
-                                                                    </p>
-                                                                    <p className="text-sm text-slate-400 mt-1">
-                                                                        Belum
-                                                                        ada
-                                                                        anomali
-                                                                        untuk
-                                                                        direview.
-                                                                    </p>
-                                                                </div>
-                                                            </td>
-                                                        </tr>
-                                                    )}
-                                                </tbody>
-                                            </table>
-                                        </div>
-
-                                        {/* Pagination */}
-                                        <div className="px-6 py-4 border-t border-slate-100 flex items-center justify-between">
-                                            <div className="text-sm text-slate-500">
-                                                Halaman{" "}
-                                                <span className="font-medium text-slate-900">
-                                                    {page}
-                                                </span>{" "}
-                                                dari{" "}
-                                                <span className="font-medium text-slate-900">
-                                                    {totalPagesReview}
-                                                </span>
-                                            </div>
-                                            <div className="flex items-center gap-2">
-                                                <button
-                                                    onClick={handlePrev}
-                                                    disabled={page === 1}
-                                                    className="p-2 rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-                                                >
-                                                    <FaChevronLeft className="h-4 w-4" />
-                                                </button>
-                                                <button
-                                                    onClick={handleNext}
-                                                    disabled={
-                                                        page ===
-                                                        totalPagesReview
-                                                    }
-                                                    className="p-2 rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-                                                >
-                                                    <FaChevronRight className="h-4 w-4" />
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </>
-                            ) : activeTab === "assign" &&
-                              auth.user.bidang &&
-                              (auth.user.bidang.toLowerCase() === "hargi" ||
-                                  auth.user.bidang.toLowerCase() === "harjar" ||
-                                  auth.user.bidang.toLowerCase() === "harpro" ||
-                                  auth.user.bidang.toLowerCase() === "k3") ? (
-                                <>
-                                    {/* Header & Toolbar */}
-                                    <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm mb-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                                        <div>
-                                            <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
-                                                <div className="p-2 bg-amber-50 rounded-lg text-amber-600">
-                                                    <FaClipboard className="text-xl" />
-                                                </div>
-                                                Anomali Yang Ditugaskan
-                                            </h2>
-                                            <p className="text-slate-500 text-sm mt-1 ml-11">
-                                                Daftar anomali yang perlu Anda
-                                                tinjau dan tindak lanjuti.
-                                            </p>
-                                        </div>
-
-                                        {/* Rows Per Page */}
-                                        <div className="flex items-center gap-3">
-                                            <span className="text-sm text-slate-500 font-medium">
-                                                Tampil:
-                                            </span>
-                                            <Listbox
-                                                value={rowsPerPage}
-                                                onChange={
-                                                    handleRowsPerPageChange
-                                                }
-                                            >
-                                                <div className="relative">
-                                                    <Listbox.Button className="relative flex items-center gap-2 cursor-pointer rounded-xl bg-slate-50 py-2 pl-3 pr-8 border border-slate-200 text-sm font-medium text-slate-700 hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500/20 whitespace-nowrap">
-                                                        <span className="block truncate">
-                                                            {rowsPerPage} baris
-                                                        </span>
-                                                        <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2">
-                                                            <FaChevronDown
-                                                                className="h-3 w-3 text-slate-400"
-                                                                aria-hidden="true"
-                                                            />
-                                                        </span>
-                                                    </Listbox.Button>
-                                                    <Transition
-                                                        as={Fragment}
-                                                        leave="transition ease-in duration-100"
-                                                        leaveFrom="opacity-100"
-                                                        leaveTo="opacity-0"
-                                                    >
-                                                        <Listbox.Options className="absolute right-0 z-20 mt-1 max-h-60 w-32 overflow-auto rounded-xl bg-white py-1 text-base shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm">
-                                                            {[
-                                                                10, 20, 50, 100,
-                                                            ].map((option) => (
-                                                                <Listbox.Option
-                                                                    key={option}
-                                                                    className={({
-                                                                        active,
-                                                                    }) =>
-                                                                        `relative cursor-pointer select-none py-2 pl-10 pr-4 ${
-                                                                            active
-                                                                                ? "bg-blue-50 text-blue-900"
-                                                                                : "text-slate-900"
-                                                                        }`
-                                                                    }
-                                                                    value={
-                                                                        option
-                                                                    }
-                                                                >
-                                                                    {({
-                                                                        selected,
-                                                                    }) => (
-                                                                        <>
-                                                                            <span
-                                                                                className={`block truncate ${
-                                                                                    selected
-                                                                                        ? "font-medium"
-                                                                                        : "font-normal"
-                                                                                }`}
-                                                                            >
-                                                                                {
-                                                                                    option
-                                                                                }{" "}
-                                                                                baris
-                                                                            </span>
-                                                                            {selected ? (
-                                                                                <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-blue-600">
-                                                                                    <FaCheck
-                                                                                        className="h-4 w-4"
-                                                                                        aria-hidden="true"
-                                                                                    />
-                                                                                </span>
-                                                                            ) : null}
-                                                                        </>
-                                                                    )}
-                                                                </Listbox.Option>
-                                                            ))}
-                                                        </Listbox.Options>
-                                                    </Transition>
-                                                </div>
-                                            </Listbox>
-                                        </div>
-                                    </div>
-
-                                    {/* Table Container */}
-                                    <div className="bg-white p-2 rounded-2xl border border-slate-200 shadow-sm mb-6">
-                                        <ErrorBoundary>
-                                            <div className="overflow-x-auto">
-                                                <table className="w-full min-w-[1000px]">
-                                                    <thead>
-                                                        <tr className="bg-slate-50 border-b border-slate-200">
-                                                            <th className="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider whitespace-nowrap">
-                                                                No
-                                                            </th>
-                                                            <th className="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                                                                Judul
-                                                            </th>
-                                                            <th className="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                                                                Gardu Induk
-                                                            </th>
-                                                            <th className="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                                                                Bagian
-                                                            </th>
-                                                            <th className="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider whitespace-nowrap">
-                                                                Tipe
-                                                            </th>
-                                                            <th className="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                                                                Kategori
-                                                            </th>
-                                                            <th className="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                                                                Peralatan
-                                                            </th>
-                                                            <th className="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider whitespace-nowrap">
-                                                                Tanggal Kejadian
-                                                            </th>
-                                                            <th className="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider whitespace-nowrap">
-                                                                Status
-                                                            </th>
-                                                            <th className="px-6 py-4 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider whitespace-nowrap">
-                                                                Aksi
-                                                            </th>
-                                                        </tr>
-                                                    </thead>
-                                                    <tbody className="divide-y divide-slate-100 bg-white">
-                                                        {paginateDataAssign.length ===
-                                                        0 ? (
-                                                            <tr>
-                                                                <td
-                                                                    colSpan={12}
-                                                                    className="px-6 py-12 text-center text-slate-400"
-                                                                >
-                                                                    <div className="flex flex-col items-center justify-center">
-                                                                        <FaClipboardList className="text-4xl mb-3 text-slate-300" />
-                                                                        <p className="text-base font-medium">
-                                                                            Tidak
-                                                                            ada
-                                                                            data
-                                                                            anomali
-                                                                            yang
-                                                                            ditugaskan
-                                                                        </p>
-                                                                    </div>
-                                                                </td>
-                                                            </tr>
-                                                        ) : (
-                                                            paginateDataAssign.map(
-                                                                (
-                                                                    anomali,
-                                                                    idx,
-                                                                ) => (
-                                                                    <tr
-                                                                        key={
-                                                                            anomali.id
-                                                                        }
-                                                                        className="hover:bg-slate-50/80 transition-colors"
-                                                                    >
-                                                                        <td className="px-6 py-4 text-sm text-slate-500 whitespace-nowrap">
-                                                                            {(page -
-                                                                                1) *
-                                                                                rowsPerPage +
-                                                                                idx +
-                                                                                1}
-                                                                        </td>
-                                                                        <td className="px-6 py-4">
-                                                                            <div
-                                                                                className="text-sm font-medium text-slate-900 line-clamp-2"
-                                                                                title={
-                                                                                    anomali.judul
-                                                                                }
-                                                                            >
-                                                                                {
-                                                                                    anomali.judul
-                                                                                }
-                                                                            </div>
-                                                                        </td>
-                                                                        <td className="px-6 py-4 text-sm text-slate-600">
-                                                                            {anomali
-                                                                                .gardu_induk
-                                                                                ?.name ??
-                                                                                "-"}
-                                                                        </td>
-                                                                        <td className="px-6 py-4 text-sm text-slate-600">
-                                                                            {
-                                                                                anomali.bagian
-                                                                            }
-                                                                        </td>
-                                                                        <td className="px-6 py-4 whitespace-nowrap">
-                                                                            <TipeBadge
-                                                                                tipe={
-                                                                                    anomali.tipe
-                                                                                }
-                                                                            />
-                                                                        </td>
-                                                                        <td className="px-6 py-4 text-sm text-slate-600">
-                                                                            {anomali
-                                                                                .kategori
-                                                                                ?.name ??
-                                                                                "-"}
-                                                                        </td>
-                                                                        <td className="px-6 py-4 text-sm text-slate-600">
-                                                                            {
-                                                                                anomali.peralatan
-                                                                            }
-                                                                        </td>
-                                                                        <td className="px-6 py-4 text-sm text-slate-600 whitespace-nowrap">
-                                                                            {formatDate(
-                                                                                anomali.tanggal_kejadian,
-                                                                            )}
-                                                                        </td>
-                                                                        <td className="px-6 py-4 whitespace-nowrap">
-                                                                            <StatusBadge
-                                                                                status={
-                                                                                    anomali.status
-                                                                                }
-                                                                            />
-                                                                        </td>
-                                                                        <td className="px-6 py-4 whitespace-nowrap text-right">
-                                                                            <div className="inline-flex items-center gap-2">
-                                                                                {anomali.status !==
-                                                                                    "Close" &&
-                                                                                anomali.status !==
-                                                                                    "Rejected" ? (
-                                                                                    <Link
-                                                                                        href={route(
-                                                                                            "dashboard.anomali.close",
-                                                                                            anomali.slug,
-                                                                                        )}
-                                                                                        target="_blank"
-                                                                                        rel="noopener noreferrer"
-                                                                                    >
-                                                                                        <button className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-700 text-xs font-medium hover:bg-emerald-100 transition-colors">
-                                                                                            <FaCheck />
-                                                                                            Tutup
-                                                                                        </button>
-                                                                                    </Link>
-                                                                                ) : null}
-
-                                                                                <Link
-                                                                                    href={route(
-                                                                                        "dashboard.anomali.schedule",
-                                                                                        anomali.slug,
-                                                                                    )}
-                                                                                >
-                                                                                    <button className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl border border-blue-200 bg-blue-50 text-blue-600 text-xs font-medium hover:bg-blue-100 transition-colors">
-                                                                                        <FaEdit />
-                                                                                        Review
-                                                                                    </button>
-                                                                                </Link>
-                                                                            </div>
-                                                                        </td>
-                                                                    </tr>
-                                                                ),
-                                                            )
-                                                        )}
-                                                    </tbody>
-                                                </table>
-                                            </div>
-                                        </ErrorBoundary>
-
-                                        {/* Pagination */}
-                                        <div className="px-6 py-4 border-t border-slate-100 flex items-center justify-between">
-                                            <div className="text-sm text-slate-500">
-                                                Halaman{" "}
-                                                <span className="font-medium text-slate-900">
-                                                    {page}
-                                                </span>{" "}
-                                                dari{" "}
-                                                <span className="font-medium text-slate-900">
-                                                    {totalPagesAssign}
-                                                </span>
-                                            </div>
-                                            <div className="flex items-center gap-2">
-                                                <button
-                                                    onClick={() =>
-                                                        setPage((p) =>
-                                                            Math.max(1, p - 1),
-                                                        )
-                                                    }
-                                                    disabled={page === 1}
-                                                    className="p-2 rounded-xl border border-slate-200 text-slate-500 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-                                                >
-                                                    <FaChevronLeft className="h-4 w-4" />
-                                                </button>
-                                                <button
-                                                    onClick={() =>
-                                                        setPage((p) =>
-                                                            Math.min(
-                                                                totalPagesAssign,
-                                                                p + 1,
-                                                            ),
-                                                        )
-                                                    }
-                                                    disabled={
-                                                        page ===
-                                                        totalPagesAssign
-                                                    }
-                                                    className="p-2 rounded-xl border border-slate-200 text-slate-500 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-                                                >
-                                                    <FaChevronRight className="h-4 w-4" />
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </>
-                            ) : activeTab === "renev" &&
-                              auth.user.bidang &&
-                              auth.user.bidang.toLowerCase() === "renev" ? (
-                                <>
-                                    <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-                                        {/* Header & Controls */}
-                                        <div className="px-6 py-5 border-b border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                                            <div>
-                                                <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
-                                                    <FaClipboard className="text-blue-500" />
-                                                    Anomali Yang Ditugaskan
-                                                </h2>
-                                                <p className="text-slate-500 text-sm mt-1">
-                                                    Kelola anomali yang
-                                                    ditugaskan kepada bidang
-                                                    RENEV
-                                                </p>
-                                            </div>
-
-                                            <div className="flex items-center gap-2">
-                                                <span className="text-sm text-slate-500">
-                                                    Baris:
-                                                </span>
-                                                <div className="w-20">
-                                                    <Listbox
-                                                        value={rowsPerPage}
-                                                        onChange={
-                                                            handleRowsPerPageChange
-                                                        }
-                                                    >
-                                                        <div className="relative">
-                                                            <Listbox.Button className="relative w-full cursor-pointer rounded-xl bg-slate-50 py-2 pl-3 pr-8 text-left border border-slate-200 focus:outline-none focus-visible:border-blue-500 focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-opacity-75 sm:text-sm hover:bg-slate-100 transition-colors">
-                                                                <span className="block truncate text-slate-700 font-medium">
-                                                                    {
-                                                                        rowsPerPage
-                                                                    }
-                                                                </span>
-                                                                <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2">
-                                                                    <FaChevronDown
-                                                                        className="h-3 w-3 text-slate-400"
-                                                                        aria-hidden="true"
-                                                                    />
-                                                                </span>
-                                                            </Listbox.Button>
-                                                            <Transition
-                                                                as={Fragment}
-                                                                leave="transition ease-in duration-100"
-                                                                leaveFrom="opacity-100"
-                                                                leaveTo="opacity-0"
-                                                            >
-                                                                <Listbox.Options className="absolute mt-1 max-h-60 w-full overflow-auto rounded-xl bg-white py-1 text-base shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm z-50">
-                                                                    {[
-                                                                        10, 20,
-                                                                        50,
-                                                                    ].map(
-                                                                        (
-                                                                            num,
-                                                                        ) => (
-                                                                            <Listbox.Option
-                                                                                key={
-                                                                                    num
-                                                                                }
-                                                                                className={({
-                                                                                    active,
-                                                                                }) =>
-                                                                                    `relative cursor-default select-none py-2 pl-3 pr-4 ${
-                                                                                        active
-                                                                                            ? "bg-blue-50 text-blue-900"
-                                                                                            : "text-slate-900"
-                                                                                    }`
-                                                                                }
-                                                                                value={
-                                                                                    num
-                                                                                }
-                                                                            >
-                                                                                {({
-                                                                                    selected,
-                                                                                }) => (
-                                                                                    <span
-                                                                                        className={`block truncate ${
-                                                                                            selected
-                                                                                                ? "font-medium"
-                                                                                                : "font-normal"
-                                                                                        }`}
-                                                                                    >
-                                                                                        {
-                                                                                            num
-                                                                                        }
-                                                                                    </span>
-                                                                                )}
-                                                                            </Listbox.Option>
-                                                                        ),
-                                                                    )}
-                                                                </Listbox.Options>
-                                                            </Transition>
-                                                        </div>
-                                                    </Listbox>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        {/* Table */}
-                                        <div className="overflow-x-auto">
-                                            <table className="w-full text-sm text-left">
-                                                <thead className="text-xs text-slate-500 uppercase bg-slate-50 border-b border-slate-100">
-                                                    <tr>
-                                                        <th className="px-6 py-4 font-semibold">
-                                                            No
-                                                        </th>
-                                                        <th className="px-6 py-4 font-semibold">
-                                                            Judul
-                                                        </th>
-                                                        <th className="px-6 py-4 font-semibold">
-                                                            Gardu Induk
-                                                        </th>
-                                                        <th className="px-6 py-4 font-semibold">
-                                                            Bagian
-                                                        </th>
-                                                        <th className="px-6 py-4 font-semibold">
-                                                            Tipe
-                                                        </th>
-                                                        <th className="px-6 py-4 font-semibold">
-                                                            Kategori
-                                                        </th>
-                                                        <th className="px-6 py-4 font-semibold">
-                                                            Peralatan
-                                                        </th>
-                                                        <th className="px-6 py-4 font-semibold">
-                                                            Tanggal
-                                                        </th>
-                                                        <th className="px-6 py-4 font-semibold">
-                                                            Status
-                                                        </th>
-                                                        <th className="px-6 py-4 font-semibold">
-                                                            Aksi
-                                                        </th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody className="divide-y divide-slate-100">
-                                                    {paginateDataRenev.length >
-                                                    0 ? (
-                                                        paginateDataRenev.map(
-                                                            (anomali, idx) => (
-                                                                <tr
-                                                                    key={
-                                                                        anomali.id
-                                                                    }
-                                                                    className="bg-white hover:bg-slate-50 transition-colors"
-                                                                >
-                                                                    <td className="px-6 py-4 font-medium text-slate-900">
-                                                                        {(page -
-                                                                            1) *
-                                                                            rowsPerPage +
-                                                                            idx +
-                                                                            1}
-                                                                    </td>
-                                                                    <td
-                                                                        className="px-6 py-4 text-slate-700 max-w-xs truncate"
-                                                                        title={
-                                                                            anomali.judul
-                                                                        }
-                                                                    >
-                                                                        {
-                                                                            anomali.judul
-                                                                        }
-                                                                    </td>
-                                                                    <td className="px-6 py-4 text-slate-600">
-                                                                        {anomali
-                                                                            .gardu_induk
-                                                                            ?.name ??
-                                                                            "-"}
-                                                                    </td>
-                                                                    <td className="px-6 py-4 text-slate-600">
-                                                                        {
-                                                                            anomali.bagian
-                                                                        }
-                                                                    </td>
-                                                                    <td className="px-6 py-4">
-                                                                        <TipeBadge
-                                                                            tipe={
-                                                                                anomali.tipe
-                                                                            }
-                                                                        />
-                                                                    </td>
-                                                                    <td className="px-6 py-4 text-slate-600">
-                                                                        {anomali
-                                                                            .kategori
-                                                                            ?.name ??
-                                                                            "-"}
-                                                                    </td>
-                                                                    <td className="px-6 py-4 text-slate-600">
-                                                                        {
-                                                                            anomali.peralatan
-                                                                        }
-                                                                    </td>
-                                                                    <td className="px-6 py-4 text-slate-600 whitespace-nowrap">
-                                                                        {formatDate(
-                                                                            anomali.tanggal_kejadian,
-                                                                        )}
-                                                                    </td>
-                                                                    <td className="px-6 py-4">
-                                                                        <StatusBadge
-                                                                            status={
-                                                                                anomali.status
-                                                                            }
-                                                                        />
-                                                                    </td>
-                                                                    <td className="px-6 py-4">
-                                                                        <Link
-                                                                            href={route(
-                                                                                "dashboard.anomali.review",
-                                                                                anomali.slug,
-                                                                            )}
-                                                                        >
-                                                                            <button className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200 rounded-xl text-slate-600 text-xs font-medium hover:bg-slate-50 hover:text-blue-600 hover:border-blue-200 transition-all shadow-sm">
-                                                                                <FaEdit />
-                                                                                Review
-                                                                            </button>
-                                                                        </Link>
-                                                                    </td>
-                                                                </tr>
-                                                            ),
-                                                        )
-                                                    ) : (
-                                                        <tr>
-                                                            <td
-                                                                colSpan="10"
-                                                                className="px-6 py-12 text-center text-slate-500"
-                                                            >
-                                                                <div className="flex flex-col items-center justify-center">
-                                                                    <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mb-4">
-                                                                        <FaClipboard className="text-slate-300 text-2xl" />
-                                                                    </div>
-                                                                    <p className="text-lg font-medium text-slate-900">
-                                                                        Tidak
-                                                                        ada data
-                                                                    </p>
-                                                                    <p className="text-sm text-slate-400 mt-1">
-                                                                        Belum
-                                                                        ada
-                                                                        anomali
-                                                                        yang
-                                                                        ditugaskan.
-                                                                    </p>
-                                                                </div>
-                                                            </td>
-                                                        </tr>
-                                                    )}
-                                                </tbody>
-                                            </table>
-                                        </div>
-
-                                        {/* Pagination */}
-                                        <div className="px-6 py-4 border-t border-slate-100 flex items-center justify-between">
-                                            <div className="text-sm text-slate-500">
-                                                Halaman{" "}
-                                                <span className="font-medium text-slate-900">
-                                                    {page}
-                                                </span>{" "}
-                                                dari{" "}
-                                                <span className="font-medium text-slate-900">
-                                                    {totalPagesRenev}
-                                                </span>
-                                            </div>
-                                            <div className="flex items-center gap-2">
-                                                <button
-                                                    onClick={() =>
-                                                        setPage((p) =>
-                                                            Math.max(1, p - 1),
-                                                        )
-                                                    }
-                                                    disabled={page === 1}
-                                                    className="p-2 rounded-xl border border-slate-200 text-slate-500 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-                                                >
-                                                    <FaChevronLeft className="h-4 w-4" />
-                                                </button>
-                                                <button
-                                                    onClick={() =>
-                                                        setPage((p) =>
-                                                            Math.min(
-                                                                totalPagesRenev,
-                                                                p + 1,
-                                                            ),
-                                                        )
-                                                    }
-                                                    disabled={
-                                                        page === totalPagesRenev
-                                                    }
-                                                    className="p-2 rounded-xl border border-slate-200 text-slate-500 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-                                                >
-                                                    <FaChevronRight className="h-4 w-4" />
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </>
-                            ) : activeTab === "kalender" ? (
-                                <div className="px-2 pb-6 pt-4">
-                                    <AnomaliCalendar
-                                        filteredAnomalis={filteredAnomalis}
-                                        onEventClick={handleCalendarEventClick}
-                                    />
-                                </div>
-                            ) : (
-                                <></>
-                            )}
-                        </div>
+                        {activeView === "calendar" ? (
+                            <div className="surface p-4 sm:p-6">
+                                <AnomaliCalendar
+                                    filteredAnomalis={stageFilteredAnomalis}
+                                    onEventClick={handleCalendarEventClick}
+                                />
+                            </div>
+                        ) : (
+                            <ErrorBoundary>
+                                <AnomaliTable
+                                    rows={paginatedData}
+                                    user={user}
+                                    today={today}
+                                    page={page}
+                                    rowsPerPage={rowsPerPage}
+                                    totalRows={totalRows}
+                                    onPageChange={handlePageChange}
+                                    emptyState={emptyState}
+                                />
+                            </ErrorBoundary>
+                        )}
                     </div>
                 </div>
             </DashboardLayout>
