@@ -8,7 +8,8 @@ import {
 } from "@headlessui/react";
 import { Bar } from "react-chartjs-2";
 import { FaChartBar, FaCheck, FaChevronDown, FaUndo } from "react-icons/fa";
-import { Card } from "@/Components/Dashboard/ui";
+import { Card, EmptyState } from "@/Components/Dashboard/ui";
+import DateRangeField from "./DateRangeField";
 import {
     buildDistributionData,
     buildStageByCategoryData,
@@ -70,31 +71,35 @@ function FilterListbox({ label, value, options, onChange }) {
     );
 }
 
-function DateField({ id, label, value, onChange }) {
-    return (
-        <div className="min-w-0">
-            <label htmlFor={id} className="field-label">
-                {label}
-            </label>
-            <input
-                id={id}
-                type="date"
-                value={value}
-                onChange={(e) => onChange(e.target.value)}
-                className="field-input"
-            />
-        </div>
-    );
-}
-
-function ChartPanel({ title, description, children }) {
+function ChartPanel({ title, description, isEmpty, children }) {
     return (
         <div className="min-w-0 rounded-2xl border border-slate-100 p-4 sm:p-5">
             <h3 className="text-sm font-bold text-ink-900">{title}</h3>
             <p className="mt-0.5 text-xs text-slate-500">{description}</p>
-            <div className="relative mt-4 h-80 w-full">{children}</div>
+            <div className="relative mt-4 h-80 w-full">
+                {isEmpty ? (
+                    <div className="flex h-full items-center justify-center rounded-xl border border-dashed border-slate-200 bg-slate-50/60">
+                        <EmptyState
+                            icon={FaChartBar}
+                            title="Tidak ada data"
+                            description="Tidak ada anomali yang cocok dengan filter. Ubah periode atau reset filter."
+                        />
+                    </div>
+                ) : (
+                    children
+                )}
+            </div>
         </div>
     );
+}
+
+function countActiveFilters(filters, defaults) {
+    let count = 0;
+    if (filters.startDate || filters.endDate) count += 1;
+    if (filters.status !== "all") count += 1;
+    if (filters.category !== "all") count += 1;
+    if (defaults && filters.ultg !== defaults.ultg) count += 1;
+    return count;
 }
 
 /**
@@ -109,8 +114,11 @@ export default function AnalyticsCard({
     ultgOptions,
     onFilterChange,
     onReset,
+    defaultFilters,
 }) {
     const showUltg = ultgOptions.length > 1;
+    const activeCount = countActiveFilters(filters, defaultFilters);
+    const isEmpty = data.length === 0;
 
     return (
         <Card
@@ -122,10 +130,16 @@ export default function AnalyticsCard({
                 <button
                     type="button"
                     onClick={onReset}
-                    className="btn-ghost btn-sm"
+                    disabled={activeCount === 0}
+                    className="btn-ghost btn-sm disabled:cursor-not-allowed disabled:opacity-50"
                 >
                     <FaUndo className="h-3 w-3" aria-hidden="true" />
                     Reset
+                    {activeCount > 0 ? (
+                        <span className="ml-0.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-brand-600 px-1 text-[10px] font-bold text-white">
+                            {activeCount}
+                        </span>
+                    ) : null}
                 </button>
             }
         >
@@ -134,18 +148,18 @@ export default function AnalyticsCard({
                     showUltg ? "xl:grid-cols-5" : "xl:grid-cols-4"
                 }`}
             >
-                <DateField
-                    id="filter-start"
-                    label="Tanggal mulai"
-                    value={filters.startDate}
-                    onChange={(value) => onFilterChange("startDate", value)}
-                />
-                <DateField
-                    id="filter-end"
-                    label="Tanggal akhir"
-                    value={filters.endDate}
-                    onChange={(value) => onFilterChange("endDate", value)}
-                />
+                <div className="sm:col-span-2">
+                    <DateRangeField
+                        label="Periode kejadian"
+                        startDate={filters.startDate}
+                        endDate={filters.endDate}
+                        today={today}
+                        onChange={({ startDate, endDate }) => {
+                            onFilterChange("startDate", startDate);
+                            onFilterChange("endDate", endDate);
+                        }}
+                    />
+                </div>
                 <FilterListbox
                     label="Status"
                     value={filters.status}
@@ -172,6 +186,7 @@ export default function AnalyticsCard({
                 <ChartPanel
                     title="Tahap proses per kategori"
                     description="Posisi anomali di alur proses, dikelompokkan per kategori."
+                    isEmpty={isEmpty}
                 >
                     <Bar
                         data={buildStageByCategoryData(data, today)}
@@ -181,6 +196,7 @@ export default function AnalyticsCard({
                 <ChartPanel
                     title="Distribusi bagian dan tipe"
                     description="Jumlah anomali per bagian, dipisah Major dan Minor."
+                    isEmpty={isEmpty}
                 >
                     <Bar
                         data={buildDistributionData(data)}

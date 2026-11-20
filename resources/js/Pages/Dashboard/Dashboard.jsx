@@ -13,6 +13,7 @@ import OverviewHeader from "@/Components/Dashboard/Home/OverviewHeader";
 import StageSummary from "@/Components/Dashboard/Home/StageSummary";
 import MyQueueCard from "@/Components/Dashboard/Home/MyQueueCard";
 import AnalyticsCard from "@/Components/Dashboard/Home/AnalyticsCard";
+import { isWithinRange } from "@/Components/Dashboard/Home/dateRange";
 import BeritaHomepageCard from "@/Components/Dashboard/Home/BeritaHomepageCard";
 import LockedState from "@/Components/Dashboard/Home/LockedState";
 import { PERMISSIONS, hasPermission } from "@/utils/permissions";
@@ -64,14 +65,14 @@ function emptyFilters(wilayah) {
 
 function applyFilters(anomalis, filters) {
     return anomalis.filter((item) => {
-        if (filters.startDate && filters.endDate) {
-            const date = new Date(item.tanggal_kejadian);
-            if (
-                date < new Date(filters.startDate) ||
-                date > new Date(filters.endDate)
-            ) {
-                return false;
-            }
+        if (
+            !isWithinRange(
+                item.tanggal_kejadian,
+                filters.startDate,
+                filters.endDate,
+            )
+        ) {
+            return false;
         }
         if (filters.status !== "all" && item.status !== filters.status) {
             return false;
@@ -340,6 +341,7 @@ export default function Dashboard() {
                             ultgOptions={ultgOptions}
                             onFilterChange={handleFilterChange}
                             onReset={handleResetFilters}
+                            defaultFilters={emptyFilters(wilayah)}
                         />
                     </>
                 ) : (
