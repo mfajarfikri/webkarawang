@@ -21,3 +21,12 @@ yarn-error.log
 /.nova
 /.vscode
 /.zed
+
+# Konfigurasi lokal Claude Code (server pratinjau) — bukan untuk server
+/.claude/launch.json
+/.claude/worktrees/
+
+# Upload pengguna: data operasional, jangan ikut ke repo
+/storage/app/public/signatures/
+/storage/app/public/Lampiran Foto Anomali/
+/storage/app/public/Lampiran Penutupan Anomali/
