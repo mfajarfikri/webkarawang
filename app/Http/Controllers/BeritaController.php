@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Http;
+use App\Services\InstagramService;
 
 class BeritaController extends Controller
 {
@@ -305,6 +306,140 @@ class BeritaController extends Controller
             return response()->json([
                 'type' => 'error',
                 'message' => 'Gagal memperbarui Berita: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Ambil feed Instagram plnuptkarawang untuk Dashboard Berita.
+     */
+    public function instagramFeed(Request $request, InstagramService $instagram)
+    {
+        $limit = (int) $request->query('limit', 12);
+        $data = $instagram->getFeed(max(1, min(50, $limit)));
+
+        if (!$data['success']) {
+            return response()->json([
+                'success' => false,
+                'error'   => $data['error'] ?? 'Gagal mengambil feed Instagram.',
+            ], 502);
+        }
+
+        return response()->json([
+            'success' => true,
+            'profile' => $data['profile'] ?? null,
+            'posts'   => $data['posts'] ?? [],
+            'backend' => config('services.instagram.backend', 'scraper'),
+        ]);
+    }
+
+    /**
+     * Import 1 postingan Instagram jadi Berita (download gambar + save).
+     */
+    public function importInstagramPost(Request $request, InstagramService $instagram)
+    {
+        $validator = Validator::make($request->all(), [
+            'shortcode' => 'required|string|max:64',
+            'tema'      => 'nullable|string|max:255',
+        ]);
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'error'   => 'Validasi gagal: ' . $validator->errors()->first(),
+            ], 422);
+        }
+
+        $shortcode = $request->input('shortcode');
+        $post = $instagram->getPostDetail($shortcode);
+        if (empty($post['success'])) {
+            return response()->json([
+                'success' => false,
+                'error'   => $post['error'] ?? 'Gagal ambil detail postingan.',
+            ], 502);
+        }
+        if (empty($post['image_url'])) {
+            return response()->json([
+                'success' => false,
+                'error'   => 'URL gambar tidak tersedia untuk postingan ini.',
+            ], 422);
+        }
+
+        $fileName = null;
+        try {
+            // 1. Download gambar dari CDN Instagram
+            $imageResponse = Http::withHeaders([
+                'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+            ])->timeout(30)->get($post['image_url']);
+
+            if (!$imageResponse->successful()) {
+                throw new Exception('Gagal unduh gambar (HTTP ' . $imageResponse->status() . ')');
+            }
+            $imageContents = $imageResponse->body();
+            $contentType = $imageResponse->header('Content-Type');
+            $ext = 'jpg';
+            if (str_contains($contentType ?? '', 'png')) $ext = 'png';
+            if (str_contains($contentType ?? '', 'webp')) $ext = 'webp';
+
+            $fileName = 'ig_' . $shortcode . '_' . time() . '_' . uniqid() . '.' . $ext;
+            Storage::disk('public')->put('berita/' . $fileName, $imageContents);
+            $photos = [$fileName];
+
+            // 2. Susun judul, excerpt, isi
+            $caption = trim($post['caption'] ?? '');
+            $firstLine = trim(explode("\n", $caption)[0] ?? '');
+            $judul = $firstLine ? mb_substr($firstLine, 0, 250) : ('Instagram Post - ' . date('d M Y', strtotime($post['timestamp'] ?? 'now')));
+
+            $slugBase = Str::slug($judul) ?: 'post-ig-' . $shortcode;
+            $slug = $slugBase . '-' . substr($shortcode, 0, 6);
+            $counter = 1;
+            $baseSlug = $slug;
+            while (Berita::where('slug', $slug)->exists()) {
+                $slug = $baseSlug . '-' . (++$counter);
+            }
+
+            $permalink = $post['permalink'] ?? "https://www.instagram.com/p/{$shortcode}/";
+            $isiClean = e($caption);
+            $isiHtml = "<p>{$isiClean}</p>\n\n<p><em>Sumber: <a href=\"{$permalink}\" target=\"_blank\" rel=\"noopener noreferrer\">Instagram @plnuptkarawang</a></em></p>";
+
+            $excerpt = mb_substr(
+                preg_replace('/\s+/', ' ', strip_tags($caption)) ?: 'Postingan Instagram plnuptkarawang.',
+                0,
+                250
+            );
+
+            // 3. Tema
+            $temaId = null;
+            if ($temaNama = $request->input('tema')) {
+                $tema = Tema::firstOrCreate(['nama' => $temaNama], ['slug' => Str::slug($temaNama)]);
+                $temaId = $tema->id;
+            }
+
+            $berita = Berita::create([
+                'judul'        => $judul,
+                'slug'         => $slug,
+                'excerpt'      => $excerpt,
+                'user_id'      => Auth::id(),
+                'isi'          => $isiHtml,
+                'content_json' => null,
+                'tema_id'      => $temaId,
+                'gambar'       => $photos,
+                'enabled'      => true,
+            ]);
+            $berita->load(['user', 'tema']);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Berita berhasil di-import dari Instagram!',
+                'berita'  => $berita,
+            ], 201);
+
+        } catch (Exception $e) {
+            if ($fileName && Storage::disk('public')->exists('berita/' . $fileName)) {
+                Storage::disk('public')->delete('berita/' . $fileName);
+            }
+            return response()->json([
+                'success' => false,
+                'error'   => 'Gagal import: ' . $e->getMessage(),
             ], 500);
         }
     }

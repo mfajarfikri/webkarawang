@@ -41,4 +41,21 @@ return [
         'redirect' => env('GOOGLE_REDIRECT_URI'),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Instagram Feed Services
+    |--------------------------------------------------------------------------
+    */
+    'instagram' => [
+        'username'     => env('INSTAGRAM_USERNAME', 'plnuptkarawang'),
+        'backend'      => env('INSTAGRAM_BACKEND', 'auto'),
+        'access_token' => env('INSTAGRAM_ACCESS_TOKEN'),
+        'cache_ttl'    => (int) env('INSTAGRAM_CACHE_TTL', 1800),
+        'rapidapi_key' => env('RAPIDAPI_INSTAGRAM_KEY', env('INSTAGRAM_RAPIDAPI_KEY', '')),
+    ],
+
+    'facebook' => [
+        'access_token' => env('FACEBOOK_ACCESS_TOKEN'),
+    ],
+
 ];

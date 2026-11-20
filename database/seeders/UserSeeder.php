@@ -62,7 +62,21 @@ class UserSeeder extends Seeder
             'Edit Berita',
             'Hapus Berita',
             'Buat Ktt', 
-            'Detail Ktt'];
+            'Detail Ktt',
+            'Buat Anomali',
+            'Export Anomali',
+            'Kelola Anomali',
+            'View Gardu Induk',
+            'View User',
+            'Kelola User',
+            'Kelola Role',
+            'View Permission',
+            'Kelola Permission',
+            'View Menu',
+            'Kelola Menu',
+            'Kelola Company Profile',
+            'View Kinerja',
+        ];
         $descriptions = [
             'Akses ke halaman manajemen role',
             'Akses ke halaman anomali',
@@ -78,6 +92,19 @@ class UserSeeder extends Seeder
             'Akses ke halaman detail berita',
             'Akses ke halaman edit berita',
             'Akses ke halaman hapus berita',
+            'Akses untuk membuat anomali baru',
+            'Akses untuk export anomali (excel/pdf)',
+            'Akses untuk mengelola jadwal dan timeline anomali',
+            'Akses ke halaman gardu induk',
+            'Akses ke halaman manajemen user',
+            'Akses untuk mengelola user (tambah/hapus/ubah role)',
+            'Akses untuk mengelola role (tambah/edit/hapus)',
+            'Akses ke halaman manajemen permission',
+            'Akses untuk mengelola permission (tambah/hapus)',
+            'Akses ke halaman manajemen menu',
+            'Akses untuk mengelola menu (tambah/edit/hapus/reorder)',
+            'Akses untuk mengelola company profile',
+            'Akses ke halaman dashboard kinerja',
         ];
         foreach ($permissions as $i => $perm) {
             Permission::firstOrCreate(

@@ -26,6 +26,18 @@ class HomeController extends Controller
         ]);
     }
 
+    public function profilPerusahaanData()
+    {
+        $profile = CompanyProfile::query()->orderBy('id')->first();
+        $published = $profile && $profile->status === 'published' ? $profile->published_data : null;
+
+        return response()->json([
+            'data' => $published,
+            'status' => $profile?->status ?? 'none',
+            'updated_at' => $profile?->published_at,
+        ]);
+    }
+
     public function garduInduk()
     {
         $garduInduks = GarduInduk::select('id', 'name', 'latitude', 'longitude', 'ultg', 'kondisi')->get();

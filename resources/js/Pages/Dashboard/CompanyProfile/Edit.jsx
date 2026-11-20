@@ -47,7 +47,37 @@ import Raw from "@editorjs/raw";
 import LinkTool from "@editorjs/link";
 import Undo from "editorjs-undo";
 import DragDrop from "editorjs-drag-drop";
-import { edjsParser, sanitizeEditorData } from "@/utils/editorParser";
+import {
+    edjsParser,
+    sanitizeEditorData,
+    generateExcerpt,
+} from "@/utils/editorParser";
+
+function parseEditorHtml(editorData) {
+    if (!editorData) return "";
+    try {
+        const parsed =
+            typeof editorData === "string"
+                ? JSON.parse(editorData)
+                : editorData;
+        const sanitized = sanitizeEditorData(parsed);
+        if (sanitized?.blocks && Array.isArray(sanitized.blocks)) {
+            const htmlArray = edjsParser.parse(sanitized);
+            if (Array.isArray(htmlArray)) return htmlArray.join("");
+        }
+    } catch (err) {
+        console.error("Parse editor data failed:", err);
+    }
+    if (typeof editorData === "string" && editorData.trim()) {
+        return editorData
+            .split(/\r?\n/)
+            .map((line) =>
+                line.trim() ? `<p class="mb-3 text-slate-700">${line}</p>` : "",
+            )
+            .join("");
+    }
+    return "";
+}
 
 function classNames(...v) {
     return v.filter(Boolean).join(" ");
@@ -714,21 +744,11 @@ function PreviewPanel({ draft, device }) {
     const deviceWidth =
         device === "mobile" ? 390 : device === "tablet" ? 768 : 1024;
     const aboutHtml = useMemo(() => {
-        if (!draft?.about_editor) return "";
-        try {
-            return edjsParser(draft.about_editor);
-        } catch {
-            return "";
-        }
+        return parseEditorHtml(draft?.about_editor);
     }, [draft?.about_editor]);
 
     const visionHtml = useMemo(() => {
-        if (!draft?.vision_editor) return "";
-        try {
-            return edjsParser(draft.vision_editor);
-        } catch {
-            return "";
-        }
+        return parseEditorHtml(draft?.vision_editor);
     }, [draft?.vision_editor]);
 
     const mapSrc = useMemo(() => {
@@ -1558,6 +1578,638 @@ function EditContent({ profile, versions = [], flash }) {
                 multiple
                 hint="Maksimal 5MB per file."
             />
+
+            <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+                <div className="p-5 border-b border-slate-100">
+                    <div className="flex items-center justify-between gap-4">
+                        <div>
+                            <div className="text-sm font-semibold text-slate-900">
+                                Layanan
+                            </div>
+                            <div className="mt-1 text-sm text-slate-600">
+                                Daftar layanan yang ditawarkan beserta fiturnya.
+                            </div>
+                        </div>
+                        <button
+                            type="button"
+                            onClick={() => {
+                                const next = [
+                                    ...(data.draft_data?.services || []),
+                                    {
+                                        icon: "bolt",
+                                        name: "",
+                                        description: "",
+                                        features: [],
+                                    },
+                                ];
+                                setDraft("services", next);
+                            }}
+                            className="inline-flex items-center rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                        >
+                            <FaPlus className="h-4 w-4" />
+                            <span className="ml-2">Tambah</span>
+                        </button>
+                    </div>
+                </div>
+                <div className="p-5 space-y-4">
+                    {(data.draft_data?.services || []).map((s, idx) => (
+                        <div
+                            key={idx}
+                            className="rounded-2xl border border-slate-200 bg-slate-50 p-4"
+                        >
+                            <div className="flex items-start justify-between gap-3">
+                                <div className="text-sm font-semibold text-slate-900">
+                                    Layanan #{idx + 1}
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        const next = (
+                                            data.draft_data?.services || []
+                                        ).filter((_, i) => i !== idx);
+                                        setDraft("services", next);
+                                    }}
+                                    className="p-2 rounded-xl border border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+                                    aria-label="Hapus layanan"
+                                >
+                                    <FaTimes className="h-4 w-4" />
+                                </button>
+                            </div>
+
+                            <div className="mt-3 grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                <div>
+                                    <div className="text-xs font-semibold text-slate-500">
+                                        Ikon
+                                    </div>
+                                    <select
+                                        value={s.icon || "bolt"}
+                                        onChange={(e) => {
+                                            const next = [
+                                                ...(data.draft_data?.services ||
+                                                    []),
+                                            ];
+                                            next[idx] = {
+                                                ...next[idx],
+                                                icon: e.target.value,
+                                            };
+                                            setDraft("services", next);
+                                        }}
+                                        className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700"
+                                    >
+                                        <option value="bolt">
+                                            Petir (Energi)
+                                        </option>
+                                        <option value="shield">
+                                            Perisai (Keamanan)
+                                        </option>
+                                        <option value="industry">
+                                            Industri
+                                        </option>
+                                        <option value="lightbulb">
+                                            Lampu (Inovasi)
+                                        </option>
+                                        <option value="users">Pengguna</option>
+                                        <option value="leaf">Lingkungan</option>
+                                        <option value="sitemap">
+                                            Jaringan
+                                        </option>
+                                        <option value="handshake">
+                                            Kemitraan
+                                        </option>
+                                        <option value="globe">Global</option>
+                                        <option value="building">
+                                            Bangunan
+                                        </option>
+                                    </select>
+                                </div>
+                                <div className="sm:col-span-2">
+                                    <div className="text-xs font-semibold text-slate-500">
+                                        Nama Layanan
+                                    </div>
+                                    <TextInput
+                                        className="mt-1 block w-full"
+                                        value={s.name || ""}
+                                        onChange={(e) => {
+                                            const next = [
+                                                ...(data.draft_data?.services ||
+                                                    []),
+                                            ];
+                                            next[idx] = {
+                                                ...next[idx],
+                                                name: e.target.value,
+                                            };
+                                            setDraft("services", next);
+                                        }}
+                                        placeholder="Contoh: Pemeliharaan Transmisi"
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="mt-3">
+                                <div className="text-xs font-semibold text-slate-500">
+                                    Deskripsi
+                                </div>
+                                <textarea
+                                    value={s.description || ""}
+                                    onChange={(e) => {
+                                        const next = [
+                                            ...(data.draft_data?.services ||
+                                                []),
+                                        ];
+                                        next[idx] = {
+                                            ...next[idx],
+                                            description: e.target.value,
+                                        };
+                                        setDraft("services", next);
+                                    }}
+                                    className="mt-1 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700"
+                                    rows={2}
+                                    placeholder="Deskripsi singkat layanan..."
+                                />
+                            </div>
+
+                            <div className="mt-3">
+                                <div className="flex items-center justify-between gap-3">
+                                    <div className="text-xs font-semibold text-slate-500">
+                                        Fitur
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            const next = [
+                                                ...(data.draft_data?.services ||
+                                                    []),
+                                            ];
+                                            next[idx] = {
+                                                ...next[idx],
+                                                features: [
+                                                    ...(next[idx].features ||
+                                                        []),
+                                                    "",
+                                                ],
+                                            };
+                                            setDraft("services", next);
+                                        }}
+                                        className="inline-flex items-center rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                                    >
+                                        <FaPlus className="h-3 w-3" />
+                                        <span className="ml-1">Fitur</span>
+                                    </button>
+                                </div>
+                                <div className="mt-2 space-y-2">
+                                    {(s.features || []).map((f, fidx) => (
+                                        <div
+                                            key={fidx}
+                                            className="flex items-start gap-2"
+                                        >
+                                            <TextInput
+                                                className="flex-1"
+                                                value={f}
+                                                onChange={(e) => {
+                                                    const next = [
+                                                        ...(data.draft_data
+                                                            ?.services || []),
+                                                    ];
+                                                    const feats = [
+                                                        ...(next[idx]
+                                                            .features || []),
+                                                    ];
+                                                    feats[fidx] =
+                                                        e.target.value;
+                                                    next[idx] = {
+                                                        ...next[idx],
+                                                        features: feats,
+                                                    };
+                                                    setDraft("services", next);
+                                                }}
+                                                placeholder="Fitur layanan..."
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    const next = [
+                                                        ...(data.draft_data
+                                                            ?.services || []),
+                                                    ];
+                                                    next[idx] = {
+                                                        ...next[idx],
+                                                        features: (
+                                                            next[idx]
+                                                                .features || []
+                                                        ).filter(
+                                                            (_, i) =>
+                                                                i !== fidx,
+                                                        ),
+                                                    };
+                                                    setDraft("services", next);
+                                                }}
+                                                className="p-3 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50"
+                                                aria-label="Hapus fitur"
+                                            >
+                                                <FaTimes className="h-4 w-4" />
+                                            </button>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </div>
+
+            <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+                <div className="p-5 border-b border-slate-100">
+                    <div className="flex items-center justify-between gap-4">
+                        <div>
+                            <div className="text-sm font-semibold text-slate-900">
+                                Portofolio
+                            </div>
+                            <div className="mt-1 text-sm text-slate-600">
+                                Proyek atau pencapaian yang ditampilkan ke
+                                publik.
+                            </div>
+                        </div>
+                        <button
+                            type="button"
+                            onClick={() => {
+                                const next = [
+                                    ...(data.draft_data?.portfolio || []),
+                                    {
+                                        title: "",
+                                        category: "",
+                                        description: "",
+                                        client: "",
+                                        year: "",
+                                        tags: [],
+                                        url: "",
+                                        image: null,
+                                    },
+                                ];
+                                setDraft("portfolio", next);
+                            }}
+                            className="inline-flex items-center rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                        >
+                            <FaPlus className="h-4 w-4" />
+                            <span className="ml-2">Tambah</span>
+                        </button>
+                    </div>
+                </div>
+                <div className="p-5 space-y-4">
+                    {(data.draft_data?.portfolio || []).map((p, idx) => (
+                        <div
+                            key={idx}
+                            className="rounded-2xl border border-slate-200 bg-slate-50 p-4"
+                        >
+                            <div className="flex items-start justify-between gap-3">
+                                <div className="text-sm font-semibold text-slate-900">
+                                    Portofolio #{idx + 1}
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        const next = (
+                                            data.draft_data?.portfolio || []
+                                        ).filter((_, i) => i !== idx);
+                                        setDraft("portfolio", next);
+                                    }}
+                                    className="p-2 rounded-xl border border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+                                    aria-label="Hapus portofolio"
+                                >
+                                    <FaTimes className="h-4 w-4" />
+                                </button>
+                            </div>
+
+                            <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <div>
+                                    <div className="text-xs font-semibold text-slate-500">
+                                        Judul Proyek
+                                    </div>
+                                    <TextInput
+                                        className="mt-1 block w-full"
+                                        value={p.title || ""}
+                                        onChange={(e) => {
+                                            const next = [
+                                                ...(data.draft_data
+                                                    ?.portfolio || []),
+                                            ];
+                                            next[idx] = {
+                                                ...next[idx],
+                                                title: e.target.value,
+                                            };
+                                            setDraft("portfolio", next);
+                                        }}
+                                        placeholder="Contoh: Pembangunan GIS"
+                                    />
+                                </div>
+                                <div>
+                                    <div className="text-xs font-semibold text-slate-500">
+                                        Kategori
+                                    </div>
+                                    <TextInput
+                                        className="mt-1 block w-full"
+                                        value={p.category || ""}
+                                        onChange={(e) => {
+                                            const next = [
+                                                ...(data.draft_data
+                                                    ?.portfolio || []),
+                                            ];
+                                            next[idx] = {
+                                                ...next[idx],
+                                                category: e.target.value,
+                                            };
+                                            setDraft("portfolio", next);
+                                        }}
+                                        placeholder="Contoh: Infrastruktur"
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="mt-3 grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                <div>
+                                    <div className="text-xs font-semibold text-slate-500">
+                                        Klien
+                                    </div>
+                                    <TextInput
+                                        className="mt-1 block w-full"
+                                        value={p.client || ""}
+                                        onChange={(e) => {
+                                            const next = [
+                                                ...(data.draft_data
+                                                    ?.portfolio || []),
+                                            ];
+                                            next[idx] = {
+                                                ...next[idx],
+                                                client: e.target.value,
+                                            };
+                                            setDraft("portfolio", next);
+                                        }}
+                                    />
+                                </div>
+                                <div>
+                                    <div className="text-xs font-semibold text-slate-500">
+                                        Tahun
+                                    </div>
+                                    <TextInput
+                                        className="mt-1 block w-full"
+                                        value={p.year || ""}
+                                        onChange={(e) => {
+                                            const next = [
+                                                ...(data.draft_data
+                                                    ?.portfolio || []),
+                                            ];
+                                            next[idx] = {
+                                                ...next[idx],
+                                                year: e.target.value,
+                                            };
+                                            setDraft("portfolio", next);
+                                        }}
+                                        placeholder="2025"
+                                    />
+                                </div>
+                                <div>
+                                    <div className="text-xs font-semibold text-slate-500">
+                                        Link (opsional)
+                                    </div>
+                                    <TextInput
+                                        className="mt-1 block w-full"
+                                        value={p.url || ""}
+                                        onChange={(e) => {
+                                            const next = [
+                                                ...(data.draft_data
+                                                    ?.portfolio || []),
+                                            ];
+                                            next[idx] = {
+                                                ...next[idx],
+                                                url: e.target.value,
+                                            };
+                                            setDraft("portfolio", next);
+                                        }}
+                                        placeholder="https://..."
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="mt-3">
+                                <div className="text-xs font-semibold text-slate-500">
+                                    Deskripsi
+                                </div>
+                                <textarea
+                                    value={p.description || ""}
+                                    onChange={(e) => {
+                                        const next = [
+                                            ...(data.draft_data?.portfolio ||
+                                                []),
+                                        ];
+                                        next[idx] = {
+                                            ...next[idx],
+                                            description: e.target.value,
+                                        };
+                                        setDraft("portfolio", next);
+                                    }}
+                                    className="mt-1 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700"
+                                    rows={2}
+                                    placeholder="Deskripsi proyek..."
+                                />
+                            </div>
+
+                            <div className="mt-3">
+                                <div className="text-xs font-semibold text-slate-500">
+                                    Tag (pisahkan dengan koma)
+                                </div>
+                                <TextInput
+                                    className="mt-1 block w-full"
+                                    value={(p.tags || []).join(", ")}
+                                    onChange={(e) => {
+                                        const next = [
+                                            ...(data.draft_data?.portfolio ||
+                                                []),
+                                        ];
+                                        next[idx] = {
+                                            ...next[idx],
+                                            tags: e.target.value
+                                                .split(",")
+                                                .map((t) => t.trim())
+                                                .filter(Boolean),
+                                        };
+                                        setDraft("portfolio", next);
+                                    }}
+                                    placeholder="Transmisi, Gardu"
+                                />
+                            </div>
+
+                            <div className="mt-3">
+                                <ImageUploadCard
+                                    title="Gambar Portofolio"
+                                    subtitle=""
+                                    value={p.image}
+                                    onChange={(v) => {
+                                        const next = [
+                                            ...(data.draft_data?.portfolio ||
+                                                []),
+                                        ];
+                                        next[idx] = { ...next[idx], image: v };
+                                        setDraft("portfolio", next);
+                                    }}
+                                    uploadType="portfolio"
+                                    maxSize={1600}
+                                    hint="Rasio disarankan 16:9."
+                                />
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </div>
+
+            <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+                <div className="p-5 border-b border-slate-100">
+                    <div className="flex items-center justify-between gap-4">
+                        <div>
+                            <div className="text-sm font-semibold text-slate-900">
+                                Dokumen Pendukung
+                            </div>
+                            <div className="mt-1 text-sm text-slate-600">
+                                Dokumen resmi yang dapat diunduh publik.
+                            </div>
+                        </div>
+                        <button
+                            type="button"
+                            onClick={() => {
+                                const next = [
+                                    ...(data.draft_data?.documents || []),
+                                    {
+                                        title: "",
+                                        description: "",
+                                        type: "",
+                                        url: "",
+                                    },
+                                ];
+                                setDraft("documents", next);
+                            }}
+                            className="inline-flex items-center rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                        >
+                            <FaPlus className="h-4 w-4" />
+                            <span className="ml-2">Tambah</span>
+                        </button>
+                    </div>
+                </div>
+                <div className="p-5 space-y-4">
+                    {(data.draft_data?.documents || []).map((d, idx) => (
+                        <div
+                            key={idx}
+                            className="rounded-2xl border border-slate-200 bg-slate-50 p-4"
+                        >
+                            <div className="flex items-start justify-between gap-3">
+                                <div className="text-sm font-semibold text-slate-900">
+                                    Dokumen #{idx + 1}
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        const next = (
+                                            data.draft_data?.documents || []
+                                        ).filter((_, i) => i !== idx);
+                                        setDraft("documents", next);
+                                    }}
+                                    className="p-2 rounded-xl border border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+                                    aria-label="Hapus dokumen"
+                                >
+                                    <FaTimes className="h-4 w-4" />
+                                </button>
+                            </div>
+
+                            <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <div>
+                                    <div className="text-xs font-semibold text-slate-500">
+                                        Judul Dokumen
+                                    </div>
+                                    <TextInput
+                                        className="mt-1 block w-full"
+                                        value={d.title || ""}
+                                        onChange={(e) => {
+                                            const next = [
+                                                ...(data.draft_data
+                                                    ?.documents || []),
+                                            ];
+                                            next[idx] = {
+                                                ...next[idx],
+                                                title: e.target.value,
+                                            };
+                                            setDraft("documents", next);
+                                        }}
+                                        placeholder="Contoh: Laporan Tahunan"
+                                    />
+                                </div>
+                                <div>
+                                    <div className="text-xs font-semibold text-slate-500">
+                                        Tipe
+                                    </div>
+                                    <TextInput
+                                        className="mt-1 block w-full"
+                                        value={d.type || ""}
+                                        onChange={(e) => {
+                                            const next = [
+                                                ...(data.draft_data
+                                                    ?.documents || []),
+                                            ];
+                                            next[idx] = {
+                                                ...next[idx],
+                                                type: e.target.value,
+                                            };
+                                            setDraft("documents", next);
+                                        }}
+                                        placeholder="PDF, XLSX, dst."
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="mt-3">
+                                <div className="text-xs font-semibold text-slate-500">
+                                    URL Dokumen
+                                </div>
+                                <TextInput
+                                    className="mt-1 block w-full"
+                                    value={d.url || ""}
+                                    onChange={(e) => {
+                                        const next = [
+                                            ...(data.draft_data?.documents ||
+                                                []),
+                                        ];
+                                        next[idx] = {
+                                            ...next[idx],
+                                            url: e.target.value,
+                                        };
+                                        setDraft("documents", next);
+                                    }}
+                                    placeholder="https://... atau /storage/..."
+                                />
+                            </div>
+
+                            <div className="mt-3">
+                                <div className="text-xs font-semibold text-slate-500">
+                                    Deskripsi
+                                </div>
+                                <textarea
+                                    value={d.description || ""}
+                                    onChange={(e) => {
+                                        const next = [
+                                            ...(data.draft_data?.documents ||
+                                                []),
+                                        ];
+                                        next[idx] = {
+                                            ...next[idx],
+                                            description: e.target.value,
+                                        };
+                                        setDraft("documents", next);
+                                    }}
+                                    className="mt-1 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700"
+                                    rows={2}
+                                    placeholder="Deskripsi singkat dokumen..."
+                                />
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </div>
 
             <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
                 <div className="p-5 border-b border-slate-100">

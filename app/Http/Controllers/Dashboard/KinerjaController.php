@@ -11,7 +11,7 @@ class KinerjaController extends Controller
 {
     public function index()
     {
-        return Inertia::render('Dashboard/Kinerja/Index');
+        return Inertia::render('Dashboard/Kinerja/Kinerja');
     }
 
     public function fetchData()

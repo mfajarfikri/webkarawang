@@ -35,3 +35,21 @@ Route::middleware('auth:sanctum')->group(function() {
 Route::get('/berita-paginated', function() {
     return response()->json(['data' => App\Models\Berita::with(['user', 'tema'])->latest()->paginate(6)]);
 })->name('api.berita.index');
+
+// Instagram feed endpoint
+Route::get('/instagram/feed', function (Illuminate\Http\Request $request) {
+    $service = app(App\Services\InstagramService::class);
+    $limit = (int) $request->query('limit', 12);
+    $data = $service->getFeed(max(1, min(50, $limit)));
+    if (!$data['success']) {
+        return response()->json([
+            'success' => false,
+            'error'   => $data['error'] ?? 'Gagal mengambil feed Instagram.',
+        ], 502);
+    }
+    return response()->json([
+        'success' => true,
+        'profile' => $data['profile'] ?? null,
+        'posts'   => $data['posts'] ?? [],
+    ]);
+})->name('api.instagram.feed');

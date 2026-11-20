@@ -25,6 +25,10 @@ import {
     FaTable,
     FaExclamationTriangle,
     FaInbox,
+    FaInstagram,
+    FaHeart,
+    FaComment,
+    FaExternalLinkAlt,
 } from "react-icons/fa";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
@@ -51,6 +55,15 @@ export default function Berita({ berita: initialBerita }) {
         from: initialBerita?.from || 0,
         to: initialBerita?.to || 0,
     });
+
+    // --- Instagram state ---
+    const [igPosts, setIgPosts] = useState([]);
+    const [igProfile, setIgProfile] = useState(null);
+    const [igLoading, setIgLoading] = useState(false);
+    const [igError, setIgError] = useState("");
+    const [importingId, setImportingId] = useState(null);
+    const [selectedIgPost, setSelectedIgPost] = useState(null);
+    // --- End Instagram state ---
 
     const deleteTitleId = useMemo(() => "delete-berita-title", []);
     const deleteDescId = useMemo(() => "delete-berita-desc", []);
@@ -128,6 +141,76 @@ export default function Berita({ berita: initialBerita }) {
         }
     }, [fetchBerita, initialBerita]);
 
+    // --- Instagram helpers ---
+    const fetchInstagramFeed = useCallback(async () => {
+        setIgLoading(true);
+        setIgError("");
+        try {
+            const response = await axios.get(
+                route("dashboard.berita.instagram.feed"),
+                { params: { limit: 12 } },
+            );
+            setIgPosts(response.data.posts || []);
+            setIgProfile(response.data.profile || null);
+        } catch (error) {
+            const msg =
+                error.response?.data?.error ||
+                error.message ||
+                "Gagal mengambil feed Instagram.";
+            setIgError(msg);
+            enqueueSnackbar(msg, {
+                variant: "error",
+                anchorOrigin: { vertical: "bottom", horizontal: "left" },
+            });
+        } finally {
+            setIgLoading(false);
+        }
+    }, [enqueueSnackbar]);
+
+    const handleImportInstagram = useCallback(
+        async (post) => {
+            if (!post?.shortcode) return;
+            setImportingId(post.shortcode);
+            try {
+                const resp = await axios.post(
+                    route("dashboard.berita.instagram.import"),
+                    { shortcode: post.shortcode, tema: "Instagram" },
+                    { headers: { "X-CSRF-TOKEN": csrf_token } },
+                );
+                enqueueSnackbar(
+                    resp.data?.message ||
+                        "Berhasil import postingan sebagai berita!",
+                    {
+                        variant: "success",
+                        anchorOrigin: {
+                            vertical: "bottom",
+                            horizontal: "left",
+                        },
+                    },
+                );
+                await fetchBerita(pagination.current_page || 1);
+                setSelectedIgPost(null);
+            } catch (err) {
+                const msg =
+                    err.response?.data?.error || err.message || "Gagal import.";
+                enqueueSnackbar(msg, {
+                    variant: "error",
+                    anchorOrigin: { vertical: "bottom", horizontal: "left" },
+                });
+            } finally {
+                setImportingId(null);
+            }
+        },
+        [csrf_token, enqueueSnackbar, fetchBerita, pagination.current_page],
+    );
+
+    useEffect(() => {
+        if (viewMode === "instagram" && igPosts.length === 0 && !igLoading) {
+            fetchInstagramFeed();
+        }
+    }, [viewMode, igPosts.length, igLoading, fetchInstagramFeed]);
+    // --- End Instagram helpers ---
+
     const filteredBerita = searchTerm
         ? berita?.data?.filter(
               (item) =>
@@ -175,6 +258,7 @@ export default function Berita({ berita: initialBerita }) {
             { id: "list", label: "List", icon: FaList },
             { id: "grid", label: "Grid", icon: FaThLarge },
             { id: "table", label: "Table", icon: FaTable },
+            { id: "instagram", label: "Instagram", icon: FaInstagram },
         ],
         [],
     );
@@ -445,18 +529,68 @@ export default function Berita({ berita: initialBerita }) {
                                         Kelola publikasi dan artikel PLN UPT
                                         Karawang dengan tampilan yang konsisten.
                                     </p>
-                                    <div
-                                        id={statusId}
-                                        className="mt-4 inline-flex items-center gap-2 rounded-full bg-slate-50 px-4 py-1.5 text-xs font-semibold text-slate-600 ring-1 ring-slate-200"
-                                    >
-                                        <span
-                                            className="inline-flex h-2 w-2 rounded-full bg-emerald-500"
-                                            aria-hidden="true"
-                                        />
-                                        <span className="text-slate-900">
-                                            {pagination?.total || 0}
-                                        </span>
-                                        <span>Artikel</span>
+                                    <div className="mt-4 flex flex-wrap items-center gap-3">
+                                        {viewMode === "instagram" ? (
+                                            <>
+                                                <div className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-fuchsia-50 to-amber-50 px-4 py-1.5 text-xs font-semibold text-fuchsia-700 ring-1 ring-fuchsia-100">
+                                                    <FaInstagram
+                                                        className="h-3 w-3 text-fuchsia-600"
+                                                        aria-hidden="true"
+                                                    />
+                                                    <span className="text-fuchsia-900">
+                                                        @
+                                                        {igProfile?.username ||
+                                                            "plnuptkarawang"}
+                                                    </span>
+                                                    {igProfile?.media_count ? (
+                                                        <span className="text-fuchsia-700">
+                                                            ·{" "}
+                                                            {
+                                                                igProfile.media_count
+                                                            }{" "}
+                                                            Posts
+                                                        </span>
+                                                    ) : null}
+                                                </div>
+                                                <div className="inline-flex items-center gap-2 rounded-full bg-slate-50 px-4 py-1.5 text-xs font-semibold text-slate-600 ring-1 ring-slate-200">
+                                                    <span
+                                                        className={`inline-flex h-2 w-2 rounded-full ${igLoading ? "bg-amber-500 animate-pulse" : igError ? "bg-rose-500" : "bg-emerald-500"}`}
+                                                        aria-hidden="true"
+                                                    />
+                                                    <span className="text-slate-900">
+                                                        {igPosts.length}
+                                                    </span>
+                                                    <span>
+                                                        Postingan Dimuat
+                                                    </span>
+                                                </div>
+                                                <button
+                                                    type="button"
+                                                    onClick={fetchInstagramFeed}
+                                                    disabled={igLoading}
+                                                    className="inline-flex items-center gap-1.5 rounded-full border border-fuchsia-200 bg-white px-3 py-1.5 text-xs font-bold text-fuchsia-700 hover:bg-fuchsia-50 transition disabled:opacity-60"
+                                                >
+                                                    <FaSpinner
+                                                        className={`h-3 w-3 ${igLoading ? "animate-spin" : ""}`}
+                                                    />
+                                                    Muat Ulang Feed
+                                                </button>
+                                            </>
+                                        ) : (
+                                            <div
+                                                id={statusId}
+                                                className="inline-flex items-center gap-2 rounded-full bg-slate-50 px-4 py-1.5 text-xs font-semibold text-slate-600 ring-1 ring-slate-200"
+                                            >
+                                                <span
+                                                    className="inline-flex h-2 w-2 rounded-full bg-emerald-500"
+                                                    aria-hidden="true"
+                                                />
+                                                <span className="text-slate-900">
+                                                    {pagination?.total || 0}
+                                                </span>
+                                                <span>Artikel</span>
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             </div>
@@ -589,6 +723,186 @@ export default function Berita({ berita: initialBerita }) {
                                 Memuat daftar berita
                             </div>
                             {renderLoading()}
+                        </div>
+                    ) : viewMode === "instagram" ? (
+                        // ---------- INSTAGRAM FEED VIEW ----------
+                        <div className="space-y-6">
+                            {igError && (
+                                <div
+                                    className="rounded-2xl border border-rose-200 bg-rose-50 px-6 py-5 text-rose-900 shadow-sm"
+                                    role="alert"
+                                >
+                                    <div className="flex items-start gap-3">
+                                        <div className="mt-0.5 text-rose-600">
+                                            <FaExclamationTriangle
+                                                className="h-5 w-5"
+                                                aria-hidden="true"
+                                            />
+                                        </div>
+                                        <div className="min-w-0 flex-1">
+                                            <div className="text-sm font-bold">
+                                                Gagal memuat feed Instagram
+                                            </div>
+                                            <div className="mt-1 text-sm text-rose-800">
+                                                {igError}
+                                            </div>
+                                            <div className="mt-2 text-xs text-rose-700/80">
+                                                <strong>Tip:</strong> Jika error
+                                                terus berlanjut, gunakan{" "}
+                                                <code className="mx-1 rounded bg-white/80 px-1.5 py-0.5 font-mono">
+                                                    INSTAGRAM_BACKEND=graph
+                                                </code>{" "}
+                                                di{" "}
+                                                <code className="mx-1 rounded bg-white/80 px-1.5 py-0.5 font-mono">
+                                                    .env
+                                                </code>{" "}
+                                                + Access Token resmi.
+                                            </div>
+                                            <div className="mt-4">
+                                                <button
+                                                    type="button"
+                                                    onClick={fetchInstagramFeed}
+                                                    disabled={igLoading}
+                                                    className="inline-flex items-center gap-2 rounded-2xl bg-rose-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-rose-700 transition disabled:opacity-60"
+                                                >
+                                                    <FaSpinner
+                                                        className={`h-4 w-4 ${igLoading ? "animate-spin" : ""}`}
+                                                        aria-hidden="true"
+                                                    />
+                                                    Coba Lagi
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {igLoading && igPosts.length === 0 ? (
+                                <div
+                                    className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4"
+                                    aria-hidden="true"
+                                >
+                                    {Array.from({ length: 12 }).map((_, i) => (
+                                        <div
+                                            key={i}
+                                            className="aspect-square rounded-2xl bg-slate-100 animate-pulse border border-slate-200"
+                                        />
+                                    ))}
+                                </div>
+                            ) : igPosts.length > 0 ? (
+                                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
+                                    {igPosts.map((post) => {
+                                        const isImporting =
+                                            importingId === post.shortcode;
+                                        return (
+                                            <button
+                                                key={post.id || post.shortcode}
+                                                type="button"
+                                                onClick={() =>
+                                                    setSelectedIgPost(post)
+                                                }
+                                                className="group relative aspect-square w-full overflow-hidden rounded-2xl border border-slate-200 bg-slate-100 shadow-sm hover:shadow-lg transition-all duration-300 focus:outline-none focus-visible:ring-4 focus-visible:ring-fuchsia-400/30 focus-visible:ring-offset-2"
+                                                aria-label={`Buka detail postingan Instagram ${post.shortcode}`}
+                                            >
+                                                <img
+                                                    src={
+                                                        post.image_url ||
+                                                        post.thumbnail_url
+                                                    }
+                                                    alt={
+                                                        post.caption ||
+                                                        "Instagram post"
+                                                    }
+                                                    loading="lazy"
+                                                    className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
+                                                    onError={(e) => {
+                                                        e.target.onerror = null;
+                                                        e.target.style.visibility =
+                                                            "hidden";
+                                                    }}
+                                                />
+                                                <div className="absolute inset-0 bg-gradient-to-t from-fuchsia-900/85 via-fuchsia-900/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                                                {post.media_type === "VIDEO" ? (
+                                                    <div className="absolute left-3 top-3 inline-flex items-center rounded-full bg-black/40 px-2.5 py-1 text-[10px] font-bold text-white ring-1 ring-white/20 backdrop-blur">
+                                                        VIDEO
+                                                    </div>
+                                                ) : null}
+                                                {isImporting ? (
+                                                    <div className="absolute inset-0 flex items-center justify-center bg-sky-900/50 backdrop-blur-sm z-10">
+                                                        <div className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-bold text-sky-700 shadow-lg">
+                                                            <FaSpinner className="h-4 w-4 animate-spin" />{" "}
+                                                            Meng-import...
+                                                        </div>
+                                                    </div>
+                                                ) : null}
+                                                <div className="absolute bottom-0 left-0 right-0 p-3 sm:p-4 translate-y-1 group-hover:translate-y-0 opacity-0 group-hover:opacity-100 transition-all duration-300">
+                                                    <div className="flex items-center justify-center gap-4 text-xs font-bold text-white">
+                                                        <span className="inline-flex items-center gap-1">
+                                                            <FaHeart className="h-3.5 w-3.5" />
+                                                            {post.likes_count ??
+                                                                0}
+                                                        </span>
+                                                        <span className="inline-flex items-center gap-1">
+                                                            <FaComment className="h-3.5 w-3.5" />
+                                                            {post.comments_count ??
+                                                                0}
+                                                        </span>
+                                                    </div>
+                                                    <p className="mt-2 text-center text-[11px] sm:text-xs font-semibold text-white/90 line-clamp-2">
+                                                        {post.caption
+                                                            ? post.caption
+                                                                  .replace(
+                                                                      /\s+/g,
+                                                                      " ",
+                                                                  )
+                                                                  .substring(
+                                                                      0,
+                                                                      110,
+                                                                  )
+                                                            : "(tanpa caption)"}
+                                                    </p>
+                                                </div>
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            ) : !igError ? (
+                                <div className="rounded-2xl border border-fuchsia-100 bg-white shadow-sm p-10 text-center">
+                                    <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-fuchsia-100 to-amber-100 ring-1 ring-fuchsia-200">
+                                        <FaInstagram
+                                            className="h-7 w-7 text-fuchsia-700"
+                                            aria-hidden="true"
+                                        />
+                                    </div>
+                                    <h3 className="mt-5 text-lg font-bold text-slate-900">
+                                        Belum ada postingan dimuat
+                                    </h3>
+                                    <p className="mt-2 text-sm text-slate-600 max-w-lg mx-auto">
+                                        Klik tombol di bawah ini untuk mengambil
+                                        feed terbaru dari Instagram{" "}
+                                        <span className="font-semibold text-fuchsia-700">
+                                            @plnuptkarawang
+                                        </span>
+                                        .
+                                    </p>
+                                    <div className="mt-6">
+                                        <button
+                                            type="button"
+                                            onClick={fetchInstagramFeed}
+                                            disabled={igLoading}
+                                            className="inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-fuchsia-600 to-amber-600 px-5 py-3 text-sm font-bold text-white shadow-sm hover:from-fuchsia-700 hover:to-amber-700 transition disabled:opacity-60"
+                                        >
+                                            <FaInstagram
+                                                className="h-4 w-4"
+                                                aria-hidden="true"
+                                            />
+                                            {igLoading
+                                                ? "Memuat..."
+                                                : "Ambil Feed Instagram"}
+                                        </button>
+                                    </div>
+                                </div>
+                            ) : null}
                         </div>
                     ) : hasData ? (
                         <>
@@ -1030,105 +1344,269 @@ export default function Berita({ berita: initialBerita }) {
                 </div>
 
                 {/* Pagination */}
-                {!isLoading && filteredBerita.length > 0 && (
-                    <div className="mt-12 flex flex-col md:flex-row items-center justify-between gap-6 border-t border-gray-200 pt-8">
-                        <div className="text-sm text-gray-500 font-medium">
-                            Menampilkan{" "}
-                            <span className="text-gray-900 font-bold">
-                                {pagination.from}
-                            </span>{" "}
-                            sampai{" "}
-                            <span className="text-gray-900 font-bold">
-                                {pagination.to}
-                            </span>{" "}
-                            dari{" "}
-                            <span className="text-gray-900 font-bold">
-                                {pagination.total}
-                            </span>{" "}
-                            data
-                        </div>
-
-                        <div className="flex items-center gap-2">
-                            <button
-                                onClick={() =>
-                                    handlePageChange(
-                                        pagination.current_page - 1,
-                                    )
-                                }
-                                disabled={pagination.current_page <= 1}
-                                className={`h-10 px-4 flex items-center justify-center rounded-xl border text-sm font-semibold transition-all duration-200 ${
-                                    pagination.current_page <= 1
-                                        ? "border-gray-200 text-gray-300 cursor-not-allowed bg-gray-50"
-                                        : "border-gray-200 text-gray-700 hover:bg-white hover:border-sky-300 hover:text-sky-600 hover:shadow-sm"
-                                }`}
-                            >
-                                <FaChevronLeft className="mr-1.5 h-3 w-3" />
-                                Sebelumnya
-                            </button>
-
-                            <div className="hidden md:flex items-center gap-1">
-                                {Array.from(
-                                    {
-                                        length: Math.min(
-                                            5,
-                                            pagination.last_page,
-                                        ),
-                                    },
-                                    (_, i) => {
-                                        // Simple pagination logic for display
-                                        let pageNum = i + 1;
-                                        if (
-                                            pagination.last_page > 5 &&
-                                            pagination.current_page > 3
-                                        ) {
-                                            pageNum =
-                                                pagination.current_page - 3 + i;
-                                            if (pageNum > pagination.last_page)
-                                                pageNum =
-                                                    pagination.last_page -
-                                                    (4 - i);
-                                        }
-
-                                        return (
-                                            <button
-                                                key={pageNum}
-                                                onClick={() =>
-                                                    handlePageChange(pageNum)
-                                                }
-                                                className={`h-10 w-10 flex items-center justify-center rounded-xl text-sm font-bold transition-all duration-200 ${
-                                                    pagination.current_page ===
-                                                    pageNum
-                                                        ? "bg-sky-700 text-white shadow-lg shadow-sky-700/20 scale-105"
-                                                        : "text-gray-600 hover:bg-sky-50 hover:text-sky-700"
-                                                }`}
-                                            >
-                                                {pageNum}
-                                            </button>
-                                        );
-                                    },
-                                )}
+                {viewMode !== "instagram" &&
+                    !isLoading &&
+                    filteredBerita.length > 0 && (
+                        <div className="mt-12 flex flex-col md:flex-row items-center justify-between gap-6 border-t border-gray-200 pt-8">
+                            <div className="text-sm text-gray-500 font-medium">
+                                Menampilkan{" "}
+                                <span className="text-gray-900 font-bold">
+                                    {pagination.from}
+                                </span>{" "}
+                                sampai{" "}
+                                <span className="text-gray-900 font-bold">
+                                    {pagination.to}
+                                </span>{" "}
+                                dari{" "}
+                                <span className="text-gray-900 font-bold">
+                                    {pagination.total}
+                                </span>{" "}
+                                data
                             </div>
 
-                            <button
-                                onClick={() =>
-                                    handlePageChange(
-                                        pagination.current_page + 1,
-                                    )
-                                }
-                                disabled={
-                                    pagination.current_page >=
-                                    pagination.last_page
-                                }
-                                className={`h-10 px-4 flex items-center justify-center rounded-xl border text-sm font-semibold transition-all duration-200 ${
-                                    pagination.current_page >=
-                                    pagination.last_page
-                                        ? "border-gray-200 text-gray-300 cursor-not-allowed bg-gray-50"
-                                        : "border-gray-200 text-gray-700 hover:bg-white hover:border-sky-300 hover:text-sky-600 hover:shadow-sm"
-                                }`}
+                            <div className="flex items-center gap-2">
+                                <button
+                                    onClick={() =>
+                                        handlePageChange(
+                                            pagination.current_page - 1,
+                                        )
+                                    }
+                                    disabled={pagination.current_page <= 1}
+                                    className={`h-10 px-4 flex items-center justify-center rounded-xl border text-sm font-semibold transition-all duration-200 ${
+                                        pagination.current_page <= 1
+                                            ? "border-gray-200 text-gray-300 cursor-not-allowed bg-gray-50"
+                                            : "border-gray-200 text-gray-700 hover:bg-white hover:border-sky-300 hover:text-sky-600 hover:shadow-sm"
+                                    }`}
+                                >
+                                    <FaChevronLeft className="mr-1.5 h-3 w-3" />
+                                    Sebelumnya
+                                </button>
+
+                                <div className="hidden md:flex items-center gap-1">
+                                    {Array.from(
+                                        {
+                                            length: Math.min(
+                                                5,
+                                                pagination.last_page,
+                                            ),
+                                        },
+                                        (_, i) => {
+                                            // Simple pagination logic for display
+                                            let pageNum = i + 1;
+                                            if (
+                                                pagination.last_page > 5 &&
+                                                pagination.current_page > 3
+                                            ) {
+                                                pageNum =
+                                                    pagination.current_page -
+                                                    3 +
+                                                    i;
+                                                if (
+                                                    pageNum >
+                                                    pagination.last_page
+                                                )
+                                                    pageNum =
+                                                        pagination.last_page -
+                                                        (4 - i);
+                                            }
+
+                                            return (
+                                                <button
+                                                    key={pageNum}
+                                                    onClick={() =>
+                                                        handlePageChange(
+                                                            pageNum,
+                                                        )
+                                                    }
+                                                    className={`h-10 w-10 flex items-center justify-center rounded-xl text-sm font-bold transition-all duration-200 ${
+                                                        pagination.current_page ===
+                                                        pageNum
+                                                            ? "bg-sky-700 text-white shadow-lg shadow-sky-700/20 scale-105"
+                                                            : "text-gray-600 hover:bg-sky-50 hover:text-sky-700"
+                                                    }`}
+                                                >
+                                                    {pageNum}
+                                                </button>
+                                            );
+                                        },
+                                    )}
+                                </div>
+
+                                <button
+                                    onClick={() =>
+                                        handlePageChange(
+                                            pagination.current_page + 1,
+                                        )
+                                    }
+                                    disabled={
+                                        pagination.current_page >=
+                                        pagination.last_page
+                                    }
+                                    className={`h-10 px-4 flex items-center justify-center rounded-xl border text-sm font-semibold transition-all duration-200 ${
+                                        pagination.current_page >=
+                                        pagination.last_page
+                                            ? "border-gray-200 text-gray-300 cursor-not-allowed bg-gray-50"
+                                            : "border-gray-200 text-gray-700 hover:bg-white hover:border-sky-300 hover:text-sky-600 hover:shadow-sm"
+                                    }`}
+                                >
+                                    Selanjutnya
+                                    <FaChevronRight className="ml-1.5 h-3 w-3" />
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
+                {/* Instagram Post Detail Modal */}
+                {selectedIgPost && (
+                    <div className="fixed inset-0 z-[99] overflow-y-auto">
+                        <div className="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 sm:block sm:p-0">
+                            <div
+                                className="fixed inset-0 transition-opacity bg-slate-900/60 backdrop-blur-sm"
+                                aria-hidden="true"
+                                onClick={() => setSelectedIgPost(null)}
+                            />
+                            <span
+                                className="hidden sm:inline-block sm:align-middle sm:h-screen"
+                                aria-hidden="true"
                             >
-                                Selanjutnya
-                                <FaChevronRight className="ml-1.5 h-3 w-3" />
-                            </button>
+                                &#8203;
+                            </span>
+                            <div className="inline-block w-full max-w-3xl my-8 overflow-hidden text-left align-middle transition-all transform bg-white shadow-2xl rounded-3xl animate-in fade-in zoom-in-95 duration-300">
+                                {/* Header */}
+                                <div className="flex items-center justify-between gap-3 px-6 py-5 border-b border-slate-100 bg-gradient-to-r from-fuchsia-50 via-white to-amber-50">
+                                    <div className="flex items-center gap-3">
+                                        <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-fuchsia-500 via-rose-500 to-amber-500 text-white shadow-md">
+                                            <FaInstagram className="h-5 w-5" />
+                                        </div>
+                                        <div className="min-w-0">
+                                            <div className="text-sm font-extrabold text-slate-900">
+                                                @
+                                                {igProfile?.username ||
+                                                    "plnuptkarawang"}
+                                            </div>
+                                            <div className="text-xs text-slate-500 inline-flex items-center gap-2">
+                                                <FaCalendar className="h-3 w-3" />
+                                                {(() => {
+                                                    try {
+                                                        return format(
+                                                            new Date(
+                                                                selectedIgPost.timestamp,
+                                                            ),
+                                                            "d MMM yyyy · HH:mm",
+                                                            { locale: id },
+                                                        );
+                                                    } catch {
+                                                        return "-";
+                                                    }
+                                                })()}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <a
+                                            href={selectedIgPost.permalink}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-700 hover:bg-sky-50 hover:text-sky-700 hover:border-sky-200 transition"
+                                            aria-label="Buka di Instagram"
+                                        >
+                                            <FaExternalLinkAlt className="h-4 w-4" />
+                                        </a>
+                                        <button
+                                            type="button"
+                                            onClick={() =>
+                                                setSelectedIgPost(null)
+                                            }
+                                            className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 hover:bg-rose-50 hover:text-rose-600 hover:border-rose-200 transition"
+                                            aria-label="Tutup"
+                                        >
+                                            <FaTimes className="h-4 w-4" />
+                                        </button>
+                                    </div>
+                                </div>
+                                {/* Body */}
+                                <div className="grid grid-cols-1 lg:grid-cols-5 gap-0">
+                                    <div className="lg:col-span-3 bg-slate-900">
+                                        <img
+                                            src={
+                                                selectedIgPost.image_url ||
+                                                selectedIgPost.thumbnail_url
+                                            }
+                                            alt="Postingan Instagram"
+                                            className="w-full h-full max-h-[70vh] object-contain"
+                                            onError={(e) => {
+                                                e.target.onerror = null;
+                                                e.target.style.display = "none";
+                                            }}
+                                        />
+                                    </div>
+                                    <div className="lg:col-span-2 flex flex-col max-h-[70vh] overflow-hidden">
+                                        <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-center gap-8 text-sm font-bold text-slate-700 bg-slate-50/60">
+                                            <span className="inline-flex items-center gap-2 text-rose-600">
+                                                <FaHeart className="h-4 w-4" />
+                                                {selectedIgPost.likes_count?.toLocaleString() ||
+                                                    0}
+                                                <span className="text-slate-500 font-semibold text-xs">
+                                                    Suka
+                                                </span>
+                                            </span>
+                                            <span className="inline-flex items-center gap-2 text-sky-700">
+                                                <FaComment className="h-4 w-4" />
+                                                {selectedIgPost.comments_count?.toLocaleString() ||
+                                                    0}
+                                                <span className="text-slate-500 font-semibold text-xs">
+                                                    Komentar
+                                                </span>
+                                            </span>
+                                        </div>
+                                        <div className="flex-1 overflow-y-auto px-6 py-5">
+                                            {selectedIgPost.caption ? (
+                                                <p className="text-sm text-slate-800 whitespace-pre-wrap leading-relaxed">
+                                                    {selectedIgPost.caption}
+                                                </p>
+                                            ) : (
+                                                <p className="text-sm text-slate-500 italic">
+                                                    Postingan ini tidak memiliki
+                                                    caption.
+                                                </p>
+                                            )}
+                                        </div>
+                                        <div className="px-6 py-5 border-t border-slate-100 bg-white">
+                                            <button
+                                                type="button"
+                                                disabled={
+                                                    importingId ===
+                                                    selectedIgPost.shortcode
+                                                }
+                                                onClick={() =>
+                                                    handleImportInstagram(
+                                                        selectedIgPost,
+                                                    )
+                                                }
+                                                className="w-full inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-sky-600 to-cyan-600 px-5 py-3 text-sm font-bold text-white shadow-sm hover:from-sky-700 hover:to-cyan-700 transition disabled:opacity-70 disabled:cursor-not-allowed focus:outline-none focus-visible:ring-4 focus-visible:ring-sky-500/30"
+                                            >
+                                                {importingId ===
+                                                selectedIgPost.shortcode ? (
+                                                    <>
+                                                        <FaSpinner className="h-4 w-4 animate-spin" />{" "}
+                                                        Sedang Meng-import...
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <FaPlus className="h-4 w-4" />{" "}
+                                                        Import Jadi Berita
+                                                    </>
+                                                )}
+                                            </button>
+                                            <p className="mt-3 text-center text-[11px] text-slate-500">
+                                                Gambar diunduh ke storage &
+                                                dibuat artikel dengan tema
+                                                Instagram.
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 )}

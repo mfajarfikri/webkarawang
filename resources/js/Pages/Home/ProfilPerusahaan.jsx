@@ -1,68 +1,153 @@
-import React, { Fragment, useEffect, useMemo, useRef, useState } from "react";
+import React, {
+    useCallback,
+    useEffect,
+    useMemo,
+    useRef,
+    useState,
+} from "react";
 import { Head, Link } from "@inertiajs/react";
+import axios from "axios";
 import HomeLayout from "@/Layouts/HomeLayout";
-import Modal from "@/Components/Modal";
-import { Listbox, Transition } from "@headlessui/react";
 import { motion } from "framer-motion";
-import { edjsParser } from "@/utils/editorParser";
+import { edjsParser, sanitizeEditorData } from "@/utils/editorParser";
 import {
     FaArrowRight,
     FaBolt,
     FaBullseye,
     FaBuilding,
-    FaCalendarAlt,
     FaCheck,
-    FaChevronDown,
     FaChevronLeft,
     FaChevronRight,
+    FaDownload,
     FaEnvelope,
+    FaExclamationTriangle,
+    FaExternalLinkAlt,
+    FaFileAlt,
+    FaFolderOpen,
     FaGlobe,
     FaHandshake,
     FaHistory,
     FaIndustry,
     FaLeaf,
     FaLightbulb,
+    FaLinkedinIn,
     FaMapMarkerAlt,
     FaPhoneAlt,
     FaQuoteLeft,
     FaShieldAlt,
     FaSitemap,
-    FaStar,
+    FaSyncAlt,
+    FaTimes,
     FaUsers,
 } from "react-icons/fa";
 
-function buildImageUrl(prompt, imageSize) {
-    const encoded = encodeURIComponent(prompt);
-    return `https://coresg-normal.trae.ai/api/ide/v1/text_to_image?prompt=${encoded}&image_size=${imageSize}`;
+const SERVICE_ICONS = {
+    bolt: FaBolt,
+    shield: FaShieldAlt,
+    industry: FaIndustry,
+    lightbulb: FaLightbulb,
+    users: FaUsers,
+    leaf: FaLeaf,
+    sitemap: FaSitemap,
+    handshake: FaHandshake,
+    globe: FaGlobe,
+    building: FaBuilding,
+};
+
+const POLL_INTERVAL_MS = 60000;
+
+function classNames(...v) {
+    return v.filter(Boolean).join(" ");
 }
 
-function useInViewport(options) {
-    const ref = useRef(null);
-    const [inView, setInView] = useState(false);
+function asString(value, fallback = "") {
+    if (typeof value === "string") return value;
+    if (value === null || value === undefined) return fallback;
+    return String(value);
+}
 
-    useEffect(() => {
-        const el = ref.current;
-        if (!el) return;
-        const io = new IntersectionObserver((entries) => {
-            const entry = entries[0];
-            if (entry?.isIntersecting) setInView(true);
-        }, options);
-        io.observe(el);
-        return () => io.disconnect();
-    }, [options]);
+function safeArray(v) {
+    return Array.isArray(v) ? v : [];
+}
 
-    return { ref, inView };
+function resolveImageUrl(value) {
+    if (!value) return "";
+    if (typeof value === "string") return value;
+    if (typeof value === "object" && typeof value.url === "string")
+        return value.url;
+    return "";
+}
+
+function parseEditorToHtml(editorData) {
+    if (!editorData) return "";
+    if (typeof editorData === "string") {
+        try {
+            const parsed = JSON.parse(editorData);
+            if (
+                parsed &&
+                typeof parsed === "object" &&
+                parsed.blocks &&
+                Array.isArray(parsed.blocks)
+            ) {
+                return parseEditorToHtml(parsed);
+            }
+            return editorData
+                .split(/\r?\n/)
+                .map((line) =>
+                    line.trim()
+                        ? `<p class="mb-3 leading-relaxed text-slate-700">${line}</p>`
+                        : "",
+                )
+                .join("");
+        } catch {
+            return editorData
+                .split(/\r?\n/)
+                .map((line) =>
+                    line.trim()
+                        ? `<p class="mb-3 leading-relaxed text-slate-700">${line}</p>`
+                        : "",
+                )
+                .join("");
+        }
+    }
+    if (typeof editorData === "object") {
+        try {
+            const parsed = sanitizeEditorData(editorData);
+            if (parsed && parsed.blocks && Array.isArray(parsed.blocks)) {
+                const htmlArray = edjsParser.parse(parsed);
+                if (Array.isArray(htmlArray)) {
+                    return htmlArray.join("");
+                }
+            }
+        } catch (error) {
+            console.error("Error parsing editor data:", error);
+        }
+    }
+    if (typeof editorData === "string" && editorData.trim()) {
+        return `<p class="leading-relaxed text-slate-700">${editorData}</p>`;
+    }
+    return "";
+}
+
+function extractPlainTextFromHtml(html) {
+    if (!html || typeof window === "undefined") return "";
+    try {
+        const doc = new DOMParser().parseFromString(html, "text/html");
+        return asString(doc?.body?.textContent || "")
+            .replace(/\s+/g, " ")
+            .trim();
+    } catch {
+        return "";
+    }
 }
 
 function useActiveSection(sectionIds) {
-    const [active, setActive] = useState(sectionIds[0] || "profil");
-
+    const [active, setActive] = useState(sectionIds[0] || "");
     useEffect(() => {
         const nodes = sectionIds
             .map((id) => document.getElementById(id))
             .filter(Boolean);
         if (nodes.length === 0) return;
-
         const io = new IntersectionObserver(
             (entries) => {
                 const visible = entries
@@ -81,1070 +166,696 @@ function useActiveSection(sectionIds) {
                 rootMargin: "-20% 0px -65% 0px",
             },
         );
-
         nodes.forEach((n) => io.observe(n));
         return () => io.disconnect();
     }, [sectionIds]);
-
     return { active, setActive };
 }
 
-function classNames(...v) {
-    return v.filter(Boolean).join(" ");
-}
-
-function asString(value, fallback = "") {
-    if (typeof value === "string") return value;
-    if (value === null || value === undefined) return fallback;
-    return String(value);
-}
-
-function extractPlainTextFromHtml(html) {
-    if (!html) return "";
-    if (typeof window === "undefined") return "";
-    try {
-        const doc = new DOMParser().parseFromString(html, "text/html");
-        return asString(doc?.body?.textContent || "")
-            .replace(/\s+/g, " ")
-            .trim();
-    } catch {
-        return "";
-    }
-}
-
-function safeArray(v) {
-    return Array.isArray(v) ? v : [];
-}
-
-function Section({ id, eyebrow, title, subtitle, children }) {
-    return (
-        <section id={id} className="scroll-mt-28">
-            <div className="rounded-2xl border border-slate-200 bg-white shadow-sm">
-                <div className="p-6 sm:p-8 border-b border-slate-100">
-                    <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-                        <div>
-                            {eyebrow ? (
-                                <div className="text-[11px] font-semibold uppercase tracking-widest text-slate-500">
-                                    {eyebrow}
-                                </div>
-                            ) : null}
-                            <h2 className="mt-1 text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
-                                {title}
-                            </h2>
-                            {subtitle ? (
-                                <p className="mt-2 text-sm sm:text-base text-slate-600 max-w-3xl">
-                                    {subtitle}
-                                </p>
-                            ) : null}
-                        </div>
-                    </div>
-                </div>
-                <div className="p-6 sm:p-8">{children}</div>
-            </div>
-        </section>
-    );
-}
-
-function IconBadge({ icon: Icon, tone = "blue" }) {
-    const toneCls =
-        tone === "yellow"
-            ? "bg-amber-50 text-amber-700 border-amber-100"
-            : tone === "green"
-              ? "bg-emerald-50 text-emerald-700 border-emerald-100"
-              : "bg-sky-50 text-sky-700 border-sky-100";
-
+function SectionHeader({ eyebrow, title, subtitle, align = "center" }) {
     return (
         <div
             className={classNames(
-                "h-10 w-10 rounded-2xl border flex items-center justify-center shadow-sm",
-                toneCls,
+                "mb-8 sm:mb-10",
+                align === "center"
+                    ? "text-center mx-auto max-w-2xl"
+                    : "max-w-2xl",
             )}
         >
-            <Icon className="h-5 w-5" aria-hidden="true" />
+            <div
+                className={classNames(
+                    "text-[11px] font-bold uppercase tracking-[0.2em] text-sky-700",
+                    align === "center"
+                        ? "flex items-center justify-center gap-2"
+                        : "flex items-center gap-2",
+                )}
+            >
+                <span className="inline-block h-[3px] w-10 rounded-full bg-gradient-to-r from-sky-600 to-amber-500" />
+                {eyebrow}
+                <span className="inline-block h-[3px] w-10 rounded-full bg-gradient-to-l from-sky-600 to-amber-500" />
+            </div>
+            <h2 className="mt-3 text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900">
+                {title}
+            </h2>
+            {subtitle ? (
+                <p className="mt-3 text-sm sm:text-base text-slate-500 leading-relaxed">
+                    {subtitle}
+                </p>
+            ) : null}
         </div>
     );
 }
 
-function InfoCard({ icon, title, children }) {
+function LiveSyncBadge({ lastSync, syncing, error, compact }) {
+    if (compact) {
+        const label = error
+            ? "Gagal"
+            : syncing
+              ? "Sinkron..."
+              : lastSync
+                ? lastSync
+                : "Live";
+        const tone = error
+            ? "border-rose-200 bg-rose-50 text-rose-600"
+            : syncing
+              ? "border-amber-200 bg-amber-50 text-amber-700"
+              : "border-emerald-200 bg-emerald-50 text-emerald-700";
+        const dot = error
+            ? "bg-rose-500"
+            : syncing
+              ? "bg-amber-500"
+              : "bg-emerald-500";
+        const ping = error ? "" : syncing ? "bg-amber-400" : "bg-emerald-400";
+        return (
+            <div
+                className={classNames(
+                    "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-bold",
+                    tone,
+                )}
+                title="Data profil disinkronkan otomatis dari database"
+            >
+                <span className="relative flex h-2 w-2">
+                    {!error && ping ? (
+                        <span
+                            className={classNames(
+                                "absolute inline-flex h-full w-full animate-ping rounded-full opacity-75",
+                                ping,
+                            )}
+                        />
+                    ) : null}
+                    <span
+                        className={classNames(
+                            "relative inline-flex h-2 w-2 rounded-full",
+                            dot,
+                        )}
+                    />
+                </span>
+                <span className="leading-none">{label}</span>
+            </div>
+        );
+    }
     return (
-        <motion.div
-            whileHover={{ y: -2 }}
-            transition={{ duration: 0.2 }}
-            className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
+        <div
+            className={classNames(
+                "inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-semibold",
+                error
+                    ? "border-rose-200 bg-rose-50 text-rose-600"
+                    : "border-emerald-200 bg-emerald-50 text-emerald-700",
+            )}
+            title="Data profil disinkronkan otomatis dari database"
         >
-            <div className="flex items-start gap-3">
-                <IconBadge icon={icon} />
-                <div className="min-w-0">
-                    <div className="text-sm font-semibold text-slate-900">
-                        {title}
+            <span className="relative flex h-2 w-2">
+                {!error && (
+                    <span
+                        className={classNames(
+                            "absolute inline-flex h-full w-full animate-ping rounded-full opacity-75",
+                            syncing ? "bg-amber-400" : "bg-emerald-400",
+                        )}
+                    />
+                )}
+                <span
+                    className={classNames(
+                        "relative inline-flex h-2 w-2 rounded-full",
+                        error
+                            ? "bg-rose-500"
+                            : syncing
+                              ? "bg-amber-500"
+                              : "bg-emerald-500",
+                    )}
+                />
+            </span>
+            {error ? (
+                "Gagal memperbarui data"
+            ) : syncing ? (
+                "Menyinkronkan..."
+            ) : lastSync ? (
+                <>Data real-time · diperbarui {lastSync}</>
+            ) : (
+                "Data real-time"
+            )}
+        </div>
+    );
+}
+
+function Skeleton({ className }) {
+    return (
+        <div
+            className={classNames(
+                "animate-pulse rounded-xl bg-slate-200/70",
+                className,
+            )}
+        />
+    );
+}
+
+function EmptyState({ onRetry }) {
+    return (
+        <div className="mx-auto max-w-xl rounded-3xl border border-slate-200 bg-white/70 p-10 text-center shadow-sm backdrop-blur">
+            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-sky-50 text-sky-600">
+                <FaBuilding className="h-7 w-7" />
+            </div>
+            <h2 className="mt-4 text-lg font-bold text-slate-900">
+                Profil belum diterbitkan
+            </h2>
+            <p className="mt-2 text-sm text-slate-500 leading-relaxed">
+                Data profil perusahaan belum dipublikasikan oleh admin. Silakan
+                kembali lagi nanti.
+            </p>
+            <div className="mt-6 flex justify-center gap-3">
+                <button
+                    type="button"
+                    onClick={onRetry}
+                    className="inline-flex items-center gap-2 rounded-xl bg-sky-700 px-4 py-2 text-sm font-semibold text-white hover:bg-sky-800 transition-colors"
+                >
+                    <FaSyncAlt className="h-3.5 w-3.5" /> Muat Ulang
+                </button>
+                <Link
+                    href="/"
+                    className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors"
+                >
+                    Kembali ke Beranda
+                </Link>
+            </div>
+        </div>
+    );
+}
+
+function ErrorBanner({ message, onRetry }) {
+    return (
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3">
+            <div className="flex items-center gap-3">
+                <FaExclamationTriangle className="h-5 w-5 shrink-0 text-rose-500" />
+                <div className="text-sm text-rose-700">
+                    <div className="font-semibold">
+                        Gagal menghubungi server
                     </div>
-                    <div className="mt-1 text-sm text-slate-600">
-                        {children}
-                    </div>
+                    <div className="text-xs text-rose-600">{message}</div>
                 </div>
             </div>
-        </motion.div>
+            <button
+                type="button"
+                onClick={onRetry}
+                className="ml-auto inline-flex items-center gap-2 rounded-lg border border-rose-300 bg-white px-3 py-1.5 text-xs font-semibold text-rose-700 hover:bg-rose-100 transition-colors"
+            >
+                <FaSyncAlt className="h-3 w-3" /> Coba Lagi
+            </button>
+        </div>
     );
 }
 
-function Pill({ children }) {
+function ProseContent({ html }) {
+    if (!html) return null;
     return (
-        <span className="inline-flex items-center rounded-full border border-slate-200 bg-white/70 px-3 py-1 text-xs font-semibold text-slate-700 shadow-sm">
-            {children}
-        </span>
+        <div
+            className="prose-sm sm:prose-base prose-slate max-w-none leading-relaxed text-slate-600
+                prose-headings:font-bold prose-headings:text-slate-900
+                prose-a:text-sky-700 prose-strong:text-slate-800"
+            dangerouslySetInnerHTML={{ __html: html }}
+        />
     );
 }
 
-function InternalNav({ sections, activeId, onJump }) {
+function StatCard({ stat }) {
+    const value = asString(stat?.value, "-");
     return (
-        <nav aria-label="Navigasi halaman" className="space-y-2">
-            <div className="text-[11px] font-semibold uppercase tracking-widest text-slate-500">
-                Navigasi Seksi
-            </div>
-            <div className="rounded-2xl border border-slate-200 bg-white shadow-sm p-3">
-                <ul className="space-y-1">
-                    {sections.map((s) => {
-                        const isActive = s.id === activeId;
-                        return (
-                            <li key={s.id}>
-                                <button
-                                    type="button"
-                                    onClick={() => onJump(s.id)}
-                                    className={classNames(
-                                        "w-full text-left rounded-xl px-3 py-2 text-sm font-medium transition-colors",
-                                        isActive
-                                            ? "bg-sky-50 text-sky-700"
-                                            : "text-slate-700 hover:bg-slate-50",
-                                    )}
-                                >
-                                    <span className="flex items-center justify-between gap-3">
-                                        <span className="truncate">
-                                            {s.label}
-                                        </span>
-                                        <span
-                                            className={classNames(
-                                                "h-2 w-2 rounded-full",
-                                                isActive
-                                                    ? "bg-sky-500"
-                                                    : "bg-slate-200",
-                                            )}
-                                            aria-hidden="true"
-                                        />
-                                    </span>
-                                </button>
-                            </li>
-                        );
-                    })}
-                </ul>
-            </div>
-        </nav>
-    );
-}
-
-function MobileNavSelect({ sections, activeId, onChange }) {
-    const selected = sections.find((s) => s.id === activeId) || sections[0];
-    return (
-        <div className="lg:hidden">
-            <Listbox value={selected} onChange={(v) => onChange(v.id)}>
-                <div className="relative">
-                    <Listbox.Button className="relative w-full cursor-pointer rounded-2xl bg-white py-3 pl-4 pr-10 text-left border border-slate-200 shadow-sm focus:outline-none focus:ring-2 focus:ring-sky-500/20">
-                        <span className="block truncate text-sm font-semibold text-slate-900">
-                            {selected.label}
+        <div className="relative overflow-hidden rounded-2xl border border-slate-100 bg-gradient-to-br from-slate-50 to-white p-5 transition-all hover:-translate-y-0.5 hover:shadow-[0_8px_24px_-12px_rgba(15,23,42,0.12)]">
+            <div className="absolute top-0 right-0 h-16 w-16 rounded-full bg-gradient-to-br from-sky-100 via-sky-50 to-transparent opacity-80" />
+            <div className="relative">
+                <div className="text-3xl sm:text-4xl font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-br from-sky-800 to-sky-600">
+                    {value}
+                    {stat?.unit ? (
+                        <span className="ml-1 text-base font-bold text-slate-400 bg-none bg-clip-text text-slate-400">
+                            {stat.unit}
                         </span>
-                        <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-4">
-                            <FaChevronDown
-                                className="h-4 w-4 text-slate-400"
-                                aria-hidden="true"
-                            />
-                        </span>
-                    </Listbox.Button>
-                    <Transition
-                        as={Fragment}
-                        leave="transition ease-in duration-100"
-                        leaveFrom="opacity-100"
-                        leaveTo="opacity-0"
+                    ) : null}
+                </div>
+                <div className="mt-1 text-sm font-bold text-slate-700">
+                    {stat?.label || "Statistik"}
+                </div>
+                {stat?.sourceLabel ? (
+                    <a
+                        href={stat?.sourceUrl || "#"}
+                        target={stat?.sourceUrl ? "_blank" : undefined}
+                        rel="noreferrer"
+                        className="mt-2 inline-flex items-center gap-1 text-[11px] font-bold text-sky-700 hover:text-sky-900"
                     >
-                        <Listbox.Options className="absolute z-50 mt-2 max-h-72 w-full overflow-auto rounded-2xl bg-white py-1 text-base shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm">
-                            {sections.map((s) => (
-                                <Listbox.Option
-                                    key={s.id}
-                                    className={({ active }) =>
-                                        classNames(
-                                            "relative cursor-default select-none py-2.5 pl-10 pr-4",
-                                            active
-                                                ? "bg-sky-50 text-sky-700"
-                                                : "text-slate-900",
-                                        )
-                                    }
-                                    value={s}
-                                >
-                                    {({ selected: isSelected }) => (
-                                        <>
-                                            <span
-                                                className={classNames(
-                                                    "block truncate",
-                                                    isSelected
-                                                        ? "font-semibold"
-                                                        : "font-normal",
-                                                )}
-                                            >
-                                                {s.label}
-                                            </span>
-                                            {isSelected ? (
-                                                <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-sky-600">
-                                                    <FaCheck
-                                                        className="h-4 w-4"
-                                                        aria-hidden="true"
-                                                    />
-                                                </span>
-                                            ) : null}
-                                        </>
-                                    )}
-                                </Listbox.Option>
-                            ))}
-                        </Listbox.Options>
-                    </Transition>
+                        {stat.sourceLabel}{" "}
+                        <FaExternalLinkAlt className="h-2.5 w-2.5" />
+                    </a>
+                ) : null}
+            </div>
+        </div>
+    );
+}
+
+function InfoRow({ icon: Icon, label, value, href }) {
+    if (!value) return null;
+    const content = (
+        <div className="flex items-start gap-3">
+            <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-sky-50 to-sky-100 text-sky-700 ring-1 ring-sky-200/60">
+                <Icon className="h-4 w-4" />
+            </span>
+            <div className="min-w-0 flex-1">
+                <div className="text-[11px] font-bold uppercase tracking-[0.15em] text-slate-400">
+                    {label}
                 </div>
-            </Listbox>
+                <div className="mt-0.5 text-sm font-semibold text-slate-800 leading-relaxed break-words">
+                    {value}
+                </div>
+            </div>
+        </div>
+    );
+    if (href) {
+        return (
+            <a
+                href={href}
+                className="block rounded-2xl border border-slate-100 bg-slate-50/70 p-3 transition-colors hover:bg-slate-50"
+            >
+                {content}
+            </a>
+        );
+    }
+    return (
+        <div className="rounded-2xl border border-slate-100 bg-slate-50/70 p-3">
+            {content}
+        </div>
+    );
+}
+
+function TimelineItem({ item, index }) {
+    const isLast = index === null;
+    return (
+        <div className="relative flex gap-5">
+            <div className="flex flex-col items-center">
+                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-sky-700 via-sky-800 to-slate-900 text-white shadow-sm ring-4 ring-sky-50">
+                    <FaHistory className="h-4 w-4" />
+                </span>
+                {!isLast && (
+                    <span className="mt-2 w-px flex-1 bg-gradient-to-b from-sky-200 via-sky-100 to-transparent" />
+                )}
+            </div>
+            <div className="pb-10 flex-1">
+                <div className="inline-flex items-center gap-1.5 rounded-full bg-sky-50 ring-1 ring-sky-100 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-[0.16em] text-sky-700">
+                    {item?.periodLabel || "Periode"}
+                </div>
+                <h3 className="mt-2 text-base font-extrabold text-slate-900">
+                    {item?.title || "Tahapan"}
+                </h3>
+                <p className="mt-2 text-sm text-slate-600 leading-relaxed">
+                    {item?.description || ""}
+                </p>
+            </div>
         </div>
     );
 }
 
 function Gallery({ items }) {
-    const safeItems = safeArray(items);
-    const [open, setOpen] = useState(false);
-    const [index, setIndex] = useState(0);
-    const { ref, inView } = useInViewport({ rootMargin: "300px" });
+    const [activeIndex, setActiveIndex] = useState(null);
+    const photos = safeArray(items)
+        .map((it) => ({
+            url: resolveImageUrl(it?.url ?? it),
+            alt: it?.alt || "Dokumentasi kegiatan",
+        }))
+        .filter((p) => p.url);
 
-    const current = safeItems[index];
+    if (photos.length === 0) return null;
 
-    const openAt = (i) => {
-        setIndex(i);
-        setOpen(true);
-    };
-
-    const prev = () =>
-        setIndex((i) => (i - 1 + safeItems.length) % safeItems.length);
-    const next = () => setIndex((i) => (i + 1) % safeItems.length);
+    const open = (i) => setActiveIndex(i);
+    const close = () => setActiveIndex(null);
+    const step = (dir) =>
+        setActiveIndex((cur) => (cur + dir + photos.length) % photos.length);
 
     return (
-        <div ref={ref} className="space-y-4">
-            {safeItems.length === 0 ? (
-                <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-6 text-sm text-slate-600">
-                    Belum ada foto galeri yang dipublikasikan.
-                </div>
-            ) : null}
-            {!inView ? (
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-                    {Array.from({ length: 8 }).map((_, i) => (
-                        <div
-                            key={i}
-                            className="aspect-[4/3] rounded-2xl bg-slate-100 border border-slate-200 animate-pulse"
+        <div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
+                {photos.map((p, i) => (
+                    <button
+                        key={p.url + i}
+                        type="button"
+                        onClick={() => open(i)}
+                        className="group relative aspect-[4/3] overflow-hidden rounded-2xl border border-slate-100 bg-slate-100 shadow-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
+                    >
+                        <img
+                            src={p.url}
+                            alt={p.alt}
+                            loading="lazy"
+                            decoding="async"
+                            className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
                         />
-                    ))}
-                </div>
-            ) : (
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-                    {safeItems.map((it, i) => (
-                        <button
-                            key={it.url}
-                            type="button"
-                            className="group relative overflow-hidden rounded-2xl border border-slate-200 bg-slate-50"
-                            onClick={() => openAt(i)}
-                            aria-label={`Buka foto: ${it.caption || it.alt}`}
-                        >
-                            <img
-                                src={it.url}
-                                alt={it.alt}
-                                loading="lazy"
-                                decoding="async"
-                                className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
-                            />
-                            <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent p-3">
-                                <div className="text-xs font-semibold text-white line-clamp-2">
-                                    {it.caption || it.alt}
-                                </div>
-                                {it.credit ? (
-                                    <div className="mt-0.5 text-[11px] text-white/80 line-clamp-1">
-                                        {it.credit}
-                                    </div>
-                                ) : null}
-                            </div>
-                        </button>
-                    ))}
-                </div>
-            )}
-
-            <Modal show={open} onClose={() => setOpen(false)} maxWidth="5xl">
-                {open && current ? (
-                    <div className="bg-white rounded-2xl overflow-hidden">
-                        <div className="flex items-center justify-between p-5 border-b border-slate-100">
-                            <div className="min-w-0">
-                                <div className="text-sm font-semibold text-slate-900 truncate">
-                                    {current.caption || "Foto"}
-                                </div>
-                                {current.credit ? (
-                                    <div className="text-xs text-slate-500 truncate">
-                                        {current.credit}
-                                    </div>
-                                ) : null}
-                            </div>
-                            <button
-                                type="button"
-                                className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors"
-                                onClick={() => setOpen(false)}
-                            >
-                                Tutup
-                            </button>
-                        </div>
-                        <div className="relative bg-slate-900">
-                            <img
-                                src={current.url}
-                                alt={current.alt}
-                                decoding="async"
-                                className="w-full max-h-[70vh] object-contain"
-                            />
-                            <div className="absolute inset-y-0 left-0 flex items-center p-3">
-                                <button
-                                    type="button"
-                                    onClick={prev}
-                                    className="h-10 w-10 rounded-2xl bg-white/90 hover:bg-white text-slate-800 shadow-sm flex items-center justify-center transition-colors"
-                                    aria-label="Foto sebelumnya"
-                                >
-                                    <FaChevronLeft className="h-4 w-4" />
-                                </button>
-                            </div>
-                            <div className="absolute inset-y-0 right-0 flex items-center p-3">
-                                <button
-                                    type="button"
-                                    onClick={next}
-                                    className="h-10 w-10 rounded-2xl bg-white/90 hover:bg-white text-slate-800 shadow-sm flex items-center justify-center transition-colors"
-                                    aria-label="Foto berikutnya"
-                                >
-                                    <FaChevronRight className="h-4 w-4" />
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                ) : null}
-            </Modal>
-        </div>
-    );
-}
-
-function StatCard({ icon: Icon, label, value, unit, sourceLabel, sourceUrl }) {
-    return (
-        <motion.div
-            whileHover={{ y: -2 }}
-            transition={{ duration: 0.2 }}
-            className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
-        >
-            <div className="flex items-start justify-between gap-4">
-                <div className="min-w-0">
-                    <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                        {label}
-                    </div>
-                    <div className="mt-2 flex items-end gap-2">
-                        <div className="text-2xl font-bold text-slate-900 tracking-tight">
-                            {value}
-                        </div>
-                        {unit ? (
-                            <div className="text-sm font-semibold text-slate-500">
-                                {unit}
-                            </div>
-                        ) : null}
-                    </div>
-                </div>
-                <IconBadge icon={Icon} tone="yellow" />
-            </div>
-            <div className="mt-4 text-xs text-slate-500">
-                <span className="font-semibold">Sumber:</span>{" "}
-                {sourceUrl ? (
-                    <a
-                        href={sourceUrl}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="text-sky-700 hover:text-sky-900 underline underline-offset-4"
-                    >
-                        {sourceLabel || sourceUrl}
-                    </a>
-                ) : (
-                    <span>{sourceLabel || "[SUMBER_BELUM_DITETAPKAN]"}</span>
-                )}
-            </div>
-        </motion.div>
-    );
-}
-
-function Timeline({ items }) {
-    return (
-        <div className="relative">
-            <div className="absolute left-4 top-0 bottom-0 w-px bg-slate-200" />
-            <div className="space-y-6">
-                {items.map((it, idx) => (
-                    <motion.div
-                        key={`${it.periodLabel}-${idx}`}
-                        initial={{ opacity: 0, y: 10 }}
-                        whileInView={{ opacity: 1, y: 0 }}
-                        viewport={{ once: true, margin: "-100px" }}
-                        transition={{ duration: 0.35 }}
-                        className="relative pl-12"
-                    >
-                        <div className="absolute left-1.5 top-2 h-5 w-5 rounded-full border-2 border-white bg-sky-500 shadow-sm" />
-                        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-                            <div className="flex items-start justify-between gap-4">
-                                <div className="min-w-0">
-                                    <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                                        {it.periodLabel}
-                                    </div>
-                                    <div className="mt-1 text-base font-bold text-slate-900">
-                                        {it.title}
-                                    </div>
-                                </div>
-                                <IconBadge icon={FaHistory} />
-                            </div>
-                            <div className="mt-3 text-sm text-slate-600 leading-relaxed">
-                                {it.description}
-                            </div>
-                        </div>
-                    </motion.div>
+                        <span className="absolute inset-0 bg-gradient-to-t from-slate-900/50 via-transparent to-transparent opacity-0 transition-opacity group-hover:opacity-100" />
+                    </button>
                 ))}
             </div>
+
+            {activeIndex !== null && photos[activeIndex] ? (
+                <div
+                    className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/90 p-4 backdrop-blur-sm"
+                    role="dialog"
+                    aria-modal="true"
+                    onClick={close}
+                >
+                    <button
+                        type="button"
+                        aria-label="Tutup"
+                        onClick={close}
+                        className="absolute right-4 top-4 flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20"
+                    >
+                        <FaTimes className="h-5 w-5" />
+                    </button>
+                    <button
+                        type="button"
+                        aria-label="Sebelumnya"
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            step(-1);
+                        }}
+                        className="absolute left-3 sm:left-6 flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20"
+                    >
+                        <FaChevronLeft className="h-5 w-5" />
+                    </button>
+                    <figure
+                        className="max-h-[85vh] max-w-4xl"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <img
+                            src={photos[activeIndex].url}
+                            alt={photos[activeIndex].alt}
+                            className="max-h-[80vh] w-auto rounded-2xl object-contain shadow-2xl"
+                        />
+                        <figcaption className="mt-3 text-center text-sm text-slate-300">
+                            {photos[activeIndex].alt}{" "}
+                            <span className="text-slate-500">
+                                ({activeIndex + 1}/{photos.length})
+                            </span>
+                        </figcaption>
+                    </figure>
+                    <button
+                        type="button"
+                        aria-label="Berikutnya"
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            step(1);
+                        }}
+                        className="absolute right-3 sm:right-6 flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20"
+                    >
+                        <FaChevronRight className="h-5 w-5" />
+                    </button>
+                </div>
+            ) : null}
         </div>
     );
 }
 
 function TestimonialCarousel({ items }) {
-    const safeItems = safeArray(items);
-    const [i, setI] = useState(0);
+    const testimonials = safeArray(items);
+    const [idx, setIdx] = useState(0);
+    const count = testimonials.length;
+    const auto = useRef(null);
 
     useEffect(() => {
-        setI(0);
-    }, [safeItems.length]);
+        if (count <= 1) return;
+        auto.current = setInterval(() => setIdx((c) => (c + 1) % count), 6000);
+        return () => clearInterval(auto.current);
+    }, [count]);
 
-    const current = safeItems[i];
-    const prev = () =>
-        setI((v) => (v - 1 + safeItems.length) % safeItems.length);
-    const next = () => setI((v) => (v + 1) % safeItems.length);
-
-    if (safeItems.length === 0) {
-        return (
-            <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-6 text-sm text-slate-600">
-                Belum ada testimoni yang dipublikasikan.
-            </div>
-        );
-    }
+    if (count === 0) return null;
+    const t = testimonials[Math.min(idx, count - 1)];
 
     return (
-        <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
-            <div className="p-6 sm:p-8 border-b border-slate-100 flex items-center justify-between gap-4">
-                <div>
-                    <div className="text-[11px] font-semibold uppercase tracking-widest text-slate-500">
-                        Testimoni
-                    </div>
-                    <div className="mt-1 text-lg font-bold text-slate-900">
-                        Suara Pelanggan & Mitra
-                    </div>
-                </div>
-                <div className="flex items-center gap-2">
-                    <button
-                        type="button"
-                        onClick={prev}
-                        className="p-2 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 transition-colors"
-                        aria-label="Testimoni sebelumnya"
-                    >
-                        <FaChevronLeft className="h-4 w-4" />
-                    </button>
-                    <button
-                        type="button"
-                        onClick={next}
-                        className="p-2 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 transition-colors"
-                        aria-label="Testimoni berikutnya"
-                    >
-                        <FaChevronRight className="h-4 w-4" />
-                    </button>
-                </div>
-            </div>
-            <div className="p-6 sm:p-8">
-                <motion.div
-                    key={i}
-                    initial={{ opacity: 0, y: 8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.25 }}
-                    className="grid grid-cols-1 lg:grid-cols-12 gap-6"
-                >
-                    <div className="lg:col-span-7">
-                        <div className="rounded-2xl border border-slate-200 bg-slate-50 p-6">
-                            <FaQuoteLeft className="h-5 w-5 text-sky-600" />
-                            <div className="mt-3 text-sm sm:text-base text-slate-700 leading-relaxed">
-                                {current.quote}
-                            </div>
-                            <div className="mt-5 flex items-center gap-3">
-                                <div className="h-10 w-10 rounded-2xl bg-gradient-to-br from-sky-500 to-indigo-500 text-white flex items-center justify-center font-bold">
-                                    {current.name
-                                        .split(" ")
-                                        .slice(0, 2)
-                                        .map((w) => w[0])
-                                        .join("")}
-                                </div>
-                                <div className="min-w-0">
-                                    <div className="text-sm font-semibold text-slate-900 truncate">
-                                        {current.name}
-                                    </div>
-                                    <div className="text-xs text-slate-500 truncate">
-                                        {[current.role, current.organization]
-                                            .filter(Boolean)
-                                            .join(" • ")}
-                                    </div>
-                                </div>
-                            </div>
+        <div className="relative mx-auto max-w-3xl">
+            <div className="rounded-3xl border border-slate-100 bg-white p-6 sm:p-10 shadow-sm">
+                <FaQuoteLeft className="h-8 w-8 text-sky-100" />
+                <p className="mt-4 text-base sm:text-lg text-slate-700 leading-relaxed">
+                    {t?.quote || ""}
+                </p>
+                <div className="mt-6 flex items-center gap-3">
+                    <span className="flex h-11 w-11 items-center justify-center rounded-full bg-sky-100 text-sm font-bold text-sky-700">
+                        {asString(t?.name, "?").charAt(0).toUpperCase()}
+                    </span>
+                    <div>
+                        <div className="text-sm font-bold text-slate-900">
+                            {t?.name || "—"}
+                        </div>
+                        <div className="text-xs text-slate-500">
+                            {[t?.role, t?.organization]
+                                .filter(Boolean)
+                                .join(" · ")}
                         </div>
                     </div>
-                    <div className="lg:col-span-5">
-                        <div className="grid grid-cols-1 gap-3">
-                            {items.map((t, idx) => {
-                                const active = idx === i;
-                                return (
-                                    <button
-                                        key={`${t.name}-${idx}`}
-                                        type="button"
-                                        onClick={() => setI(idx)}
-                                        className={classNames(
-                                            "text-left rounded-2xl border p-4 transition-colors",
-                                            active
-                                                ? "border-sky-200 bg-sky-50"
-                                                : "border-slate-200 bg-white hover:bg-slate-50",
-                                        )}
-                                    >
-                                        <div className="flex items-center justify-between gap-3">
-                                            <div className="min-w-0">
-                                                <div className="text-sm font-semibold text-slate-900 truncate">
-                                                    {t.name}
-                                                </div>
-                                                <div className="mt-0.5 text-xs text-slate-500 truncate">
-                                                    {[t.role, t.organization]
-                                                        .filter(Boolean)
-                                                        .join(" • ")}
-                                                </div>
-                                            </div>
-                                            <div
-                                                className={classNames(
-                                                    "h-2.5 w-2.5 rounded-full",
-                                                    active
-                                                        ? "bg-sky-500"
-                                                        : "bg-slate-200",
-                                                )}
-                                                aria-hidden="true"
-                                            />
-                                        </div>
-                                    </button>
-                                );
-                            })}
-                        </div>
-                    </div>
-                </motion.div>
+                </div>
             </div>
+            {count > 1 ? (
+                <div className="mt-4 flex items-center justify-center gap-2">
+                    <button
+                        type="button"
+                        aria-label="Sebelumnya"
+                        onClick={() => setIdx((c) => (c - 1 + count) % count)}
+                        className="flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 text-slate-500 hover:bg-slate-50"
+                    >
+                        <FaChevronLeft className="h-3.5 w-3.5" />
+                    </button>
+                    {testimonials.map((_, i) => (
+                        <button
+                            key={i}
+                            type="button"
+                            aria-label={`Testimoni ${i + 1}`}
+                            onClick={() => setIdx(i)}
+                            className={classNames(
+                                "h-2 rounded-full transition-all",
+                                i === idx
+                                    ? "w-6 bg-sky-600"
+                                    : "w-2 bg-slate-300 hover:bg-slate-400",
+                            )}
+                        />
+                    ))}
+                    <button
+                        type="button"
+                        aria-label="Berikutnya"
+                        onClick={() => setIdx((c) => (c + 1) % count)}
+                        className="flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 text-slate-500 hover:bg-slate-50"
+                    >
+                        <FaChevronRight className="h-3.5 w-3.5" />
+                    </button>
+                </div>
+            ) : null}
         </div>
     );
 }
 
 export default function ProfilPerusahaan({ publishedProfile = null }) {
-    const content = useMemo(() => {
-        const heroPrompt =
-            "professional corporate hero photo, Indonesian electric power transmission facility, Karawang area, clean modern look, blue and yellow accents, cinematic daylight, ultra sharp, realistic";
-        const galleryPromptBase =
-            "professional documentary photo, PLN UPT Karawang operations, electric substation and maintenance, safety equipment, teamwork, clean modern style, blue and yellow accents, realistic";
+    const [data, setData] = useState(publishedProfile);
+    const [initialLoading, setInitialLoading] = useState(!publishedProfile);
+    const [syncing, setSyncing] = useState(false);
+    const [error, setError] = useState(null);
+    const [lastSync, setLastSync] = useState(null);
+    const [pageError, setPageError] = useState(null);
 
-        const base = {
-            hero: {
-                headline: "Profil Perusahaan",
-                unitName: "PLN UPT Karawang",
-                tagline: "",
-                summary:
-                    "PLN Unit Pelaksana Transmisi (UPT) Karawang berperan menjaga keandalan penyaluran tenaga listrik melalui pengelolaan aset transmisi dan koordinasi operasional lintas fungsi. Halaman ini merangkum profil unit, arah strategis, serta perjalanan pengembangan layanan secara ringkas dan mudah dipindai.",
-                chips: [
-                    "Area kerja: [AREA_LAYANAN_PLACEHOLDER]",
-                    "Fokus: keandalan, keselamatan, dan layanan prima",
-                ],
-                logoUrl: "",
-                image: {
-                    url: buildImageUrl(heroPrompt, "landscape_16_9"),
-                    alt: "Gambar hero fasilitas transmisi (ilustrasi)",
-                    caption: "Dokumentasi operasional (ilustrasi).",
-                    credit: "Sumber gambar: [KREDIT/SUMBER_PLACEHOLDER]",
-                },
-            },
-            profile: {
-                overviewText:
-                    "PLN UPT Karawang adalah unit pelaksana yang mendukung keberlangsungan penyaluran energi listrik melalui pengelolaan aset dan kegiatan operasi-pemeliharaan yang terencana. Fokus utama unit mencakup peningkatan keandalan sistem, penerapan keselamatan kerja, serta kolaborasi dengan pemangku kepentingan untuk memastikan layanan kelistrikan berjalan stabil.",
-                overviewHtml: "",
-                location: {
-                    office: "[ALAMAT_KANTOR_PLACEHOLDER]",
-                    serviceArea: "[WILAYAH_LAYANAN_PLACEHOLDER]",
-                },
-                mapEmbedUrl: "",
-                orgSummary: [
-                    "Pimpinan Unit: [JABATAN/PERAN_PLACEHOLDER]",
-                    "Bidang Operasi & Pemeliharaan: [RINGKASAN_PLACEHOLDER]",
-                    "Bidang Keandalan & K3L: [RINGKASAN_PLACEHOLDER]",
-                    "Dukungan Administrasi & Layanan: [RINGKASAN_PLACEHOLDER]",
-                ],
-                teamPhotoUrl: "",
-                customers:
-                    "Dukungan penyaluran energi listrik untuk pelanggan dan jaringan di wilayah Karawang dan sekitarnya: [DATA_PELANGGAN_PLACEHOLDER].",
-                contacts: {
-                    phone: "[TELEPON_PLACEHOLDER]",
-                    email: "[EMAIL_PLACEHOLDER]",
-                    website: "[WEBSITE_PLACEHOLDER]",
-                    hours: "[JAM_OPERASIONAL_PLACEHOLDER]",
-                },
-                social: {
-                    facebook: "",
-                    instagram: "",
-                    linkedin: "",
-                    twitter: "",
-                },
-            },
-            visionMission: {
-                vision: "Menjadi unit transmisi yang andal, aman, dan berorientasi layanan untuk mendukung sistem kelistrikan yang berkelanjutan.",
-                visionHtml: "",
-                missions: [
-                    {
-                        icon: FaBolt,
-                        title: "Keandalan Operasi",
-                        text: "Menjaga kesiapan aset dan kesiapan operasi melalui perencanaan, pemeliharaan, dan evaluasi berbasis data.",
-                    },
-                    {
-                        icon: FaShieldAlt,
-                        title: "Keselamatan & Kepatuhan",
-                        text: "Menerapkan budaya K3L, kepatuhan prosedur, dan penguatan mitigasi risiko secara konsisten.",
-                    },
-                    {
-                        icon: FaIndustry,
-                        title: "Peningkatan Kapabilitas",
-                        text: "Mengembangkan kompetensi SDM dan standardisasi proses kerja untuk mendukung layanan yang unggul.",
-                    },
-                    {
-                        icon: FaLightbulb,
-                        title: "Inovasi Berkelanjutan",
-                        text: "Mendorong perbaikan berkesinambungan melalui inovasi proses, digitalisasi, dan pembelajaran organisasi.",
-                    },
-                    {
-                        icon: FaUsers,
-                        title: "Kolaborasi Stakeholder",
-                        text: "Menguatkan koordinasi internal dan eksternal untuk mempercepat respons operasional dan mutu layanan.",
-                    },
-                    {
-                        icon: FaLeaf,
-                        title: "Tanggung Jawab Lingkungan",
-                        text: "Menerapkan praktik ramah lingkungan serta pengelolaan dampak operasional secara bertanggung jawab.",
-                    },
-                ],
-                values: [
-                    {
-                        icon: FaHandshake,
-                        title: "Integritas",
-                        text: "Mengutamakan transparansi, etika, dan tanggung jawab dalam setiap keputusan.",
-                    },
-                    {
-                        icon: FaStar,
-                        title: "Keunggulan Layanan",
-                        text: "Memberikan layanan yang cepat, tepat, dan konsisten untuk kebutuhan pemangku kepentingan.",
-                    },
-                    {
-                        icon: FaBullseye,
-                        title: "Fokus Hasil",
-                        text: "Bekerja dengan target jelas, terukur, dan berorientasi perbaikan.",
-                    },
-                ],
-            },
-            history: {
-                timelineItems: [
-                    {
-                        periodLabel: "[PERIODE_1: Tahun YYYY]",
-                        title: "Pembentukan & Penataan Operasional",
-                        description:
-                            "Pada fase awal, unit membangun fondasi proses operasional, tata kelola aset, serta pola koordinasi kerja. Fokus utama adalah memastikan kesiapan layanan dan standar keselamatan kerja terbentuk dengan baik.",
-                    },
-                    {
-                        periodLabel: "[PERIODE_2: Tahun YYYY–YYYY]",
-                        title: "Penguatan Keandalan & Pemeliharaan",
-                        description:
-                            "Unit memperkuat program pemeliharaan dan monitoring untuk meningkatkan ketersediaan aset. Penyelarasan prosedur kerja dan peningkatan kompetensi menjadi landasan untuk layanan yang lebih stabil.",
-                    },
-                    {
-                        periodLabel: "[PERIODE_3: Tahun YYYY–YYYY]",
-                        title: "Modernisasi & Digitalisasi",
-                        description:
-                            "Penerapan digitalisasi proses dan perbaikan berkelanjutan mendorong visibilitas data yang lebih baik. Upaya ini membantu percepatan pengambilan keputusan dan respons terhadap kebutuhan operasional.",
-                    },
-                    {
-                        periodLabel: "[PERIODE_4: Tahun YYYY–Sekarang]",
-                        title: "Kolaborasi Layanan & Transformasi",
-                        description:
-                            "Unit menguatkan kolaborasi lintas fungsi dan pemangku kepentingan untuk meningkatkan mutu layanan. Fokus bergerak pada penguatan budaya K3L, pengelolaan risiko, serta transformasi proses yang adaptif.",
-                    },
-                ],
-                milestones: [
-                    {
-                        icon: FaCalendarAlt,
-                        title: "Milestone Infrastruktur",
-                        text: "[DESKRIPSI_MILESTONE_INFRASTRUKTUR_PLACEHOLDER]",
-                    },
-                    {
-                        icon: FaSitemap,
-                        title: "Penguatan Proses",
-                        text: "[DESKRIPSI_MILESTONE_PROSES_PLACEHOLDER]",
-                    },
-                    {
-                        icon: FaShieldAlt,
-                        title: "Pencapaian K3L",
-                        text: "[DESKRIPSI_PENGHARGAAN_K3L_PLACEHOLDER]",
-                    },
-                ],
-            },
-            gallery: {
-                items: [
-                    {
-                        url: buildImageUrl(
-                            `${galleryPromptBase}, high-voltage substation overview`,
-                            "landscape_4_3",
-                        ),
-                        alt: "Ilustrasi fasilitas gardu induk",
-                        caption:
-                            "Fasilitas dan infrastruktur transmisi (ilustrasi)",
-                        credit: "[KREDIT_FOTO_1]",
-                    },
-                    {
-                        url: buildImageUrl(
-                            `${galleryPromptBase}, technician inspection with safety gear`,
-                            "landscape_4_3",
-                        ),
-                        alt: "Ilustrasi inspeksi peralatan",
-                        caption: "Inspeksi rutin dan pemeliharaan (ilustrasi)",
-                        credit: "[KREDIT_FOTO_2]",
-                    },
-                    {
-                        url: buildImageUrl(
-                            `${galleryPromptBase}, control room monitoring screens`,
-                            "landscape_4_3",
-                        ),
-                        alt: "Ilustrasi ruang monitoring",
-                        caption: "Monitoring operasi dan keandalan (ilustrasi)",
-                        credit: "[KREDIT_FOTO_3]",
-                    },
-                    {
-                        url: buildImageUrl(
-                            `${galleryPromptBase}, teamwork briefing meeting`,
-                            "landscape_4_3",
-                        ),
-                        alt: "Ilustrasi briefing keselamatan",
-                        caption: "Briefing K3L sebelum pekerjaan (ilustrasi)",
-                        credit: "[KREDIT_FOTO_4]",
-                    },
-                    {
-                        url: buildImageUrl(
-                            `${galleryPromptBase}, maintenance tools and PPE, close-up`,
-                            "landscape_4_3",
-                        ),
-                        alt: "Ilustrasi peralatan dan APD",
-                        caption: "Peralatan kerja dan APD (ilustrasi)",
-                        credit: "[KREDIT_FOTO_5]",
-                    },
-                    {
-                        url: buildImageUrl(
-                            `${galleryPromptBase}, aerial view power lines`,
-                            "landscape_4_3",
-                        ),
-                        alt: "Ilustrasi jaringan transmisi",
-                        caption:
-                            "Jaringan transmisi dan koridor pemeliharaan (ilustrasi)",
-                        credit: "[KREDIT_FOTO_6]",
-                    },
-                    {
-                        url: buildImageUrl(
-                            `${galleryPromptBase}, training session, classroom`,
-                            "landscape_4_3",
-                        ),
-                        alt: "Ilustrasi pelatihan",
-                        caption: "Pengembangan kompetensi SDM (ilustrasi)",
-                        credit: "[KREDIT_FOTO_7]",
-                    },
-                    {
-                        url: buildImageUrl(
-                            `${galleryPromptBase}, community stakeholder discussion`,
-                            "landscape_4_3",
-                        ),
-                        alt: "Ilustrasi kolaborasi stakeholder",
-                        caption:
-                            "Koordinasi dan kolaborasi layanan (ilustrasi)",
-                        credit: "[KREDIT_FOTO_8]",
-                    },
-                ],
-            },
-            stats: {
-                note: "Catatan: Angka pada statistik di bawah adalah placeholder. Ganti dengan data resmi beserta tautan sumber yang tervalidasi.",
-                items: [
-                    {
-                        icon: FaBolt,
-                        label: "Aset Transmisi Dipelihara",
-                        value: "[N]",
-                        unit: "[UNIT]",
-                        sourceLabel: "[DOKUMEN_RESMI_PLN]",
-                        sourceUrl: "",
-                    },
-                    {
-                        icon: FaShieldAlt,
-                        label: "Kepatuhan K3L",
-                        value: "[X%]",
-                        unit: "",
-                        sourceLabel: "[LAPORAN_K3L]",
-                        sourceUrl: "",
-                    },
-                    {
-                        icon: FaUsers,
-                        label: "Dukungan Pelanggan / Stakeholder",
-                        value: "[N]",
-                        unit: "[ENTITAS]",
-                        sourceLabel: "[LAPORAN_LAYANAN]",
-                        sourceUrl: "",
-                    },
-                    {
-                        icon: FaLightbulb,
-                        label: "Inisiatif Perbaikan",
-                        value: "[N]",
-                        unit: "program",
-                        sourceLabel: "[CATATAN_TRANSFORMASI]",
-                        sourceUrl: "",
-                    },
-                ],
-            },
-            testimonials: {
-                items: [
-                    {
-                        quote: "Koordinasi tim responsif dan komunikatif. Proses tindak lanjut dibuat jelas sehingga kami memahami langkah yang dilakukan di lapangan.",
-                        name: "[NAMA_TESTIMONI_1]",
-                        organization: "[INSTANSI/MITRA_1]",
-                        role: "[PERAN_1]",
-                    },
-                    {
-                        quote: "Komitmen terhadap keselamatan kerja dan kualitas layanan sangat terlihat. Informasi yang diberikan juga mudah dipahami.",
-                        name: "[NAMA_TESTIMONI_2]",
-                        organization: "[INSTANSI/MITRA_2]",
-                        role: "[PERAN_2]",
-                    },
-                    {
-                        quote: "Kolaborasi berjalan baik dan solusi yang ditawarkan relevan dengan kebutuhan operasional. Semoga peningkatan layanan terus berlanjut.",
-                        name: "[NAMA_TESTIMONI_3]",
-                        organization: "[INSTANSI/MITRA_3]",
-                        role: "[PERAN_3]",
-                    },
-                ],
-            },
-            relatedLinks: [
-                {
-                    label: "Berita",
-                    href: "/berita",
-                    icon: FaArrowRight,
-                },
-                {
-                    label: "Galeri",
-                    href: route("gallery"),
-                    icon: FaArrowRight,
-                },
-                {
-                    label: "Kontak",
-                    href: "/kontak",
-                    icon: FaArrowRight,
-                },
-            ],
-        };
+    const dataRef = useRef(publishedProfile);
+    useEffect(() => {
+        dataRef.current = data;
+    }, [data]);
 
-        if (!publishedProfile) return base;
-
-        const merged = {
-            ...base,
-            hero: {
-                ...base.hero,
-                unitName: publishedProfile.company_name || base.hero.unitName,
-                tagline: publishedProfile.tagline || base.hero.tagline,
-                image: {
-                    ...base.hero.image,
-                    url: publishedProfile.cover?.url || base.hero.image.url,
-                },
-                logoUrl: publishedProfile.logo?.url || base.hero.logoUrl,
-            },
-            profile: {
-                ...base.profile,
-                location: {
-                    ...base.profile.location,
-                    office:
-                        publishedProfile.address ||
-                        base.profile.location.office,
-                },
-                contacts: {
-                    ...base.profile.contacts,
-                    phone:
-                        publishedProfile.phone || base.profile.contacts.phone,
-                    email:
-                        publishedProfile.email || base.profile.contacts.email,
-                    website:
-                        publishedProfile.website ||
-                        base.profile.contacts.website,
-                },
-                social: {
-                    ...base.profile.social,
-                    ...(publishedProfile.social || {}),
-                },
-            },
-            history: base.history,
-            relatedLinks: base.relatedLinks,
-        };
-
-        if (publishedProfile.about_editor) {
+    const fetchData = useCallback(
+        async (isInitial = false) => {
+            if (isInitial) setInitialLoading(true);
+            else setSyncing(true);
             try {
-                merged.profile.overviewHtml = edjsParser(
-                    publishedProfile.about_editor,
-                );
-                const heroText = extractPlainTextFromHtml(
-                    merged.profile.overviewHtml,
-                );
-                if (heroText) {
-                    merged.hero.summary =
-                        heroText.length > 260
-                            ? `${heroText.slice(0, 257)}...`
-                            : heroText;
+                const res = await axios.get("/profil/data", { timeout: 10000 });
+                setData(res.data?.data ?? null);
+                setPageError(null);
+                setError(null);
+                if (res.data?.updated_at) {
+                    setLastSync(
+                        new Date(res.data.updated_at).toLocaleTimeString(
+                            "id-ID",
+                            {
+                                hour: "2-digit",
+                                minute: "2-digit",
+                            },
+                        ),
+                    );
                 }
-            } catch {
-                merged.profile.overviewHtml = "";
+            } catch (err) {
+                const msg =
+                    err?.code === "ECONNABORTED"
+                        ? "Server tidak merespons (timeout)."
+                        : err?.response?.status === 500
+                          ? "Terjadi kesalahan pada server."
+                          : "Koneksi ke database gagal.";
+                setError(msg);
+                if (!dataRef.current && !publishedProfile) setPageError(msg);
+            } finally {
+                setInitialLoading(false);
+                setSyncing(false);
             }
-        }
+        },
+        [publishedProfile],
+    );
 
-        if (publishedProfile.map?.lat && publishedProfile.map?.lng) {
-            merged.profile.mapEmbedUrl = `https://www.google.com/maps?q=${encodeURIComponent(
-                `${publishedProfile.map.lat},${publishedProfile.map.lng}`,
-            )}&output=embed`;
-        }
+    useEffect(() => {
+        fetchData(true);
+        const id = setInterval(() => fetchData(false), POLL_INTERVAL_MS);
+        return () => clearInterval(id);
+    }, [fetchData]);
 
-        if (publishedProfile.vision_editor) {
-            try {
-                merged.visionMission.visionHtml = edjsParser(
-                    publishedProfile.vision_editor,
-                );
-            } catch {
-                merged.visionMission.visionHtml = "";
-            }
-        }
-        // Fallback ke teks visi biasa dari database jika tersedia
-        if (asString(publishedProfile.vision).trim()) {
-            merged.visionMission.vision = asString(
-                publishedProfile.vision,
-            ).trim();
-        }
-
-        if (
-            Array.isArray(publishedProfile.missions) &&
-            publishedProfile.missions.length
-        ) {
-            const icons = [
-                FaBolt,
-                FaShieldAlt,
-                FaIndustry,
-                FaLightbulb,
-                FaUsers,
-                FaLeaf,
-            ];
-            merged.visionMission.missions = publishedProfile.missions.map(
-                (text, idx) => ({
-                    icon: icons[idx % icons.length],
-                    title: `Misi ${idx + 1}`,
-                    text,
-                }),
-            );
-        }
-
-        if (Array.isArray(publishedProfile.gallery?.items)) {
-            const galleryItems = publishedProfile.gallery.items
-                .map((it) => {
-                    const url = it?.image?.url || it?.url || "";
-                    if (!url) return null;
-                    return {
-                        url,
-                        alt: it?.caption || "Galeri",
-                        caption: it?.caption || "",
-                        credit: it?.credit || "",
-                    };
-                })
-                .filter(Boolean);
-
-            if (galleryItems.length) {
-                merged.gallery = {
-                    items: galleryItems,
-                };
-            }
-        }
-
-        if (
-            Array.isArray(publishedProfile.stats) &&
-            publishedProfile.stats.length
-        ) {
-            merged.stats = {
-                ...base.stats,
-                items: publishedProfile.stats.map((s) => ({
-                    icon: FaBolt,
-                    label: s.label,
-                    value: s.value,
-                    unit: s.unit,
-                    sourceLabel: s.sourceLabel,
-                    sourceUrl: s.sourceUrl,
-                })),
-            };
-        }
-
-        if (
-            Array.isArray(publishedProfile.testimonials) &&
-            publishedProfile.testimonials.length
-        ) {
-            merged.testimonials = {
-                items: publishedProfile.testimonials,
-            };
-        }
-
-        if (publishedProfile.team?.photo?.url) {
-            merged.profile.teamPhotoUrl = publishedProfile.team.photo.url;
-        }
-
-        if (
-            Array.isArray(publishedProfile.team?.members) &&
-            publishedProfile.team.members.length
-        ) {
-            merged.profile.orgSummary = publishedProfile.team.members
-                .filter((m) => m?.name || m?.position)
-                .slice(0, 6)
-                .map((m) => {
-                    const name = asString(m?.name).trim();
-                    const position = asString(m?.position).trim();
-                    if (name && position) return `${name} • ${position}`;
-                    return name || position;
-                });
-        }
-
-        return merged;
-    }, [publishedProfile]);
+    const content = useMemo(() => {
+        const aboutHtml =
+            parseEditorToHtml(data?.about_editor) ||
+            parseEditorToHtml(data?.about) ||
+            parseEditorToHtml(data?.description) ||
+            "";
+        const visionHtml =
+            parseEditorToHtml(data?.vision_editor) ||
+            parseEditorToHtml(data?.vision) ||
+            parseEditorToHtml(data?.visi) ||
+            "";
+        const rawMissions =
+            data?.missions ??
+            data?.mission ??
+            data?.misi ??
+            data?.mission_list ??
+            [];
+        const missions = safeArray(rawMissions).filter((m) => {
+            if (!m) return false;
+            const text = typeof m === "string" ? m : m?.text || m?.content;
+            return Boolean(text && text.trim());
+        });
+        const history = safeArray(
+            data?.history ?? data?.timeline ?? data?.sejarah ?? [],
+        );
+        const stats = safeArray(data?.stats ?? data?.statistics ?? []);
+        const galleryItems = safeArray(
+            data?.gallery?.items ??
+                data?.gallery ??
+                data?.photos ??
+                data?.images ??
+                [],
+        );
+        const testimonials = safeArray(
+            data?.testimonials ?? data?.testimonies ?? data?.ulasan ?? [],
+        );
+        return {
+            companyName:
+                asString(data?.company_name, "PLN UPT Karawang") ||
+                asString(data?.name, "PLN UPT Karawang"),
+            tagline:
+                asString(data?.tagline, "") || asString(data?.subtitle, ""),
+            aboutHtml,
+            aboutText: extractPlainTextFromHtml(aboutHtml),
+            logoUrl:
+                resolveImageUrl(data?.logo) ||
+                resolveImageUrl(data?.logo_url) ||
+                resolveImageUrl(data?.logoImage),
+            coverUrl:
+                resolveImageUrl(data?.cover) ||
+                resolveImageUrl(data?.cover_url) ||
+                resolveImageUrl(data?.banner) ||
+                resolveImageUrl(data?.hero_image),
+            contact: {
+                address:
+                    asString(data?.address, "") ||
+                    asString(data?.location, "") ||
+                    asString(data?.alamat, ""),
+                phone:
+                    asString(data?.phone, "") ||
+                    asString(data?.telephone, "") ||
+                    asString(data?.telp, "") ||
+                    asString(data?.contact_phone, ""),
+                email:
+                    asString(data?.email, "") ||
+                    asString(data?.contact_email, ""),
+                website:
+                    asString(data?.website, "") ||
+                    asString(data?.web, "") ||
+                    asString(data?.url, ""),
+                social: data?.social || data?.social_media || {},
+            },
+            hasMap:
+                Boolean(data?.map?.lat && data?.map?.lng) ||
+                Boolean(
+                    (data?.latitude || data?.lat) &&
+                    (data?.longitude || data?.lng),
+                ),
+            mapEmbedUrl: (() => {
+                const lat = data?.map?.lat || data?.latitude || data?.lat;
+                const lng = data?.map?.lng || data?.longitude || data?.lng;
+                if (lat && lng) {
+                    return `https://maps.google.com/maps?q=${lat},${lng}&z=15&output=embed`;
+                }
+                return "";
+            })(),
+            visionHtml,
+            visionText: extractPlainTextFromHtml(visionHtml),
+            missions,
+            history,
+            stats,
+            galleryItems,
+            teamPhotoUrl:
+                resolveImageUrl(data?.team?.photo) ||
+                resolveImageUrl(data?.teamPhoto),
+            teamMembers: safeArray(
+                data?.team?.members ??
+                    data?.team_members ??
+                    data?.teams ??
+                    data?.team ??
+                    [],
+            ).filter((t) => Boolean(t?.name || t?.nama)),
+            testimonials,
+            documents: safeArray(data?.documents ?? data?.files ?? []),
+            services: safeArray(data?.services ?? data?.layanan ?? []),
+            portfolio: safeArray(data?.portfolio ?? data?.portofolio ?? []),
+        };
+    }, [data]);
 
     const sections = useMemo(
         () => [
             { id: "profil", label: "Profil" },
             { id: "visi-misi", label: "Visi & Misi" },
+            { id: "layanan", label: "Layanan" },
             { id: "sejarah", label: "Sejarah" },
+            { id: "portofolio", label: "Portofolio" },
             { id: "galeri", label: "Galeri" },
             { id: "statistik", label: "Statistik" },
             { id: "testimoni", label: "Testimoni" },
+            { id: "kontak", label: "Kontak" },
         ],
         [],
     );
 
-    const { active, setActive } = useActiveSection(sections.map((s) => s.id));
+    const visibleSections = useMemo(
+        () =>
+            sections.filter((s) => {
+                switch (s.id) {
+                    case "profil":
+                        return true;
+                    case "visi-misi":
+                        return Boolean(
+                            content.visionHtml || content.missions.length,
+                        );
+                    case "layanan":
+                        return content.services.length > 0;
+                    case "sejarah":
+                        return content.history.length > 0;
+                    case "portofolio":
+                        return content.portfolio.length > 0;
+                    case "galeri":
+                        return content.galleryItems.length > 0;
+                    case "statistik":
+                        return content.stats.length > 0;
+                    case "testimoni":
+                        return content.testimonials.length > 0;
+                    case "kontak":
+                        return true;
+                    default:
+                        return true;
+                }
+            }),
+        [sections, content],
+    );
+
+    const { active, setActive } = useActiveSection(
+        visibleSections.map((s) => s.id),
+    );
 
     const jumpTo = (id) => {
         const el = document.getElementById(id);
@@ -1153,679 +864,958 @@ export default function ProfilPerusahaan({ publishedProfile = null }) {
         setActive(id);
     };
 
+    const hasContent = Boolean(
+        content.companyName ||
+        content.aboutHtml ||
+        content.visionHtml ||
+        content.missions.length ||
+        content.history.length ||
+        content.teamMembers.length ||
+        content.stats.length ||
+        content.galleryItems.length ||
+        content.testimonials.length ||
+        content.services.length ||
+        content.portfolio.length ||
+        content.documents.length ||
+        content.contact.address ||
+        content.contact.phone ||
+        content.contact.email ||
+        content.contact.website,
+    );
+
+    if (initialLoading) {
+        return (
+            <HomeLayout>
+                <Head>
+                    <title>Profil Perusahaan | PLN UPT Karawang</title>
+                </Head>
+                <div className="mx-auto max-w-6xl px-4 sm:px-6 py-10">
+                    <Skeleton className="h-[340px] w-full rounded-3xl" />
+                    <div className="mt-10 grid grid-cols-1 gap-6 lg:grid-cols-3">
+                        <Skeleton className="h-64 w-full" />
+                        <Skeleton className="h-64 w-full" />
+                        <Skeleton className="h-64 w-full" />
+                    </div>
+                    <Skeleton className="mt-10 h-40 w-full" />
+                </div>
+            </HomeLayout>
+        );
+    }
+
     return (
         <HomeLayout>
             <Head>
-                <title>Profil Perusahaan | PLN UPT Karawang</title>
+                <title>{`Profil Perusahaan | ${content.companyName}`}</title>
                 <meta
                     name="description"
-                    content="Profil, visi & misi, sejarah, galeri, statistik, dan testimoni PLN UPT Karawang."
+                    content={
+                        content.aboutText
+                            ? `${content.companyName} — ${content.aboutText.slice(0, 150)}`
+                            : `Profil perusahaan ${content.companyName}.`
+                    }
                 />
             </Head>
 
-            <div className="bg-gradient-to-b from-sky-50 via-white to-white">
-                <div className="container mx-auto px-4 sm:px-6 py-10 sm:py-12">
-                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-                        <div className="lg:col-span-12">
-                            <motion.div
-                                initial={{ opacity: 0, y: 10 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ duration: 0.35 }}
-                                className="rounded-3xl border border-sky-100 bg-white/70 backdrop-blur shadow-sm overflow-hidden"
-                            >
-                                <div className="grid grid-cols-1 lg:grid-cols-12 gap-0">
-                                    <div className="lg:col-span-6 p-6 sm:p-10">
-                                        <div className="text-[11px] font-semibold uppercase tracking-widest text-slate-500">
-                                            Tentang Kami
-                                        </div>
-                                        <h1 className="mt-2 text-2xl sm:text-4xl font-extrabold tracking-tight text-slate-900">
-                                            {content.hero.headline}
-                                        </h1>
-                                        <div className="mt-2 text-lg sm:text-xl font-bold text-sky-700">
-                                            <span className="inline-flex items-center gap-3">
-                                                {content.hero.logoUrl ? (
-                                                    <img
-                                                        src={
-                                                            content.hero.logoUrl
-                                                        }
-                                                        alt="Logo"
-                                                        loading="eager"
-                                                        decoding="async"
-                                                        className="h-9 w-9 rounded-xl border border-slate-200 bg-white object-contain"
-                                                    />
-                                                ) : null}
-                                                <span>
-                                                    {content.hero.unitName}
-                                                </span>
-                                            </span>
-                                        </div>
-                                        {content.hero.tagline ? (
-                                            <div className="mt-1 text-sm font-semibold text-slate-600">
-                                                {content.hero.tagline}
-                                            </div>
-                                        ) : null}
-                                        <p className="mt-4 text-sm sm:text-base text-slate-600 leading-relaxed max-w-xl">
-                                            {content.hero.summary}
-                                        </p>
-                                        <div className="mt-5 flex flex-wrap gap-2">
-                                            {content.hero.chips.map((c) => (
-                                                <Pill key={c}>{c}</Pill>
-                                            ))}
-                                        </div>
-                                        <div className="mt-6 flex flex-wrap gap-2">
-                                            {sections.slice(0, 3).map((s) => (
-                                                <button
-                                                    key={s.id}
-                                                    type="button"
-                                                    onClick={() => jumpTo(s.id)}
-                                                    className="inline-flex items-center rounded-2xl bg-sky-700 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-sky-800 transition-colors"
-                                                >
-                                                    {s.label}
-                                                    <FaArrowRight className="ml-2 h-3.5 w-3.5" />
-                                                </button>
-                                            ))}
-                                        </div>
-                                    </div>
-                                    <div className="lg:col-span-6">
-                                        <div className="relative h-full min-h-[240px] sm:min-h-[320px] lg:min-h-[420px]">
+            <div className="relative overflow-hidden bg-gradient-to-b from-sky-50/80 via-white to-white">
+                <div className="pointer-events-none absolute inset-x-0 top-0 h-[34rem] opacity-60 [background-image:radial-gradient(ellipse_at_top,rgba(14,116,144,0.12)_0,transparent_55%),radial-gradient(ellipse_at_top_right,rgba(251,191,36,0.10)_0,transparent_50%)]" />
+
+                <div className="mx-auto max-w-6xl px-4 sm:px-6 py-7 sm:py-10">
+                    {pageError ? (
+                        <div className="mb-5">
+                            <ErrorBanner
+                                message={pageError}
+                                onRetry={() => fetchData(true)}
+                            />
+                        </div>
+                    ) : null}
+
+                    {!hasContent ? (
+                        <div className="py-16">
+                            <EmptyState onRetry={() => fetchData(true)} />
+                        </div>
+                    ) : (
+                        <>
+                            {/* Hero */}
+                            <section id="profil" className="scroll-mt-20">
+                                <motion.div
+                                    initial={{ opacity: 0, y: 12 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ duration: 0.4 }}
+                                    className="relative overflow-hidden rounded-3xl border border-slate-200 shadow-[0_12px_40px_-16px_rgba(15,23,42,0.18)]"
+                                >
+                                    {content.coverUrl ? (
+                                        <div className="relative h-72 sm:h-80 lg:h-[26rem]">
                                             <img
-                                                src={content.hero.image.url}
-                                                alt={content.hero.image.alt}
+                                                src={content.coverUrl}
+                                                alt="Cover profil perusahaan"
                                                 loading="eager"
                                                 decoding="async"
                                                 className="absolute inset-0 h-full w-full object-cover"
                                             />
-                                            <div className="absolute inset-0 bg-gradient-to-t from-slate-900/35 via-slate-900/10 to-transparent" />
-                                            <div className="absolute bottom-0 left-0 right-0 p-5 sm:p-6">
-                                                <div className="rounded-2xl bg-white/85 backdrop-blur border border-white/60 p-4 shadow-sm">
-                                                    <div className="text-sm font-semibold text-slate-900">
-                                                        {
-                                                            content.hero.image
-                                                                .caption
+                                            <div className="absolute inset-0 bg-gradient-to-r from-slate-900/85 via-slate-900/55 to-slate-900/30" />
+                                            <div className="absolute inset-0 bg-gradient-to-t from-slate-900/60 via-transparent to-transparent" />
+                                        </div>
+                                    ) : (
+                                        <div className="relative h-72 sm:h-80 lg:h-[26rem] overflow-hidden bg-gradient-to-br from-sky-900 via-sky-800 to-slate-700">
+                                            <div className="absolute inset-0 opacity-[0.22] [background-image:radial-gradient(circle_at_15%_25%,rgba(255,255,255,0.55)_0,transparent_35%),radial-gradient(circle_at_82%_72%,rgba(251,191,36,0.35)_0,transparent_40%)]" />
+                                            <div className="absolute inset-0 opacity-[0.08] [background-image:linear-gradient(rgba(255,255,255,0.6)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.6)_1px,transparent_1px)] [background-size:44px_44px]" />
+                                        </div>
+                                    )}
+
+                                    <div className="absolute inset-0 flex flex-col justify-center px-6 sm:px-10 lg:px-16">
+                                        <div className="inline-flex w-fit items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3.5 py-1.5 backdrop-blur-md">
+                                            <span className="h-1.5 w-1.5 rounded-full bg-amber-400" />
+                                            <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-sky-100">
+                                                Profil Perusahaan
+                                            </span>
+                                        </div>
+                                        <h1 className="mt-4 max-w-3xl text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-white leading-tight drop-shadow-[0_2px_14px_rgba(0,0,0,0.35)]">
+                                            {content.companyName}
+                                        </h1>
+                                        {content.tagline ? (
+                                            <p className="mt-3 max-w-2xl text-sm sm:text-lg font-semibold text-sky-100/90 leading-relaxed">
+                                                {content.tagline}
+                                            </p>
+                                        ) : null}
+                                        {content.aboutText ? (
+                                            <p className="mt-4 max-w-2xl line-clamp-2 text-sm text-white/75 leading-relaxed">
+                                                {content.aboutText}
+                                            </p>
+                                        ) : null}
+                                        <div className="mt-6 flex flex-wrap items-center gap-3">
+                                            {visibleSections
+                                                .slice(1, 5)
+                                                .map((s) => (
+                                                    <button
+                                                        key={s.id}
+                                                        type="button"
+                                                        onClick={() =>
+                                                            jumpTo(s.id)
                                                         }
+                                                        className="group inline-flex items-center gap-2 rounded-xl border border-white/25 bg-white/10 px-4 py-2 text-sm font-semibold text-white backdrop-blur-md transition-all hover:bg-white hover:text-sky-900"
+                                                    >
+                                                        {s.label}
+                                                        <FaArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
+                                                    </button>
+                                                ))}
+                                        </div>
+                                    </div>
+                                </motion.div>
+
+                                {/* Identity Card */}
+                                <div className="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-4">
+                                    <div className="lg:col-span-2 relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-5 sm:p-6 shadow-sm">
+                                        <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-sky-700 via-sky-500 to-amber-500" />
+                                        <div className="flex flex-col sm:flex-row gap-5">
+                                            <div className="shrink-0">
+                                                {content.logoUrl ? (
+                                                    <div className="flex h-24 w-24 items-center justify-center rounded-2xl border border-slate-100 bg-white p-2 shadow-sm">
+                                                        <img
+                                                            src={
+                                                                content.logoUrl
+                                                            }
+                                                            alt="Logo"
+                                                            loading="eager"
+                                                            decoding="async"
+                                                            className="h-full w-full object-contain"
+                                                        />
                                                     </div>
-                                                    <div className="mt-1 text-xs text-slate-500">
-                                                        {
-                                                            content.hero.image
-                                                                .credit
-                                                        }
-                                                    </div>
+                                                ) : (
+                                                    <span className="flex h-24 w-24 items-center justify-center rounded-2xl border border-slate-100 bg-gradient-to-br from-sky-700 to-sky-900 text-white shadow-sm">
+                                                        <FaBuilding className="h-11 w-11" />
+                                                    </span>
+                                                )}
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                                <div className="text-[11px] font-bold uppercase tracking-[0.2em] text-sky-700">
+                                                    Identitas Utama
+                                                </div>
+                                                <h2 className="mt-1 text-xl sm:text-2xl font-extrabold tracking-tight text-slate-900">
+                                                    {content.companyName}
+                                                </h2>
+                                                {content.tagline ? (
+                                                    <p className="mt-1 text-sm font-semibold text-slate-500">
+                                                        {content.tagline}
+                                                    </p>
+                                                ) : null}
+                                                <div className="mt-4 flex flex-wrap gap-2">
+                                                    {content.contact.address ? (
+                                                        <span className="inline-flex items-center gap-1.5 rounded-lg bg-slate-50 border border-slate-100 px-2.5 py-1 text-[11px] font-semibold text-slate-600">
+                                                            <FaMapMarkerAlt className="h-3 w-3 text-sky-600" />
+                                                            <span className="line-clamp-1 max-w-[280px]">
+                                                                {
+                                                                    content
+                                                                        .contact
+                                                                        .address
+                                                                }
+                                                            </span>
+                                                        </span>
+                                                    ) : null}
+                                                    {content.contact.phone ? (
+                                                        <span className="inline-flex items-center gap-1.5 rounded-lg bg-slate-50 border border-slate-100 px-2.5 py-1 text-[11px] font-semibold text-slate-600">
+                                                            <FaPhoneAlt className="h-3 w-3 text-sky-600" />
+                                                            {
+                                                                content.contact
+                                                                    .phone
+                                                            }
+                                                        </span>
+                                                    ) : null}
+                                                    {content.contact.email ? (
+                                                        <span className="inline-flex items-center gap-1.5 rounded-lg bg-slate-50 border border-slate-100 px-2.5 py-1 text-[11px] font-semibold text-slate-600">
+                                                            <FaEnvelope className="h-3 w-3 text-sky-600" />
+                                                            {
+                                                                content.contact
+                                                                    .email
+                                                            }
+                                                        </span>
+                                                    ) : null}
                                                 </div>
                                             </div>
                                         </div>
                                     </div>
-                                </div>
-                            </motion.div>
-                        </div>
-
-                        <div className="lg:col-span-4 order-2 lg:order-1">
-                            <div className="sticky top-28 space-y-4">
-                                <MobileNavSelect
-                                    sections={sections}
-                                    activeId={active}
-                                    onChange={jumpTo}
-                                />
-                                <div className="hidden lg:block">
-                                    <InternalNav
-                                        sections={sections}
-                                        activeId={active}
-                                        onJump={jumpTo}
-                                    />
-                                </div>
-                                <div className="rounded-2xl border border-slate-200 bg-white shadow-sm p-4">
-                                    <div className="text-[11px] font-semibold uppercase tracking-widest text-slate-500">
-                                        Tautan Terkait
+                                    <div className="relative overflow-hidden rounded-2xl border border-slate-200 bg-gradient-to-br from-slate-900 via-sky-900 to-sky-800 p-5 sm:p-6 shadow-sm text-white">
+                                        <div className="absolute inset-0 opacity-[0.12] [background-image:radial-gradient(circle_at_80%_10%,rgba(251,191,36,0.7)_0,transparent_45%)]" />
+                                        <div className="relative">
+                                            <div className="text-[11px] font-bold uppercase tracking-[0.2em] text-sky-200">
+                                                Navigasi Cepat
+                                            </div>
+                                            <div className="mt-3 grid grid-cols-2 gap-2">
+                                                {visibleSections
+                                                    .slice(1)
+                                                    .map((s) => (
+                                                        <button
+                                                            key={s.id}
+                                                            type="button"
+                                                            onClick={() =>
+                                                                jumpTo(s.id)
+                                                            }
+                                                            className="group inline-flex items-center justify-between rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-xs font-semibold text-white/90 transition-colors hover:bg-white hover:text-sky-900"
+                                                        >
+                                                            <span>
+                                                                {s.label}
+                                                            </span>
+                                                            <FaArrowRight className="h-3 w-3 opacity-70 group-hover:opacity-100" />
+                                                        </button>
+                                                    ))}
+                                            </div>
+                                        </div>
                                     </div>
-                                    <div className="mt-3 space-y-2">
-                                        {content.relatedLinks.map((l) => (
-                                            <Link
-                                                key={l.label}
-                                                href={l.href}
-                                                className="group flex items-center justify-between rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors"
-                                            >
-                                                <span>{l.label}</span>
-                                                <l.icon className="h-3.5 w-3.5 text-slate-400 group-hover:text-slate-600" />
-                                            </Link>
-                                        ))}
+                                </div>
+                            </section>
+
+                            {/* Sticky section navigation */}
+                            <div className="sticky top-16 z-30 -mx-4 mt-8 sm:mt-10 sm:-mx-6 border-y border-slate-200/70 bg-white/90 backdrop-blur-xl shadow-[0_4px_18px_-14px_rgba(15,23,42,0.12)]">
+                                <div className="mx-auto max-w-6xl px-4 sm:px-6">
+                                    {/* Desktop: Pill tabs + sync status */}
+                                    <div className="hidden lg:flex items-center justify-between gap-4 py-2.5">
+                                        <div className="flex min-w-0 items-center gap-1 overflow-x-auto">
+                                            {visibleSections.map((s) => (
+                                                <button
+                                                    key={s.id}
+                                                    type="button"
+                                                    onClick={() => jumpTo(s.id)}
+                                                    className={classNames(
+                                                        "relative shrink-0 whitespace-nowrap rounded-full px-4 py-1.5 text-sm font-bold transition-all duration-200",
+                                                        active === s.id
+                                                            ? "bg-sky-900 text-white shadow-[0_6px_18px_-10px_rgba(14,116,144,0.8)]"
+                                                            : "text-slate-600 hover:bg-slate-100 hover:text-slate-900",
+                                                    )}
+                                                >
+                                                    <span className="relative inline-flex items-center gap-2">
+                                                        {active === s.id ? (
+                                                            <span className="h-1.5 w-1.5 rounded-full bg-amber-400 shadow-[0_0_0_3px_rgba(251,191,36,0.18)]" />
+                                                        ) : null}
+                                                        {s.label}
+                                                    </span>
+                                                </button>
+                                            ))}
+                                        </div>
+                                        <div className="flex shrink-0 items-center gap-3">
+                                            <div className="hidden xl:flex items-center gap-1.5 text-[11px] font-semibold text-slate-500">
+                                                <FaSyncAlt className="h-3 w-3 text-sky-500" />
+                                                Database Profil
+                                            </div>
+                                            <LiveSyncBadge
+                                                compact
+                                                lastSync={lastSync}
+                                                syncing={syncing}
+                                                error={error}
+                                            />
+                                        </div>
+                                    </div>
+                                    {/* Mobile: Label + select + sync */}
+                                    <div className="lg:hidden flex flex-col gap-2 py-2.5">
+                                        <div className="flex items-center justify-between gap-3">
+                                            <span className="text-[11px] font-bold uppercase tracking-[0.16em] text-slate-400">
+                                                Bagian
+                                            </span>
+                                            <LiveSyncBadge
+                                                compact
+                                                lastSync={lastSync}
+                                                syncing={syncing}
+                                                error={error}
+                                            />
+                                        </div>
+                                        <select
+                                            value={active}
+                                            onChange={(e) =>
+                                                jumpTo(e.target.value)
+                                            }
+                                            className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-bold text-slate-700 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-200"
+                                        >
+                                            {visibleSections.map((s) => (
+                                                <option key={s.id} value={s.id}>
+                                                    {s.label}
+                                                </option>
+                                            ))}
+                                        </select>
                                     </div>
                                 </div>
                             </div>
-                        </div>
 
-                        <div className="lg:col-span-8 order-1 lg:order-2 space-y-6">
-                            <Section
-                                id="profil"
-                                eyebrow="Profil"
-                                title="Profil Perusahaan"
-                                subtitle="Ringkasan unit, area layanan, struktur organisasi, dan informasi kontak."
-                            >
-                                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-                                    <div className="lg:col-span-7">
-                                        <div className="rounded-2xl border border-slate-200 bg-slate-50 p-6">
-                                            <div className="flex items-start gap-3">
-                                                <IconBadge icon={FaBuilding} />
-                                                <div>
-                                                    <div className="text-sm font-semibold text-slate-900">
-                                                        Gambaran Umum
-                                                    </div>
-                                                    {content.profile
-                                                        .overviewHtml ? (
-                                                        <div
-                                                            className="mt-3 prose prose-slate max-w-none"
-                                                            dangerouslySetInnerHTML={{
-                                                                __html: content
-                                                                    .profile
-                                                                    .overviewHtml,
-                                                            }}
-                                                        />
-                                                    ) : (
-                                                        <p className="mt-2 text-sm text-slate-700 leading-relaxed">
-                                                            {
-                                                                content.profile
-                                                                    .overviewText
+                            {/* Profil / Tentang */}
+                            {content.aboutHtml ? (
+                                <section
+                                    id="tentang"
+                                    className="scroll-mt-36 mt-12 sm:mt-16"
+                                >
+                                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                                        <div className="lg:col-span-7 relative overflow-hidden rounded-3xl border border-slate-100 bg-white p-6 sm:p-8 shadow-[0_4px_24px_-12px_rgba(15,23,42,0.08)]">
+                                            <div className="absolute inset-x-6 top-0 h-1 rounded-full bg-gradient-to-r from-sky-700 via-sky-500 to-sky-300" />
+                                            <SectionHeader
+                                                align="left"
+                                                eyebrow="Tentang Kami"
+                                                title="Mengenal Lebih Dekat"
+                                            />
+                                            <ProseContent
+                                                html={content.aboutHtml}
+                                            />
+                                        </div>
+                                        <div className="lg:col-span-5 space-y-4">
+                                            <div className="relative overflow-hidden rounded-3xl border border-slate-100 bg-white p-6 shadow-[0_4px_24px_-12px_rgba(15,23,42,0.08)]">
+                                                <div className="absolute inset-x-6 top-0 h-1 rounded-full bg-gradient-to-r from-amber-500 via-amber-400 to-yellow-300" />
+                                                <h3 className="mt-2 text-xs font-bold uppercase tracking-[0.18em] text-amber-600">
+                                                    Informasi Kontak
+                                                </h3>
+                                                <div className="mt-4 space-y-3">
+                                                    <InfoRow
+                                                        icon={FaMapMarkerAlt}
+                                                        label="Alamat"
+                                                        value={
+                                                            content.contact
+                                                                .address
+                                                        }
+                                                    />
+                                                    <InfoRow
+                                                        icon={FaPhoneAlt}
+                                                        label="Telepon"
+                                                        value={
+                                                            content.contact
+                                                                .phone
+                                                        }
+                                                        href={
+                                                            content.contact
+                                                                .phone
+                                                                ? `tel:${content.contact.phone.replace(/[^+\d]/g, "")}`
+                                                                : ""
+                                                        }
+                                                    />
+                                                    <InfoRow
+                                                        icon={FaEnvelope}
+                                                        label="Email"
+                                                        value={
+                                                            content.contact
+                                                                .email
+                                                        }
+                                                        href={
+                                                            content.contact
+                                                                .email
+                                                                ? `mailto:${content.contact.email}`
+                                                                : ""
+                                                        }
+                                                    />
+                                                    <InfoRow
+                                                        icon={FaGlobe}
+                                                        label="Website"
+                                                        value={
+                                                            content.contact
+                                                                .website
+                                                        }
+                                                        href={
+                                                            content.contact.website?.startsWith(
+                                                                "http",
+                                                            )
+                                                                ? content
+                                                                      .contact
+                                                                      .website
+                                                                : `https://${content.contact.website}`
+                                                        }
+                                                    />
+                                                    {content.contact.social
+                                                        ?.linkedin ? (
+                                                        <InfoRow
+                                                            icon={FaLinkedinIn}
+                                                            label="LinkedIn"
+                                                            value={
+                                                                content.contact
+                                                                    .social
+                                                                    .linkedin
                                                             }
-                                                        </p>
-                                                    )}
+                                                            href={
+                                                                content.contact
+                                                                    .social
+                                                                    .linkedin
+                                                            }
+                                                        />
+                                                    ) : null}
                                                 </div>
                                             </div>
-                                        </div>
-
-                                        <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                            <InfoCard
-                                                icon={FaMapMarkerAlt}
-                                                title="Lokasi & Wilayah Layanan"
-                                            >
-                                                <div className="space-y-2">
-                                                    <div>
-                                                        <div className="text-xs font-semibold text-slate-500">
-                                                            Kantor
-                                                        </div>
-                                                        <div className="text-sm text-slate-700">
-                                                            {
-                                                                content.profile
-                                                                    .location
-                                                                    .office
-                                                            }
-                                                        </div>
-                                                    </div>
-                                                    <div>
-                                                        <div className="text-xs font-semibold text-slate-500">
-                                                            Wilayah layanan
-                                                        </div>
-                                                        <div className="text-sm text-slate-700">
-                                                            {
-                                                                content.profile
-                                                                    .location
-                                                                    .serviceArea
-                                                            }
-                                                        </div>
-                                                    </div>
+                                            {content.hasMap ? (
+                                                <div className="overflow-hidden rounded-3xl border border-slate-100 shadow-[0_4px_24px_-12px_rgba(15,23,42,0.08)]">
+                                                    <iframe
+                                                        title="Lokasi perusahaan"
+                                                        src={
+                                                            content.mapEmbedUrl
+                                                        }
+                                                        className="h-56 w-full border-0"
+                                                        loading="lazy"
+                                                        referrerPolicy="no-referrer-when-downgrade"
+                                                        allowFullScreen
+                                                    />
                                                 </div>
-                                            </InfoCard>
-                                            <InfoCard
-                                                icon={FaUsers}
-                                                title="Pelanggan & Stakeholder"
-                                            >
-                                                {content.profile.customers}
-                                            </InfoCard>
+                                            ) : null}
                                         </div>
+                                    </div>
+                                </section>
+                            ) : null}
 
-                                        {content.profile.mapEmbedUrl ? (
-                                            <div className="mt-4 rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
-                                                <div className="px-5 py-4 border-b border-slate-100">
-                                                    <div className="text-sm font-semibold text-slate-900">
-                                                        Peta Lokasi
-                                                    </div>
-                                                    <div className="mt-1 text-xs text-slate-500">
-                                                        Berdasarkan koordinat
-                                                        yang diinput pada
-                                                        dashboard.
-                                                    </div>
+                            {/* Visi & Misi */}
+                            {content.visionHtml || content.missions.length ? (
+                                <section
+                                    id="visi-misi"
+                                    className="scroll-mt-36 mt-12 sm:mt-16"
+                                >
+                                    <SectionHeader
+                                        eyebrow="Arah Strategis"
+                                        title="Visi & Misi"
+                                        subtitle="Landasan arah dan tujuan organisasi dalam memberikan layanan terbaik."
+                                    />
+                                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                                        {content.visionHtml ? (
+                                            <div className="lg:col-span-5 relative overflow-hidden rounded-3xl border border-sky-100 bg-white p-6 sm:p-8 shadow-[0_4px_24px_-12px_rgba(15,23,42,0.08)]">
+                                                <div className="absolute inset-x-6 top-0 h-1 rounded-full bg-gradient-to-r from-sky-700 to-sky-400" />
+                                                <div className="mt-2 flex items-center gap-3">
+                                                    <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-sky-700 to-sky-900 text-white shadow-sm">
+                                                        <FaBullseye className="h-5 w-5" />
+                                                    </span>
+                                                    <h3 className="text-lg font-extrabold text-slate-900">
+                                                        Visi
+                                                    </h3>
                                                 </div>
-                                                <iframe
-                                                    title="Peta lokasi"
-                                                    src={
-                                                        content.profile
-                                                            .mapEmbedUrl
-                                                    }
-                                                    className="w-full h-64"
-                                                    loading="lazy"
-                                                    referrerPolicy="no-referrer-when-downgrade"
-                                                />
+                                                <div className="mt-5">
+                                                    <ProseContent
+                                                        html={
+                                                            content.visionHtml
+                                                        }
+                                                    />
+                                                </div>
                                             </div>
                                         ) : null}
-                                    </div>
-
-                                    <div className="lg:col-span-5 space-y-4">
-                                        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-                                            <div className="flex items-start gap-3">
-                                                <IconBadge icon={FaSitemap} />
-                                                <div className="min-w-0">
-                                                    <div className="text-sm font-semibold text-slate-900">
-                                                        Struktur Organisasi
-                                                        Singkat
-                                                    </div>
-                                                    {content.profile
-                                                        .teamPhotoUrl ? (
-                                                        <div className="mt-3 overflow-hidden rounded-2xl border border-slate-200 bg-slate-50">
-                                                            <img
-                                                                src={
-                                                                    content
-                                                                        .profile
-                                                                        .teamPhotoUrl
-                                                                }
-                                                                alt="Foto tim"
-                                                                loading="lazy"
-                                                                decoding="async"
-                                                                className="h-40 w-full object-cover"
-                                                            />
-                                                        </div>
-                                                    ) : null}
-                                                    <ul className="mt-3 space-y-2 text-sm text-slate-700">
-                                                        {content.profile.orgSummary.map(
-                                                            (it) => (
-                                                                <li
-                                                                    key={it}
-                                                                    className="flex gap-2"
+                                        <div
+                                            className={classNames(
+                                                content.visionHtml
+                                                    ? "lg:col-span-7"
+                                                    : "lg:col-span-12",
+                                            )}
+                                        >
+                                            <div className="relative overflow-hidden rounded-3xl border border-emerald-100 bg-white p-6 sm:p-8 shadow-[0_4px_24px_-12px_rgba(15,23,42,0.08)]">
+                                                <div className="absolute inset-x-6 top-0 h-1 rounded-full bg-gradient-to-r from-emerald-600 via-emerald-400 to-teal-300" />
+                                                <div className="mt-2 flex items-center gap-3">
+                                                    <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-600 to-teal-700 text-white shadow-sm">
+                                                        <FaCheck className="h-5 w-5" />
+                                                    </span>
+                                                    <h3 className="text-lg font-extrabold text-slate-900">
+                                                        Misi
+                                                    </h3>
+                                                </div>
+                                                <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                                    {content.missions.map(
+                                                        (m, i) => {
+                                                            const text =
+                                                                typeof m ===
+                                                                "string"
+                                                                    ? m
+                                                                    : m?.text ||
+                                                                      "";
+                                                            return (
+                                                                <div
+                                                                    key={i}
+                                                                    className="flex items-start gap-3 rounded-2xl border border-slate-100 bg-slate-50/70 p-4"
                                                                 >
-                                                                    <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-slate-400" />
-                                                                    <span className="min-w-0">
-                                                                        {it}
+                                                                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-sm">
+                                                                        <FaCheck className="h-4 w-4" />
                                                                     </span>
-                                                                </li>
-                                                            ),
-                                                        )}
-                                                    </ul>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-                                            <div className="flex items-start gap-3">
-                                                <IconBadge icon={FaPhoneAlt} />
-                                                <div className="min-w-0">
-                                                    <div className="text-sm font-semibold text-slate-900">
-                                                        Kontak Kantor
-                                                    </div>
-                                                    <div className="mt-3 space-y-2 text-sm text-slate-700">
-                                                        <div className="flex items-center gap-2">
-                                                            <FaPhoneAlt className="h-4 w-4 text-slate-400" />
-                                                            <span>
-                                                                {
-                                                                    content
-                                                                        .profile
-                                                                        .contacts
-                                                                        .phone
-                                                                }
-                                                            </span>
-                                                        </div>
-                                                        <div className="flex items-center gap-2">
-                                                            <FaEnvelope className="h-4 w-4 text-slate-400" />
-                                                            <span>
-                                                                {
-                                                                    content
-                                                                        .profile
-                                                                        .contacts
-                                                                        .email
-                                                                }
-                                                            </span>
-                                                        </div>
-                                                        <div className="flex items-center gap-2">
-                                                            <FaGlobe className="h-4 w-4 text-slate-400" />
-                                                            {asString(
-                                                                content.profile
-                                                                    .contacts
-                                                                    .website,
-                                                            ).startsWith(
-                                                                "http",
-                                                            ) ? (
-                                                                <a
-                                                                    href={
-                                                                        content
-                                                                            .profile
-                                                                            .contacts
-                                                                            .website
-                                                                    }
-                                                                    target="_blank"
-                                                                    rel="noreferrer"
-                                                                    className="font-semibold text-sky-700 hover:text-sky-900 underline underline-offset-4"
-                                                                >
-                                                                    {
-                                                                        content
-                                                                            .profile
-                                                                            .contacts
-                                                                            .website
-                                                                    }
-                                                                </a>
-                                                            ) : (
-                                                                <span>
-                                                                    {
-                                                                        content
-                                                                            .profile
-                                                                            .contacts
-                                                                            .website
-                                                                    }
-                                                                </span>
-                                                            )}
-                                                        </div>
-                                                        <div className="text-xs text-slate-500">
-                                                            Jam layanan:{" "}
-                                                            {
-                                                                content.profile
-                                                                    .contacts
-                                                                    .hours
-                                                            }
-                                                        </div>
-                                                    </div>
-                                                    <div className="mt-4">
-                                                        <Link
-                                                            href="/kontak"
-                                                            className="inline-flex items-center rounded-xl bg-sky-700 px-4 py-2 text-sm font-semibold text-white hover:bg-sky-800 transition-colors"
-                                                        >
-                                                            Hubungi Kami
-                                                            <FaArrowRight className="ml-2 h-3.5 w-3.5" />
-                                                        </Link>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </Section>
-
-                            <Section
-                                id="visi-misi"
-                                eyebrow="Arah Strategis"
-                                title="Visi & Misi"
-                                subtitle="Komitmen unit terhadap keandalan sistem, keselamatan, dan layanan yang berkelanjutan."
-                            >
-                                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-                                    <div className="lg:col-span-5">
-                                        <div className="rounded-2xl border border-slate-200 bg-gradient-to-br from-sky-50 via-white to-amber-50 p-6 shadow-sm">
-                                            <div className="flex items-start gap-3">
-                                                <IconBadge icon={FaBullseye} />
-                                                <div>
-                                                    <div className="text-sm font-semibold text-slate-900">
-                                                        Visi
-                                                    </div>
-                                                    {content.visionMission
-                                                        .visionHtml ? (
-                                                        <div
-                                                            className="mt-3 prose prose-slate max-w-none"
-                                                            dangerouslySetInnerHTML={{
-                                                                __html: content
-                                                                    .visionMission
-                                                                    .visionHtml,
-                                                            }}
-                                                        />
-                                                    ) : (
-                                                        <div className="mt-2 text-sm sm:text-base font-semibold text-slate-800 leading-relaxed">
-                                                            {
-                                                                content
-                                                                    .visionMission
-                                                                    .vision
-                                                            }
-                                                        </div>
+                                                                    <p className="pt-0.5 text-sm text-slate-700 leading-relaxed">
+                                                                        {text}
+                                                                    </p>
+                                                                </div>
+                                                            );
+                                                        },
                                                     )}
                                                 </div>
                                             </div>
                                         </div>
+                                    </div>
+                                </section>
+                            ) : null}
 
-                                        <div className="mt-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-                                            <div className="text-sm font-semibold text-slate-900">
-                                                Nilai-Nilai
-                                            </div>
-                                            <div className="mt-4 grid grid-cols-1 gap-3">
-                                                {content.visionMission.values.map(
-                                                    (v) => (
-                                                        <div
-                                                            key={v.title}
-                                                            className="rounded-2xl border border-slate-200 bg-slate-50 p-4"
-                                                        >
-                                                            <div className="flex items-start gap-3">
-                                                                <IconBadge
-                                                                    icon={
-                                                                        v.icon
-                                                                    }
-                                                                    tone="yellow"
-                                                                />
-                                                                <div>
-                                                                    <div className="text-sm font-semibold text-slate-900">
-                                                                        {
-                                                                            v.title
-                                                                        }
-                                                                    </div>
-                                                                    <div className="mt-1 text-sm text-slate-600">
-                                                                        {v.text}
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    ),
-                                                )}
-                                            </div>
+                            {/* Layanan */}
+                            {content.services.length ? (
+                                <section
+                                    id="layanan"
+                                    className="scroll-mt-36 mt-12 sm:mt-16"
+                                >
+                                    <SectionHeader
+                                        eyebrow="Apa yang Kami Lakukan"
+                                        title="Layanan Kami"
+                                        subtitle="Layanan dan solusi yang kami tawarkan untuk memenuhi kebutuhan pemangku kepentingan."
+                                    />
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                                        {content.services.map((s, i) => {
+                                            const Icon =
+                                                SERVICE_ICONS[s?.icon] ||
+                                                FaBuilding;
+                                            const features = safeArray(
+                                                s?.features,
+                                            ).filter(Boolean);
+                                            return (
+                                                <div
+                                                    key={i}
+                                                    className="group relative overflow-hidden rounded-3xl border border-slate-100 bg-white p-6 shadow-[0_4px_24px_-12px_rgba(15,23,42,0.08)] transition-all hover:-translate-y-0.5 hover:shadow-[0_10px_32px_-14px_rgba(15,23,42,0.15)]"
+                                                >
+                                                    <div className="absolute inset-x-6 top-0 h-1 rounded-full bg-gradient-to-r from-sky-700 to-sky-400 opacity-80" />
+                                                    <span className="mt-1 flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-sky-50 to-sky-100 text-sky-700 ring-1 ring-sky-200/60">
+                                                        <Icon className="h-6 w-6" />
+                                                    </span>
+                                                    <h3 className="mt-4 text-base font-extrabold text-slate-900">
+                                                        {s?.name || "Layanan"}
+                                                    </h3>
+                                                    {s?.description ? (
+                                                        <p className="mt-2 text-sm text-slate-500 leading-relaxed">
+                                                            {s.description}
+                                                        </p>
+                                                    ) : null}
+                                                    {features.length ? (
+                                                        <ul className="mt-4 space-y-2">
+                                                            {features.map(
+                                                                (f, fi) => (
+                                                                    <li
+                                                                        key={fi}
+                                                                        className="flex items-start gap-2 text-sm text-slate-600"
+                                                                    >
+                                                                        <FaCheck className="mt-0.5 h-4 w-4 shrink-0 text-emerald-500" />
+                                                                        <span>
+                                                                            {f}
+                                                                        </span>
+                                                                    </li>
+                                                                ),
+                                                            )}
+                                                        </ul>
+                                                    ) : null}
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </section>
+                            ) : null}
+
+                            {/* Sejarah */}
+                            {content.history.length ? (
+                                <section
+                                    id="sejarah"
+                                    className="scroll-mt-36 mt-12 sm:mt-16"
+                                >
+                                    <SectionHeader
+                                        eyebrow="Perjalanan"
+                                        title="Sejarah & Perkembangan"
+                                        subtitle="Tahapan penting dalam perjalanan organisasi hingga saat ini."
+                                    />
+                                    <div className="relative mx-auto max-w-2xl rounded-3xl border border-slate-100 bg-white p-6 sm:p-8 shadow-[0_4px_24px_-12px_rgba(15,23,42,0.08)]">
+                                        <div className="absolute inset-x-6 top-0 h-1 rounded-full bg-gradient-to-r from-violet-600 via-sky-500 to-cyan-400" />
+                                        <div className="mt-2">
+                                            {content.history.map((item, i) => (
+                                                <TimelineItem
+                                                    key={i}
+                                                    item={item}
+                                                    index={
+                                                        i ===
+                                                        content.history.length -
+                                                            1
+                                                            ? null
+                                                            : i
+                                                    }
+                                                />
+                                            ))}
                                         </div>
                                     </div>
+                                </section>
+                            ) : null}
 
-                                    <div className="lg:col-span-7">
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                            {content.visionMission.missions.map(
-                                                (m) => (
-                                                    <motion.div
-                                                        key={m.title}
-                                                        initial={{
-                                                            opacity: 0,
-                                                            y: 10,
-                                                        }}
-                                                        whileInView={{
-                                                            opacity: 1,
-                                                            y: 0,
-                                                        }}
-                                                        viewport={{
-                                                            once: true,
-                                                            margin: "-100px",
-                                                        }}
-                                                        transition={{
-                                                            duration: 0.3,
-                                                        }}
-                                                        className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
-                                                    >
-                                                        <div className="flex items-start gap-3">
-                                                            <IconBadge
-                                                                icon={m.icon}
+                            {/* Portofolio */}
+                            {content.portfolio.length ? (
+                                <section
+                                    id="portofolio"
+                                    className="scroll-mt-36 mt-12 sm:mt-16"
+                                >
+                                    <SectionHeader
+                                        eyebrow="Pencapaian & Proyek"
+                                        title="Portofolio"
+                                        subtitle="Proyek dan pencapaian yang telah kami selesaikan."
+                                    />
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                                        {content.portfolio.map((p, i) => {
+                                            const image = resolveImageUrl(
+                                                p?.image,
+                                            );
+                                            return (
+                                                <div
+                                                    key={i}
+                                                    className="group relative overflow-hidden rounded-3xl border border-slate-100 bg-white shadow-[0_4px_24px_-12px_rgba(15,23,42,0.08)] transition-all hover:-translate-y-0.5 hover:shadow-[0_10px_32px_-14px_rgba(15,23,42,0.15)]"
+                                                >
+                                                    <div className="absolute inset-x-0 top-0 z-10 h-1 bg-gradient-to-r from-amber-500 via-sky-500 to-violet-500 opacity-80" />
+                                                    {image ? (
+                                                        <div className="relative">
+                                                            <img
+                                                                src={image}
+                                                                alt={
+                                                                    p?.title ||
+                                                                    "Portofolio"
+                                                                }
+                                                                loading="lazy"
+                                                                decoding="async"
+                                                                className="h-44 w-full object-cover transition-transform duration-500 group-hover:scale-105"
                                                             />
-                                                            <div>
-                                                                <div className="text-sm font-semibold text-slate-900">
-                                                                    {m.title}
-                                                                </div>
-                                                                <div className="mt-1 text-sm text-slate-600 leading-relaxed">
-                                                                    {m.text}
-                                                                </div>
-                                                            </div>
+                                                            <div className="absolute inset-0 bg-gradient-to-t from-slate-900/50 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                                                         </div>
-                                                    </motion.div>
-                                                ),
-                                            )}
-                                        </div>
-                                    </div>
-                                </div>
-                            </Section>
-
-                            <Section
-                                id="sejarah"
-                                eyebrow="Perjalanan"
-                                title="Sejarah Perusahaan"
-                                subtitle="Garis waktu perkembangan, milestone, serta penguatan layanan dan infrastruktur (placeholder)."
-                            >
-                                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-                                    <div className="lg:col-span-7">
-                                        <Timeline
-                                            items={
-                                                content.history.timelineItems
-                                            }
-                                        />
-                                    </div>
-                                    <div className="lg:col-span-5 space-y-4">
-                                        <div className="rounded-2xl border border-slate-200 bg-slate-50 p-6">
-                                            <div className="flex items-center gap-3">
-                                                <IconBadge icon={FaHistory} />
-                                                <div>
-                                                    <div className="text-sm font-semibold text-slate-900">
-                                                        Pencapaian & Milestone
-                                                    </div>
-                                                    <div className="text-xs text-slate-500">
-                                                        Gunakan data resmi saat
-                                                        mengisi.
+                                                    ) : (
+                                                        <div className="flex h-44 w-full items-center justify-center bg-gradient-to-br from-sky-50 via-sky-100 to-violet-50 text-sky-300">
+                                                            <FaFolderOpen className="h-10 w-10" />
+                                                        </div>
+                                                    )}
+                                                    <div className="p-5">
+                                                        <div className="flex items-center gap-2">
+                                                            {p?.category ? (
+                                                                <span className="rounded-full bg-sky-50 ring-1 ring-sky-100 px-2.5 py-0.5 text-[11px] font-bold text-sky-700">
+                                                                    {p.category}
+                                                                </span>
+                                                            ) : null}
+                                                            {p?.year ? (
+                                                                <span className="text-xs font-semibold text-slate-400">
+                                                                    {p.year}
+                                                                </span>
+                                                            ) : null}
+                                                        </div>
+                                                        <h3 className="mt-2.5 text-sm font-extrabold text-slate-900">
+                                                            {p?.title ||
+                                                                "Proyek"}
+                                                        </h3>
+                                                        {p?.description ? (
+                                                            <p className="mt-2 text-xs text-slate-500 leading-relaxed line-clamp-3">
+                                                                {p.description}
+                                                            </p>
+                                                        ) : null}
+                                                        {p?.client ? (
+                                                            <div className="mt-3 text-xs text-slate-500">
+                                                                Klien:{" "}
+                                                                <span className="font-bold text-slate-700">
+                                                                    {p.client}
+                                                                </span>
+                                                            </div>
+                                                        ) : null}
+                                                        {p?.url ? (
+                                                            <a
+                                                                href={p.url}
+                                                                target="_blank"
+                                                                rel="noreferrer"
+                                                                className="mt-3 inline-flex items-center gap-1.5 rounded-lg bg-sky-50 px-2.5 py-1 text-[11px] font-bold text-sky-700 ring-1 ring-sky-100 hover:bg-sky-100 transition-colors"
+                                                            >
+                                                                Lihat detail
+                                                                <FaExternalLinkAlt className="h-3 w-3" />
+                                                            </a>
+                                                        ) : null}
                                                     </div>
                                                 </div>
-                                            </div>
-                                            <div className="mt-4 space-y-3">
-                                                {content.history.milestones.map(
-                                                    (m) => (
-                                                        <div
-                                                            key={m.title}
-                                                            className="rounded-2xl border border-slate-200 bg-white p-4"
-                                                        >
-                                                            <div className="flex items-start gap-3">
-                                                                <IconBadge
-                                                                    icon={
-                                                                        m.icon
-                                                                    }
-                                                                />
-                                                                <div>
-                                                                    <div className="text-sm font-semibold text-slate-900">
-                                                                        {
-                                                                            m.title
-                                                                        }
-                                                                    </div>
-                                                                    <div className="mt-1 text-sm text-slate-600">
-                                                                        {m.text}
-                                                                    </div>
-                                                                </div>
-                                                            </div>
+                                            );
+                                        })}
+                                    </div>
+                                </section>
+                            ) : null}
+
+                            {/* Tim Pengelola */}
+                            {content.teamMembers.length ? (
+                                <section
+                                    id="tim"
+                                    className="scroll-mt-36 mt-12 sm:mt-16"
+                                >
+                                    <SectionHeader
+                                        eyebrow="Tim Pengelola"
+                                        title="Pimpinan & Anggota Tim"
+                                        subtitle="Para pengelola yang menjalankan operasional dan layanan unit."
+                                    />
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+                                        {content.teamMembers.map((m, i) => {
+                                            const photo = resolveImageUrl(
+                                                m?.photo,
+                                            );
+                                            return (
+                                                <div
+                                                    key={i}
+                                                    className="group relative overflow-hidden rounded-3xl border border-slate-100 bg-white shadow-[0_4px_24px_-12px_rgba(15,23,42,0.08)] transition-all hover:-translate-y-0.5 hover:shadow-[0_10px_32px_-14px_rgba(15,23,42,0.15)]"
+                                                >
+                                                    <div className="absolute inset-x-6 top-0 h-1 rounded-full bg-gradient-to-r from-amber-500 to-sky-500 opacity-80 z-10" />
+                                                    {photo ? (
+                                                        <div className="relative">
+                                                            <img
+                                                                src={photo}
+                                                                alt={
+                                                                    m?.name ||
+                                                                    "Anggota tim"
+                                                                }
+                                                                loading="lazy"
+                                                                decoding="async"
+                                                                className="h-48 w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                                                            />
+                                                            <div className="absolute inset-0 bg-gradient-to-t from-slate-900/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                                                         </div>
-                                                    ),
-                                                )}
-                                            </div>
+                                                    ) : (
+                                                        <div className="flex h-48 w-full items-center justify-center bg-gradient-to-br from-sky-50 via-slate-50 to-amber-50 text-sky-300">
+                                                            <FaUsers className="h-10 w-10" />
+                                                        </div>
+                                                    )}
+                                                    <div className="p-5">
+                                                        <div className="text-sm font-extrabold text-slate-900">
+                                                            {m?.name || "—"}
+                                                        </div>
+                                                        <div className="mt-0.5 text-xs font-bold text-sky-700">
+                                                            {m?.position || ""}
+                                                        </div>
+                                                        {m?.bio ? (
+                                                            <p className="mt-2.5 text-xs text-slate-500 leading-relaxed line-clamp-3">
+                                                                {m.bio}
+                                                            </p>
+                                                        ) : null}
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </section>
+                            ) : null}
+
+                            {/* Statistik */}
+                            {content.stats.length ? (
+                                <section
+                                    id="statistik"
+                                    className="scroll-mt-36 mt-12 sm:mt-16"
+                                >
+                                    <SectionHeader
+                                        eyebrow="Angka Kinerja"
+                                        title="Statistik & Capaian"
+                                        subtitle="Indikator kinerja utama yang mencerminkan capaian unit."
+                                    />
+                                    <div className="relative overflow-hidden rounded-3xl border border-slate-100 bg-white p-6 sm:p-8 shadow-[0_4px_24px_-12px_rgba(15,23,42,0.08)]">
+                                        <div className="absolute inset-x-6 top-0 h-1 rounded-full bg-gradient-to-r from-amber-500 via-sky-500 to-emerald-500" />
+                                        <div className="mt-2 grid grid-cols-2 lg:grid-cols-4 gap-5">
+                                            {content.stats.map((s, i) => (
+                                                <StatCard key={i} stat={s} />
+                                            ))}
                                         </div>
                                     </div>
-                                </div>
-                            </Section>
+                                </section>
+                            ) : null}
 
-                            <Section
-                                id="galeri"
-                                eyebrow="Dokumentasi"
-                                title="Galeri"
-                                subtitle="Foto fasilitas dan aktivitas operasional (ilustrasi). Klik untuk melihat lebih besar."
-                            >
-                                <Gallery items={content.gallery.items} />
-                            </Section>
-
-                            <Section
-                                id="statistik"
-                                eyebrow="Ringkasan"
-                                title="Statistik & Pencapaian"
-                                subtitle="Infografis ringkas untuk membantu pemindaian cepat."
-                            >
-                                <div className="rounded-2xl border border-amber-100 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-                                    {content.stats.note}
-                                </div>
-                                {safeArray(content.stats.items).length ? (
-                                    <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                        {content.stats.items.map((s) => (
-                                            <StatCard
-                                                key={s.label}
-                                                icon={s.icon}
-                                                label={s.label}
-                                                value={s.value}
-                                                unit={s.unit}
-                                                sourceLabel={s.sourceLabel}
-                                                sourceUrl={s.sourceUrl}
+                            {/* Galeri */}
+                            {content.galleryItems.length ? (
+                                <section
+                                    id="galeri"
+                                    className="scroll-mt-36 mt-12 sm:mt-16"
+                                >
+                                    <SectionHeader
+                                        eyebrow="Dokumentasi"
+                                        title="Galeri Kegiatan"
+                                        subtitle="Dokumentasi kegiatan operasional dan momen penting unit."
+                                    />
+                                    <div className="relative overflow-hidden rounded-3xl border border-slate-100 bg-white p-4 sm:p-6 shadow-[0_4px_24px_-12px_rgba(15,23,42,0.08)]">
+                                        <div className="absolute inset-x-6 top-0 h-1 rounded-full bg-gradient-to-r from-rose-500 via-sky-500 to-violet-500 opacity-80" />
+                                        <div className="mt-2">
+                                            <Gallery
+                                                items={content.galleryItems}
                                             />
-                                        ))}
+                                        </div>
                                     </div>
-                                ) : (
-                                    <div className="mt-4 rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-6 text-sm text-slate-600">
-                                        Belum ada statistik yang dipublikasikan.
-                                    </div>
-                                )}
-                            </Section>
+                                </section>
+                            ) : null}
 
-                            <div id="testimoni" className="scroll-mt-28">
-                                <TestimonialCarousel
-                                    items={content.testimonials.items}
+                            {/* Dokumen Pendukung */}
+                            {content.documents.length ? (
+                                <section
+                                    id="dokumen"
+                                    className="scroll-mt-36 mt-12 sm:mt-16"
+                                >
+                                    <SectionHeader
+                                        eyebrow="Referensi"
+                                        title="Dokumen Pendukung"
+                                        subtitle="Dokumen resmi yang dapat diunduh untuk referensi."
+                                    />
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                                        {content.documents.map((d, i) => {
+                                            const url = resolveImageUrl(
+                                                d?.file ?? d?.url,
+                                            );
+                                            return (
+                                                <a
+                                                    key={i}
+                                                    href={url}
+                                                    target="_blank"
+                                                    rel="noreferrer"
+                                                    className="group relative flex items-center gap-4 rounded-3xl border border-slate-100 bg-white p-5 shadow-[0_4px_24px_-12px_rgba(15,23,42,0.08)] transition-all hover:-translate-y-0.5 hover:shadow-[0_10px_32px_-14px_rgba(15,23,42,0.15)]"
+                                                >
+                                                    <div className="absolute inset-x-6 top-0 h-1 rounded-full bg-gradient-to-r from-sky-600 via-sky-400 to-cyan-400 opacity-80" />
+                                                    <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-sky-50 to-sky-100 text-sky-700 ring-1 ring-sky-200/60">
+                                                        <FaFileAlt className="h-5 w-5" />
+                                                    </span>
+                                                    <div className="min-w-0 flex-1">
+                                                        <div className="truncate text-sm font-extrabold text-slate-900">
+                                                            {d?.title ||
+                                                                d?.name ||
+                                                                "Dokumen"}
+                                                        </div>
+                                                        {d?.type ? (
+                                                            <div className="mt-0.5 inline-block rounded-md bg-slate-50 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-slate-500">
+                                                                {d.type}
+                                                            </div>
+                                                        ) : null}
+                                                        {d?.description ? (
+                                                            <div className="mt-1 truncate text-xs text-slate-500">
+                                                                {d.description}
+                                                            </div>
+                                                        ) : null}
+                                                    </div>
+                                                    <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-slate-50 text-slate-400 ring-1 ring-slate-100 transition-all group-hover:bg-sky-50 group-hover:text-sky-600 group-hover:ring-sky-200/60">
+                                                        <FaDownload className="h-3.5 w-3.5" />
+                                                    </span>
+                                                </a>
+                                            );
+                                        })}
+                                    </div>
+                                </section>
+                            ) : null}
+
+                            {/* Testimoni */}
+                            {content.testimonials.length ? (
+                                <section
+                                    id="testimoni"
+                                    className="scroll-mt-36 mt-12 sm:mt-16"
+                                >
+                                    <SectionHeader
+                                        eyebrow="Apa Kata Mereka"
+                                        title="Testimoni & Ulasan"
+                                        subtitle="Apresiasi dari mitra dan pemangku kepentingan."
+                                    />
+                                    <div className="relative overflow-hidden rounded-3xl border border-slate-100 bg-gradient-to-br from-slate-50 to-white p-6 sm:p-8 shadow-[0_4px_24px_-12px_rgba(15,23,42,0.08)]">
+                                        <div className="absolute inset-x-6 top-0 h-1 rounded-full bg-gradient-to-r from-violet-500 via-sky-500 to-cyan-400" />
+                                        <div className="mt-2">
+                                            <TestimonialCarousel
+                                                items={content.testimonials}
+                                            />
+                                        </div>
+                                    </div>
+                                </section>
+                            ) : null}
+
+                            {/* Kontak */}
+                            <section
+                                id="kontak"
+                                className="scroll-mt-36 mt-12 sm:mt-16"
+                            >
+                                <SectionHeader
+                                    eyebrow="Hubungi Kami"
+                                    title="Kontak & Lokasi"
+                                    subtitle="Jangan ragu untuk menghubungi kami untuk informasi lebih lanjut."
                                 />
-                            </div>
-
-                            <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
-                                <div className="p-6 sm:p-8 border-b border-slate-100">
-                                    <div className="text-[11px] font-semibold uppercase tracking-widest text-slate-500">
-                                        Integrasi
+                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                    <div className="relative overflow-hidden rounded-3xl border border-slate-100 bg-white p-6 sm:p-8 shadow-[0_4px_24px_-12px_rgba(15,23,42,0.08)]">
+                                        <div className="absolute inset-x-6 top-0 h-1 rounded-full bg-gradient-to-r from-sky-700 to-sky-400" />
+                                        <h3 className="mt-2 text-lg font-extrabold text-slate-900">
+                                            {content.companyName}
+                                        </h3>
+                                        <div className="mt-5 space-y-4">
+                                            <InfoRow
+                                                icon={FaMapMarkerAlt}
+                                                label="Alamat"
+                                                value={content.contact.address}
+                                            />
+                                            <InfoRow
+                                                icon={FaPhoneAlt}
+                                                label="Telepon"
+                                                value={content.contact.phone}
+                                                href={
+                                                    content.contact.phone
+                                                        ? `tel:${content.contact.phone.replace(/[^+\d]/g, "")}`
+                                                        : ""
+                                                }
+                                            />
+                                            <InfoRow
+                                                icon={FaEnvelope}
+                                                label="Email"
+                                                value={content.contact.email}
+                                                href={
+                                                    content.contact.email
+                                                        ? `mailto:${content.contact.email}`
+                                                        : ""
+                                                }
+                                            />
+                                            <InfoRow
+                                                icon={FaGlobe}
+                                                label="Website"
+                                                value={content.contact.website}
+                                                href={
+                                                    content.contact.website?.startsWith(
+                                                        "http",
+                                                    )
+                                                        ? content.contact
+                                                              .website
+                                                        : `https://${content.contact.website}`
+                                                }
+                                            />
+                                        </div>
                                     </div>
-                                    <div className="mt-1 text-lg font-bold text-slate-900">
-                                        Lanjutkan Eksplorasi
-                                    </div>
-                                    <div className="mt-2 text-sm text-slate-600">
-                                        Akses halaman terkait untuk informasi
-                                        layanan dan pembaruan terbaru.
+                                    <div className="relative overflow-hidden rounded-3xl border border-slate-100 shadow-[0_4px_24px_-12px_rgba(15,23,42,0.08)]">
+                                        <div className="absolute inset-x-6 top-0 h-1 rounded-full bg-gradient-to-r from-emerald-500 via-sky-500 to-violet-500 opacity-80 z-10" />
+                                        {content.hasMap ? (
+                                            <iframe
+                                                title="Peta lokasi perusahaan"
+                                                src={content.mapEmbedUrl}
+                                                className="h-full min-h-[280px] w-full border-0"
+                                                loading="lazy"
+                                                referrerPolicy="no-referrer-when-downgrade"
+                                                allowFullScreen
+                                            />
+                                        ) : (
+                                            <div className="flex h-full min-h-[280px] items-center justify-center bg-slate-50 text-slate-400">
+                                                <div className="text-center">
+                                                    <FaMapMarkerAlt className="mx-auto h-8 w-8" />
+                                                    <p className="mt-2 text-sm">
+                                                        Lokasi belum diatur
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
-                                <div className="p-6 sm:p-8 grid grid-cols-1 sm:grid-cols-3 gap-3">
-                                    <Link
-                                        href="/berita"
-                                        className="rounded-2xl border border-slate-200 bg-white p-4 hover:bg-slate-50 transition-colors"
-                                    >
-                                        <div className="flex items-start justify-between gap-3">
-                                            <div>
-                                                <div className="text-sm font-semibold text-slate-900">
-                                                    Berita
-                                                </div>
-                                                <div className="mt-1 text-sm text-slate-600">
-                                                    Informasi dan pembaruan
-                                                    terkini.
-                                                </div>
-                                            </div>
-                                            <FaArrowRight className="h-4 w-4 text-slate-400" />
-                                        </div>
-                                    </Link>
-                                    <Link
-                                        href={route("gallery")}
-                                        className="rounded-2xl border border-slate-200 bg-white p-4 hover:bg-slate-50 transition-colors"
-                                    >
-                                        <div className="flex items-start justify-between gap-3">
-                                            <div>
-                                                <div className="text-sm font-semibold text-slate-900">
-                                                    Galeri
-                                                </div>
-                                                <div className="mt-1 text-sm text-slate-600">
-                                                    Dokumentasi kegiatan dan
-                                                    fasilitas.
-                                                </div>
-                                            </div>
-                                            <FaArrowRight className="h-4 w-4 text-slate-400" />
-                                        </div>
-                                    </Link>
-                                    <Link
-                                        href="/kontak"
-                                        className="rounded-2xl border border-slate-200 bg-white p-4 hover:bg-slate-50 transition-colors"
-                                    >
-                                        <div className="flex items-start justify-between gap-3">
-                                            <div>
-                                                <div className="text-sm font-semibold text-slate-900">
-                                                    Kontak
-                                                </div>
-                                                <div className="mt-1 text-sm text-slate-600">
-                                                    Hubungi untuk kolaborasi dan
-                                                    layanan.
-                                                </div>
-                                            </div>
-                                            <FaArrowRight className="h-4 w-4 text-slate-400" />
-                                        </div>
-                                    </Link>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                            </section>
+                        </>
+                    )}
                 </div>
             </div>
         </HomeLayout>
