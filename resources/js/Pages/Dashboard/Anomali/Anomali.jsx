@@ -4,6 +4,7 @@ import ProcessPipeline from "@/Components/Anomali/ProcessPipeline";
 import AnomaliTable from "@/Components/Anomali/AnomaliTable";
 import AnomaliCalendar from "@/Components/Anomali/AnomaliCalendar";
 import ScheduleDetailModal from "@/Components/Anomali/ScheduleDetailModal";
+import { PERMISSIONS, hasPermission } from "@/utils/permissions";
 import {
     buildMyQueue,
     countByStage,
@@ -434,7 +435,12 @@ export default function Anomali({ anomalis = [], auth = [], kategoris = [] }) {
 
     const user = auth?.user ?? null;
     const today = useMemo(() => new Date(), []);
-    const canCreate = (user?.permissions ?? []).includes("View Anomali Create");
+    // Form dibuka dengan "View Anomali Create", tetapi simpan butuh "Buat Anomali".
+    const canCreate = hasPermission(user, [
+        PERMISSIONS.ANOMALI_CREATE_FORM,
+        PERMISSIONS.ANOMALI_CREATE,
+    ]);
+    const canExport = hasPermission(user, PERMISSIONS.ANOMALI_EXPORT);
 
     const myQueue = useMemo(
         () => buildMyQueue(filteredAnomalis, user, today),
@@ -611,17 +617,19 @@ export default function Anomali({ anomalis = [], auth = [], kategoris = [] }) {
                                                         <span>Filter</span>
                                                     </button>
 
-                                                    <button
-                                                        onClick={() =>
-                                                            setShowExportModal(
-                                                                true,
-                                                            )
-                                                        }
-                                                        className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-700 text-sm font-medium hover:bg-emerald-100 transition-all whitespace-nowrap"
-                                                    >
-                                                        <FaFileExcel className="text-emerald-600" />
-                                                        <span>Export</span>
-                                                    </button>
+                                                    {canExport ? (
+                                                        <button
+                                                            onClick={() =>
+                                                                setShowExportModal(
+                                                                    true,
+                                                                )
+                                                            }
+                                                            className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-700 text-sm font-medium hover:bg-emerald-100 transition-all whitespace-nowrap"
+                                                        >
+                                                            <FaFileExcel className="text-emerald-600" />
+                                                            <span>Export</span>
+                                                        </button>
+                                                    ) : null}
 
                                                     <div className="w-px h-8 bg-slate-200 mx-1 hidden lg:block"></div>
 

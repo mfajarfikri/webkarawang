@@ -1,5 +1,6 @@
 import DashboardLayout from "@/Layouts/DashboardLayout";
 import { Head, Link } from "@inertiajs/react";
+import { PERMISSIONS, useCan } from "@/utils/permissions";
 import { useState } from "react";
 import {
     FaArrowLeft,
@@ -208,6 +209,7 @@ function SummaryItem({ label, children }) {
 }
 
 export default function Detail({ anomalis }) {
+    const can = useCan();
     const [activeTab, setActiveTab] = useState("informasi");
     const [selectedImage, setSelectedImage] = useState(null);
 
@@ -288,10 +290,12 @@ export default function Detail({ anomalis }) {
                     }
                 >
                     <StageBadge anomali={anomalis} />
-                    <PdfDownloadButton
-                        url={`/dashboard/anomali/${anomalis.slug}/pdf`}
-                        fileName={`anomali_${anomalis.slug}.pdf`}
-                    />
+                    {can(PERMISSIONS.ANOMALI_EXPORT) ? (
+                        <PdfDownloadButton
+                            url={`/dashboard/anomali/${anomalis.slug}/pdf`}
+                            fileName={`anomali_${anomalis.slug}.pdf`}
+                        />
+                    ) : null}
                 </PageHeader>
 
                 {/* Ringkasan */}

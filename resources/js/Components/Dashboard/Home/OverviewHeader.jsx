@@ -42,6 +42,7 @@ export default function OverviewHeader({
     lastUpdated,
     error,
     canCreateAnomali,
+    canWriteBerita,
 }) {
     return (
         <header className="mb-6">
@@ -71,13 +72,15 @@ export default function OverviewHeader({
                             Laporkan anomali
                         </Link>
                     ) : null}
-                    <Link
-                        href={route("dashboard.berita.create")}
-                        className="btn-ghost"
-                    >
-                        <FaPen className="h-3 w-3" aria-hidden="true" />
-                        Tulis berita
-                    </Link>
+                    {canWriteBerita ? (
+                        <Link
+                            href={route("dashboard.berita.create")}
+                            className="btn-ghost"
+                        >
+                            <FaPen className="h-3 w-3" aria-hidden="true" />
+                            Tulis berita
+                        </Link>
+                    ) : null}
                 </div>
             </div>
             {error ? (

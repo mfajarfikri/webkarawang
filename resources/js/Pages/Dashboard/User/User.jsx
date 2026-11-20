@@ -24,6 +24,7 @@ import { Listbox, Combobox, Dialog, Transition } from "@headlessui/react";
 import { useSnackbar } from "notistack";
 import axios from "axios";
 
+import { PERMISSIONS, useCan } from "@/utils/permissions";
 const BIDANG_OPTIONS = [
     "Master",
     "Renev",
@@ -193,6 +194,7 @@ function ComboboxMultiple({ options, value, onChange }) {
 }
 
 export default function User() {
+    const canManage = useCan()(PERMISSIONS.USER_MANAGE);
     const { enqueueSnackbar } = useSnackbar();
     const { users = [], garduInduks = [] } = usePage().props;
     const [roleModalOpen, setRoleModalOpen] = useState(false);
@@ -515,10 +517,12 @@ export default function User() {
                         title="Manajemen User"
                         description="Kelola data user dan hak akses sistem."
                     >
-                        <button onClick={openCreateModal} className="btn-brand">
-                            <FaPlus className="h-3.5 w-3.5" />
-                            <span>Tambah User</span>
-                        </button>
+                        {canManage ? (
+                            <button onClick={openCreateModal} className="btn-brand">
+                                <FaPlus className="h-3.5 w-3.5" />
+                                <span>Tambah User</span>
+                            </button>
+                        ) : null}
                     </PageHeader>
 
                     {/* Main Card */}
@@ -731,24 +735,28 @@ export default function User() {
 
                                             {/* Actions */}
                                             <div className="flex gap-2">
-                                                <button
-                                                    onClick={() =>
-                                                        openRoleModal(row)
-                                                    }
-                                                    className="btn-ghost btn-sm flex-1"
-                                                >
-                                                    <FaUserShield className="h-3 w-3" />{" "}
-                                                    Kelola Role
-                                                </button>
-                                                <button
-                                                    onClick={() =>
-                                                        openDeleteModal(row)
-                                                    }
-                                                    className="btn-ghost btn-sm flex-1 !text-rose-600 hover:!border-rose-200 hover:!bg-rose-50"
-                                                >
-                                                    <FaTrash className="h-3 w-3" />{" "}
-                                                    Hapus
-                                                </button>
+                                                {canManage ? (
+                                                    <button
+                                                        onClick={() =>
+                                                            openRoleModal(row)
+                                                        }
+                                                        className="btn-ghost btn-sm flex-1"
+                                                    >
+                                                        <FaUserShield className="h-3 w-3" />{" "}
+                                                        Kelola Role
+                                                    </button>
+                                                ) : null}
+                                                {canManage ? (
+                                                    <button
+                                                        onClick={() =>
+                                                            openDeleteModal(row)
+                                                        }
+                                                        className="btn-ghost btn-sm flex-1 !text-rose-600 hover:!border-rose-200 hover:!bg-rose-50"
+                                                    >
+                                                        <FaTrash className="h-3 w-3" />{" "}
+                                                        Hapus
+                                                    </button>
+                                                ) : null}
                                             </div>
                                         </div>
                                     ))
@@ -877,30 +885,34 @@ export default function User() {
                                                     </td>
                                                     <td className="whitespace-nowrap text-right">
                                                         <div className="inline-flex items-center gap-0.5">
-                                                            <button
-                                                                onClick={() =>
-                                                                    openRoleModal(
-                                                                        row,
-                                                                    )
-                                                                }
-                                                                className="btn-icon hover:!bg-brand-50 hover:!text-brand-700"
-                                                                title="Kelola Role"
-                                                                aria-label="Kelola Role"
-                                                            >
-                                                                <FaUserShield className="h-3.5 w-3.5" />
-                                                            </button>
-                                                            <button
-                                                                onClick={() =>
-                                                                    openDeleteModal(
-                                                                        row,
-                                                                    )
-                                                                }
-                                                                className="btn-icon hover:!bg-rose-50 hover:!text-rose-600"
-                                                                title="Hapus User"
-                                                                aria-label="Hapus User"
-                                                            >
-                                                                <FaTrash className="h-3.5 w-3.5" />
-                                                            </button>
+                                                            {canManage ? (
+                                                                <button
+                                                                    onClick={() =>
+                                                                        openRoleModal(
+                                                                            row,
+                                                                        )
+                                                                    }
+                                                                    className="btn-icon hover:!bg-brand-50 hover:!text-brand-700"
+                                                                    title="Kelola Role"
+                                                                    aria-label="Kelola Role"
+                                                                >
+                                                                    <FaUserShield className="h-3.5 w-3.5" />
+                                                                </button>
+                                                            ) : null}
+                                                            {canManage ? (
+                                                                <button
+                                                                    onClick={() =>
+                                                                        openDeleteModal(
+                                                                            row,
+                                                                        )
+                                                                    }
+                                                                    className="btn-icon hover:!bg-rose-50 hover:!text-rose-600"
+                                                                    title="Hapus User"
+                                                                    aria-label="Hapus User"
+                                                                >
+                                                                    <FaTrash className="h-3.5 w-3.5" />
+                                                                </button>
+                                                            ) : null}
                                                         </div>
                                                     </td>
                                                 </tr>

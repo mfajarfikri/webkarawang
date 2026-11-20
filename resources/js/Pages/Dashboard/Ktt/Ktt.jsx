@@ -20,6 +20,7 @@ import axios from "axios";
 import PageHeader from "@/Components/Dashboard/PageHeader";
 import { Badge, Card, EmptyState } from "@/Components/Dashboard/ui";
 
+import { PERMISSIONS, useCan } from "@/utils/permissions";
 const TIPE_TONES = {
     Khusus: "violet",
     Gold: "amber",
@@ -34,6 +35,7 @@ function TipeBadge({ tipe }) {
 }
 
 export default function Ktt({ ktts }) {
+    const canCreate = useCan()(PERMISSIONS.KTT_CREATE);
     const [open, setOpen] = useState(false);
     const [rowsPerPage, setRowsPerPage] = useState(10);
     const [page, setPage] = useState(1);
@@ -211,14 +213,16 @@ export default function Ktt({ ktts }) {
                         title="Konsumen Tegangan Tinggi"
                         description="Data konsumen tegangan tinggi (KTT) yang terdaftar dan dimonitor pada sistem UPT Karawang."
                     >
-                        <button
-                            onClick={handleOpen}
-                            className="btn-brand"
-                            aria-label="Tambah data KTT"
-                        >
-                            <FaPlus className="h-3.5 w-3.5" />
-                            <span>Tambah KTT</span>
-                        </button>
+                        {canCreate ? (
+                            <button
+                                onClick={handleOpen}
+                                className="btn-brand"
+                                aria-label="Tambah data KTT"
+                            >
+                                <FaPlus className="h-3.5 w-3.5" />
+                                <span>Tambah KTT</span>
+                            </button>
+                        ) : null}
                     </PageHeader>
 
                     <div className="grid grid-cols-1 gap-6 md:grid-cols-2">

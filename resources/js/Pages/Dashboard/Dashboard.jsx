@@ -15,6 +15,7 @@ import MyQueueCard from "@/Components/Dashboard/Home/MyQueueCard";
 import AnalyticsCard from "@/Components/Dashboard/Home/AnalyticsCard";
 import BeritaHomepageCard from "@/Components/Dashboard/Home/BeritaHomepageCard";
 import LockedState from "@/Components/Dashboard/Home/LockedState";
+import { PERMISSIONS, hasPermission } from "@/utils/permissions";
 import {
     buildMonthlyTrendData,
     trendChartOptions,
@@ -26,7 +27,6 @@ const ITEMS_PER_PAGE = 5;
 
 const PERMISSION_BERITA = "Berita Home";
 const PERMISSION_ANOMALI = "Anomali Dashboard";
-const PERMISSION_CREATE_ANOMALI = "View Anomali Create";
 
 const ULTG_KARAWANG = "ULTG Karawang";
 const ULTG_PURWAKARTA = "ULTG Purwakarta";
@@ -296,9 +296,11 @@ export default function Dashboard() {
                 isSyncing={isSyncing}
                 lastUpdated={lastUpdated}
                 error={error}
-                canCreateAnomali={permissions.includes(
-                    PERMISSION_CREATE_ANOMALI,
-                )}
+                canCreateAnomali={hasPermission(user, [
+                    PERMISSIONS.ANOMALI_CREATE_FORM,
+                    PERMISSIONS.ANOMALI_CREATE,
+                ])}
+                canWriteBerita={hasPermission(user, PERMISSIONS.BERITA_CREATE)}
             />
 
             <div className="space-y-6">

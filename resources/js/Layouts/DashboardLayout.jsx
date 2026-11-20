@@ -24,6 +24,7 @@ import {
 import { useSnackbar } from "notistack";
 import BrandMark from "@/Components/BrandMark";
 import LogoutModal from "@/Components/LogoutModal";
+import { PERMISSIONS, hasPermission } from "@/utils/permissions";
 
 const SIDEBAR_STORAGE_KEY = "collapsedSidebar";
 const CLOCK_TICK_MS = 60000;
@@ -48,24 +49,28 @@ const NAV_GROUPS = [
                 label: "Berita",
                 icon: FaNewspaper,
                 routeName: "dashboard.berita.index",
+                permission: PERMISSIONS.BERITA_VIEW,
                 path: "/dashboard/berita",
             },
             {
                 label: "Profil Perusahaan",
                 icon: FaFileAlt,
                 routeName: "dashboard.company-profile.edit",
+                permission: PERMISSIONS.COMPANY_PROFILE_MANAGE,
                 path: "/dashboard/company-profile",
             },
             {
                 label: "KTT",
                 icon: FaBuilding,
                 routeName: "dashboard.ktt.index",
+                permission: PERMISSIONS.KTT_VIEW,
                 path: "/dashboard/ktt",
             },
             {
                 label: "Anomali",
                 icon: MdOutlineReportProblem,
                 routeName: "dashboard.anomali.index",
+                permission: PERMISSIONS.ANOMALI_VIEW,
                 path: "/dashboard/anomali",
             },
         ],
@@ -77,12 +82,14 @@ const NAV_GROUPS = [
                 label: "User",
                 icon: FaUsers,
                 routeName: "dashboard.user.index",
+                permission: PERMISSIONS.USER_VIEW,
                 path: "/dashboard/user",
             },
             {
                 label: "Gardu Induk",
                 icon: GiElectric,
                 routeName: "dashboard.gardu.index",
+                permission: PERMISSIONS.GARDU_VIEW,
                 path: "/dashboard/garduinduk",
             },
         ],
@@ -94,24 +101,28 @@ const NAV_GROUPS = [
                 label: "Dashboard Kinerja",
                 icon: FaChartBar,
                 routeName: "dashboard.kinerja.index",
+                permission: PERMISSIONS.KINERJA_VIEW,
                 path: "/dashboard/kinerja",
             },
             {
                 label: "Role",
                 icon: FaUserShield,
                 routeName: "dashboard.role.index",
+                permission: PERMISSIONS.ROLE_VIEW,
                 path: "/dashboard/role",
             },
             {
                 label: "Permission",
                 icon: FaKey,
                 routeName: "permission.index",
+                permission: PERMISSIONS.PERMISSION_VIEW,
                 path: "/dashboard/permission",
             },
             {
                 label: "Manajemen Menu",
                 icon: FaBars,
                 routeName: "dashboard.menu.index",
+                permission: PERMISSIONS.MENU_VIEW,
                 path: "/dashboard/menu",
             },
             {
@@ -138,12 +149,25 @@ function readCollapsedPreference() {
     }
 }
 
+/** Grup navigasi yang boleh dilihat user; grup tanpa item disembunyikan. */
+export function visibleNavGroups(groups, user) {
+    return groups
+        .map((group) => ({
+            ...group,
+            items: group.items.filter((item) =>
+                hasPermission(user, item.permission),
+            ),
+        }))
+        .filter((group) => group.items.length > 0);
+}
+
 function SidebarNav({ isCollapsed = false, onNavigate }) {
-    const { url } = usePage();
+    const { url, props } = usePage();
+    const groups = visibleNavGroups(NAV_GROUPS, props?.auth?.user);
 
     return (
         <nav aria-label="Navigasi dashboard" className="space-y-6">
-            {NAV_GROUPS.map((group, groupIndex) => (
+            {groups.map((group, groupIndex) => (
                 <div key={group.title ?? groupIndex}>
                     {group.title &&
                         (isCollapsed ? (

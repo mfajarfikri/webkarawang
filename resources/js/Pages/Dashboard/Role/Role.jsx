@@ -32,7 +32,9 @@ import { useRef } from "react";
 import ErrorBoundary from "@/Components/ErrorBoundary";
 import { Badge, Card, EmptyState } from "@/Components/Dashboard/ui";
 
+import { PERMISSIONS, useCan } from "@/utils/permissions";
 export default function Role() {
+    const canManage = useCan()(PERMISSIONS.ROLE_MANAGE);
     const { roles, errors } = usePage().props;
     const [name, setName] = useState("");
     const [loading, setLoading] = useState(false);
@@ -180,45 +182,47 @@ export default function Role() {
                 </PageHeader>
 
                 {/* Add Role Card */}
-                <Card
-                    icon={FaPlus}
-                    title="Tambah Role Baru"
-                    description="Role baru dapat langsung diberi permission dari daftar di bawah."
-                >
-                    <form
-                        onSubmit={handleSubmit}
-                        className="flex flex-col items-end gap-3 sm:flex-row"
+                {canManage ? (
+                    <Card
+                        icon={FaPlus}
+                        title="Tambah Role Baru"
+                        description="Role baru dapat langsung diberi permission dari daftar di bawah."
                     >
-                        <div className="w-full flex-1">
-                            <label
-                                htmlFor="role-name"
-                                className="field-label"
-                            >
-                                Nama Role
-                            </label>
-                            <input
-                                id="role-name"
-                                type="text"
-                                className="field-input"
-                                placeholder="Contoh: Administrator"
-                                value={name}
-                                onChange={(e) => setName(e.target.value)}
-                                required
-                            />
-                            {errors && errors.name && (
-                                <p className="field-error">{errors.name}</p>
-                            )}
-                        </div>
-                        <button
-                            type="submit"
-                            className="btn-brand w-full sm:w-auto"
-                            disabled={loading}
+                        <form
+                            onSubmit={handleSubmit}
+                            className="flex flex-col items-end gap-3 sm:flex-row"
                         >
-                            <FaPlus className="h-3.5 w-3.5" />
-                            Tambah
-                        </button>
-                    </form>
-                </Card>
+                            <div className="w-full flex-1">
+                                <label
+                                    htmlFor="role-name"
+                                    className="field-label"
+                                >
+                                    Nama Role
+                                </label>
+                                <input
+                                    id="role-name"
+                                    type="text"
+                                    className="field-input"
+                                    placeholder="Contoh: Administrator"
+                                    value={name}
+                                    onChange={(e) => setName(e.target.value)}
+                                    required
+                                />
+                                {errors && errors.name && (
+                                    <p className="field-error">{errors.name}</p>
+                                )}
+                            </div>
+                            <button
+                                type="submit"
+                                className="btn-brand w-full sm:w-auto"
+                                disabled={loading}
+                            >
+                                <FaPlus className="h-3.5 w-3.5" />
+                                Tambah
+                            </button>
+                        </form>
+                    </Card>
+                ) : null}
 
                 {/* Roles Table Card */}
                 <Card
@@ -389,28 +393,30 @@ export default function Role() {
                                                     </div>
                                                 </td>
                                                 <td className="whitespace-nowrap text-right">
-                                                    <IconButton
-                                                        aria-label="actions"
-                                                        onClick={(e) =>
-                                                            handleMenuOpen(
-                                                                row.id,
-                                                                e
-                                                            )
-                                                        }
-                                                        size="small"
-                                                        sx={{
-                                                            width: 36,
-                                                            height: 36,
-                                                            color: "rgb(100 116 139)",
-                                                            "&:hover": {
-                                                                backgroundColor:
-                                                                    "rgb(241 245 249)",
-                                                                color: "rgb(15 23 42)",
-                                                            },
-                                                        }}
-                                                    >
-                                                        <FaEllipsisV className="h-3.5 w-3.5" />
-                                                    </IconButton>
+                                                    {canManage ? (
+                                                        <IconButton
+                                                            aria-label="actions"
+                                                            onClick={(e) =>
+                                                                handleMenuOpen(
+                                                                    row.id,
+                                                                    e
+                                                                )
+                                                            }
+                                                            size="small"
+                                                            sx={{
+                                                                width: 36,
+                                                                height: 36,
+                                                                color: "rgb(100 116 139)",
+                                                                "&:hover": {
+                                                                    backgroundColor:
+                                                                        "rgb(241 245 249)",
+                                                                    color: "rgb(15 23 42)",
+                                                                },
+                                                            }}
+                                                        >
+                                                            <FaEllipsisV className="h-3.5 w-3.5" />
+                                                        </IconButton>
+                                                    ) : null}
                                                     <Menu
                                                         anchorEl={
                                                             anchorEls[row.id]

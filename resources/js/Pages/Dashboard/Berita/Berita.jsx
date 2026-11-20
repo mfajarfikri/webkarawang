@@ -33,6 +33,7 @@ import { id } from "date-fns/locale";
 import { useSnackbar } from "notistack";
 import { generateExcerpt } from "@/utils/editorParser";
 import axios from "axios";
+import { PERMISSIONS, useCan } from "@/utils/permissions";
 
 export default function Berita({ berita: initialBerita }) {
     const [searchTerm, setSearchTerm] = useState("");
@@ -43,6 +44,11 @@ export default function Berita({ berita: initialBerita }) {
     const [beritaToDelete, setBeritaToDelete] = useState(null);
     const { enqueueSnackbar } = useSnackbar();
     const { csrf_token } = usePage().props;
+    const can = useCan();
+    const canCreate = can(PERMISSIONS.BERITA_CREATE);
+    const canDetail = can(PERMISSIONS.BERITA_DETAIL);
+    const canEdit = can(PERMISSIONS.BERITA_EDIT);
+    const canDelete = can(PERMISSIONS.BERITA_DELETE);
     const [actionDropdown, setActionDropdown] = useState(null);
     const [viewMode, setViewMode] = useState("grid");
     const [pagination, setPagination] = useState({
@@ -284,7 +290,7 @@ export default function Berita({ berita: initialBerita }) {
                         >
                             Reset Pencarian
                         </button>
-                    ) : (
+                    ) : canCreate ? (
                         <Link
                             href={route("dashboard.berita.create")}
                             className="btn-brand"
@@ -292,7 +298,7 @@ export default function Berita({ berita: initialBerita }) {
                             <FaPlus className="h-3.5 w-3.5" aria-hidden="true" />
                             Buat Berita Pertama
                         </Link>
-                    )}
+                    ) : null}
                     <button
                         type="button"
                         onClick={() =>
@@ -446,13 +452,15 @@ export default function Berita({ berita: initialBerita }) {
                         </span>
                         <span>Artikel</span>
                     </div>
-                    <Link
-                        href={route("dashboard.berita.create")}
-                        className="btn-brand"
-                    >
-                        <FaPlus className="h-3.5 w-3.5" aria-hidden="true" />
-                        Buat Berita Baru
-                    </Link>
+                    {canCreate ? (
+                        <Link
+                            href={route("dashboard.berita.create")}
+                            className="btn-brand"
+                        >
+                            <FaPlus className="h-3.5 w-3.5" aria-hidden="true" />
+                            Buat Berita Baru
+                        </Link>
+                    ) : null}
                 </PageHeader>
 
                 <div className="surface">
@@ -612,15 +620,23 @@ export default function Berita({ berita: initialBerita }) {
                                                 {filteredBerita.map((item) => (
                                                     <tr key={item.id}>
                                                         <td className="min-w-[16rem]">
-                                                            <Link
-                                                                href={route(
-                                                                    "dashboard.berita.show",
-                                                                    item.slug,
-                                                                )}
-                                                                className="font-semibold text-ink-900 hover:text-brand-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/30 rounded"
-                                                            >
-                                                                {item.judul}
-                                                            </Link>
+                                                            {canDetail ? (
+                                                                <Link
+                                                                    href={route(
+                                                                        "dashboard.berita.show",
+                                                                        item.slug,
+                                                                    )}
+                                                                    className="font-semibold text-ink-900 hover:text-brand-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/30 rounded"
+                                                                >
+                                                                    {item.judul}
+                                                                </Link>
+                                                            ) : (
+                                                                <span
+                                                                    className="font-semibold text-ink-900 hover:text-brand-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/30 rounded"
+                                                                >
+                                                                    {item.judul}
+                                                                </span>
+                                                            )}
                                                             <div className="mt-1 text-xs text-slate-500 line-clamp-1">
                                                                 {(item.content_json
                                                                     ? generateExcerpt(
@@ -660,37 +676,41 @@ export default function Berita({ berita: initialBerita }) {
                                                         </td>
                                                         <td>
                                                             <div className="flex items-center justify-end gap-1">
-                                                                <Link
-                                                                    href={route(
-                                                                        "dashboard.berita.edit",
-                                                                        item.slug,
-                                                                    )}
-                                                                    className="btn-ghost btn-sm"
-                                                                >
-                                                                    <FaEdit
-                                                                        className="h-3 w-3"
-                                                                        aria-hidden="true"
-                                                                    />
-                                                                    Edit
-                                                                </Link>
-                                                                <button
-                                                                    type="button"
-                                                                    onClick={() => {
-                                                                        setBeritaToDelete(
-                                                                            item,
-                                                                        );
-                                                                        setShowDeleteModal(
-                                                                            true,
-                                                                        );
-                                                                    }}
-                                                                    className="btn btn-sm text-rose-600 hover:bg-rose-50"
-                                                                >
-                                                                    <FaTrash
-                                                                        className="h-3 w-3"
-                                                                        aria-hidden="true"
-                                                                    />
-                                                                    Hapus
-                                                                </button>
+                                                                {canEdit ? (
+                                                                    <Link
+                                                                        href={route(
+                                                                            "dashboard.berita.edit",
+                                                                            item.slug,
+                                                                        )}
+                                                                        className="btn-ghost btn-sm"
+                                                                    >
+                                                                        <FaEdit
+                                                                            className="h-3 w-3"
+                                                                            aria-hidden="true"
+                                                                        />
+                                                                        Edit
+                                                                    </Link>
+                                                                ) : null}
+                                                                {canDelete ? (
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => {
+                                                                            setBeritaToDelete(
+                                                                                item,
+                                                                            );
+                                                                            setShowDeleteModal(
+                                                                                true,
+                                                                            );
+                                                                        }}
+                                                                        className="btn btn-sm text-rose-600 hover:bg-rose-50"
+                                                                    >
+                                                                        <FaTrash
+                                                                            className="h-3 w-3"
+                                                                            aria-hidden="true"
+                                                                        />
+                                                                        Hapus
+                                                                    </button>
+                                                                ) : null}
                                                             </div>
                                                         </td>
                                                     </tr>
@@ -742,15 +762,23 @@ export default function Berita({ berita: initialBerita }) {
                                                             )}
                                                         </span>
                                                     </div>
-                                                    <Link
-                                                        href={route(
-                                                            "dashboard.berita.show",
-                                                            item.slug,
-                                                        )}
-                                                        className="mt-3 block font-display text-lg font-bold tracking-tight text-ink-900 hover:text-brand-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/30 rounded"
-                                                    >
-                                                        {item.judul}
-                                                    </Link>
+                                                    {canDetail ? (
+                                                        <Link
+                                                            href={route(
+                                                                "dashboard.berita.show",
+                                                                item.slug,
+                                                            )}
+                                                            className="mt-3 block font-display text-lg font-bold tracking-tight text-ink-900 hover:text-brand-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/30 rounded"
+                                                        >
+                                                            {item.judul}
+                                                        </Link>
+                                                    ) : (
+                                                        <span
+                                                            className="mt-3 block font-display text-lg font-bold tracking-tight text-ink-900 hover:text-brand-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/30 rounded"
+                                                        >
+                                                            {item.judul}
+                                                        </span>
+                                                    )}
                                                     <div
                                                         className="mt-2 text-sm text-slate-600 leading-relaxed line-clamp-3"
                                                         dangerouslySetInnerHTML={{
@@ -771,47 +799,53 @@ export default function Berita({ berita: initialBerita }) {
                                                         }}
                                                     />
                                                     <div className="mt-5 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
-                                                        <Link
-                                                            href={route(
-                                                                "dashboard.berita.show",
-                                                                item.slug,
-                                                            )}
-                                                            className="inline-flex items-center text-sm font-semibold text-brand-700 hover:text-brand-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/30 rounded"
-                                                        >
-                                                            Baca Selengkapnya
-                                                        </Link>
-                                                        <div className="flex items-center gap-2 justify-end">
+                                                        {canDetail ? (
                                                             <Link
                                                                 href={route(
-                                                                    "dashboard.berita.edit",
+                                                                    "dashboard.berita.show",
                                                                     item.slug,
                                                                 )}
-                                                                className="btn-ghost btn-sm"
+                                                                className="inline-flex items-center text-sm font-semibold text-brand-700 hover:text-brand-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/30 rounded"
                                                             >
-                                                                <FaEdit
-                                                                    className="h-3 w-3"
-                                                                    aria-hidden="true"
-                                                                />
-                                                                Edit
+                                                                Baca Selengkapnya
                                                             </Link>
-                                                            <button
-                                                                type="button"
-                                                                onClick={() => {
-                                                                    setBeritaToDelete(
-                                                                        item,
-                                                                    );
-                                                                    setShowDeleteModal(
-                                                                        true,
-                                                                    );
-                                                                }}
-                                                                className="btn btn-sm text-rose-600 hover:bg-rose-50"
-                                                            >
-                                                                <FaTrash
-                                                                    className="h-3 w-3"
-                                                                    aria-hidden="true"
-                                                                />
-                                                                Hapus
-                                                            </button>
+                                                        ) : null}
+                                                        <div className="flex items-center gap-2 justify-end">
+                                                            {canEdit ? (
+                                                                <Link
+                                                                    href={route(
+                                                                        "dashboard.berita.edit",
+                                                                        item.slug,
+                                                                    )}
+                                                                    className="btn-ghost btn-sm"
+                                                                >
+                                                                    <FaEdit
+                                                                        className="h-3 w-3"
+                                                                        aria-hidden="true"
+                                                                    />
+                                                                    Edit
+                                                                </Link>
+                                                            ) : null}
+                                                            {canDelete ? (
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => {
+                                                                        setBeritaToDelete(
+                                                                            item,
+                                                                        );
+                                                                        setShowDeleteModal(
+                                                                            true,
+                                                                        );
+                                                                    }}
+                                                                    className="btn btn-sm text-rose-600 hover:bg-rose-50"
+                                                                >
+                                                                    <FaTrash
+                                                                        className="h-3 w-3"
+                                                                        aria-hidden="true"
+                                                                    />
+                                                                    Hapus
+                                                                </button>
+                                                            ) : null}
                                                         </div>
                                                     </div>
                                                 </div>
@@ -842,83 +876,89 @@ export default function Berita({ berita: initialBerita }) {
                                                 <div className="absolute left-4 top-4 inline-flex items-center rounded-full bg-white/90 px-2.5 py-0.5 text-xs font-semibold text-ink-900 shadow-soft">
                                                     {item.tema?.nama || "Umum"}
                                                 </div>
-                                                <div className="absolute right-4 top-4">
-                                                    <button
-                                                        type="button"
-                                                        onClick={(e) =>
-                                                            toggleActionDropdown(
-                                                                item.id,
-                                                                e,
-                                                            )
-                                                        }
-                                                        aria-haspopup="menu"
-                                                        aria-expanded={
-                                                            actionDropdown ===
-                                                            item.id
-                                                        }
-                                                        className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-white/90 text-ink-900 shadow-soft hover:bg-white transition focus:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
-                                                        aria-label="Buka menu aksi"
-                                                    >
-                                                        <FaEllipsisV
-                                                            className="text-xs"
-                                                            aria-hidden="true"
-                                                        />
-                                                    </button>
-                                                    {actionDropdown ===
-                                                    item.id ? (
-                                                        <div
-                                                            role="menu"
-                                                            className="absolute right-0 top-full mt-2 w-52 rounded-2xl border border-slate-200/80 bg-white shadow-lift overflow-hidden z-10"
+                                                {(canEdit || canDelete) ? (
+                                                    <div className="absolute right-4 top-4">
+                                                        <button
+                                                            type="button"
                                                             onClick={(e) =>
-                                                                e.stopPropagation()
+                                                                toggleActionDropdown(
+                                                                    item.id,
+                                                                    e,
+                                                                )
                                                             }
+                                                            aria-haspopup="menu"
+                                                            aria-expanded={
+                                                                actionDropdown ===
+                                                                item.id
+                                                            }
+                                                            className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-white/90 text-ink-900 shadow-soft hover:bg-white transition focus:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
+                                                            aria-label="Buka menu aksi"
                                                         >
-                                                            <div className="p-2">
-                                                                <Link
-                                                                    role="menuitem"
-                                                                    href={route(
-                                                                        "dashboard.berita.edit",
-                                                                        item.slug,
-                                                                    )}
-                                                                    className="flex items-center rounded-xl px-3 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 hover:text-ink-900 transition"
-                                                                >
-                                                                    <FaEdit
-                                                                        className="mr-3 h-3.5 w-3.5"
-                                                                        aria-hidden="true"
-                                                                    />
-                                                                    Edit Artikel
-                                                                </Link>
-                                                                <button
-                                                                    role="menuitem"
-                                                                    type="button"
-                                                                    onClick={(
-                                                                        e,
-                                                                    ) => {
-                                                                        e.preventDefault();
-                                                                        e.stopPropagation();
-                                                                        setBeritaToDelete(
-                                                                            item,
-                                                                        );
-                                                                        setShowDeleteModal(
-                                                                            true,
-                                                                        );
-                                                                        setActionDropdown(
-                                                                            null,
-                                                                        );
-                                                                    }}
-                                                                    className="flex w-full items-center rounded-xl px-3 py-2.5 text-sm font-semibold text-rose-700 hover:bg-rose-50 transition"
-                                                                >
-                                                                    <FaTrash
-                                                                        className="mr-3 h-3.5 w-3.5"
-                                                                        aria-hidden="true"
-                                                                    />
-                                                                    Hapus
-                                                                    Artikel
-                                                                </button>
+                                                            <FaEllipsisV
+                                                                className="text-xs"
+                                                                aria-hidden="true"
+                                                            />
+                                                        </button>
+                                                        {actionDropdown ===
+                                                        item.id ? (
+                                                            <div
+                                                                role="menu"
+                                                                className="absolute right-0 top-full mt-2 w-52 rounded-2xl border border-slate-200/80 bg-white shadow-lift overflow-hidden z-10"
+                                                                onClick={(e) =>
+                                                                    e.stopPropagation()
+                                                                }
+                                                            >
+                                                                <div className="p-2">
+                                                                    {canEdit ? (
+                                                                        <Link
+                                                                            role="menuitem"
+                                                                            href={route(
+                                                                                "dashboard.berita.edit",
+                                                                                item.slug,
+                                                                            )}
+                                                                            className="flex items-center rounded-xl px-3 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 hover:text-ink-900 transition"
+                                                                        >
+                                                                            <FaEdit
+                                                                                className="mr-3 h-3.5 w-3.5"
+                                                                                aria-hidden="true"
+                                                                            />
+                                                                            Edit Artikel
+                                                                        </Link>
+                                                                    ) : null}
+                                                                    {canDelete ? (
+                                                                        <button
+                                                                            role="menuitem"
+                                                                            type="button"
+                                                                            onClick={(
+                                                                                e,
+                                                                            ) => {
+                                                                                e.preventDefault();
+                                                                                e.stopPropagation();
+                                                                                setBeritaToDelete(
+                                                                                    item,
+                                                                                );
+                                                                                setShowDeleteModal(
+                                                                                    true,
+                                                                                );
+                                                                                setActionDropdown(
+                                                                                    null,
+                                                                                );
+                                                                            }}
+                                                                            className="flex w-full items-center rounded-xl px-3 py-2.5 text-sm font-semibold text-rose-700 hover:bg-rose-50 transition"
+                                                                        >
+                                                                            <FaTrash
+                                                                                className="mr-3 h-3.5 w-3.5"
+                                                                                aria-hidden="true"
+                                                                            />
+                                                                            Hapus
+                                                                            Artikel
+                                                                        </button>
+                                                                    ) : null}
+                                                                </div>
                                                             </div>
-                                                        </div>
-                                                    ) : null}
-                                                </div>
+                                                        ) : null}
+                                                    </div>
+                                                ) : null}
                                                 <div className="absolute bottom-0 left-0 right-0 p-5">
                                                     <div className="flex items-center gap-3 text-white/90 text-xs font-semibold">
                                                         <span className="inline-flex items-center gap-1.5">
@@ -946,17 +986,27 @@ export default function Berita({ berita: initialBerita }) {
                                                             )}
                                                         </span>
                                                     </div>
-                                                    <Link
-                                                        href={route(
-                                                            "dashboard.berita.show",
-                                                            item.slug,
-                                                        )}
-                                                        className="mt-2 block font-display text-lg font-bold tracking-tight text-white hover:text-brand-100 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-white/40 rounded"
-                                                    >
-                                                        <span className="line-clamp-2">
-                                                            {item.judul}
+                                                    {canDetail ? (
+                                                        <Link
+                                                            href={route(
+                                                                "dashboard.berita.show",
+                                                                item.slug,
+                                                            )}
+                                                            className="mt-2 block font-display text-lg font-bold tracking-tight text-white hover:text-brand-100 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-white/40 rounded"
+                                                        >
+                                                            <span className="line-clamp-2">
+                                                                {item.judul}
+                                                            </span>
+                                                        </Link>
+                                                    ) : (
+                                                        <span
+                                                            className="mt-2 block font-display text-lg font-bold tracking-tight text-white hover:text-brand-100 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-white/40 rounded"
+                                                        >
+                                                            <span className="line-clamp-2">
+                                                                {item.judul}
+                                                            </span>
                                                         </span>
-                                                    </Link>
+                                                    )}
                                                 </div>
                                             </div>
                                             <div className="p-5 flex flex-col flex-1">
@@ -980,19 +1030,21 @@ export default function Berita({ berita: initialBerita }) {
                                                     }}
                                                 />
                                                 <div className="mt-auto pt-5 flex items-center justify-between">
-                                                    <Link
-                                                        href={route(
-                                                            "dashboard.berita.show",
-                                                            item.slug,
-                                                        )}
-                                                        className="text-sm font-semibold text-brand-700 hover:text-brand-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/30 rounded inline-flex items-center"
-                                                    >
-                                                        Baca Selengkapnya
-                                                        <FaChevronRight
-                                                            className="ml-1.5 text-xs"
-                                                            aria-hidden="true"
-                                                        />
-                                                    </Link>
+                                                    {canDetail ? (
+                                                        <Link
+                                                            href={route(
+                                                                "dashboard.berita.show",
+                                                                item.slug,
+                                                            )}
+                                                            className="text-sm font-semibold text-brand-700 hover:text-brand-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/30 rounded inline-flex items-center"
+                                                        >
+                                                            Baca Selengkapnya
+                                                            <FaChevronRight
+                                                                className="ml-1.5 text-xs"
+                                                                aria-hidden="true"
+                                                            />
+                                                        </Link>
+                                                    ) : null}
                                                 </div>
                                             </div>
                                         </div>

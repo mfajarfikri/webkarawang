@@ -2,7 +2,7 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import React from "react";
 import DashboardLayout from "../DashboardLayout";
 
-const pageState = { url: "/dashboard" };
+const pageState = { url: "/dashboard", permissions: ["Dashboard Berita"] };
 
 vi.mock("@inertiajs/react", () => ({
     Head: () => null,
@@ -22,6 +22,7 @@ vi.mock("@inertiajs/react", () => ({
                     role: "Admin",
                     wilayah: "UPT Karawang",
                     foto_profil: null,
+                    permissions: pageState.permissions,
                 },
             },
         },
@@ -80,6 +81,17 @@ describe("DashboardLayout", () => {
 
         expect(current.length).toBeGreaterThan(0);
         current.forEach((link) => expect(link).toHaveTextContent("Berita"));
+    });
+
+    it("hides menus the user has no permission for", () => {
+        renderLayout();
+
+        // Sidebar dirender untuk desktop dan mobile, jadi pakai *AllBy*.
+        expect(screen.getAllByRole("link", { name: "Berita" }).length).toBeGreaterThan(0);
+        expect(screen.getAllByRole("link", { name: "Pengaturan" }).length).toBeGreaterThan(0);
+        expect(screen.queryAllByRole("link", { name: "User" })).toHaveLength(0);
+        expect(screen.queryAllByRole("link", { name: "Role" })).toHaveLength(0);
+        expect(screen.queryAllByText("Data")).toHaveLength(0);
     });
 
     it("persists the collapsed sidebar preference", () => {

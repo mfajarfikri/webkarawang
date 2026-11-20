@@ -34,7 +34,9 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 
+import { PERMISSIONS, useCan } from "@/utils/permissions";
 export default function MenuManagement() {
+    const canManage = useCan()(PERMISSIONS.MENU_MANAGE);
     const { menus: initialMenus } = usePage().props;
     const { enqueueSnackbar } = useSnackbar();
     const [menus, setMenus] = useState(initialMenus);
@@ -225,7 +227,7 @@ export default function MenuManagement() {
             transform,
             transition,
             isDragging,
-        } = useSortable({ id: menu.id });
+        } = useSortable({ id: menu.id, disabled: !canManage });
 
         const style = {
             transform: CSS.Transform.toString(transform),
@@ -255,13 +257,15 @@ export default function MenuManagement() {
 
                     <div className="flex min-w-0 items-center gap-3">
                         <div className="flex items-center gap-1.5">
-                            <div
-                                {...attributes}
-                                {...listeners}
-                                className="cursor-grab rounded-full p-2 text-slate-300 transition-colors hover:bg-slate-100 hover:text-slate-600 active:cursor-grabbing"
-                            >
-                                <FaBars size={14} />
-                            </div>
+                            {canManage ? (
+                                <div
+                                    {...attributes}
+                                    {...listeners}
+                                    className="cursor-grab rounded-full p-2 text-slate-300 transition-colors hover:bg-slate-100 hover:text-slate-600 active:cursor-grabbing"
+                                >
+                                    <FaBars size={14} />
+                                </div>
+                            ) : null}
 
                             {hasSubmenus || level < 3 ? ( // Limit to 3 levels for UX, but logic supports more
                                 <button
@@ -308,32 +312,34 @@ export default function MenuManagement() {
                             </span>
                         </div>
 
-                        <div className="flex items-center gap-0.5 transition-opacity focus-within:opacity-100 sm:opacity-0 sm:group-hover:opacity-100">
-                            <button
-                                onClick={() => openModal(null, menu.id)}
-                                className="btn-icon hover:!bg-brand-50 hover:!text-brand-700"
-                                title="Tambah Submenu"
-                                aria-label="Tambah Submenu"
-                            >
-                                <FaPlus size={13} />
-                            </button>
-                            <button
-                                onClick={() => openModal(menu)}
-                                className="btn-icon"
-                                title="Edit"
-                                aria-label="Edit"
-                            >
-                                <FaEdit size={13} />
-                            </button>
-                            <button
-                                onClick={() => handleDelete(menu.id)}
-                                className="btn-icon hover:!bg-rose-50 hover:!text-rose-600"
-                                title="Hapus"
-                                aria-label="Hapus"
-                            >
-                                <FaTrash size={13} />
-                            </button>
-                        </div>
+                        {canManage ? (
+                            <div className="flex items-center gap-0.5 transition-opacity focus-within:opacity-100 sm:opacity-0 sm:group-hover:opacity-100">
+                                <button
+                                    onClick={() => openModal(null, menu.id)}
+                                    className="btn-icon hover:!bg-brand-50 hover:!text-brand-700"
+                                    title="Tambah Submenu"
+                                    aria-label="Tambah Submenu"
+                                >
+                                    <FaPlus size={13} />
+                                </button>
+                                <button
+                                    onClick={() => openModal(menu)}
+                                    className="btn-icon"
+                                    title="Edit"
+                                    aria-label="Edit"
+                                >
+                                    <FaEdit size={13} />
+                                </button>
+                                <button
+                                    onClick={() => handleDelete(menu.id)}
+                                    className="btn-icon hover:!bg-rose-50 hover:!text-rose-600"
+                                    title="Hapus"
+                                    aria-label="Hapus"
+                                >
+                                    <FaTrash size={13} />
+                                </button>
+                            </div>
+                        ) : null}
                     </div>
                 </div>
 
@@ -373,9 +379,11 @@ export default function MenuManagement() {
                     title="Manajemen Menu"
                     description="Susun navigasi website dengan struktur tak terbatas dan antarmuka drag-and-drop."
                 >
-                    <button onClick={() => openModal()} className="btn-brand">
-                        <FaPlus className="h-3.5 w-3.5" /> Tambah Menu Utama
-                    </button>
+                    {canManage ? (
+                        <button onClick={() => openModal()} className="btn-brand">
+                            <FaPlus className="h-3.5 w-3.5" /> Tambah Menu Utama
+                        </button>
+                    ) : null}
                 </PageHeader>
 
                 {menus.length > 0 ? (

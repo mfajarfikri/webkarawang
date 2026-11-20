@@ -35,9 +35,14 @@ const multg = {
 const harjar = {
     bidang: "Harjar",
     wilayah: "ULTG Karawang",
-    permissions: ["View Anomali"],
+    permissions: ["View Anomali", "Kelola Anomali"],
 };
-const renev = { bidang: "Renev", wilayah: null, permissions: ["View Anomali"] };
+const harjarNoManage = { ...harjar, permissions: ["View Anomali"] };
+const renev = {
+    bidang: "Renev",
+    wilayah: null,
+    permissions: ["View Anomali", "Kelola Anomali"],
+};
 const viewer = { bidang: null, wilayah: null, permissions: ["View Anomali"] };
 
 describe("deriveStage", () => {
@@ -199,6 +204,15 @@ describe("nextAction", () => {
             routeName: "dashboard.anomali.close",
             isMine: true,
         });
+    });
+
+    it("offers Tutup instead of Jadwalkan when the field lacks Kelola Anomali", () => {
+        const assigned = anomali({ status: "Open", bidang_assigned: "Harjar" });
+        expect(nextAction(assigned, harjarNoManage)).toMatchObject({
+            kind: "close",
+            isMine: true,
+        });
+        expect(secondaryActions(assigned, harjarNoManage)).toEqual([]);
     });
 
     it("matches the assigned field case-insensitively and lets Renev act across regions", () => {

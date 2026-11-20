@@ -6,9 +6,11 @@
  * tanggal_mulai. Fungsi di sini murni (tanpa efek samping) supaya mudah diuji.
  */
 
+import { PERMISSIONS, hasPermission } from "@/utils/permissions";
+
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
-const REVIEW_PERMISSION = "Review Anomali";
+const REVIEW_PERMISSION = PERMISSIONS.ANOMALI_REVIEW;
 
 /** Urutan tahap pada pipeline proses (Ditolak ditampilkan terpisah). */
 export const PIPELINE = ["review", "assigned", "scheduled", "closed"];
@@ -149,6 +151,11 @@ function action(kind, isMine) {
     return { kind, ...ACTIONS[kind], isMine };
 }
 
+/** Route jadwal dijaga izin "Kelola Anomali" (routes/web.php). */
+function canSchedule(user) {
+    return hasPermission(user, PERMISSIONS.ANOMALI_MANAGE);
+}
+
 /**
  * Satu aksi berikutnya untuk sebuah anomali, dilihat dari pengguna tertentu.
  * `isMine` true berarti anomali menunggu tindakan pengguna ini.
@@ -160,7 +167,7 @@ export function nextAction(anomali, user) {
         return action("review", true);
     }
     if (stage === "assigned" && isAssignedToMyField(anomali, user)) {
-        return action("schedule", true);
+        return action(canSchedule(user) ? "schedule" : "close", true);
     }
     if (stage === "scheduled" && isAssignedToMyField(anomali, user)) {
         return action("close", true);
@@ -170,10 +177,11 @@ export function nextAction(anomali, user) {
 
 /**
  * Aksi tambahan untuk bidang yang ditugaskan: menutup pekerjaan yang selesai
- * tanpa dijadwalkan, atau mengubah jadwal yang sudah ada.
+ * tanpa dijadwalkan, atau mengubah jadwal yang sudah ada. Aksi jadwal hanya
+ * untuk pemegang izin "Kelola Anomali".
  */
 export function secondaryActions(anomali, user) {
-    if (!isAssignedToMyField(anomali, user)) return [];
+    if (!isAssignedToMyField(anomali, user) || !canSchedule(user)) return [];
     const stage = deriveStage(anomali);
     if (stage === "assigned") return [action("close", true)];
     if (stage === "scheduled") {
