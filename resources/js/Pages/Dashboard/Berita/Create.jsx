@@ -14,11 +14,12 @@ import { useForm } from "@inertiajs/react";
 import { useSnackbar } from "notistack";
 import axios from "axios";
 import Modal from "react-modal";
-import ApplicationLogo from "@/Components/ApplicationLogo";
+import PageHeader from "@/Components/Dashboard/PageHeader";
+import { Card } from "@/Components/Dashboard/ui";
+import { Link } from "@inertiajs/react";
 import TextInput from "@/Components/TextInput";
 import InputLabel from "@/Components/InputLabel";
 import InputError from "@/Components/InputError";
-import PrimaryButton from "@/Components/PrimaryButton";
 import { Combobox, Transition } from "@headlessui/react";
 import { CheckIcon, ChevronUpDownIcon } from "@heroicons/react/20/solid";
 
@@ -436,42 +437,40 @@ export default function Create({ temas = [], flash }) {
         <DashboardLayout title="Tulis Berita">
             <Head title="Buat Berita" />
 
-            <div className="min-h-screen bg-slate-50 py-8 px-4 sm:px-6 lg:px-8">
-                <div className="max-w-7xl mx-auto">
-                    {/* Simple Clean Header */}
-                    <div className="mb-8 flex items-center justify-between">
-                        <div>
-                            <h1 className="text-3xl font-bold text-slate-800 tracking-tight">
-                                Tulis Berita
-                            </h1>
-                            <p className="text-slate-500 mt-1">
-                                Bagikan informasi terkini kepada semua orang
-                            </p>
-                        </div>
-                        <div className="flex items-center gap-2 text-slate-400">
-                            <ApplicationLogo className="h-8 w-8 opacity-50" />
-                        </div>
-                    </div>
+            <div className="w-full">
+                <div>
+                    <PageHeader
+                        icon={FaNewspaper}
+                        title="Tulis Berita"
+                        description="Bagikan informasi terkini kepada semua orang"
+                    />
 
-                    <form onSubmit={handleSubmit} className="space-y-8">
+                    <form onSubmit={handleSubmit} className="space-y-6">
                         {/* Main Grid: Content (Left) & Meta (Right) */}
-                        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
                             {/* Left Column: Editor Area (Focus Mode) - Takes up more space */}
                             <div className="lg:col-span-8 space-y-6">
                                 {/* Title Input - Seamless with Editor */}
-                                <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-8">
+                                <div className="surface p-6 sm:p-8">
                                     <div className="space-y-6">
+                                        <label
+                                            htmlFor="judul-berita"
+                                            className="eyebrow"
+                                        >
+                                            Judul &amp; Konten
+                                        </label>
                                         <input
+                                            id="judul-berita"
                                             type="text"
                                             value={data.judul}
                                             onChange={(e) =>
                                                 setData("judul", e.target.value)
                                             }
                                             placeholder="Judul Berita..."
-                                            className={`w-full text-4xl font-bold border-none focus:ring-0 p-0 bg-transparent ${
+                                            className={`w-full border-0 border-b border-slate-100 bg-transparent px-0 pb-4 font-display text-3xl font-extrabold tracking-tight focus:border-brand-500 focus:ring-0 ${
                                                 errors.judul
-                                                    ? "text-red-900 placeholder-red-300"
-                                                    : "text-slate-900 placeholder-slate-300"
+                                                    ? "text-rose-900 placeholder-rose-300"
+                                                    : "text-ink-900 placeholder-slate-300"
                                             }`}
                                             required
                                         />
@@ -483,7 +482,7 @@ export default function Create({ temas = [], flash }) {
                                                 id="editorjs"
                                                 className={`min-h-[400px] outline-none ${
                                                     errors.isi
-                                                        ? "border border-red-300 rounded-lg p-4 bg-red-50/10"
+                                                        ? "border border-rose-300 rounded-xl p-4 bg-rose-50/30"
                                                         : ""
                                                 }`}
                                             ></div>
@@ -495,64 +494,75 @@ export default function Create({ temas = [], flash }) {
 
                             {/* Right Column: Settings & Meta - Sticky */}
                             <div className="lg:col-span-4 space-y-6">
-                                <div className="sticky top-8 space-y-6">
+                                <div className="sticky top-24 space-y-6">
                                     {/* Publish Card */}
-                                    <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
-                                        <h3 className="text-lg font-semibold text-slate-800 mb-4">
-                                            Publikasi
-                                        </h3>
-
+                                    <Card
+                                        title="Publikasi"
+                                        description="Periksa permalink lalu terbitkan."
+                                    >
                                         <div className="space-y-4">
                                             {/* Slug Preview */}
                                             <div>
                                                 <InputLabel
                                                     value="Permalink (Slug)"
-                                                    className="text-xs uppercase tracking-wider text-slate-400 mb-1"
+                                                    className="mb-1.5"
                                                 />
-                                                <div className="flex items-center text-sm text-slate-500 bg-slate-50 px-3 py-2 rounded-lg border border-slate-100 truncate">
+                                                <div className="flex items-center text-sm text-slate-500 bg-slate-50 px-3.5 py-2.5 rounded-xl border border-slate-200 truncate">
                                                     <span className="mr-1 opacity-50">
                                                         /berita/
                                                     </span>
-                                                    <span className="font-medium text-slate-700 truncate">
+                                                    <span className="font-semibold text-ink-900 truncate">
                                                         {data.slug || "..."}
                                                     </span>
                                                 </div>
                                             </div>
 
                                             {/* Action Button */}
-                                            <PrimaryButton
-                                                type="submit"
-                                                disabled={
-                                                    processing || isSubmitting
-                                                }
-                                                className="w-full justify-center py-3 bg-blue-600 hover:bg-blue-700 rounded-xl"
-                                            >
-                                                {processing || isSubmitting ? (
-                                                    <>
-                                                        <FaSpinner className="animate-spin mr-2" />{" "}
-                                                        Menyimpan...
-                                                    </>
-                                                ) : (
-                                                    <>
-                                                        <FaSave className="mr-2" />{" "}
-                                                        Terbitkan Berita
-                                                    </>
-                                                )}
-                                            </PrimaryButton>
+                                            <div className="flex flex-col-reverse gap-2 sm:flex-row">
+                                                <Link
+                                                    href={route(
+                                                        "dashboard.berita.index",
+                                                    )}
+                                                    className="btn-ghost sm:flex-1"
+                                                >
+                                                    Batal
+                                                </Link>
+                                                <button
+                                                    type="submit"
+                                                    disabled={
+                                                        processing ||
+                                                        isSubmitting
+                                                    }
+                                                    className="btn-brand sm:flex-[2]"
+                                                >
+                                                    {processing ||
+                                                    isSubmitting ? (
+                                                        <>
+                                                            <FaSpinner className="animate-spin" />
+                                                            Menyimpan...
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <FaSave />
+                                                            Terbitkan Berita
+                                                        </>
+                                                    )}
+                                                </button>
+                                            </div>
                                         </div>
-                                    </div>
+                                    </Card>
 
                                     {/* Settings Card */}
-                                    <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 space-y-6">
-                                        <h3 className="text-lg font-semibold text-slate-800">
-                                            Pengaturan Berita
-                                        </h3>
-
+                                    <Card
+                                        title="Pengaturan Berita"
+                                        description="Tema, ringkasan, dan foto berita."
+                                        bodyClassName="space-y-6"
+                                    >
                                         {/* Tema */}
                                         <div className="relative">
                                             <InputLabel
                                                 value="Kategori / Tema"
-                                                className="text-slate-700 font-medium mb-2"
+                                                className="mb-1.5"
                                             />
                                             <Combobox
                                                 value={selectedTema}
@@ -560,9 +570,9 @@ export default function Create({ temas = [], flash }) {
                                                 nullable
                                             >
                                                 <div className="relative mt-1">
-                                                    <div className="relative w-full cursor-default overflow-hidden rounded-xl bg-slate-50 text-left border border-slate-200 focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-500 sm:text-sm">
+                                                    <div className="relative w-full cursor-default overflow-hidden rounded-xl bg-white text-left border border-slate-200 shadow-sm transition hover:border-slate-300 focus-within:border-brand-500 focus-within:ring-2 focus-within:ring-brand-500/20 sm:text-sm">
                                                         <Combobox.Input
-                                                            className="w-full border-none py-2.5 pl-4 pr-10 text-sm leading-5 text-slate-900 bg-transparent focus:ring-0"
+                                                            className="w-full border-none py-2.5 pl-3.5 pr-10 text-sm leading-5 text-ink-900 placeholder:text-slate-400 bg-transparent focus:ring-0"
                                                             displayValue={(
                                                                 tema,
                                                             ) =>
@@ -593,7 +603,7 @@ export default function Create({ temas = [], flash }) {
                                                             setQuery("")
                                                         }
                                                     >
-                                                        <Combobox.Options className="absolute mt-1 max-h-60 w-full overflow-auto rounded-xl bg-white py-1 text-base shadow-lg ring-1 ring-black/5 focus:outline-none sm:text-sm z-50">
+                                                        <Combobox.Options className="absolute mt-2 max-h-60 w-full overflow-auto rounded-xl border border-slate-200/80 bg-white p-1 text-base shadow-lift focus:outline-none sm:text-sm z-50">
                                                             {filteredTemas.length ===
                                                                 0 &&
                                                             query !== "" ? (
@@ -605,10 +615,10 @@ export default function Create({ temas = [], flash }) {
                                                                     className={({
                                                                         active,
                                                                     }) =>
-                                                                        `relative cursor-default select-none py-2 pl-4 pr-4 ${
+                                                                        `relative cursor-default select-none rounded-lg py-2 pl-3 pr-9 ${
                                                                             active
-                                                                                ? "bg-blue-50 text-blue-700"
-                                                                                : "text-slate-900"
+                                                                                ? "bg-brand-50 text-brand-800"
+                                                                                : "text-slate-700"
                                                                         }`
                                                                     }
                                                                 >
@@ -626,10 +636,10 @@ export default function Create({ temas = [], flash }) {
                                                                             className={({
                                                                                 active,
                                                                             }) =>
-                                                                                `relative cursor-default select-none py-2 pl-4 pr-4 ${
+                                                                                `relative cursor-default select-none rounded-lg py-2 pl-3 pr-9 ${
                                                                                     active
-                                                                                        ? "bg-blue-50 text-blue-700"
-                                                                                        : "text-slate-900"
+                                                                                        ? "bg-brand-50 text-brand-800"
+                                                                                        : "text-slate-700"
                                                                                 }`
                                                                             }
                                                                             value={
@@ -650,7 +660,7 @@ export default function Create({ temas = [], flash }) {
                                                                                     </span>
                                                                                     {selected ? (
                                                                                         <span
-                                                                                            className={`absolute inset-y-0 right-0 flex items-center pr-3 ${active ? "text-blue-600" : "text-blue-600"}`}
+                                                                                            className={`absolute inset-y-0 right-0 flex items-center pr-3 ${active ? "text-brand-600" : "text-brand-600"}`}
                                                                                         >
                                                                                             <CheckIcon
                                                                                                 className="h-5 w-5"
@@ -679,16 +689,16 @@ export default function Create({ temas = [], flash }) {
                                             <InputLabel
                                                 htmlFor="excerpt"
                                                 value="Ringkasan Singkat"
-                                                className="text-slate-700 font-medium mb-2"
+                                                className="mb-1.5"
                                             />
                                             <textarea
                                                 id="excerpt"
                                                 rows={4}
-                                                className={`w-full rounded-xl transition-all text-sm ${
+                                                className={`field-input ${
                                                     errors.excerpt ||
                                                     localErrors.excerpt
-                                                        ? "border-red-300 bg-red-50 focus:border-red-500 focus:ring-red-500"
-                                                        : "border-slate-200 bg-slate-50 focus:border-blue-500 focus:ring-blue-500"
+                                                        ? "border-rose-300 bg-rose-50/40 focus:border-rose-500 focus:ring-rose-500/20"
+                                                        : ""
                                                 }`}
                                                 placeholder="Tulis ringkasan untuk kartu berita..."
                                                 value={data.excerpt}
@@ -712,9 +722,9 @@ export default function Create({ temas = [], flash }) {
                                         <div>
                                             <InputLabel
                                                 value="Foto Berita"
-                                                className="text-slate-700 font-medium mb-2"
+                                                className="mb-1.5"
                                             />
-                                            <div className="border-2 border-dashed border-slate-200 rounded-xl p-4 hover:bg-slate-50 transition-colors text-center group cursor-pointer relative">
+                                            <div className="border-2 border-dashed border-slate-200 rounded-xl p-4 hover:border-brand-300 hover:bg-brand-50/40 transition-colors text-center group cursor-pointer relative">
                                                 <input
                                                     type="file"
                                                     multiple
@@ -725,9 +735,14 @@ export default function Create({ temas = [], flash }) {
                                                     id="file-upload"
                                                 />
                                                 <div className="py-4">
-                                                    <FaImage className="w-8 h-8 text-slate-300 mx-auto mb-2 group-hover:text-blue-500 transition-colors" />
-                                                    <span className="text-sm font-medium text-slate-600">
+                                                    <span className="mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-slate-500 group-hover:bg-brand-50 group-hover:text-brand-600 transition-colors">
+                                                        <FaImage className="w-4 h-4" />
+                                                    </span>
+                                                    <span className="block text-sm font-semibold text-ink-900">
                                                         Upload Foto
+                                                    </span>
+                                                    <span className="mt-0.5 block text-xs text-slate-500">
+                                                        Maksimal 5 foto
                                                     </span>
                                                 </div>
                                             </div>
@@ -739,7 +754,7 @@ export default function Create({ temas = [], flash }) {
                                                         (url, idx) => (
                                                             <div
                                                                 key={idx}
-                                                                className="relative aspect-square rounded-lg overflow-hidden group border border-slate-200"
+                                                                className="relative aspect-square rounded-xl overflow-hidden group border border-slate-200 bg-slate-100"
                                                             >
                                                                 <img
                                                                     src={url}
@@ -753,7 +768,8 @@ export default function Create({ temas = [], flash }) {
                                                                             idx,
                                                                         )
                                                                     }
-                                                                    className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity shadow-sm hover:bg-red-600 z-20"
+                                                                    className="absolute top-1 right-1 bg-rose-600 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity shadow-soft hover:bg-rose-700 z-20"
+aria-label={`Hapus foto ${idx + 1}`}
                                                                 >
                                                                     <FaTimes className="w-3 h-3" />
                                                                 </button>
@@ -778,9 +794,10 @@ export default function Create({ temas = [], flash }) {
                                                     />
                                                 ))}
                                         </div>
-                                    </div>
+                                    </Card>
                                 </div>
                             </div>
+
                         </div>
                     </form>
                 </div>

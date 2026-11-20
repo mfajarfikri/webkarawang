@@ -1,7 +1,24 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import DashboardLayout from "@/Layouts/DashboardLayout";
 import { Head } from "@inertiajs/react";
 import axios from "axios";
+import {
+    FaArrowDown,
+    FaArrowUp,
+    FaBolt,
+    FaChartBar,
+    FaExclamationTriangle,
+    FaIndustry,
+    FaShieldAlt,
+} from "react-icons/fa";
+import PageHeader from "@/Components/Dashboard/PageHeader";
+import { Card } from "@/Components/Dashboard/ui";
+import {
+    MONTHS_ID,
+    sortedComparison,
+    summarizeCumulative,
+    yearColor,
+} from "@/Components/Kinerja/kinerjaSummary";
 import {
     Chart as ChartJS,
     CategoryScale,
@@ -28,55 +45,276 @@ ChartJS.register(
     Filler,
 );
 
-export default function Kinerja({ auth }) {
-    const defaultData = {
-        transmisi_kumulatif: { labels: [], datasets: [] },
-        transmisi_ultg: { labels: [], datasets: [] },
-        transmisi_penyebab: { labels: [], datasets: [] },
-        trafo_kumulatif: { labels: [], datasets: [] },
-        trafo_ultg: { labels: [], datasets: [] },
-        trafo_penyebab: { labels: [], datasets: [] },
-        security_kumulatif: { labels: [], datasets: [] },
-        security_ultg: { labels: [], datasets: [] },
-        security_penyebab: { labels: [], datasets: [] },
+const POLL_INTERVAL_MS = 10000;
+
+const CATEGORIES = [
+    {
+        id: "transmisi",
+        title: "Gangguan Transmisi",
+        unit: "gangguan",
+        icon: FaBolt,
+    },
+    {
+        id: "trafo",
+        title: "Gangguan Trafo",
+        unit: "gangguan",
+        icon: FaIndustry,
+    },
+    {
+        id: "security",
+        title: "Security Index",
+        unit: "kejadian",
+        icon: FaShieldAlt,
+    },
+];
+
+const EMPTY_SECTION = { labels: [], datasets: [] };
+const FONT = { family: "'Inter', sans-serif", size: 11 };
+const TICK = { font: FONT, color: "#64748b" };
+
+const BASE_OPTIONS = {
+    responsive: true,
+    maintainAspectRatio: false,
+    interaction: { mode: "index", intersect: false },
+    plugins: {
+        legend: {
+            position: "bottom",
+            align: "start",
+            labels: {
+                boxWidth: 8,
+                boxHeight: 8,
+                usePointStyle: true,
+                padding: 14,
+                font: FONT,
+                color: "#475569",
+            },
+        },
+        tooltip: {
+            backgroundColor: "#131c31",
+            titleFont: FONT,
+            bodyFont: FONT,
+            padding: 10,
+            cornerRadius: 10,
+            boxPadding: 4,
+        },
+    },
+};
+
+const VALUE_AXIS = {
+    beginAtZero: true,
+    ticks: { ...TICK, precision: 0 },
+    grid: { color: "#eef2f6" },
+    border: { display: false },
+};
+
+function lineChart(section) {
+    const count = section.datasets.length;
+    return {
+        data: {
+            // Label bulan dari spreadsheet tidak seragam (May/Mei, feb, Ags).
+            labels: section.labels.length === 12 ? MONTHS_ID : section.labels,
+            datasets: section.datasets.map((ds, i) => {
+                const color = yearColor(i, count);
+                const isCurrent = color.emphasis === "current";
+                return {
+                    label: ds.label,
+                    data: ds.data,
+                    borderColor: color.solid,
+                    backgroundColor: isCurrent ? color.soft : "transparent",
+                    fill: isCurrent,
+                    borderWidth: isCurrent ? 3 : 1.5,
+                    borderDash: color.emphasis === "older" ? [4, 4] : [],
+                    tension: 0.3,
+                    pointRadius: isCurrent ? 3 : 0,
+                    pointHoverRadius: 5,
+                    pointBackgroundColor: "#ffffff",
+                    pointBorderColor: color.solid,
+                    pointBorderWidth: 2,
+                    order: isCurrent ? 0 : 1,
+                };
+            }),
+        },
+        options: {
+            ...BASE_OPTIONS,
+            scales: {
+                x: { ticks: TICK, grid: { display: false } },
+                y: VALUE_AXIS,
+            },
+        },
     };
+}
 
-    const [chartData, setChartData] = useState(defaultData);
-    const [lastUpdated, setLastUpdated] = useState(
-        new Date().toLocaleTimeString(),
-    );
-    const [error, setError] = useState(null);
-
-    // Corporate Color Palette
-    const colors = [
-        { border: "#94a3b8", bg: "rgba(148, 163, 184, 0.2)" }, // 2023: Slate Gray
-        { border: "#f59e0b", bg: "rgba(245, 158, 11, 0.2)" }, // 2024: Amber/Yellow
-        { border: "#0ea5e9", bg: "rgba(14, 165, 233, 0.2)" }, // 2025: Sky Blue
-        { border: "#1d4ed8", bg: "rgba(29, 78, 216, 0.2)" }, // 2026: Deep Corporate Blue
-    ];
-
-    const formatDatasets = (datasets, type = "line") => {
-        if (!datasets) return [];
-        return datasets.map((ds, index) => {
-            const color = colors[index % colors.length];
-            return {
-                type: type,
+function groupedBarChart(section) {
+    const count = section.datasets.length;
+    return {
+        data: {
+            labels: section.labels,
+            datasets: section.datasets.map((ds, i) => ({
                 label: ds.label,
                 data: ds.data,
-                borderColor: color.border,
-                backgroundColor: type === "line" ? color.bg : color.border,
-                borderWidth: type === "line" ? 2 : 0,
-                borderRadius: type === "bar" ? 4 : 0, // Rounded corners for bars
-                fill: type === "line", // Fill under the line for corporate look
-                tension: 0.3, // Smooth curves
-                pointBackgroundColor: "#ffffff",
-                pointBorderColor: color.border,
-                pointBorderWidth: 2,
-                pointRadius: 3,
-                pointHoverRadius: 5,
-            };
-        });
+                backgroundColor: yearColor(i, count).solid,
+                borderRadius: 6,
+                maxBarThickness: 26,
+            })),
+        },
+        options: {
+            ...BASE_OPTIONS,
+            scales: {
+                x: { ticks: TICK, grid: { display: false } },
+                y: VALUE_AXIS,
+            },
+        },
     };
+}
+
+function causesChart(comparison) {
+    const datasets = [
+        {
+            label: comparison.latest.label,
+            data: comparison.latest.data,
+            backgroundColor: "#0086c9",
+            borderRadius: 6,
+            maxBarThickness: 16,
+        },
+    ];
+    if (comparison.previous) {
+        datasets.push({
+            label: comparison.previous.label,
+            data: comparison.previous.data,
+            backgroundColor: "#cbd5e1",
+            borderRadius: 6,
+            maxBarThickness: 16,
+        });
+    }
+    return {
+        data: { labels: comparison.labels, datasets },
+        options: {
+            ...BASE_OPTIONS,
+            indexAxis: "y",
+            interaction: { mode: "index", intersect: false, axis: "y" },
+            scales: {
+                x: VALUE_AXIS,
+                y: { ticks: TICK, grid: { display: false } },
+            },
+        },
+    };
+}
+
+function DeltaChip({ summary }) {
+    if (!summary || summary.delta === null) return null;
+    const { delta, monthLabel, previousYear } = summary;
+    // Untuk gangguan, naik berarti memburuk.
+    const tone =
+        delta > 0
+            ? "bg-rose-50 text-rose-700 ring-rose-200"
+            : delta < 0
+              ? "bg-emerald-50 text-emerald-700 ring-emerald-200"
+              : "bg-slate-100 text-slate-600 ring-slate-200";
+    const Icon = delta > 0 ? FaArrowUp : delta < 0 ? FaArrowDown : null;
+    return (
+        <span
+            className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold ring-1 ring-inset ${tone}`}
+        >
+            {Icon ? <Icon className="h-2.5 w-2.5" aria-hidden="true" /> : null}
+            {delta === 0 ? "Sama" : Math.abs(delta)} vs {monthLabel}{" "}
+            {previousYear}
+        </span>
+    );
+}
+
+function CategoryCard({ category, summary, isActive, isLoading, onSelect }) {
+    const Icon = category.icon;
+    return (
+        <button
+            type="button"
+            onClick={onSelect}
+            aria-pressed={isActive}
+            className={`surface flex h-full flex-col gap-4 p-5 text-left transition duration-200 ${
+                isActive
+                    ? "ring-2 ring-ink-900"
+                    : "hover:-translate-y-0.5 hover:shadow-lift"
+            }`}
+        >
+            <span className="flex items-center justify-between gap-3">
+                <span className="text-sm font-semibold text-slate-600">
+                    {category.title}
+                </span>
+                <span
+                    className={`flex h-9 w-9 items-center justify-center rounded-xl ${
+                        isActive
+                            ? "bg-ink-900 text-volt"
+                            : "bg-slate-100 text-slate-500"
+                    }`}
+                >
+                    <Icon className="h-4 w-4" aria-hidden="true" />
+                </span>
+            </span>
+            {isLoading ? (
+                <span className="space-y-2">
+                    <span className="block h-9 w-20 animate-pulse rounded-lg bg-slate-100" />
+                    <span className="block h-4 w-40 animate-pulse rounded bg-slate-100" />
+                </span>
+            ) : summary ? (
+                <span className="space-y-2">
+                    <span className="flex items-baseline gap-2">
+                        <span className="font-display text-4xl font-extrabold tabular-nums text-ink-900">
+                            {summary.value}
+                        </span>
+                        <span className="text-sm text-slate-500">
+                            {category.unit} s.d. {summary.monthLabel}{" "}
+                            {summary.year}
+                        </span>
+                    </span>
+                    <span className="flex flex-wrap items-center gap-2 text-xs text-slate-500">
+                        <DeltaChip summary={summary} />
+                        {summary.previousYearTotal !== null ? (
+                            <span>
+                                Total {summary.previousYear}:{" "}
+                                <span className="font-semibold text-slate-700">
+                                    {summary.previousYearTotal}
+                                </span>
+                            </span>
+                        ) : null}
+                    </span>
+                </span>
+            ) : (
+                <span className="text-sm text-slate-400">
+                    Data belum tersedia
+                </span>
+            )}
+        </button>
+    );
+}
+
+function ChartBox({ height = "h-72", isLoading, isEmpty, children }) {
+    if (isLoading) {
+        return (
+            <div
+                className={`${height || "h-40"} animate-pulse rounded-xl bg-slate-50`}
+            />
+        );
+    }
+    if (isEmpty) {
+        return (
+            <div
+                className={`${height || "h-40"} flex items-center justify-center rounded-xl border border-dashed border-slate-200 text-sm text-slate-400`}
+            >
+                Data tidak tersedia
+            </div>
+        );
+    }
+    return <div className={height}>{children}</div>;
+}
+
+function hasData(section) {
+    return Boolean(section?.labels?.length && section?.datasets?.length);
+}
+
+export default function Kinerja() {
+    const [chartData, setChartData] = useState(null);
+    const [lastUpdated, setLastUpdated] = useState(null);
+    const [error, setError] = useState(null);
+    const [activeId, setActiveId] = useState("transmisi");
 
     useEffect(() => {
         const loadData = async () => {
@@ -86,311 +324,164 @@ export default function Kinerja({ auth }) {
                 );
                 if (response.data) {
                     setChartData(response.data);
-                    setLastUpdated(new Date().toLocaleTimeString());
+                    setLastUpdated(new Date());
                     setError(null);
                 }
             } catch (err) {
-                console.error("Gagal mengambil data dari server:", err);
-                if (
-                    err.response &&
-                    err.response.data &&
-                    err.response.data.error
-                ) {
-                    setError(err.response.data.error);
-                }
+                setError(
+                    err?.response?.data?.error ||
+                        "Gagal mengambil data dari server.",
+                );
             }
         };
 
         loadData();
-        const interval = setInterval(loadData, 10000);
+        const interval = setInterval(loadData, POLL_INTERVAL_MS);
         return () => clearInterval(interval);
     }, []);
 
-    const renderChart = (title, dataSection, type = "line") => {
-        if (
-            !dataSection ||
-            !dataSection.labels ||
-            dataSection.labels.length === 0
-        ) {
-            return (
-                <div className="bg-white p-3 rounded-xl border border-gray-100 shadow-sm h-52 flex flex-col items-center justify-center">
-                    <svg
-                        className="w-8 h-8 text-gray-300 mb-2"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                    >
-                        <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth="2"
-                            d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
-                        ></path>
-                    </svg>
-                    <p className="text-xs text-gray-400 font-medium">
-                        Data tidak tersedia
-                    </p>
-                </div>
-            );
-        }
+    const isLoading = chartData === null && !error;
+    const section = (key) => chartData?.[key] ?? EMPTY_SECTION;
 
-        const data = {
-            labels: dataSection.labels,
-            datasets: formatDatasets(dataSection.datasets, type),
-        };
+    const summaries = useMemo(
+        () =>
+            Object.fromEntries(
+                CATEGORIES.map((c) => [
+                    c.id,
+                    summarizeCumulative(chartData?.[`${c.id}_kumulatif`]),
+                ]),
+            ),
+        [chartData],
+    );
 
-        const options = {
-            responsive: true,
-            maintainAspectRatio: false,
-            interaction: {
-                mode: "index",
-                intersect: false,
-            },
-            plugins: {
-                legend: {
-                    position: "top",
-                    align: "end",
-                    labels: {
-                        boxWidth: 8,
-                        boxHeight: 8,
-                        usePointStyle: true,
-                        font: { size: 10, family: "'Inter', sans-serif" },
-                        padding: 10,
-                        color: "#475569",
-                    },
-                },
-                title: {
-                    display: true,
-                    text: title,
-                    align: "start",
-                    color: "#1e293b",
-                    font: {
-                        size: 12,
-                        weight: "600",
-                        family: "'Inter', sans-serif",
-                    },
-                    padding: { top: 0, bottom: 10 },
-                },
-                tooltip: {
-                    backgroundColor: "rgba(15, 23, 42, 0.9)",
-                    titleFont: { size: 11 },
-                    bodyFont: { size: 11 },
-                    padding: 8,
-                    cornerRadius: 6,
-                },
-            },
-            scales: {
-                x: {
-                    ticks: { font: { size: 9 }, color: "#64748b" },
-                    grid: { display: false },
-                },
-                y: {
-                    ticks: { font: { size: 9 }, color: "#64748b" },
-                    grid: { color: "#f1f5f9", drawBorder: false },
-                    border: { display: false },
-                },
-            },
-        };
-
-        return (
-            <div className="bg-white p-3 rounded-xl border border-gray-100 shadow-sm h-52 transition-all duration-300 hover:shadow-md relative overflow-hidden group">
-                <div className="absolute top-0 left-0 w-1 h-full bg-blue-600 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                {type === "line" ? (
-                    <Line data={data} options={options} />
-                ) : (
-                    <Bar data={data} options={options} />
-                )}
-            </div>
-        );
-    };
+    const active = CATEGORIES.find((c) => c.id === activeId);
+    const cumulative = section(`${activeId}_kumulatif`);
+    const perUltg = section(`${activeId}_ultg`);
+    const causes = sortedComparison(section(`${activeId}_penyebab`));
+    const causesHeight = causes
+        ? `${Math.max(160, causes.labels.length * 44 + 70)}px`
+        : "160px";
 
     return (
-        <DashboardLayout>
+        <DashboardLayout title="Dashboard Kinerja">
             <Head title="Dashboard Kinerja" />
 
-            <div className="py-4 bg-slate-50 min-h-screen">
-                <div className="max-w-[1400px] mx-auto px-4 sm:px-6">
-                    {/* Corporate Header */}
-                    <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-4 mb-4 flex flex-col sm:flex-row justify-between items-start sm:items-center relative overflow-hidden">
-                        <div className="absolute right-0 top-0 w-64 h-full bg-gradient-to-l from-blue-50 to-transparent opacity-50"></div>
-                        <div className="relative z-10">
-                            <h2 className="text-2xl font-bold text-slate-800 tracking-tight flex items-center gap-2">
-                                <svg
-                                    className="w-6 h-6 text-blue-600"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    viewBox="0 0 24 24"
-                                >
-                                    <path
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                        strokeWidth="2"
-                                        d="M8 13v-1m4 1v-3m4 3V8M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"
-                                    ></path>
-                                </svg>
-                                Dashboard Kinerja Operasional
-                            </h2>
-                            <p className="text-sm text-slate-500 mt-1">
-                                Pemantauan Real-time Transmisi, Trafo, dan
-                                Security Index
-                            </p>
-                        </div>
-                        <div className="mt-3 sm:mt-0 relative z-10 flex items-center gap-3 bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-100">
-                            <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
-                            <span className="text-xs font-medium text-slate-600">
-                                Live Update:{" "}
-                                <span className="text-blue-600 font-bold">
-                                    {lastUpdated}
-                                </span>
-                            </span>
-                        </div>
-                    </div>
+            <PageHeader
+                icon={FaChartBar}
+                title="Dashboard Kinerja"
+                description="Gangguan transmisi, gangguan trafo, dan security index dibandingkan antar tahun."
+            >
+                <span className="inline-flex items-center gap-2 rounded-full border border-slate-200/80 bg-white px-3.5 py-2 text-xs text-slate-600 shadow-soft">
+                    <span
+                        className={`h-2 w-2 rounded-full ${
+                            error ? "bg-rose-500" : "bg-emerald-500"
+                        }`}
+                    />
+                    {lastUpdated
+                        ? `Diperbarui ${lastUpdated.toLocaleTimeString(
+                              "id-ID",
+                              {
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                  second: "2-digit",
+                              },
+                          )}`
+                        : "Memuat data..."}
+                    <span className="text-slate-400">· Google Sheets</span>
+                </span>
+            </PageHeader>
 
-                    {error && (
-                        <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl flex items-start gap-3">
-                            <svg
-                                className="w-5 h-5 text-red-500 mt-0.5"
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
-                            >
-                                <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth="2"
-                                    d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                                ></path>
-                            </svg>
-                            <div>
-                                <h4 className="text-sm font-semibold text-red-800">
-                                    Koneksi Data Terputus
-                                </h4>
-                                <p className="text-xs text-red-600 mt-0.5">
-                                    {error}
-                                </p>
-                            </div>
-                        </div>
-                    )}
-
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-                        {/* Transmisi Column */}
-                        <div className="flex flex-col gap-4">
-                            <div className="bg-gradient-to-r from-blue-700 to-blue-500 rounded-xl p-3 shadow-md flex items-center gap-3">
-                                <div className="bg-white/20 p-2 rounded-lg backdrop-blur-sm">
-                                    <svg
-                                        className="w-5 h-5 text-white"
-                                        fill="none"
-                                        stroke="currentColor"
-                                        viewBox="0 0 24 24"
-                                    >
-                                        <path
-                                            strokeLinecap="round"
-                                            strokeLinejoin="round"
-                                            strokeWidth="2"
-                                            d="M13 10V3L4 14h7v7l9-11h-7z"
-                                        ></path>
-                                    </svg>
-                                </div>
-                                <h3 className="text-sm font-bold text-white uppercase tracking-widest">
-                                    Gangguan Transmisi
-                                </h3>
-                            </div>
-                            {renderChart(
-                                "Kumulatif Transmisi",
-                                chartData.transmisi_kumulatif,
-                                "line",
-                            )}
-                            {renderChart(
-                                "Trend Per ULTG",
-                                chartData.transmisi_ultg,
-                                "bar",
-                            )}
-                            {renderChart(
-                                "YoY Per Penyebab",
-                                chartData.transmisi_penyebab,
-                                "bar",
-                            )}
-                        </div>
-
-                        {/* Trafo Column */}
-                        <div className="flex flex-col gap-4">
-                            <div className="bg-gradient-to-r from-cyan-600 to-cyan-400 rounded-xl p-3 shadow-md flex items-center gap-3">
-                                <div className="bg-white/20 p-2 rounded-lg backdrop-blur-sm">
-                                    <svg
-                                        className="w-5 h-5 text-white"
-                                        fill="none"
-                                        stroke="currentColor"
-                                        viewBox="0 0 24 24"
-                                    >
-                                        <path
-                                            strokeLinecap="round"
-                                            strokeLinejoin="round"
-                                            strokeWidth="2"
-                                            d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
-                                        ></path>
-                                    </svg>
-                                </div>
-                                <h3 className="text-sm font-bold text-white uppercase tracking-widest">
-                                    Gangguan Trafo
-                                </h3>
-                            </div>
-                            {renderChart(
-                                "Kumulatif Trafo",
-                                chartData.trafo_kumulatif,
-                                "line",
-                            )}
-                            {renderChart(
-                                "Trend Per ULTG",
-                                chartData.trafo_ultg,
-                                "bar",
-                            )}
-                            {renderChart(
-                                "YoY Per Penyebab",
-                                chartData.trafo_penyebab,
-                                "bar",
-                            )}
-                        </div>
-
-                        {/* Security Index Column */}
-                        <div className="flex flex-col gap-4">
-                            <div className="bg-gradient-to-r from-slate-700 to-slate-500 rounded-xl p-3 shadow-md flex items-center gap-3">
-                                <div className="bg-white/20 p-2 rounded-lg backdrop-blur-sm">
-                                    <svg
-                                        className="w-5 h-5 text-white"
-                                        fill="none"
-                                        stroke="currentColor"
-                                        viewBox="0 0 24 24"
-                                    >
-                                        <path
-                                            strokeLinecap="round"
-                                            strokeLinejoin="round"
-                                            strokeWidth="2"
-                                            d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
-                                        ></path>
-                                    </svg>
-                                </div>
-                                <h3 className="text-sm font-bold text-white uppercase tracking-widest">
-                                    Security Index
-                                </h3>
-                            </div>
-                            {renderChart(
-                                "Kumulatif Security Index",
-                                chartData.security_kumulatif,
-                                "line",
-                            )}
-                            {renderChart(
-                                "Trafo Per ULTG",
-                                chartData.security_ultg,
-                                "bar",
-                            )}
-                            {renderChart(
-                                "YoY Per Penyebab",
-                                chartData.security_penyebab,
-                                "bar",
-                            )}
-                        </div>
+            {error ? (
+                <div
+                    role="alert"
+                    className="mb-6 flex items-start gap-3 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3"
+                >
+                    <FaExclamationTriangle
+                        className="mt-0.5 h-4 w-4 shrink-0 text-rose-600"
+                        aria-hidden="true"
+                    />
+                    <div className="text-sm">
+                        <p className="font-semibold text-rose-900">
+                            Data tidak bisa diperbarui
+                        </p>
+                        <p className="mt-0.5 text-rose-800">{error}</p>
                     </div>
                 </div>
+            ) : null}
+
+            <div
+                role="group"
+                aria-label="Pilih kategori kinerja"
+                className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-3"
+            >
+                {CATEGORIES.map((category) => (
+                    <CategoryCard
+                        key={category.id}
+                        category={category}
+                        summary={summaries[category.id]}
+                        isActive={category.id === activeId}
+                        isLoading={isLoading}
+                        onSelect={() => setActiveId(category.id)}
+                    />
+                ))}
+            </div>
+
+            <div className="space-y-6">
+                <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
+                    <Card
+                        className="xl:col-span-2"
+                        title={`${active.title} kumulatif`}
+                        description="Akumulasi per bulan. Garis biru tebal adalah tahun berjalan."
+                    >
+                        <ChartBox
+                            isLoading={isLoading}
+                            isEmpty={!hasData(cumulative)}
+                        >
+                            {hasData(cumulative) ? (
+                                <Line {...lineChart(cumulative)} />
+                            ) : null}
+                        </ChartBox>
+                    </Card>
+
+                    <Card
+                        title="Per ULTG"
+                        description={
+                            summaries[activeId]
+                                ? `Jumlah per wilayah, per tahun. Tahun ${summaries[activeId].year} baru sampai ${summaries[activeId].monthLabel}.`
+                                : "Jumlah per wilayah, per tahun."
+                        }
+                    >
+                        <ChartBox
+                            isLoading={isLoading}
+                            isEmpty={!hasData(perUltg)}
+                        >
+                            {hasData(perUltg) ? (
+                                <Bar {...groupedBarChart(perUltg)} />
+                            ) : null}
+                        </ChartBox>
+                    </Card>
+                </div>
+
+                <Card
+                    title="Per penyebab"
+                    description={
+                        causes?.previous
+                            ? `Tahun ${causes.latest.label} dibanding ${causes.previous.label}, diurutkan dari penyebab terbanyak.`
+                            : "Diurutkan dari penyebab terbanyak."
+                    }
+                >
+                    <ChartBox
+                        height=""
+                        isLoading={isLoading}
+                        isEmpty={!causes || causes.labels.length === 0}
+                    >
+                        {causes && causes.labels.length > 0 ? (
+                            <div style={{ height: causesHeight }}>
+                                <Bar {...causesChart(causes)} />
+                            </div>
+                        ) : null}
+                    </ChartBox>
+                </Card>
             </div>
         </DashboardLayout>
     );

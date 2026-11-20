@@ -1,5 +1,5 @@
 import DashboardLayout from "@/Layouts/DashboardLayout";
-import { Head, router } from "@inertiajs/react";
+import { Head, Link, router, usePage } from "@inertiajs/react";
 import { useForm } from "@inertiajs/react";
 import TextInput from "@/Components/TextInput";
 import InputLabel from "@/Components/InputLabel";
@@ -17,6 +17,9 @@ import {
     FaChevronLeft,
     FaCheckCircle,
     FaClipboard,
+    FaArrowRight,
+    FaExclamationTriangle,
+    FaSignature,
 } from "react-icons/fa";
 import { FaCheck, FaCheckToSlot } from "react-icons/fa6";
 import ApplicationLogo from "@/Components/ApplicationLogo";
@@ -26,11 +29,25 @@ import { ChevronUpDownIcon } from "@heroicons/react/24/solid";
 import React from "react";
 import axios from "axios";
 import { useSnackbar } from "notistack";
-import Compressor from "compressorjs";
 import { formatDate } from "@/Components/Utils/formatDate";
 import { format, isValid, parseISO } from "date-fns";
 import { id } from "date-fns/locale";
 import { GiElectric } from "react-icons/gi";
+import ReportStepNav from "@/Components/Anomali/ReportStepNav";
+import { compressImageToMaxBytes } from "@/Components/Anomali/imageCompression";
+import {
+    LAST_STEP,
+    REPORT_STEPS,
+    findStep,
+    fieldLabel,
+    firstIncompleteStep,
+    missingFields,
+    requiredMessage,
+    stepStatus,
+} from "@/Components/Anomali/anomaliReportSteps";
+
+const SIGNATURE_REQUIRED_MESSAGE =
+    "Tanda tangan Anda belum diunggah. Unggah dulu di menu Pengaturan agar laporan bisa dikirim.";
 
 export default function Create({
     gardus = [],
@@ -116,18 +133,89 @@ export default function Create({
         { id: "Minor", name: "Minor" },
     ];
 
-    const nextStep = () => setStep(step + 1);
-    const prevStep = () => setStep(step - 1);
+    const { auth } = usePage().props;
+    const hasSignature = Boolean(auth?.user?.tanda_tangan_path);
+    const formTopRef = React.useRef(null);
+    const [furthestStep, setFurthestStep] = useState(1);
+    const [stepAlert, setStepAlert] = useState(null);
+    const [serverError, setServerError] = useState("");
+
+    const scrollToFormTop = () =>
+        formTopRef.current?.scrollIntoView({
+            behavior: "smooth",
+            block: "start",
+        });
+
+    const showStep = (target) => {
+        setStep(target);
+        setFurthestStep((furthest) => Math.max(furthest, target));
+        scrollToFormTop();
+    };
+
+    // Tandai isian wajib yang kosong pada satu langkah; kembalikan daftarnya.
+    const flagMissing = (stepId) => {
+        const missing = missingFields(data, stepId);
+        missing.forEach((field) => setError(field, requiredMessage(field)));
+        setStepAlert(missing.length ? { stepId, fields: missing } : null);
+        return missing;
+    };
+
+    // Mundur selalu boleh; maju hanya bila langkah yang dilewati sudah lengkap.
+    const goToStep = (target) => {
+        if (target === step || target < 1 || target > LAST_STEP) return;
+        if (target < step) {
+            setStepAlert(null);
+            showStep(target);
+            return;
+        }
+        for (let s = step; s < target; s += 1) {
+            if (flagMissing(s).length > 0) {
+                if (s === step) scrollToFormTop();
+                else showStep(s);
+                return;
+            }
+        }
+        setStepAlert(null);
+        showStep(target);
+    };
+
+    const nextStep = () => goToStep(step + 1);
+    const prevStep = () => goToStep(step - 1);
+
+    // Hapus pesan "wajib diisi" begitu field-nya terisi.
+    React.useEffect(() => {
+        const stillMissing = new Set(
+            REPORT_STEPS.flatMap((s) => missingFields(data, s.id)),
+        );
+        const resolved = Object.keys(errors).filter(
+            (field) =>
+                errors[field] === requiredMessage(field) &&
+                !stillMissing.has(field),
+        );
+        if (resolved.length) clearErrors(...resolved);
+        setStepAlert((alert) => {
+            if (!alert) return alert;
+            const fields = missingFields(data, alert.stepId);
+            return fields.length ? { ...alert, fields } : null;
+        });
+    }, [data]);
+
+    const stepStatusOf = (stepId) =>
+        stepStatus(data, stepId, {
+            currentStep: step,
+            furthest: furthestStep,
+        });
+    const remainingInStep = missingFields(data, step).length;
+    const nextStepInfo = findStep(step + 1);
 
     const [preview, setPreview] = useState([]);
     const [previewModal, setPreviewModal] = useState(false);
     const [previewIndex, setPreviewIndex] = useState(0);
+    // Foto yang gagal ditambahkan pada pilihan terakhir: [{ name, reason }].
+    const [rejectedPhotos, setRejectedPhotos] = useState([]);
     const MAX_FILES = 4;
 
     const MAX_IMAGE_BYTES = 2 * 1024 * 1024;
-    const IMAGE_QUALITY_START = 0.9;
-    const IMAGE_QUALITY_MIN = 0.75;
-    const IMAGE_MAX_DIMENSION = 1920;
 
     const formatBytes = (bytes) => {
         if (!bytes && bytes !== 0) return "";
@@ -142,88 +230,9 @@ export default function Create({
         return `${val.toFixed(precision)} ${units[unitIndex]}`;
     };
 
-    const extensionForMime = (mime) => {
-        if (mime === "image/png") return "png";
-        if (mime === "image/webp") return "webp";
-        return "jpg";
-    };
+    const compressToMaxBytes = (file) =>
+        compressImageToMaxBytes(file, { maxBytes: MAX_IMAGE_BYTES });
 
-    const replaceFileExtension = (name, ext) => {
-        const base = name?.includes(".")
-            ? name.slice(0, name.lastIndexOf("."))
-            : name;
-        return `${base}.${ext}`;
-    };
-
-    const compressWithCompressor = (file, { quality, mimeType }) => {
-        return new Promise((resolve, reject) => {
-            new Compressor(file, {
-                quality,
-                mimeType,
-                maxWidth: IMAGE_MAX_DIMENSION,
-                maxHeight: IMAGE_MAX_DIMENSION,
-                convertSize: Infinity,
-                success(result) {
-                    resolve(result);
-                },
-                error(err) {
-                    reject(err);
-                },
-            });
-        });
-    };
-
-    const compressToMaxBytes = async (file) => {
-        if (!file || !(file instanceof File)) return null;
-        if (file.size <= MAX_IMAGE_BYTES) return file;
-
-        const originalType = file.type;
-        const targetMimeType =
-            originalType === "image/png" || originalType === "image/jpeg"
-                ? originalType
-                : "image/jpeg";
-
-        const tryCompress = async ({ quality, mimeType }) => {
-            const blob = await compressWithCompressor(file, {
-                quality,
-                mimeType,
-            });
-            const ext = extensionForMime(mimeType);
-            const name = replaceFileExtension(file.name || "image", ext);
-            return new File([blob], name, {
-                type: mimeType,
-                lastModified: Date.now(),
-            });
-        };
-
-        let quality = IMAGE_QUALITY_START;
-        let last = null;
-
-        while (quality >= IMAGE_QUALITY_MIN) {
-            const attempt = await tryCompress({
-                quality,
-                mimeType: targetMimeType,
-            });
-            last = attempt;
-            if (attempt.size <= MAX_IMAGE_BYTES) return attempt;
-            quality = Math.round((quality - 0.05) * 100) / 100;
-        }
-
-        if (originalType === "image/png") {
-            quality = IMAGE_QUALITY_START;
-            while (quality >= IMAGE_QUALITY_MIN) {
-                const attempt = await tryCompress({
-                    quality,
-                    mimeType: "image/jpeg",
-                });
-                last = attempt;
-                if (attempt.size <= MAX_IMAGE_BYTES) return attempt;
-                quality = Math.round((quality - 0.05) * 100) / 100;
-            }
-        }
-
-        return last;
-    };
     const handleFileChange = async (e) => {
         const inputFiles = Array.from(e.target.files || []);
         e.target.value = "";
@@ -277,6 +286,7 @@ export default function Create({
 
         const acceptedFiles = [];
         const acceptedPreviews = [];
+        const rejected = [];
         let skippedCount = 0;
 
         for (let i = 0; i < candidates.length; i += 1) {
@@ -298,17 +308,19 @@ export default function Create({
 
                 if (!processed) {
                     skippedCount += 1;
+                    rejected.push({
+                        name: file.name,
+                        reason: "Foto tidak bisa diproses.",
+                    });
                     continue;
                 }
 
                 if (processed.size > MAX_IMAGE_BYTES) {
                     skippedCount += 1;
-                    enqueueSnackbar(
-                        `Gagal mengompres "${
-                            file.name
-                        }" ke <= 2MB (hasil: ${formatBytes(processed.size)}).`,
-                        { variant: "error" },
-                    );
+                    rejected.push({
+                        name: file.name,
+                        reason: `Masih ${formatBytes(processed.size)} setelah dikompres (maks. 2 MB).`,
+                    });
                     continue;
                 }
 
@@ -316,8 +328,9 @@ export default function Create({
                 acceptedPreviews.push(URL.createObjectURL(processed));
             } catch (err) {
                 skippedCount += 1;
-                enqueueSnackbar(`Gagal mengompres "${file.name}".`, {
-                    variant: "error",
+                rejected.push({
+                    name: file.name,
+                    reason: err?.message || "Gagal dikompres.",
                 });
             }
         }
@@ -331,9 +344,10 @@ export default function Create({
             });
         }
 
+        setRejectedPhotos(rejected);
         if (skippedCount > 0) {
             enqueueSnackbar(
-                `${skippedCount} file tidak ditambahkan karena gagal kompres/validasi.`,
+                `${skippedCount} foto tidak ditambahkan. Lihat alasannya di langkah Lampiran.`,
                 { variant: "warning" },
             );
         }
@@ -364,6 +378,20 @@ export default function Create({
     };
     const handleSubmit = async (e) => {
         e.preventDefault();
+        setServerError("");
+
+        const incompleteStep = firstIncompleteStep(data);
+        if (incompleteStep) {
+            flagMissing(incompleteStep);
+            showStep(incompleteStep);
+            return;
+        }
+
+        if (!hasSignature) {
+            setServerError(SIGNATURE_REQUIRED_MESSAGE);
+            scrollToFormTop();
+            return;
+        }
 
         if (compressionState.running) {
             enqueueSnackbar("Tunggu proses kompresi selesai.", {
@@ -446,7 +474,8 @@ export default function Create({
                     "Tidak ada respon dari server. Periksa koneksi internet Anda.";
             }
 
-            enqueueSnackbar(`Error | ${errorMsg}`, { variant: "error" });
+            setServerError(errorMsg);
+            enqueueSnackbar(errorMsg, { variant: "error" });
         } finally {
             setIsSubmitting(false);
             setUploadProgress(null);
@@ -563,94 +592,133 @@ export default function Create({
         <>
             <Head title="Anomali" />
             <DashboardLayout title="Lapor Anomali">
-                <div className="max-w-full surface overflow-hidden">
-                    <div className="flex items-center gap-3 px-6 py-4 bg-ink-900">
-                        <button
-                            onClick={() => window.history.back()}
-                            className="flex-shrink-0 h-10 w-10 rounded-full bg-transparent border border-white/20 flex items-center justify-center text-slate-600 hover:bg-white/10 hover:text-white transition-all shadow-sm active:scale-95 group"
-                            title="Kembali"
-                        >
-                            <FaChevronLeft className="w-4 h-4 text-white group-hover:-translate-x-0.5 transition-transform" />
-                        </button>
-                        <div className="flex items-center gap-2">
-                            <ApplicationLogo className="h-8 w-8" />
-                            <span className="font-display text-white font-bold text-lg tracking-tight">
-                                Lapor Anomali Baru
-                            </span>
-                        </div>
+                <div className="mb-6 flex items-start gap-4">
+                    <Link
+                        href={route("dashboard.anomali.index")}
+                        className="btn-icon shrink-0 border border-slate-200 bg-white"
+                        aria-label="Kembali ke daftar anomali"
+                        title="Kembali ke daftar anomali"
+                    >
+                        <FaChevronLeft className="h-3.5 w-3.5" />
+                    </Link>
+                    <div className="min-w-0">
+                        <h1 className="text-2xl font-extrabold text-ink-900">
+                            Lapor Anomali Baru
+                        </h1>
+                        <p className="mt-1 max-w-2xl text-sm text-slate-600">
+                            Isi lima langkah singkat. Setelah dikirim, laporan
+                            masuk ke tahap{" "}
+                            <span className="font-semibold text-amber-700">
+                                Menunggu review
+                            </span>{" "}
+                            oleh MULTG.
+                        </p>
                     </div>
+                </div>
 
-                    {/* Stepper */}
-                    <div className="px-4 sm:px-8 py-6">
-                        <div className="flex items-center justify-center">
-                            <div className="flex items-center w-full max-w-4xl">
-                                {[
-                                    { id: 1, label: "Informasi Anomali" },
-                                    { id: 2, label: "Detail Peralatan" },
-                                    { id: 3, label: "Analisa" },
-                                    { id: 4, label: "Lampiran" },
-                                    { id: 5, label: "Review" },
-                                ].map((item, idx, arr) => (
-                                    <React.Fragment key={item.id}>
-                                        <div className="relative flex flex-col items-center group">
-                                            <div
-                                                className={`w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center rounded-xl border-2 transition-all duration-300 z-10 ${
-                                                    step === item.id
-                                                        ? "bg-cyan-600 border-cyan-600 text-white shadow-lg shadow-cyan-500/30 scale-110"
-                                                        : step > item.id
-                                                          ? "bg-emerald-500 border-emerald-500 text-white shadow-md shadow-emerald-500/20"
-                                                          : "bg-white border-slate-200 text-slate-400 group-hover:border-slate-300"
-                                                }`}
-                                            >
-                                                {step > item.id ? (
-                                                    <FaCheck className="w-3 h-3 sm:w-4 sm:h-4" />
-                                                ) : (
-                                                    <span className="font-bold text-xs sm:text-sm">
-                                                        {item.id}
-                                                    </span>
-                                                )}
-                                            </div>
-                                            <span
-                                                className={`absolute -bottom-8 text-[10px] sm:text-xs font-bold whitespace-nowrap transition-colors duration-300 ${
-                                                    step === item.id
-                                                        ? "text-sky-700"
-                                                        : step > item.id
-                                                          ? "text-emerald-600"
-                                                          : "text-slate-400"
-                                                }`}
-                                            >
-                                                {item.label}
-                                            </span>
-                                        </div>
-                                        {idx < arr.length - 1 && (
-                                            <div className="flex-1 h-0.5 mx-2 sm:mx-4 bg-slate-200 relative rounded-full overflow-hidden">
-                                                <div
-                                                    className={`absolute inset-y-0 left-0 transition-all duration-500 ease-out ${
-                                                        step > item.id
-                                                            ? "w-full bg-emerald-500"
-                                                            : "w-0 bg-emerald-500"
-                                                    }`}
-                                                />
-                                            </div>
-                                        )}
-                                    </React.Fragment>
-                                ))}
+                {!hasSignature ? (
+                    <div
+                        role="status"
+                        className="mb-6 flex flex-col gap-3 rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 sm:flex-row sm:items-center sm:justify-between"
+                    >
+                        <div className="flex items-start gap-3">
+                            <FaSignature
+                                className="mt-0.5 h-4 w-4 shrink-0 text-amber-600"
+                                aria-hidden="true"
+                            />
+                            <div>
+                                <p className="text-sm font-semibold text-amber-900">
+                                    Tanda tangan Anda belum diunggah
+                                </p>
+                                <p className="mt-0.5 text-sm text-amber-800">
+                                    Laporan anomali memerlukan tanda tangan
+                                    pelapor. Unggah dulu di Pengaturan sebelum
+                                    mulai mengisi agar laporan bisa dikirim.
+                                </p>
                             </div>
                         </div>
+                        <Link
+                            href={route("dashboard.profile.edit")}
+                            className="btn-ghost btn-sm shrink-0"
+                        >
+                            Unggah tanda tangan
+                        </Link>
                     </div>
+                ) : null}
 
-                    <form onSubmit={handleSubmit}>
-                        <div className="p-4">
+                <div className="grid items-start gap-6 lg:grid-cols-[17rem_minmax(0,1fr)]">
+                    <ReportStepNav
+                        steps={REPORT_STEPS}
+                        currentStep={step}
+                        statusOf={stepStatusOf}
+                        onSelect={goToStep}
+                    />
+
+                    <form
+                        onSubmit={handleSubmit}
+                        noValidate
+                        className="surface min-w-0"
+                    >
+                        <div
+                            ref={formTopRef}
+                            className="scroll-mt-24 p-5 sm:p-8"
+                        >
+                            {stepAlert && stepAlert.stepId === step ? (
+                                <div
+                                    role="alert"
+                                    className="mb-6 flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm"
+                                >
+                                    <FaExclamationTriangle
+                                        className="mt-0.5 h-4 w-4 shrink-0 text-amber-600"
+                                        aria-hidden="true"
+                                    />
+                                    <div>
+                                        <p className="font-semibold text-amber-900">
+                                            Lengkapi {stepAlert.fields.length}{" "}
+                                            isian wajib sebelum lanjut
+                                        </p>
+                                        <p className="mt-0.5 text-amber-800">
+                                            {stepAlert.fields
+                                                .map(fieldLabel)
+                                                .join(", ")}
+                                        </p>
+                                    </div>
+                                </div>
+                            ) : null}
+
+                            {serverError ? (
+                                <div
+                                    role="alert"
+                                    className="mb-6 flex items-start gap-3 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm"
+                                >
+                                    <FaExclamationTriangle
+                                        className="mt-0.5 h-4 w-4 shrink-0 text-rose-600"
+                                        aria-hidden="true"
+                                    />
+                                    <div>
+                                        <p className="font-semibold text-rose-900">
+                                            Laporan belum terkirim
+                                        </p>
+                                        <p className="mt-0.5 text-rose-800">
+                                            {serverError}
+                                        </p>
+                                    </div>
+                                </div>
+                            ) : null}
                             {step === 1 && (
                                 <>
-                                    <div className="border border-slate-200 rounded-xl p-6 bg-white shadow-sm">
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+                                    <div className="mb-6">
+                                        <h2 className="text-base font-bold text-ink-900">Informasi anomali</h2>
+                                        <p className="mt-0.5 text-sm text-slate-500">Lokasi dan klasifikasi anomali yang ditemukan.</p>
+                                    </div>
+                                    <div>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-5">
                                             {/* Judul */}
                                             <div className="flex flex-col gap-1">
                                                 <InputLabel
                                                     htmlFor="judul"
                                                     value="Judul"
-                                                    className="text-sm font-bold tracking-wide text-slate-700"
+                                                    className="field-label !mb-0"
                                                 />
                                                 <div className="relative">
                                                     <span className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
@@ -665,7 +733,7 @@ export default function Create({
                                                                 e.target.value,
                                                             )
                                                         }
-                                                        className="pl-10 block w-full rounded-xl border border-slate-200 focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 text-sm px-4 py-2.5 shadow-sm transition-all placeholder:text-slate-400"
+                                                        className="block w-full px-3.5 py-2.5 pl-10"
                                                         placeholder="Masukkan judul anomali"
                                                         required
                                                         autoComplete="off"
@@ -679,7 +747,7 @@ export default function Create({
                                             <div className="flex flex-col gap-1">
                                                 <InputLabel
                                                     value="ULTG"
-                                                    className="text-sm font-bold tracking-wide text-slate-700"
+                                                    className="field-label !mb-0"
                                                 />
                                                 <div className="relative">
                                                     <Listbox
@@ -694,9 +762,9 @@ export default function Create({
                                                         <Listbox.Button
                                                             className={`${
                                                                 isUltgDisabled
-                                                                    ? "bg-slate-100 cursor-not-allowed text-slate-500"
-                                                                    : "bg-white text-slate-900"
-                                                            } pl-4 pr-10 py-2.5 w-full rounded-xl border border-slate-200 text-sm text-left shadow-sm focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500`}
+                                                                    ? "!bg-slate-50 cursor-not-allowed !text-slate-500"
+                                                                    : ""
+                                                            } field-input relative pr-10 text-left`}
                                                             placeholder="Pilih ULTG"
                                                         >
                                                             {ultgOptions.find(
@@ -718,7 +786,7 @@ export default function Create({
                                                             leaveFrom="opacity-100"
                                                             leaveTo="opacity-0"
                                                         >
-                                                            <Listbox.Options className="absolute z-50 mt-1 max-h-60 w-full overflow-auto rounded-xl bg-white py-1 text-sm shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none custom-scrollbar">
+                                                            <Listbox.Options className="absolute z-50 mt-1 max-h-60 w-full overflow-auto rounded-xl bg-white py-1 text-sm shadow-lift ring-1 ring-slate-200 focus:outline-none custom-scrollbar">
                                                                 {ultgOptions.map(
                                                                     (opt) => (
                                                                         <Listbox.Option
@@ -733,7 +801,7 @@ export default function Create({
                                                                             }) =>
                                                                                 `relative cursor-pointer select-none py-2.5 pl-10 pr-4 ${
                                                                                     active
-                                                                                        ? "bg-sky-50 text-cyan-900"
+                                                                                        ? "bg-brand-50 text-brand-900"
                                                                                         : "text-slate-900"
                                                                                 }`
                                                                             }
@@ -754,7 +822,7 @@ export default function Create({
                                                                                         }
                                                                                     </span>
                                                                                     {selected ? (
-                                                                                        <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-cyan-600">
+                                                                                        <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-brand-600">
                                                                                             <FaCheck
                                                                                                 className="h-4 w-4"
                                                                                                 aria-hidden="true"
@@ -778,7 +846,7 @@ export default function Create({
                                             <div className="flex flex-col gap-1">
                                                 <InputLabel
                                                     value="Gardu Induk"
-                                                    className="text-sm font-bold tracking-wide text-slate-700"
+                                                    className="field-label !mb-0"
                                                 />
                                                 <div className="relative">
                                                     <Listbox
@@ -791,7 +859,7 @@ export default function Create({
                                                         }
                                                     >
                                                         <Listbox.Button
-                                                            className="pl-4 pr-10 py-2.5 w-full rounded-xl border border-slate-200 bg-white text-sm text-left shadow-sm focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
+                                                            className="field-input relative pr-10 text-left"
                                                             placeholder="Pilih Gardu Induk"
                                                         >
                                                             {findById(
@@ -812,7 +880,7 @@ export default function Create({
                                                             leaveFrom="opacity-100"
                                                             leaveTo="opacity-0"
                                                         >
-                                                            <Listbox.Options className="absolute z-50 mt-1 max-h-60 w-full overflow-auto rounded-xl bg-white py-1 text-sm shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none custom-scrollbar">
+                                                            <Listbox.Options className="absolute z-50 mt-1 max-h-60 w-full overflow-auto rounded-xl bg-white py-1 text-sm shadow-lift ring-1 ring-slate-200 focus:outline-none custom-scrollbar">
                                                                 {(
                                                                     filteredGarduOptions ||
                                                                     []
@@ -829,7 +897,7 @@ export default function Create({
                                                                         }) =>
                                                                             `relative cursor-pointer select-none py-2.5 pl-10 pr-4 ${
                                                                                 active
-                                                                                    ? "bg-sky-50 text-cyan-900"
+                                                                                    ? "bg-brand-50 text-brand-900"
                                                                                     : "text-slate-900"
                                                                             }`
                                                                         }
@@ -850,7 +918,7 @@ export default function Create({
                                                                                     }
                                                                                 </span>
                                                                                 {selected ? (
-                                                                                    <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-cyan-600">
+                                                                                    <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-brand-600">
                                                                                         <FaCheck
                                                                                             className="h-4 w-4"
                                                                                             aria-hidden="true"
@@ -873,7 +941,7 @@ export default function Create({
                                             <div className="flex flex-col gap-1">
                                                 <InputLabel
                                                     value="Bagian"
-                                                    className="text-sm font-bold tracking-wide text-slate-700"
+                                                    className="field-label !mb-0"
                                                 />
                                                 <div className="relative">
                                                     <Listbox
@@ -886,7 +954,7 @@ export default function Create({
                                                         }
                                                     >
                                                         <Listbox.Button
-                                                            className="pl-4 pr-10 py-2.5 w-full rounded-xl border border-slate-200 bg-white text-sm text-left shadow-sm focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
+                                                            className="field-input relative pr-10 text-left"
                                                             placeholder="Pilih Bagian"
                                                         >
                                                             {bagianOptions.find(
@@ -908,7 +976,7 @@ export default function Create({
                                                             leaveFrom="opacity-100"
                                                             leaveTo="opacity-0"
                                                         >
-                                                            <Listbox.Options className="absolute z-50 mt-1 max-h-60 w-full overflow-auto rounded-xl bg-white py-1 text-sm shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none custom-scrollbar">
+                                                            <Listbox.Options className="absolute z-50 mt-1 max-h-60 w-full overflow-auto rounded-xl bg-white py-1 text-sm shadow-lift ring-1 ring-slate-200 focus:outline-none custom-scrollbar">
                                                                 {bagianOptions.map(
                                                                     (opt) => (
                                                                         <Listbox.Option
@@ -923,7 +991,7 @@ export default function Create({
                                                                             }) =>
                                                                                 `relative cursor-pointer select-none py-2.5 pl-10 pr-4 ${
                                                                                     active
-                                                                                        ? "bg-sky-50 text-cyan-900"
+                                                                                        ? "bg-brand-50 text-brand-900"
                                                                                         : "text-slate-900"
                                                                                 }`
                                                                             }
@@ -944,7 +1012,7 @@ export default function Create({
                                                                                         }
                                                                                     </span>
                                                                                     {selected ? (
-                                                                                        <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-cyan-600">
+                                                                                        <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-brand-600">
                                                                                             <FaCheck
                                                                                                 className="h-4 w-4"
                                                                                                 aria-hidden="true"
@@ -968,7 +1036,7 @@ export default function Create({
                                             <div className="flex flex-col gap-1">
                                                 <InputLabel
                                                     value="Tipe"
-                                                    className="text-sm font-bold tracking-wide text-slate-700"
+                                                    className="field-label !mb-0"
                                                 />
                                                 <div className="relative">
                                                     <Listbox
@@ -978,7 +1046,7 @@ export default function Create({
                                                         }
                                                     >
                                                         <Listbox.Button
-                                                            className="pl-4 pr-10 py-2.5 w-full rounded-xl border border-slate-200 bg-white text-sm text-left shadow-sm focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
+                                                            className="field-input relative pr-10 text-left"
                                                             placeholder="Pilih Tipe"
                                                         >
                                                             {tipeOptions.find(
@@ -1000,7 +1068,7 @@ export default function Create({
                                                             leaveFrom="opacity-100"
                                                             leaveTo="opacity-0"
                                                         >
-                                                            <Listbox.Options className="absolute z-50 mt-1 max-h-60 w-full overflow-auto rounded-xl bg-white py-1 text-sm shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none custom-scrollbar">
+                                                            <Listbox.Options className="absolute z-50 mt-1 max-h-60 w-full overflow-auto rounded-xl bg-white py-1 text-sm shadow-lift ring-1 ring-slate-200 focus:outline-none custom-scrollbar">
                                                                 {(
                                                                     tipeOptions ||
                                                                     []
@@ -1017,7 +1085,7 @@ export default function Create({
                                                                         }) =>
                                                                             `relative cursor-pointer select-none py-2.5 pl-10 pr-4 ${
                                                                                 active
-                                                                                    ? "bg-sky-50 text-cyan-900"
+                                                                                    ? "bg-brand-50 text-brand-900"
                                                                                     : "text-slate-900"
                                                                             }`
                                                                         }
@@ -1038,7 +1106,7 @@ export default function Create({
                                                                                     }
                                                                                 </span>
                                                                                 {selected ? (
-                                                                                    <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-cyan-600">
+                                                                                    <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-brand-600">
                                                                                         <FaCheck
                                                                                             className="h-4 w-4"
                                                                                             aria-hidden="true"
@@ -1061,7 +1129,7 @@ export default function Create({
                                             <div className="flex flex-col gap-1">
                                                 <InputLabel
                                                     value="Kategori"
-                                                    className="text-sm font-bold tracking-wide text-slate-700"
+                                                    className="field-label !mb-0"
                                                 />
                                                 <div className="relative">
                                                     <Listbox
@@ -1074,7 +1142,7 @@ export default function Create({
                                                         }
                                                     >
                                                         <Listbox.Button
-                                                            className="pl-4 pr-10 py-2.5 w-full rounded-xl border border-slate-200 bg-white text-sm text-left shadow-sm focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
+                                                            className="field-input relative pr-10 text-left"
                                                             placeholder="Pilih Kategori"
                                                         >
                                                             {findById(
@@ -1095,7 +1163,7 @@ export default function Create({
                                                             leaveFrom="opacity-100"
                                                             leaveTo="opacity-0"
                                                         >
-                                                            <Listbox.Options className="absolute z-50 mt-1 max-h-60 w-full flex-wrap rounded-xl bg-white py-1 text-sm shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none custom-scrollbar">
+                                                            <Listbox.Options className="absolute z-50 mt-1 max-h-60 w-full flex-wrap rounded-xl bg-white py-1 text-sm shadow-lift ring-1 ring-slate-200 focus:outline-none custom-scrollbar">
                                                                 {(
                                                                     kategoris ||
                                                                     []
@@ -1112,7 +1180,7 @@ export default function Create({
                                                                         }) =>
                                                                             `relative cursor-pointer select-none py-2.5 pl-10 pr-4 ${
                                                                                 active
-                                                                                    ? "bg-sky-50 text-cyan-900"
+                                                                                    ? "bg-brand-50 text-brand-900"
                                                                                     : "text-slate-900"
                                                                             }`
                                                                         }
@@ -1133,7 +1201,7 @@ export default function Create({
                                                                                     }
                                                                                 </span>
                                                                                 {selected ? (
-                                                                                    <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-cyan-600">
+                                                                                    <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-brand-600">
                                                                                         <FaCheck
                                                                                             className="h-4 w-4"
                                                                                             aria-hidden="true"
@@ -1157,7 +1225,7 @@ export default function Create({
                                                 <InputLabel
                                                     htmlFor="Bay"
                                                     value="Bay"
-                                                    className="text-sm font-bold tracking-wide text-slate-700"
+                                                    className="field-label !mb-0"
                                                 />
                                                 <div className="relative">
                                                     <span className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
@@ -1172,7 +1240,7 @@ export default function Create({
                                                                 e.target.value,
                                                             )
                                                         }
-                                                        className="pl-10 block w-full rounded-xl border border-slate-200 focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 text-sm px-4 py-2.5 shadow-sm transition-all placeholder:text-slate-400"
+                                                        className="block w-full px-3.5 py-2.5 pl-10"
                                                         placeholder="Bay arah mana?"
                                                         required
                                                         autoComplete="off"
@@ -1187,7 +1255,7 @@ export default function Create({
                                                 <InputLabel
                                                     htmlFor="penempatan_alat"
                                                     value="Penempatan Alat"
-                                                    className="text-sm font-bold tracking-wide text-slate-700"
+                                                    className="field-label !mb-0"
                                                 />
                                                 <div className="relative">
                                                     <span className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
@@ -1204,7 +1272,7 @@ export default function Create({
                                                                 e.target.value,
                                                             )
                                                         }
-                                                        className="pl-10 block w-full rounded-xl border border-slate-200 focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 text-sm px-4 py-2.5 shadow-sm transition-all placeholder:text-slate-400"
+                                                        className="block w-full px-3.5 py-2.5 pl-10"
                                                         placeholder="Di mana alat ini dipasang?"
                                                         required
                                                         autoComplete="off"
@@ -1223,13 +1291,17 @@ export default function Create({
 
                             {step === 2 && (
                                 <>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 pt-4 border border-slate-200 rounded-xl p-6 bg-white gap-8">
+                                    <div className="mb-6">
+                                        <h2 className="text-base font-bold text-ink-900">Detail peralatan</h2>
+                                        <p className="mt-0.5 text-sm text-slate-500">Identitas peralatan yang mengalami anomali.</p>
+                                    </div>
+                                    <div className="grid grid-cols-1 gap-x-6 gap-y-5 md:grid-cols-2">
                                         {/* Peralatan */}
                                         <div className="relative flex flex-col justify-end">
                                             <InputLabel
                                                 htmlFor="peralatan"
                                                 value="Nama Peralatan"
-                                                className="text-sm font-bold mb-1 tracking-wide text-slate-700"
+                                                className="field-label !mb-0"
                                             />
                                             <div className="relative">
                                                 <span className="absolute mt-0.5 inset-y-0 left-4 flex items-center pointer-events-none">
@@ -1244,7 +1316,7 @@ export default function Create({
                                                             e.target.value,
                                                         )
                                                     }
-                                                    className="pl-10 mt-1 block w-full rounded-xl border-slate-200 focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 text-md px-4 py-2 shadow-sm transition-all"
+                                                    className="mt-1 block w-full px-3.5 py-2.5 pl-10"
                                                     placeholder="Masukkan nama peralatan"
                                                     required
                                                 />
@@ -1258,25 +1330,31 @@ export default function Create({
                                             <InputLabel
                                                 htmlFor="tanggal_kejadian"
                                                 value="Tanggal Kejadian"
-                                                className="text-sm font-bold mb-1 tracking-wide text-slate-700"
+                                                className="field-label !mb-0"
                                             />
                                             <div className="relative date-picker-container">
                                                 <span className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
                                                     <FaCalendarAlt className="text-slate-400 text-lg" />
                                                 </span>
-                                                <div
+                                                <button
+                                                    id="tanggal_kejadian"
+                                                    type="button"
+                                                    aria-haspopup="dialog"
+                                                    aria-expanded={
+                                                        showDatePicker
+                                                    }
                                                     onClick={() =>
                                                         setShowDatePicker(
                                                             !showDatePicker,
                                                         )
                                                     }
-                                                    className={`pl-10 mt-1 block w-full rounded-xl border cursor-pointer ${
+                                                    className={`pl-10 mt-1 block w-full rounded-xl border text-left cursor-pointer focus:outline-none ${
                                                         errors.tanggal_kejadian
-                                                            ? "border-red-400 focus:ring-red-400 focus:border-red-400"
+                                                            ? "border-rose-400 focus:ring-rose-400/30 focus:border-rose-400"
                                                             : data.tanggal_kejadian
-                                                              ? "border-green-400 focus:ring-green-400 focus:border-green-400"
-                                                              : "border-slate-200 focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
-                                                    } text-md px-4 py-2 shadow-sm transition-all bg-white hover:bg-slate-50`}
+                                                              ? "border-emerald-400 focus:ring-emerald-400/30 focus:border-emerald-400"
+                                                              : "border-slate-200 focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500"
+                                                    } text-sm px-3.5 py-2.5 shadow-sm transition-all bg-white hover:border-slate-300`}
                                                 >
                                                     {data.tanggal_kejadian ? (
                                                         <span className="text-slate-900 flex items-center justify-between">
@@ -1285,7 +1363,7 @@ export default function Create({
                                                                     data.tanggal_kejadian,
                                                                 )}
                                                             </span>
-                                                            <span className="text-green-600 text-xs">
+                                                            <span className="text-xs text-emerald-600">
                                                                 ✓
                                                             </span>
                                                         </span>
@@ -1295,11 +1373,11 @@ export default function Create({
                                                             kejadian *
                                                         </span>
                                                     )}
-                                                </div>
+                                                </button>
 
                                                 {/* Custom Date Picker */}
                                                 {showDatePicker && (
-                                                    <div className="date-picker-container absolute z-50 mt-1 w-full bg-white border border-slate-200 rounded-xl shadow-lg p-4">
+                                                    <div className="date-picker-container absolute z-50 mt-1 w-full rounded-2xl border border-slate-200 bg-white p-4 shadow-lift">
                                                         {/* Calendar Header */}
                                                         <div className="flex items-center justify-between mb-4">
                                                             <button
@@ -1309,7 +1387,7 @@ export default function Create({
                                                                         -1,
                                                                     )
                                                                 }
-                                                                className="p-2 hover:bg-slate-100 rounded-xl transition-colors"
+                                                                className="btn-icon"
                                                             >
                                                                 <svg
                                                                     className="w-4 h-4"
@@ -1327,7 +1405,7 @@ export default function Create({
                                                                     />
                                                                 </svg>
                                                             </button>
-                                                            <h3 className="text-sm font-semibold text-slate-900">
+                                                            <h3 className="text-sm font-semibold text-ink-900">
                                                                 {selectedDate
                                                                     ? format(
                                                                           selectedDate,
@@ -1351,7 +1429,7 @@ export default function Create({
                                                                         1,
                                                                     )
                                                                 }
-                                                                className="p-2 hover:bg-slate-100 rounded-xl transition-colors"
+                                                                className="btn-icon"
                                                             >
                                                                 <svg
                                                                     className="w-4 h-4"
@@ -1440,9 +1518,9 @@ export default function Create({
                                                                             }
                                                                             className={`p-2 text-xs rounded-xl transition-colors ${
                                                                                 isSelected
-                                                                                    ? "bg-cyan-600 text-white font-semibold"
+                                                                                    ? "bg-ink-900 text-white font-semibold"
                                                                                     : isToday
-                                                                                      ? "bg-cyan-100 text-cyan-900 font-semibold"
+                                                                                      ? "bg-brand-50 text-brand-900 font-semibold"
                                                                                       : isCurrentMonth &&
                                                                                           isValidDate
                                                                                         ? "text-slate-900 hover:bg-slate-100"
@@ -1472,7 +1550,7 @@ export default function Create({
                                                                             today,
                                                                         );
                                                                     }}
-                                                                    className="text-xs text-cyan-600 hover:text-cyan-800 font-medium"
+                                                                    className="text-xs text-brand-700 hover:text-brand-800 font-medium"
                                                                 >
                                                                     Hari Ini
                                                                 </button>
@@ -1488,7 +1566,7 @@ export default function Create({
                                                                                 null,
                                                                             );
                                                                         }}
-                                                                        className="text-xs text-red-600 hover:text-red-800 font-medium"
+                                                                        className="text-xs text-rose-600 hover:text-rose-800 font-medium"
                                                                     >
                                                                         Hapus
                                                                     </button>
@@ -1519,7 +1597,7 @@ export default function Create({
                                             <InputLabel
                                                 htmlFor="merek"
                                                 value="Merek (optional)"
-                                                className="text-sm font-bold mb-1 tracking-wide text-slate-700"
+                                                className="field-label !mb-0"
                                             />
                                             <div className="relative">
                                                 <TextInput
@@ -1531,7 +1609,7 @@ export default function Create({
                                                             e.target.value,
                                                         )
                                                     }
-                                                    className="mt-1 block w-full rounded-xl border-slate-200 focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 text-md px-4 py-2 shadow-sm transition-all"
+                                                    className="mt-1 block w-full px-3.5 py-2.5"
                                                 />
                                                 <InputError
                                                     message={errors.merek}
@@ -1542,7 +1620,7 @@ export default function Create({
                                             <InputLabel
                                                 htmlFor="tipe_alat"
                                                 value="Tipe (optional)"
-                                                className="text-sm font-bold mb-1 tracking-wide text-slate-700"
+                                                className="field-label !mb-0"
                                             />
                                             <div className="relative">
                                                 <TextInput
@@ -1554,7 +1632,7 @@ export default function Create({
                                                             e.target.value,
                                                         )
                                                     }
-                                                    className="mt-1 block w-full rounded-xl border-slate-200 focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 text-md px-4 py-2 shadow-sm transition-all"
+                                                    className="mt-1 block w-full px-3.5 py-2.5"
                                                 />
                                                 <InputError
                                                     message={errors.tipe_alat}
@@ -1565,7 +1643,7 @@ export default function Create({
                                             <InputLabel
                                                 htmlFor="no_seri"
                                                 value="No Seri (optional)"
-                                                className="text-sm font-bold mb-1 tracking-wide text-slate-700"
+                                                className="field-label !mb-0"
                                             />
                                             <div className="relative">
                                                 <TextInput
@@ -1577,7 +1655,7 @@ export default function Create({
                                                             e.target.value,
                                                         )
                                                     }
-                                                    className="mt-1 block w-full rounded-xl border-slate-200 focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 text-md px-4 py-2 shadow-sm transition-all"
+                                                    className="mt-1 block w-full px-3.5 py-2.5"
                                                 />
                                                 <InputError
                                                     message={errors.no_seri}
@@ -1588,7 +1666,7 @@ export default function Create({
                                             <InputLabel
                                                 htmlFor="harga"
                                                 value="Harga (optional)"
-                                                className="text-sm font-bold mb-1 tracking-wide text-slate-700"
+                                                className="field-label !mb-0"
                                             />
                                             <div className="relative">
                                                 <TextInput
@@ -1600,7 +1678,7 @@ export default function Create({
                                                             e.target.value,
                                                         )
                                                     }
-                                                    className="mt-1 block w-full rounded-xl border-slate-200 focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 text-md px-4 py-2 shadow-sm transition-all"
+                                                    className="mt-1 block w-full px-3.5 py-2.5"
                                                 />
                                                 <InputError
                                                     message={errors.harga}
@@ -1611,7 +1689,7 @@ export default function Create({
                                             <InputLabel
                                                 htmlFor="kode_asset"
                                                 value="Kode Asset (optional)"
-                                                className="text-sm font-bold mb-1 tracking-wide text-slate-700"
+                                                className="field-label !mb-0"
                                             />
                                             <div className="relative">
                                                 <TextInput
@@ -1623,7 +1701,7 @@ export default function Create({
                                                             e.target.value,
                                                         )
                                                     }
-                                                    className="mt-1 block w-full rounded-xl border-slate-200 focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 text-md px-4 py-2 shadow-sm transition-all"
+                                                    className="mt-1 block w-full px-3.5 py-2.5"
                                                 />
                                                 <InputError
                                                     message={errors.kode_asset}
@@ -1634,7 +1712,7 @@ export default function Create({
                                             <InputLabel
                                                 htmlFor="tahun_operasi"
                                                 value="Tahun Operasi (optional)"
-                                                className="text-sm font-bold mb-1 tracking-wide text-slate-700"
+                                                className="field-label !mb-0"
                                             />
                                             <div className="relative">
                                                 <TextInput
@@ -1646,7 +1724,7 @@ export default function Create({
                                                             e.target.value,
                                                         )
                                                     }
-                                                    className="mt-1 block w-full rounded-xl border-slate-200 focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 text-md px-4 py-2 shadow-sm transition-all"
+                                                    className="mt-1 block w-full px-3.5 py-2.5"
                                                 />
                                                 <InputError
                                                     message={
@@ -1659,7 +1737,7 @@ export default function Create({
                                             <InputLabel
                                                 htmlFor="tahun_buat"
                                                 value="Tahun Buat (optional)"
-                                                className="text-sm font-bold mb-1 tracking-wide text-slate-700"
+                                                className="field-label !mb-0"
                                             />
                                             <div className="relative">
                                                 <TextInput
@@ -1671,7 +1749,7 @@ export default function Create({
                                                             e.target.value,
                                                         )
                                                     }
-                                                    className="mt-1 block w-full rounded-xl border-slate-200 focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 text-md px-4 py-2 shadow-sm transition-all"
+                                                    className="mt-1 block w-full px-3.5 py-2.5"
                                                 />
                                                 <InputError
                                                     message={errors.tahun_buat}
@@ -1684,13 +1762,17 @@ export default function Create({
 
                             {step === 3 && (
                                 <>
-                                    <div className="grid grid-cols-1 border border-slate-200 rounded-xl p-6 bg-white md:grid-cols-2 pt-4 gap-8">
+                                    <div className="mb-6">
+                                        <h2 className="text-base font-bold text-ink-900">Analisa</h2>
+                                        <p className="mt-0.5 text-sm text-slate-500">Jelaskan penyebab, akibat, dan usulan perbaikan.</p>
+                                    </div>
+                                    <div className="grid grid-cols-1 gap-x-6 gap-y-5 md:grid-cols-2">
                                         {/* Penyebab */}
                                         <div className="relative flex flex-col justify-end">
                                             <InputLabel
                                                 htmlFor="penyebab"
                                                 value="Penyebab"
-                                                className="text-sm font-bold mb-1 tracking-wide text-slate-700"
+                                                className="field-label !mb-0"
                                             />
                                             <div className="relative flex items-center">
                                                 <textarea
@@ -1702,7 +1784,7 @@ export default function Create({
                                                             e.target.value,
                                                         )
                                                     }
-                                                    className=" mt-1 block w-full rounded-xl border-slate-200 focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 text-md px-4 py-2 shadow-sm transition-all min-h-[60px]"
+                                                    className="field-input mt-1 min-h-[96px]"
                                                     placeholder="Jelaskan penyebab anomali"
                                                     required
                                                 />
@@ -1716,7 +1798,7 @@ export default function Create({
                                             <InputLabel
                                                 htmlFor="akibat"
                                                 value="Akibat"
-                                                className="text-sm font-bold mb-1 tracking-wide text-slate-700"
+                                                className="field-label !mb-0"
                                             />
                                             <div className="relative flex items-center">
                                                 <textarea
@@ -1728,7 +1810,7 @@ export default function Create({
                                                             e.target.value,
                                                         )
                                                     }
-                                                    className=" mt-1 block w-full rounded-xl border-slate-200 focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 text-md px-4 py-2 shadow-sm transition-all min-h-[60px]"
+                                                    className="field-input mt-1 min-h-[96px]"
                                                     placeholder="Jelaskan akibat anomali"
                                                     required
                                                 />
@@ -1742,7 +1824,7 @@ export default function Create({
                                             <InputLabel
                                                 htmlFor="usul_saran"
                                                 value="Usul/Saran"
-                                                className="text-sm font-bold mb-1 tracking-wide text-slate-700"
+                                                className="field-label !mb-0"
                                             />
                                             <div className="relative flex items-center">
                                                 <textarea
@@ -1754,7 +1836,7 @@ export default function Create({
                                                             e.target.value,
                                                         )
                                                     }
-                                                    className=" mt-1 block w-full rounded-xl border-slate-200 focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 text-md px-4 py-2 shadow-sm transition-all min-h-[60px]"
+                                                    className="field-input mt-1 min-h-[96px]"
                                                     placeholder="Tulis usul atau saran (opsional)"
                                                 />
                                             </div>
@@ -1768,22 +1850,24 @@ export default function Create({
 
                             {step === 4 && (
                                 <>
-                                    <div className="flex justify-center pt-4">
+                                    <div>
                                         {/* Lampiran Foto */}
-                                        <div className="rounded-xl shadow-xl border border-slate-200 overflow-hidden flex flex-col w-full max-w-4xl">
-                                            <div className="flex items-center border-b border-slate-200 gap-3 px-6 py-4 justify-center">
-                                                <span className="text-slate-600 text-2xl">
-                                                    <FaFileAlt />
+                                        <div className="flex w-full flex-col">
+                                            <div className="mb-6 flex items-center gap-3">
+                                                <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-100 text-slate-600">
+                                                    <FaFileAlt className="h-4 w-4" />
                                                 </span>
-                                                <h2 className="text-xl font-bold text-slate-600 tracking-tight">
+                                                <h2 className="text-base font-bold text-ink-900">
                                                     Lampiran Foto
                                                 </h2>
                                             </div>
-                                            <div className="p-6 flex-1 flex flex-col">
-                                                <div className="flex flex-col items-center justify-center mb-4 gap-1">
-                                                    <span className="text-xs text-cyan-500 font-medium">
-                                                        Maksimal {MAX_FILES}{" "}
-                                                        gambar ukuran 2048kb
+                                            <div className="flex flex-1 flex-col">
+                                                <div className="mb-4 flex flex-col items-start gap-1">
+                                                    <span className="text-xs text-slate-500">
+                                                        Opsional. Maksimal{" "}
+                                                        {MAX_FILES} foto; foto
+                                                        di atas 2 MB otomatis
+                                                        diperkecil.
                                                     </span>
                                                     {compressionState.running ? (
                                                         <div className="mt-2 w-full max-w-md rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
@@ -1822,10 +1906,10 @@ export default function Create({
                                                         </div>
                                                     ) : null}
                                                 </div>
-                                                <div className="flex flex-wrap gap-3 mb-6 justify-center">
+                                                <div className="mb-6 flex flex-wrap items-center gap-3">
                                                     <label
                                                         htmlFor="lampiran_foto"
-                                                        className={`flex items-center gap-2 cursor-pointer px-4 py-2 bg-cyan-600 hover:bg-cyan-700 transition text-white rounded-xl shadow font-medium text-sm ${
+                                                        className={`flex items-center gap-2 cursor-pointer px-4 py-2 bg-white border border-slate-200 hover:border-slate-300 hover:bg-slate-50 transition text-slate-700 rounded-full font-semibold text-sm ${
                                                             preview.length >=
                                                                 MAX_FILES ||
                                                             compressionState.running ||
@@ -1834,7 +1918,7 @@ export default function Create({
                                                                 : ""
                                                         }`}
                                                     >
-                                                        <FaPlus className="text-white" />
+                                                        <FaPlus className="text-slate-500" />
                                                         Tambah Foto
                                                         <input
                                                             id="lampiran_foto"
@@ -1855,15 +1939,68 @@ export default function Create({
                                                     </label>
                                                     {preview.length >=
                                                         MAX_FILES && (
-                                                        <span className="text-xs text-red-500 font-semibold ml-2">
+                                                        <span className="ml-2 text-xs font-semibold text-rose-600">
                                                             Maksimal {MAX_FILES}{" "}
                                                             gambar tercapai
                                                         </span>
                                                     )}
                                                 </div>
+                                                {rejectedPhotos.length > 0 ? (
+                                                    <div
+                                                        role="alert"
+                                                        className="mb-6 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm"
+                                                    >
+                                                        <div className="flex items-start justify-between gap-3">
+                                                            <p className="font-semibold text-amber-900">
+                                                                {
+                                                                    rejectedPhotos.length
+                                                                }{" "}
+                                                                foto tidak
+                                                                ditambahkan
+                                                            </p>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() =>
+                                                                    setRejectedPhotos(
+                                                                        [],
+                                                                    )
+                                                                }
+                                                                className="text-xs font-semibold text-amber-800 underline-offset-4 hover:underline"
+                                                            >
+                                                                Tutup
+                                                            </button>
+                                                        </div>
+                                                        <ul className="mt-2 space-y-1 text-amber-800">
+                                                            {rejectedPhotos.map(
+                                                                (item, idx) => (
+                                                                    <li
+                                                                        key={`${item.name}-${idx}`}
+                                                                    >
+                                                                        <span className="font-semibold">
+                                                                            {
+                                                                                item.name
+                                                                            }
+                                                                        </span>
+                                                                        {" — "}
+                                                                        {
+                                                                            item.reason
+                                                                        }
+                                                                    </li>
+                                                                ),
+                                                            )}
+                                                        </ul>
+                                                        <p className="mt-2 text-xs text-amber-700">
+                                                            Foto bersifat
+                                                            opsional. Anda bisa
+                                                            mencoba foto lain
+                                                            atau lanjut tanpa
+                                                            foto ini.
+                                                        </p>
+                                                    </div>
+                                                ) : null}
                                                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-5">
                                                     {preview.length === 0 && (
-                                                        <div className="col-span-full flex flex-col items-center justify-center py-10 border-2 border-dashed border-slate-200 rounded-xl bg-white/60">
+                                                        <div className="col-span-full flex flex-col items-center justify-center rounded-xl border border-dashed border-slate-300 bg-slate-50/70 py-12">
                                                             <FaFileAlt className="text-slate-300 text-4xl mb-2" />
                                                             <span className="text-slate-400 text-sm font-medium">
                                                                 Belum ada foto
@@ -1874,7 +2011,7 @@ export default function Create({
                                                     {preview.map((src, i) => (
                                                         <div
                                                             key={i}
-                                                            className="relative group border border-slate-200 rounded-xl overflow-hidden shadow bg-white hover:shadow-xl transition"
+                                                            className="group relative overflow-hidden rounded-xl border border-slate-200 bg-white transition hover:border-slate-300 hover:shadow-soft"
                                                         >
                                                             <img
                                                                 src={src}
@@ -1889,7 +2026,7 @@ export default function Create({
                                                                             i,
                                                                         )
                                                                     }
-                                                                    className="bg-white/90 hover:bg-red-600 text-red-600 hover:text-white rounded-full p-1 shadow transition"
+                                                                    className="rounded-full bg-white/90 p-1 text-rose-600 shadow-soft transition hover:bg-rose-600 hover:text-white"
                                                                     title="Hapus Foto"
                                                                 >
                                                                     <FaTrash className="h-4 w-4" />
@@ -1897,7 +2034,7 @@ export default function Create({
                                                             </div>
                                                             <button
                                                                 type="button"
-                                                                className="absolute inset-0 bg-slate-900/30 opacity-0 group-hover:opacity-100 rounded-xl transition-all duration-200 flex items-center justify-center text-base text-white font-semibold tracking-wide backdrop-blur-sm"
+                                                                className="absolute inset-0 bg-ink-900/30 opacity-0 group-hover:opacity-100 rounded-xl transition-all duration-200 flex items-center justify-center text-base text-white font-semibold tracking-wide backdrop-blur-sm"
                                                                 onClick={(
                                                                     e,
                                                                 ) => {
@@ -1910,7 +2047,7 @@ export default function Create({
                                                                     );
                                                                 }}
                                                             >
-                                                                <span className="px-4 py-1 bg-slate-700/80 rounded-xl shadow text-white font-medium">
+                                                                <span className="rounded-full bg-white px-4 py-1 text-sm font-semibold text-ink-900 shadow-soft">
                                                                     Preview
                                                                 </span>
                                                             </button>
@@ -1945,90 +2082,145 @@ export default function Create({
                             )}
 
                             {step === 5 && (
-                                <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden animate-fade-in">
+                                <div className="overflow-hidden rounded-xl border border-slate-200/80">
                                     {/* Header */}
-                                    <div className="bg-slate-50 px-6 py-4 border-b border-slate-100 flex items-center justify-between">
-                                        <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
-                                            <FaClipboard className="text-sky-600" />
+                                    <div className="flex items-center justify-between border-b border-slate-100 bg-slate-50/60 px-5 py-4">
+                                        <h2 className="flex items-center gap-2 text-base font-bold text-ink-900">
+                                            <FaClipboard className="text-slate-500" />
                                             Review Data Anomali
                                         </h2>
-                                        <div className="px-3 py-1 rounded-full bg-sky-100 text-sky-700 text-xs font-bold uppercase tracking-wider">
+                                        <div className="rounded-full bg-amber-50 px-2.5 py-0.5 text-xs font-semibold text-amber-800 ring-1 ring-inset ring-amber-200">
                                             Draft
                                         </div>
                                     </div>
 
-                                    <div className="p-6 space-y-8">
+                                    <div className="space-y-8 p-5">
+                                        {/* Informasi anomali (langkah 1) */}
+                                        <div>
+                                            <h3 className="mb-4 flex items-center gap-2 border-b border-slate-100 pb-2 text-sm font-bold text-ink-900">
+                                                Informasi Anomali
+                                                <button
+                                                    type="button"
+                                                    onClick={() => goToStep(1)}
+                                                    className="ml-auto text-xs font-semibold text-brand-700 underline-offset-4 hover:underline"
+                                                >
+                                                    Ubah
+                                                </button>
+                                            </h3>
+                                            <dl className="grid grid-cols-1 gap-x-8 gap-y-4 md:grid-cols-2">
+                                                {[
+                                                    ["Judul", data.judul],
+                                                    ["ULTG", data.ultg],
+                                                    [
+                                                        "Gardu induk",
+                                                        findById(
+                                                            gardus,
+                                                            data.gardu_id,
+                                                        )?.name,
+                                                    ],
+                                                    ["Bagian", data.bagian],
+                                                    ["Tipe", data.tipe],
+                                                    [
+                                                        "Kategori",
+                                                        findById(
+                                                            kategoris,
+                                                            data.kategori_id,
+                                                        )?.name,
+                                                    ],
+                                                ].map(([label, value]) => (
+                                                    <div
+                                                        key={label}
+                                                        className="rounded-xl border border-slate-200/80 bg-white p-3"
+                                                    >
+                                                        <dt className="mb-1 text-xs font-medium text-slate-500">
+                                                            {label}
+                                                        </dt>
+                                                        <dd className="text-sm font-semibold text-ink-900">
+                                                            {value || "-"}
+                                                        </dd>
+                                                    </div>
+                                                ))}
+                                            </dl>
+                                        </div>
+
                                         {/* 1. Data Peralatan */}
                                         <div>
-                                            <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4 border-b border-slate-100 pb-2 flex items-center gap-2">
-                                                <span className="w-6 h-6 rounded-full bg-sky-50 text-sky-600 flex items-center justify-center text-xs">
+                                            <h3 className="mb-4 flex items-center gap-2 border-b border-slate-100 pb-2 text-sm font-bold text-ink-900">
+                                                <span className="flex h-6 w-6 items-center justify-center rounded-full bg-slate-100 text-xs text-slate-600">
                                                     1
                                                 </span>
                                                 Data Peralatan
+                                                <button
+                                                    type="button"
+                                                    onClick={() => goToStep(2)}
+                                                    className="ml-auto text-xs font-semibold text-brand-700 underline-offset-4 hover:underline"
+                                                >
+                                                    Ubah
+                                                </button>
                                             </h3>
                                             <dl className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
-                                                <div className="bg-slate-50 p-3 rounded-xl border border-slate-100">
-                                                    <dt className="text-xs font-medium text-slate-500 mb-1">
+                                                <div className="rounded-xl border border-slate-200/80 bg-white p-3">
+                                                    <dt className="mb-1 text-xs font-medium text-slate-500">
                                                         Nama Peralatan
                                                     </dt>
-                                                    <dd className="text-sm font-semibold text-slate-900">
+                                                    <dd className="text-sm font-semibold text-ink-900">
                                                         {data.peralatan || "-"}
                                                     </dd>
                                                 </div>
-                                                <div className="bg-slate-50 p-3 rounded-xl border border-slate-100">
-                                                    <dt className="text-xs font-medium text-slate-500 mb-1">
+                                                <div className="rounded-xl border border-slate-200/80 bg-white p-3">
+                                                    <dt className="mb-1 text-xs font-medium text-slate-500">
                                                         Merek
                                                     </dt>
-                                                    <dd className="text-sm font-semibold text-slate-900">
+                                                    <dd className="text-sm font-semibold text-ink-900">
                                                         {data.merek || "-"}
                                                     </dd>
                                                 </div>
-                                                <div className="bg-slate-50 p-3 rounded-xl border border-slate-100">
-                                                    <dt className="text-xs font-medium text-slate-500 mb-1">
+                                                <div className="rounded-xl border border-slate-200/80 bg-white p-3">
+                                                    <dt className="mb-1 text-xs font-medium text-slate-500">
                                                         Tipe
                                                     </dt>
-                                                    <dd className="text-sm font-semibold text-slate-900">
+                                                    <dd className="text-sm font-semibold text-ink-900">
                                                         {data.tipe_alat || "-"}
                                                     </dd>
                                                 </div>
-                                                <div className="bg-slate-50 p-3 rounded-xl border border-slate-100">
-                                                    <dt className="text-xs font-medium text-slate-500 mb-1">
+                                                <div className="rounded-xl border border-slate-200/80 bg-white p-3">
+                                                    <dt className="mb-1 text-xs font-medium text-slate-500">
                                                         No Seri
                                                     </dt>
-                                                    <dd className="text-sm font-semibold text-slate-900">
+                                                    <dd className="text-sm font-semibold text-ink-900">
                                                         {data.no_seri || "-"}
                                                     </dd>
                                                 </div>
-                                                <div className="bg-slate-50 p-3 rounded-xl border border-slate-100">
-                                                    <dt className="text-xs font-medium text-slate-500 mb-1">
+                                                <div className="rounded-xl border border-slate-200/80 bg-white p-3">
+                                                    <dt className="mb-1 text-xs font-medium text-slate-500">
                                                         Harga
                                                     </dt>
-                                                    <dd className="text-sm font-semibold text-slate-900">
+                                                    <dd className="text-sm font-semibold text-ink-900">
                                                         {data.harga || "-"}
                                                     </dd>
                                                 </div>
-                                                <div className="bg-slate-50 p-3 rounded-xl border border-slate-100">
-                                                    <dt className="text-xs font-medium text-slate-500 mb-1">
+                                                <div className="rounded-xl border border-slate-200/80 bg-white p-3">
+                                                    <dt className="mb-1 text-xs font-medium text-slate-500">
                                                         Kode Asset
                                                     </dt>
-                                                    <dd className="text-sm font-semibold text-slate-900">
+                                                    <dd className="text-sm font-semibold text-ink-900">
                                                         {data.kode_asset || "-"}
                                                     </dd>
                                                 </div>
-                                                <div className="bg-slate-50 p-3 rounded-xl border border-slate-100">
-                                                    <dt className="text-xs font-medium text-slate-500 mb-1">
+                                                <div className="rounded-xl border border-slate-200/80 bg-white p-3">
+                                                    <dt className="mb-1 text-xs font-medium text-slate-500">
                                                         Tahun Operasi
                                                     </dt>
-                                                    <dd className="text-sm font-semibold text-slate-900">
+                                                    <dd className="text-sm font-semibold text-ink-900">
                                                         {data.tahun_operasi ||
                                                             "-"}
                                                     </dd>
                                                 </div>
-                                                <div className="bg-slate-50 p-3 rounded-xl border border-slate-100">
-                                                    <dt className="text-xs font-medium text-slate-500 mb-1">
+                                                <div className="rounded-xl border border-slate-200/80 bg-white p-3">
+                                                    <dt className="mb-1 text-xs font-medium text-slate-500">
                                                         Tahun Buat
                                                     </dt>
-                                                    <dd className="text-sm font-semibold text-slate-900">
+                                                    <dd className="text-sm font-semibold text-ink-900">
                                                         {data.tahun_buat || "-"}
                                                     </dd>
                                                 </div>
@@ -2037,35 +2229,42 @@ export default function Create({
 
                                         {/* 2. Detail Kejadian */}
                                         <div>
-                                            <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4 border-b border-slate-100 pb-2 flex items-center gap-2">
-                                                <span className="w-6 h-6 rounded-full bg-sky-50 text-sky-600 flex items-center justify-center text-xs">
+                                            <h3 className="mb-4 flex items-center gap-2 border-b border-slate-100 pb-2 text-sm font-bold text-ink-900">
+                                                <span className="flex h-6 w-6 items-center justify-center rounded-full bg-slate-100 text-xs text-slate-600">
                                                     2
                                                 </span>
                                                 Detail Kejadian
+                                                <button
+                                                    type="button"
+                                                    onClick={() => goToStep(1)}
+                                                    className="ml-auto text-xs font-semibold text-brand-700 underline-offset-4 hover:underline"
+                                                >
+                                                    Ubah
+                                                </button>
                                             </h3>
                                             <dl className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
-                                                <div className="bg-slate-50 p-3 rounded-xl border border-slate-100 col-span-1 md:col-span-1">
-                                                    <dt className="text-xs font-medium text-slate-500 mb-1">
+                                                <div className="rounded-xl border border-slate-200/80 bg-white p-3">
+                                                    <dt className="mb-1 text-xs font-medium text-slate-500">
                                                         Bay
                                                     </dt>
-                                                    <dd className="text-sm font-semibold text-slate-900">
+                                                    <dd className="text-sm font-semibold text-ink-900">
                                                         {data.bay || "-"}
                                                     </dd>
                                                 </div>
-                                                <div className="bg-slate-50 p-3 rounded-xl border border-slate-100">
-                                                    <dt className="text-xs font-medium text-slate-500 mb-1">
+                                                <div className="rounded-xl border border-slate-200/80 bg-white p-3">
+                                                    <dt className="mb-1 text-xs font-medium text-slate-500">
                                                         Penempatan Alat
                                                     </dt>
-                                                    <dd className="text-sm font-semibold text-slate-900">
+                                                    <dd className="text-sm font-semibold text-ink-900">
                                                         {data.penempatan_alat ||
                                                             "-"}
                                                     </dd>
                                                 </div>
-                                                <div className="bg-slate-50 p-3 rounded-xl border border-slate-100">
-                                                    <dt className="text-xs font-medium text-slate-500 mb-1">
+                                                <div className="rounded-xl border border-slate-200/80 bg-white p-3">
+                                                    <dt className="mb-1 text-xs font-medium text-slate-500">
                                                         Tanggal Kejadian
                                                     </dt>
-                                                    <dd className="text-sm font-semibold text-slate-900">
+                                                    <dd className="text-sm font-semibold text-ink-900">
                                                         {data.tanggal_kejadian
                                                             ? formatDate(
                                                                   data.tanggal_kejadian,
@@ -2073,11 +2272,11 @@ export default function Create({
                                                             : "-"}
                                                     </dd>
                                                 </div>
-                                                <div className="bg-slate-50 p-3 rounded-xl border border-slate-100">
-                                                    <dt className="text-xs font-medium text-slate-500 mb-1">
+                                                <div className="rounded-xl border border-slate-200/80 bg-white p-3">
+                                                    <dt className="mb-1 text-xs font-medium text-slate-500">
                                                         Jenis Kerusakan
                                                     </dt>
-                                                    <dd className="text-sm font-semibold text-slate-900">
+                                                    <dd className="text-sm font-semibold text-ink-900">
                                                         {kategoris?.find(
                                                             (k) =>
                                                                 k.id ==
@@ -2090,34 +2289,41 @@ export default function Create({
 
                                         {/* 3. Analisa */}
                                         <div>
-                                            <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4 border-b border-slate-100 pb-2 flex items-center gap-2">
-                                                <span className="w-6 h-6 rounded-full bg-sky-50 text-sky-600 flex items-center justify-center text-xs">
+                                            <h3 className="mb-4 flex items-center gap-2 border-b border-slate-100 pb-2 text-sm font-bold text-ink-900">
+                                                <span className="flex h-6 w-6 items-center justify-center rounded-full bg-slate-100 text-xs text-slate-600">
                                                     3
                                                 </span>
                                                 Analisa & Tindak Lanjut
+                                                <button
+                                                    type="button"
+                                                    onClick={() => goToStep(3)}
+                                                    className="ml-auto text-xs font-semibold text-brand-700 underline-offset-4 hover:underline"
+                                                >
+                                                    Ubah
+                                                </button>
                                             </h3>
                                             <dl className="grid grid-cols-1 gap-4">
-                                                <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
-                                                    <dt className="text-xs font-medium text-slate-500 mb-1">
+                                                <div className="rounded-xl border border-slate-200/80 bg-white p-4">
+                                                    <dt className="mb-1 text-xs font-medium text-slate-500">
                                                         Penyebab Kerusakan
                                                     </dt>
-                                                    <dd className="text-sm font-semibold text-slate-900 whitespace-pre-wrap">
+                                                    <dd className="whitespace-pre-wrap text-sm font-semibold text-ink-900">
                                                         {data.penyebab || "-"}
                                                     </dd>
                                                 </div>
-                                                <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
-                                                    <dt className="text-xs font-medium text-slate-500 mb-1">
+                                                <div className="rounded-xl border border-slate-200/80 bg-white p-4">
+                                                    <dt className="mb-1 text-xs font-medium text-slate-500">
                                                         Akibat Kerusakan
                                                     </dt>
-                                                    <dd className="text-sm font-semibold text-slate-900 whitespace-pre-wrap">
+                                                    <dd className="whitespace-pre-wrap text-sm font-semibold text-ink-900">
                                                         {data.akibat || "-"}
                                                     </dd>
                                                 </div>
-                                                <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
-                                                    <dt className="text-xs font-medium text-slate-500 mb-1">
+                                                <div className="rounded-xl border border-slate-200/80 bg-white p-4">
+                                                    <dt className="mb-1 text-xs font-medium text-slate-500">
                                                         Usul dan Saran
                                                     </dt>
-                                                    <dd className="text-sm font-semibold text-slate-900 whitespace-pre-wrap">
+                                                    <dd className="whitespace-pre-wrap text-sm font-semibold text-ink-900">
                                                         {data.usul_saran || "-"}
                                                     </dd>
                                                 </div>
@@ -2126,13 +2332,20 @@ export default function Create({
 
                                         {/* 4. Lampiran */}
                                         <div>
-                                            <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4 border-b border-slate-100 pb-2 flex items-center gap-2">
-                                                <span className="w-6 h-6 rounded-full bg-sky-50 text-sky-600 flex items-center justify-center text-xs">
+                                            <h3 className="mb-4 flex items-center gap-2 border-b border-slate-100 pb-2 text-sm font-bold text-ink-900">
+                                                <span className="flex h-6 w-6 items-center justify-center rounded-full bg-slate-100 text-xs text-slate-600">
                                                     4
                                                 </span>
                                                 Lampiran
+                                                <button
+                                                    type="button"
+                                                    onClick={() => goToStep(4)}
+                                                    className="ml-auto text-xs font-semibold text-brand-700 underline-offset-4 hover:underline"
+                                                >
+                                                    Ubah
+                                                </button>
                                             </h3>
-                                            <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
+                                            <div className="rounded-xl border border-slate-200/80 bg-white p-4">
                                                 {preview &&
                                                 preview.length > 0 ? (
                                                     <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 gap-3">
@@ -2168,43 +2381,72 @@ export default function Create({
                                 </div>
                             )}
 
-                            <div className="flex justify-between gap-6 mt-6 pt-4">
-                                <button
-                                    type="button"
-                                    onClick={prevStep}
-                                    className={`w-full md:w-auto border border-slate-300 text-slate-800 hover:bg-slate-50 px-4 sm:px-5 py-2 rounded-xl shadow  font-semibold flex items-center justify-center gap-2 transition text-sm sm:text-base ${
-                                        step === 1
-                                            ? "cursor-not-allowed opacity-50"
-                                            : "hover:from-slate-700 hover:to-slate-800"
-                                    }`}
-                                    disabled={step === 1}
-                                >
-                                    Back
-                                </button>
-                                {step < 5 && (
+                        </div>
+
+                        <footer className="flex flex-col-reverse gap-3 rounded-b-2xl border-t border-slate-100 bg-slate-50/60 px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-8">
+                            <button
+                                type="button"
+                                onClick={prevStep}
+                                disabled={step === 1}
+                                className="btn-ghost"
+                            >
+                                <FaChevronLeft className="h-3 w-3" />
+                                Sebelumnya
+                            </button>
+
+                            {step < LAST_STEP ? (
+                                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
+                                    <span
+                                        className={`text-xs ${
+                                            step === 4 && rejectedPhotos.length
+                                                ? "font-semibold text-amber-700"
+                                                : remainingInStep > 0 ||
+                                                    (step === 4 &&
+                                                        preview.length === 0)
+                                                  ? "text-slate-500"
+                                                  : "font-semibold text-emerald-700"
+                                        }`}
+                                    >
+                                        {step === 4 && rejectedPhotos.length
+                                            ? `${rejectedPhotos.length} foto gagal ditambahkan`
+                                            : remainingInStep > 0
+                                              ? `${remainingInStep} isian wajib belum diisi`
+                                              : step === 4 && preview.length === 0
+                                                ? "Foto opsional, boleh dilewati"
+                                                : "Langkah ini lengkap"}
+                                    </span>
                                     <button
                                         type="button"
                                         onClick={nextStep}
-                                        className="w-full md:w-auto bg-brand-600 text-white px-4 sm:px-5 py-2 rounded-xl shadow hover:bg-brand-700 font-semibold flex transition-all duration-300 ease-in-out items-center justify-center gap-2 text-sm sm:text-base"
+                                        className="btn-primary"
                                     >
-                                        Next
+                                        Lanjut ke {nextStepInfo?.title}
+                                        <FaArrowRight className="h-3 w-3" />
                                     </button>
-                                )}
-                                {step === 5 && (
+                                </div>
+                            ) : (
+                                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
+                                    {!hasSignature ? (
+                                        <span className="text-xs font-semibold text-amber-700">
+                                            Unggah tanda tangan dulu untuk
+                                            mengirim
+                                        </span>
+                                    ) : null}
                                     <button
                                         type="submit"
                                         disabled={
                                             processing ||
                                             isSubmitting ||
-                                            compressionState.running
+                                            compressionState.running ||
+                                            !hasSignature
                                         }
-                                        className="w-full md:w-auto bg-gradient-to-r from-green-600 to-green-500 text-white px-4 sm:px-5 py-2 rounded-xl shadow hover:from-green-700 hover:to-green-800 font-semibold flex items-center justify-center gap-2 transition text-sm sm:text-base"
+                                        className="btn-brand"
                                     >
                                         {isSubmitting ? (
                                             <>
-                                                <span className="h-4 w-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />
+                                                <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
                                                 <span>
-                                                    Uploading
+                                                    Mengirim
                                                     {typeof uploadProgress ===
                                                     "number"
                                                         ? ` ${uploadProgress}%`
@@ -2213,16 +2455,19 @@ export default function Create({
                                             </>
                                         ) : compressionState.running ? (
                                             <>
-                                                <span className="h-4 w-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />
-                                                <span>Mengompres...</span>
+                                                <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                                                <span>Mengompres foto...</span>
                                             </>
                                         ) : (
-                                            "Submit"
+                                            <>
+                                                <FaCheckCircle className="h-3.5 w-3.5" />
+                                                Kirim laporan
+                                            </>
                                         )}
                                     </button>
-                                )}
-                            </div>
-                        </div>
+                                </div>
+                            )}
+                        </footer>
                     </form>
                 </div>
             </DashboardLayout>

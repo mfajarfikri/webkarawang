@@ -75,6 +75,57 @@
         @apply rounded-2xl border border-slate-200/80 bg-white shadow-soft;
     }
 
+    .btn-danger {
+        @apply btn bg-rose-600 text-white shadow-soft hover:bg-rose-700;
+    }
+
+    .btn-sm {
+        @apply px-3.5 py-1.5 text-xs;
+    }
+
+    /* Ikon-saja (edit, hapus, tutup) */
+    .btn-icon {
+        @apply inline-flex h-9 w-9 items-center justify-center rounded-full text-slate-500 transition hover:bg-slate-100 hover:text-ink-900 disabled:cursor-not-allowed disabled:opacity-40;
+    }
+
+    /* Form */
+    .field-label {
+        @apply mb-1.5 block text-sm font-semibold text-slate-700;
+    }
+
+    .field-input {
+        @apply block w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-ink-900 shadow-sm transition placeholder:text-slate-400 hover:border-slate-300 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-500;
+    }
+
+    .field-hint {
+        @apply mt-1.5 text-xs text-slate-500;
+    }
+
+    .field-error {
+        @apply mt-1.5 text-xs font-semibold text-rose-600;
+    }
+
+    /* Tabel data */
+    .data-table {
+        @apply w-full text-sm;
+    }
+
+    .data-table thead th {
+        @apply whitespace-nowrap border-b border-slate-100 bg-slate-50/60 px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500 first:pl-6 last:pr-6;
+    }
+
+    .data-table tbody td {
+        @apply border-b border-slate-100 px-4 py-3.5 align-middle text-slate-700 first:pl-6 last:pr-6;
+    }
+
+    .data-table tbody tr {
+        @apply transition-colors hover:bg-slate-50/70;
+    }
+
+    .data-table tbody tr:last-child td {
+        @apply border-b-0;
+    }
+
     /* Latar grid halus untuk permukaan gelap */
     .bg-grid-ink {
         background-color: #0c1424;
@@ -1493,4 +1544,129 @@ blockquote {
         color: #1d4ed8;
         border-color: #bfdbfe;
     }
+}
+
+/* ---------- Kalender jadwal anomali (Components/Anomali/AnomaliCalendar) ---------- */
+.anomali-calendar .fc {
+    --fc-border-color: #eef2f6;
+    --fc-today-bg-color: #f0f9ff;
+    --fc-neutral-bg-color: #f8fafc;
+    --fc-page-bg-color: #ffffff;
+    font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+    font-size: 0.8125rem;
+}
+
+.anomali-calendar .fc-scrollgrid {
+    border-radius: 0.875rem;
+    overflow: hidden;
+}
+
+.anomali-calendar .fc-col-header-cell {
+    background: #f8fafc;
+}
+
+.anomali-calendar .fc-col-header-cell-cushion {
+    padding: 0.625rem 0;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #64748b;
+    text-decoration: none;
+}
+
+.anomali-calendar .fc-daygrid-day-frame {
+    min-height: 6.5rem;
+}
+
+.anomali-calendar .fc-daygrid-day-number {
+    padding: 0.5rem 0.625rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #334155;
+    text-decoration: none;
+}
+
+.anomali-calendar .fc-day-other .fc-daygrid-day-number {
+    color: #cbd5e1;
+}
+
+.anomali-calendar .fc-day-today .fc-daygrid-day-number {
+    display: inline-flex;
+    height: 1.625rem;
+    min-width: 1.625rem;
+    margin: 0.25rem;
+    padding: 0 0.375rem;
+    align-items: center;
+    justify-content: center;
+    border-radius: 9999px;
+    background: #131c31;
+    color: #ffffff;
+}
+
+/* Event: isian lembut + garis tepi kiri sesuai tahap */
+.anomali-calendar .fc-event {
+    margin: 1px 4px;
+    padding: 2px 6px;
+    border: 0;
+    border-left: 3px solid transparent;
+    border-radius: 0.5rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: none;
+}
+
+.anomali-calendar .fc-event .fc-event-main {
+    color: inherit;
+}
+
+.anomali-calendar .fc-event:hover {
+    filter: none !important;
+    transform: none !important;
+    box-shadow: 0 1px 2px rgba(12, 20, 36, 0.08) !important;
+}
+
+.anomali-calendar .ev-violet {
+    background: #f5f3ff;
+    border-left-color: #8b5cf6;
+    color: #4c1d95;
+}
+
+.anomali-calendar .ev-violet:hover {
+    background: #ede9fe !important;
+}
+
+.anomali-calendar .ev-rose {
+    background: #fff1f2;
+    border-left-color: #f43f5e;
+    color: #9f1239;
+}
+
+.anomali-calendar .ev-rose:hover {
+    background: #ffe4e6 !important;
+}
+
+.anomali-calendar .ev-emerald {
+    background: #ecfdf5;
+    border-left-color: #10b981;
+    color: #065f46;
+}
+
+.anomali-calendar .ev-emerald:hover {
+    background: #d1fae5 !important;
+}
+
+.anomali-calendar .fc-daygrid-more-link {
+    margin: 2px 6px;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    color: #026aa2;
+}
+
+.anomali-calendar .fc-popover {
+    border-radius: 0.875rem;
+    border-color: #e2e8f0;
+    box-shadow: 0 24px 48px -20px rgba(12, 20, 36, 0.22);
+    overflow: hidden;
 }

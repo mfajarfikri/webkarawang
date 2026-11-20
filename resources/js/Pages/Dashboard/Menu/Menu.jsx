@@ -2,6 +2,7 @@ import React, { useState, Fragment, useEffect } from "react";
 import { Head, usePage, router, useForm } from "@inertiajs/react";
 import DashboardLayout from "../../../Layouts/DashboardLayout";
 import PageHeader, { HeaderStat } from "@/Components/Dashboard/PageHeader";
+import { Badge, Card, EmptyState } from "@/Components/Dashboard/ui";
 import {
     FaPlus,
     FaEdit,
@@ -239,92 +240,98 @@ export default function MenuManagement() {
         return (
             <div ref={setNodeRef} style={style} className="relative">
                 <div
-                    className={`flex items-center justify-between p-4 mb-3 bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all duration-300 group ${level > 0 ? "ml-10" : ""}`}
+                    className={`group mb-2.5 flex items-center justify-between gap-3 rounded-2xl border bg-white p-3 transition sm:p-4 ${
+                        isDragging
+                            ? "border-brand-300 shadow-lift"
+                            : "border-slate-200/80 shadow-soft hover:border-slate-300"
+                    } ${level > 0 ? "ml-10" : ""}`}
                 >
                     {/* Visual Connector for Nested Menus */}
                     {level > 0 && (
-                        <div className="absolute -left-6 top-1/2 -translate-y-1/2 w-6 h-px bg-gray-200">
-                            <div className="absolute left-0 -top-12 w-px h-12 bg-gray-200"></div>
+                        <div className="absolute -left-6 top-1/2 h-px w-6 -translate-y-1/2 bg-slate-200">
+                            <div className="absolute -top-12 left-0 h-12 w-px bg-slate-200"></div>
                         </div>
                     )}
 
-                    <div className="flex items-center gap-4">
-                        <div className="flex items-center gap-3">
+                    <div className="flex min-w-0 items-center gap-3">
+                        <div className="flex items-center gap-1.5">
                             <div
                                 {...attributes}
                                 {...listeners}
-                                className="cursor-grab active:cursor-grabbing p-2 hover:bg-gray-50 rounded-xl text-gray-300 hover:text-cyan-500 transition-colors"
+                                className="cursor-grab rounded-full p-2 text-slate-300 transition-colors hover:bg-slate-100 hover:text-slate-600 active:cursor-grabbing"
                             >
-                                <FaBars size={16} />
+                                <FaBars size={14} />
                             </div>
-                            
+
                             {hasSubmenus || level < 3 ? ( // Limit to 3 levels for UX, but logic supports more
                                 <button
                                     onClick={() => toggleExpand(menu.id)}
-                                    className={`p-1.5 rounded-lg transition-all duration-200 ${
-                                        isExpanded 
-                                            ? "bg-cyan-50 text-cyan-600 rotate-0" 
-                                            : "hover:bg-gray-50 text-gray-400"
-                                    } ${!hasSubmenus ? "opacity-0 pointer-events-none" : ""}`}
+                                    className={`flex h-7 w-7 items-center justify-center rounded-full transition ${
+                                        isExpanded
+                                            ? "bg-brand-50 text-brand-700"
+                                            : "text-slate-400 hover:bg-slate-100 hover:text-ink-900"
+                                    } ${!hasSubmenus ? "pointer-events-none opacity-0" : ""}`}
                                 >
-                                    <FaChevronDown size={12} className={`transition-transform duration-200 ${isExpanded ? "" : "-rotate-90"}`} />
+                                    <FaChevronDown size={11} className={`transition-transform duration-200 ${isExpanded ? "" : "-rotate-90"}`} />
                                 </button>
                             ) : (
                                 <div className="w-7" />
                             )}
                         </div>
 
-                        <div className="flex flex-col">
+                        <div className="flex min-w-0 flex-col">
                             <div className="flex items-center gap-2">
-                                <span className="font-bold text-gray-800 group-hover:text-cyan-600 transition-colors">
+                                <span className="truncate font-semibold text-ink-900">
                                     {menu.title}
                                 </span>
-                                {level === 0 && <FaLayerGroup className="text-gray-300 text-[10px]" title="Menu Utama" />}
+                                {level === 0 && <FaLayerGroup className="shrink-0 text-[10px] text-slate-300" title="Menu Utama" />}
+                                {hasSubmenus && (
+                                    <span className="text-[11px] font-medium text-slate-400">
+                                        {menu.submenus.length} submenu
+                                    </span>
+                                )}
                             </div>
-                            <div className="text-[11px] text-gray-400 flex items-center gap-1.5 mt-0.5">
-                                <FaLink size={10} className="text-gray-300" />
-                                <span className="truncate max-w-[150px] sm:max-w-xs">{menu.url}</span>
+                            <div className="mt-0.5 flex items-center gap-1.5 text-xs text-slate-500">
+                                <FaLink size={9} className="shrink-0 text-slate-300" />
+                                <span className="max-w-[150px] truncate font-mono text-[11px] sm:max-w-xs">{menu.url}</span>
                             </div>
                         </div>
                     </div>
 
-                    <div className="flex items-center gap-1.5 sm:gap-3">
-                        <div className="hidden sm:flex items-center gap-2 mr-2">
-                            <span
-                                className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${
-                                    menu.is_active 
-                                        ? "bg-emerald-50 text-emerald-600 border border-emerald-100" 
-                                        : "bg-rose-50 text-rose-600 border border-rose-100"
-                                }`}
-                            >
+                    <div className="flex shrink-0 items-center gap-1.5 sm:gap-3">
+                        <div className="mr-1 hidden items-center gap-2 sm:flex">
+                            <Badge tone={menu.is_active ? "emerald" : "rose"} dot>
                                 {menu.is_active ? "Aktif" : "Non-aktif"}
-                            </span>
-                            <span className="px-2.5 py-1 rounded-full bg-slate-50 text-slate-500 border border-slate-100 text-[10px] font-bold">
+                            </Badge>
+                            <span className="text-xs font-semibold tabular-nums text-slate-400">
                                 #{menu.order}
                             </span>
                         </div>
 
-                        <div className="flex items-center bg-gray-50/50 rounded-xl p-1 border border-gray-100 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <div className="flex items-center gap-0.5 transition-opacity focus-within:opacity-100 sm:opacity-0 sm:group-hover:opacity-100">
                             <button
                                 onClick={() => openModal(null, menu.id)}
-                                className="p-2 text-cyan-600 hover:bg-white hover:shadow-sm rounded-lg transition-all"
+                                className="btn-icon hover:!bg-brand-50 hover:!text-brand-700"
                                 title="Tambah Submenu"
+                                aria-label="Tambah Submenu"
                             >
-                                <FaPlus size={14} />
+                                <FaPlus size={13} />
                             </button>
                             <button
                                 onClick={() => openModal(menu)}
-                                className="p-2 text-amber-500 hover:bg-white hover:shadow-sm rounded-lg transition-all"
+                                className="btn-icon"
                                 title="Edit"
+                                aria-label="Edit"
                             >
-                                <FaEdit size={14} />
+                                <FaEdit size={13} />
                             </button>
                             <button
                                 onClick={() => handleDelete(menu.id)}
-                                className="p-2 text-rose-500 hover:bg-white hover:shadow-sm rounded-lg transition-all"
+                                className="btn-icon hover:!bg-rose-50 hover:!text-rose-600"
                                 title="Hapus"
+                                aria-label="Hapus"
                             >
-                                <FaTrash size={14} />
+                                <FaTrash size={13} />
                             </button>
                         </div>
                     </div>
@@ -360,7 +367,7 @@ export default function MenuManagement() {
         <DashboardLayout title="Manajemen Menu">
             <Head title="Manajemen Menu" />
 
-            <div className="max-w-5xl mx-auto">
+            <div className="mx-auto max-w-5xl space-y-6">
                 <PageHeader
                     icon={FaBars}
                     title="Manajemen Menu"
@@ -371,8 +378,13 @@ export default function MenuManagement() {
                     </button>
                 </PageHeader>
 
-                <div className="space-y-2">
-                    {menus.length > 0 ? (
+                {menus.length > 0 ? (
+                    <Card
+                        title="Struktur Navigasi"
+                        description="Seret ikon garis untuk mengubah urutan. Arahkan kursor ke baris untuk aksi tambah, ubah, dan hapus."
+                        icon={FaLayerGroup}
+                        bodyClassName="bg-slate-50/60"
+                    >
                         <DndContext
                             sensors={sensors}
                             collisionDetection={closestCenter}
@@ -390,16 +402,16 @@ export default function MenuManagement() {
                                 ))}
                             </SortableContext>
                         </DndContext>
-                    ) : (
-                        <div className="text-center py-24 bg-white rounded-[32px] border-2 border-dashed border-slate-100 shadow-inner">
-                            <div className="bg-slate-50 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4">
-                                <FaBars className="text-slate-300 text-2xl" />
-                            </div>
-                            <h3 className="text-slate-400 font-bold">Belum ada menu</h3>
-                            <p className="text-slate-300 text-xs mt-1">Mulai dengan menambahkan menu utama pertama Anda.</p>
-                        </div>
-                    )}
-                </div>
+                    </Card>
+                ) : (
+                    <div className="surface">
+                        <EmptyState
+                            icon={FaBars}
+                            title="Belum ada menu"
+                            description="Mulai dengan menambahkan menu utama pertama Anda."
+                        />
+                    </div>
+                )}
             </div>
 
             {/* Modal Form */}
@@ -414,7 +426,7 @@ export default function MenuManagement() {
                         leaveFrom="opacity-100"
                         leaveTo="opacity-0"
                     >
-                        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-md" />
+                        <div className="fixed inset-0 bg-ink-950/50 backdrop-blur-sm" />
                     </Transition.Child>
 
                     <div className="fixed inset-0 overflow-y-auto">
@@ -428,15 +440,15 @@ export default function MenuManagement() {
                                 leaveFrom="opacity-100 scale-100"
                                 leaveTo="opacity-0 scale-95"
                             >
-                                <Dialog.Panel className="w-full max-w-md transform overflow-hidden rounded-[32px] bg-white p-8 text-left align-middle shadow-2xl transition-all border border-white">
-                                    <div className="flex justify-between items-center mb-8">
+                                <Dialog.Panel className="w-full max-w-md transform overflow-hidden rounded-2xl border border-slate-200/80 bg-white text-left align-middle shadow-lift transition-all">
+                                    <div className="flex items-center justify-between gap-3 border-b border-slate-100 px-6 py-4">
                                         <div className="flex items-center gap-3">
-                                            <div className="p-2 bg-cyan-50 rounded-xl">
-                                                <FaEdit className="text-cyan-600" />
-                                            </div>
+                                            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-brand-50 text-brand-700">
+                                                <FaEdit className="h-4 w-4" />
+                                            </span>
                                             <Dialog.Title
                                                 as="h3"
-                                                className="text-xl font-black text-slate-800 tracking-tight"
+                                                className="text-base font-bold text-ink-900"
                                             >
                                                 {editingMenu
                                                     ? "Edit Menu"
@@ -444,147 +456,160 @@ export default function MenuManagement() {
                                             </Dialog.Title>
                                         </div>
                                         <button
+                                            type="button"
                                             onClick={closeModal}
-                                            className="p-2 text-slate-300 hover:text-slate-600 hover:bg-slate-50 rounded-xl transition-all"
+                                            className="btn-icon"
+                                            aria-label="Tutup"
                                         >
-                                            <FaTimes size={18} />
+                                            <FaTimes size={16} />
                                         </button>
                                     </div>
 
-                                    <form
-                                        onSubmit={handleSubmit}
-                                        className="space-y-6"
-                                    >
-                                        <div className="space-y-1.5">
-                                            <label className="text-[13px] font-bold text-slate-500 ml-1">
-                                                JUDUL MENU
-                                            </label>
-                                            <input
-                                                type="text"
-                                                className="w-full px-4 py-3.5 rounded-2xl border-slate-100 bg-slate-50/50 focus:bg-white focus:border-cyan-500 focus:ring-4 focus:ring-cyan-500/10 transition-all text-sm font-medium text-slate-700"
-                                                value={data.title}
-                                                onChange={(e) =>
-                                                    setData(
-                                                        "title",
-                                                        e.target.value,
-                                                    )
-                                                }
-                                                placeholder="Contoh: Beranda"
-                                                required
-                                            />
-                                            {errors.title && (
-                                                <div className="text-rose-500 text-[11px] font-bold ml-1 mt-1 uppercase tracking-wider">
-                                                    {errors.title}
-                                                </div>
-                                            )}
-                                        </div>
-
-                                        <div className="space-y-1.5">
-                                            <label className="text-[13px] font-bold text-slate-500 ml-1">
-                                                URL / ROUTE
-                                            </label>
-                                            <input
-                                                type="text"
-                                                className="w-full px-4 py-3.5 rounded-2xl border-slate-100 bg-slate-50/50 focus:bg-white focus:border-cyan-500 focus:ring-4 focus:ring-cyan-500/10 transition-all text-sm font-medium text-slate-700"
-                                                value={data.url}
-                                                onChange={(e) =>
-                                                    setData(
-                                                        "url",
-                                                        e.target.value,
-                                                    )
-                                                }
-                                                onBlur={(e) =>
-                                                    setData(
-                                                        "url",
-                                                        e.target.value.trim(),
-                                                    )
-                                                }
-                                                placeholder="Contoh: /profil atau #"
-                                                required
-                                            />
-                                            {errors.url && (
-                                                <div className="text-rose-500 text-[11px] font-bold ml-1 mt-1 uppercase tracking-wider">
-                                                    {errors.url}
-                                                </div>
-                                            )}
-                                        </div>
-
-                                        <div className="grid grid-cols-2 gap-4">
-                                            <div className="space-y-1.5">
-                                                <label className="text-[13px] font-bold text-slate-500 ml-1">
-                                                    URUTAN
+                                    <form onSubmit={handleSubmit}>
+                                        <div className="space-y-4 px-6 py-5">
+                                            <div>
+                                                <label
+                                                    htmlFor="menu-title"
+                                                    className="field-label"
+                                                >
+                                                    Judul Menu
                                                 </label>
                                                 <input
-                                                    type="number"
-                                                    className="w-full px-4 py-3.5 rounded-2xl border-slate-100 bg-slate-50/50 focus:bg-white focus:border-cyan-500 focus:ring-4 focus:ring-cyan-500/10 transition-all text-sm font-medium text-slate-700"
-                                                    value={data.order}
+                                                    id="menu-title"
+                                                    type="text"
+                                                    className="field-input"
+                                                    value={data.title}
                                                     onChange={(e) =>
                                                         setData(
-                                                            "order",
+                                                            "title",
                                                             e.target.value,
                                                         )
                                                     }
+                                                    placeholder="Contoh: Beranda"
                                                     required
                                                 />
-                                                {errors.order && (
-                                                    <div className="text-rose-500 text-[11px] font-bold ml-1 mt-1 uppercase tracking-wider">
-                                                        {errors.order}
-                                                    </div>
+                                                {errors.title && (
+                                                    <p className="field-error">
+                                                        {errors.title}
+                                                    </p>
                                                 )}
                                             </div>
-                                            <div className="flex flex-col justify-center">
-                                                <label className="text-[13px] font-bold text-slate-500 ml-1 mb-2">
-                                                    STATUS
+
+                                            <div>
+                                                <label
+                                                    htmlFor="menu-url"
+                                                    className="field-label"
+                                                >
+                                                    URL / Route
                                                 </label>
-                                                <div className="flex items-center gap-3 mt-1 px-1">
-                                                    <Switch
-                                                        checked={data.is_active}
-                                                        onChange={(val) =>
+                                                <input
+                                                    id="menu-url"
+                                                    type="text"
+                                                    className="field-input font-mono"
+                                                    value={data.url}
+                                                    onChange={(e) =>
+                                                        setData(
+                                                            "url",
+                                                            e.target.value,
+                                                        )
+                                                    }
+                                                    onBlur={(e) =>
+                                                        setData(
+                                                            "url",
+                                                            e.target.value.trim(),
+                                                        )
+                                                    }
+                                                    placeholder="Contoh: /profil atau #"
+                                                    required
+                                                />
+                                                {errors.url && (
+                                                    <p className="field-error">
+                                                        {errors.url}
+                                                    </p>
+                                                )}
+                                            </div>
+
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <div>
+                                                    <label
+                                                        htmlFor="menu-order"
+                                                        className="field-label"
+                                                    >
+                                                        Urutan
+                                                    </label>
+                                                    <input
+                                                        id="menu-order"
+                                                        type="number"
+                                                        className="field-input tabular-nums"
+                                                        value={data.order}
+                                                        onChange={(e) =>
                                                             setData(
-                                                                "is_active",
-                                                                val,
+                                                                "order",
+                                                                e.target.value,
                                                             )
                                                         }
-                                                        className={`${
-                                                            data.is_active
-                                                                ? "bg-cyan-600 shadow-lg shadow-cyan-200"
-                                                                : "bg-slate-200"
-                                                        } relative inline-flex h-7 w-12 items-center rounded-full transition-all duration-300 focus:outline-none focus:ring-4 focus:ring-cyan-500/20`}
-                                                    >
-                                                        <span
+                                                        required
+                                                    />
+                                                    {errors.order && (
+                                                        <p className="field-error">
+                                                            {errors.order}
+                                                        </p>
+                                                    )}
+                                                </div>
+                                                <div>
+                                                    <span className="field-label">
+                                                        Status
+                                                    </span>
+                                                    <div className="flex h-[42px] items-center gap-3">
+                                                        <Switch
+                                                            checked={data.is_active}
+                                                            onChange={(val) =>
+                                                                setData(
+                                                                    "is_active",
+                                                                    val,
+                                                                )
+                                                            }
                                                             className={`${
                                                                 data.is_active
-                                                                    ? "translate-x-6"
-                                                                    : "translate-x-1"
-                                                            } inline-block h-5 w-5 transform rounded-full bg-white transition-transform duration-300 shadow-sm`}
-                                                        />
-                                                    </Switch>
-                                                    <span className={`text-[13px] font-bold ${data.is_active ? "text-cyan-600" : "text-slate-400"}`}>
-                                                        {data.is_active
-                                                            ? "AKTIF"
-                                                            : "OFF"}
-                                                    </span>
+                                                                    ? "bg-emerald-500"
+                                                                    : "bg-slate-200"
+                                                            } relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/40 focus-visible:ring-offset-2`}
+                                                        >
+                                                            <span
+                                                                className={`${
+                                                                    data.is_active
+                                                                        ? "translate-x-6"
+                                                                        : "translate-x-1"
+                                                                } inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform duration-200`}
+                                                            />
+                                                        </Switch>
+                                                        <span className={`text-sm font-semibold ${data.is_active ? "text-emerald-700" : "text-slate-500"}`}>
+                                                            {data.is_active
+                                                                ? "Aktif"
+                                                                : "Nonaktif"}
+                                                        </span>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
 
-                                        <div className="mt-10 flex gap-3">
-                                            <button
-                                                type="submit"
-                                                disabled={processing}
-                                                className="flex-1 flex justify-center items-center gap-2 px-6 py-4 bg-cyan-600 hover:bg-cyan-700 text-white rounded-2xl font-black text-sm shadow-xl shadow-cyan-100 transition-all active:scale-95 disabled:opacity-50"
-                                            >
-                                                <FaSave size={16} />{" "}
-                                                {processing
-                                                    ? "MENYIMPAN..."
-                                                    : "SIMPAN PERUBAHAN"}
-                                            </button>
+                                        <div className="flex justify-end gap-2 border-t border-slate-100 bg-slate-50/60 px-6 py-3">
                                             <button
                                                 type="button"
                                                 onClick={closeModal}
-                                                className="px-6 py-4 bg-slate-50 hover:bg-slate-100 text-slate-500 rounded-2xl font-bold text-sm transition-all"
+                                                className="btn-ghost"
                                             >
-                                                BATAL
+                                                Batal
+                                            </button>
+                                            <button
+                                                type="submit"
+                                                disabled={processing}
+                                                className="btn-brand"
+                                            >
+                                                <FaSave className="h-3.5 w-3.5" />
+                                                {processing
+                                                    ? "Menyimpan..."
+                                                    : "Simpan Perubahan"}
                                             </button>
                                         </div>
                                     </form>

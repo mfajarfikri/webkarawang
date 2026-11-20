@@ -15,11 +15,12 @@ import { useForm } from "@inertiajs/react";
 import { useSnackbar } from "notistack";
 import axios from "axios";
 import Modal from "react-modal";
-import ApplicationLogo from "@/Components/ApplicationLogo";
+import PageHeader from "@/Components/Dashboard/PageHeader";
+import { Card } from "@/Components/Dashboard/ui";
+import { Link } from "@inertiajs/react";
 import TextInput from "@/Components/TextInput";
 import InputLabel from "@/Components/InputLabel";
 import InputError from "@/Components/InputError";
-import PrimaryButton from "@/Components/PrimaryButton";
 import { Combobox, Transition } from "@headlessui/react";
 import { CheckIcon, ChevronUpDownIcon } from "@heroicons/react/20/solid";
 
@@ -441,39 +442,37 @@ export default function Edit({ berita, temas = [], flash }) {
         <DashboardLayout title="Edit Berita">
             <Head title={`Edit Berita - ${berita.judul}`} />
 
-            <div className="min-h-screen bg-slate-50 py-8 px-4 sm:px-6 lg:px-8">
-                <div className="max-w-7xl mx-auto">
-                    {/* Header */}
-                    <div className="mb-8 flex items-center justify-between">
-                        <div>
-                            <h1 className="text-3xl font-bold text-slate-800 tracking-tight">
-                                Edit Berita
-                            </h1>
-                            <p className="text-slate-500 mt-1">
-                                Perbarui informasi berita
-                            </p>
-                        </div>
-                        <div className="flex items-center gap-2 text-slate-400">
-                            <ApplicationLogo className="h-8 w-8 opacity-50" />
-                        </div>
-                    </div>
+            <div className="w-full">
+                <div>
+                    <PageHeader
+                        icon={FaEdit}
+                        title="Edit Berita"
+                        description="Perbarui informasi berita"
+                    />
 
-                    <form onSubmit={handleSubmit} className="space-y-8">
+                    <form onSubmit={handleSubmit} className="space-y-6">
                         {/* Main Grid: Content (Left) & Meta (Right) */}
-                        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
                             {/* Left Column: Editor Area */}
                             <div className="lg:col-span-8 space-y-6">
                                 {/* Title Input - Seamless with Editor */}
-                                <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-8">
+                                <div className="surface p-6 sm:p-8">
                                     <div className="space-y-6">
+                                        <label
+                                            htmlFor="judul-berita"
+                                            className="eyebrow"
+                                        >
+                                            Judul &amp; Konten
+                                        </label>
                                         <input
+                                            id="judul-berita"
                                             type="text"
                                             value={data.judul}
                                             onChange={(e) =>
                                                 setData("judul", e.target.value)
                                             }
                                             placeholder="Judul Berita..."
-                                            className="w-full text-4xl font-bold text-slate-900 placeholder-slate-300 border-none focus:ring-0 p-0 bg-transparent"
+                                            className="w-full border-0 border-b border-slate-100 bg-transparent px-0 pb-4 font-display text-3xl font-extrabold tracking-tight text-ink-900 placeholder-slate-300 focus:border-brand-500 focus:ring-0"
                                             required
                                         />
                                         <InputError message={errors.judul} />
@@ -492,64 +491,75 @@ export default function Edit({ berita, temas = [], flash }) {
 
                             {/* Right Column: Settings & Meta */}
                             <div className="lg:col-span-4 space-y-6">
-                                <div className="sticky top-8 space-y-6">
+                                <div className="sticky top-24 space-y-6">
                                     {/* Publish Card */}
-                                    <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
-                                        <h3 className="text-lg font-semibold text-slate-800 mb-4">
-                                            Publikasi
-                                        </h3>
-
+                                    <Card
+                                        title="Publikasi"
+                                        description="Periksa permalink lalu simpan perubahan."
+                                    >
                                         <div className="space-y-4">
                                             {/* Slug Preview */}
                                             <div>
                                                 <InputLabel
                                                     value="Permalink (Slug)"
-                                                    className="text-xs uppercase tracking-wider text-slate-400 mb-1"
+                                                    className="mb-1.5"
                                                 />
-                                                <div className="flex items-center text-sm text-slate-500 bg-slate-50 px-3 py-2 rounded-lg border border-slate-100 truncate">
+                                                <div className="flex items-center text-sm text-slate-500 bg-slate-50 px-3.5 py-2.5 rounded-xl border border-slate-200 truncate">
                                                     <span className="mr-1 opacity-50">
                                                         /berita/
                                                     </span>
-                                                    <span className="font-medium text-slate-700 truncate">
+                                                    <span className="font-semibold text-ink-900 truncate">
                                                         {data.slug || "..."}
                                                     </span>
                                                 </div>
                                             </div>
 
                                             {/* Action Button */}
-                                            <PrimaryButton
-                                                type="submit"
-                                                disabled={
-                                                    processing || isSubmitting
-                                                }
-                                                className="w-full justify-center py-3 bg-blue-600 hover:bg-blue-700 rounded-xl"
-                                            >
-                                                {processing || isSubmitting ? (
-                                                    <>
-                                                        <FaSpinner className="animate-spin mr-2" />{" "}
-                                                        Menyimpan...
-                                                    </>
-                                                ) : (
-                                                    <>
-                                                        <FaSave className="mr-2" />{" "}
-                                                        Simpan Perubahan
-                                                    </>
-                                                )}
-                                            </PrimaryButton>
+                                            <div className="flex flex-col-reverse gap-2 sm:flex-row">
+                                                <Link
+                                                    href={route(
+                                                        "dashboard.berita.index",
+                                                    )}
+                                                    className="btn-ghost sm:flex-1"
+                                                >
+                                                    Batal
+                                                </Link>
+                                                <button
+                                                    type="submit"
+                                                    disabled={
+                                                        processing ||
+                                                        isSubmitting
+                                                    }
+                                                    className="btn-brand sm:flex-[2]"
+                                                >
+                                                    {processing ||
+                                                    isSubmitting ? (
+                                                        <>
+                                                            <FaSpinner className="animate-spin" />
+                                                            Menyimpan...
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <FaSave />
+                                                            Simpan Perubahan
+                                                        </>
+                                                    )}
+                                                </button>
+                                            </div>
                                         </div>
-                                    </div>
+                                    </Card>
 
                                     {/* Settings Card */}
-                                    <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 space-y-6">
-                                        <h3 className="text-lg font-semibold text-slate-800">
-                                            Pengaturan Berita
-                                        </h3>
-
+                                    <Card
+                                        title="Pengaturan Berita"
+                                        description="Tema, ringkasan, dan foto berita."
+                                        bodyClassName="space-y-6"
+                                    >
                                         {/* Tema */}
                                         <div className="relative">
                                             <InputLabel
                                                 value="Kategori / Tema"
-                                                className="text-slate-700 font-medium mb-2"
+                                                className="mb-1.5"
                                             />
                                             <Combobox
                                                 value={selectedTema}
@@ -557,9 +567,9 @@ export default function Edit({ berita, temas = [], flash }) {
                                                 nullable
                                             >
                                                 <div className="relative mt-1">
-                                                    <div className="relative w-full cursor-default overflow-hidden rounded-xl bg-slate-50 text-left border border-slate-200 focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-500 sm:text-sm">
+                                                    <div className="relative w-full cursor-default overflow-hidden rounded-xl bg-white text-left border border-slate-200 shadow-sm transition hover:border-slate-300 focus-within:border-brand-500 focus-within:ring-2 focus-within:ring-brand-500/20 sm:text-sm">
                                                         <Combobox.Input
-                                                            className="w-full border-none py-2.5 pl-4 pr-10 text-sm leading-5 text-slate-900 bg-transparent focus:ring-0"
+                                                            className="w-full border-none py-2.5 pl-3.5 pr-10 text-sm leading-5 text-ink-900 placeholder:text-slate-400 bg-transparent focus:ring-0"
                                                             displayValue={(
                                                                 tema,
                                                             ) =>
@@ -590,11 +600,11 @@ export default function Edit({ berita, temas = [], flash }) {
                                                             setQuery("")
                                                         }
                                                     >
-                                                        <Combobox.Options className="absolute mt-1 max-h-60 w-full overflow-auto rounded-md bg-white py-1 text-base shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm z-50">
+                                                        <Combobox.Options className="absolute mt-2 max-h-60 w-full overflow-auto rounded-xl border border-slate-200/80 bg-white p-1 text-base shadow-lift focus:outline-none sm:text-sm z-50">
                                                             {filteredTemas.length ===
                                                                 0 &&
                                                             query !== "" ? (
-                                                                <div className="relative cursor-default select-none py-2 px-4 text-slate-700">
+                                                                <div className="relative cursor-default select-none py-2 px-3 text-slate-600">
                                                                     Buat tema
                                                                     baru:{" "}
                                                                     <span className="font-semibold">
@@ -612,10 +622,10 @@ export default function Edit({ berita, temas = [], flash }) {
                                                                             className={({
                                                                                 active,
                                                                             }) =>
-                                                                                `relative cursor-default select-none py-2 pl-10 pr-4 ${
+                                                                                `relative cursor-default select-none rounded-lg py-2 pl-10 pr-4 ${
                                                                                     active
-                                                                                        ? "bg-blue-600 text-white"
-                                                                                        : "text-slate-900"
+                                                                                        ? "bg-brand-50 text-brand-800"
+                                                                                        : "text-slate-700"
                                                                                 }`
                                                                             }
                                                                             value={
@@ -642,8 +652,8 @@ export default function Edit({ berita, temas = [], flash }) {
                                                                                         <span
                                                                                             className={`absolute inset-y-0 left-0 flex items-center pl-3 ${
                                                                                                 active
-                                                                                                    ? "text-white"
-                                                                                                    : "text-blue-600"
+                                                                                                    ? "text-brand-600"
+                                                                                                    : "text-brand-600"
                                                                                             }`}
                                                                                         >
                                                                                             <CheckIcon
@@ -668,7 +678,7 @@ export default function Edit({ berita, temas = [], flash }) {
                                         <div>
                                             <InputLabel
                                                 value="Ringkasan (Excerpt)"
-                                                className="text-slate-700 font-medium mb-2"
+                                                className="mb-1.5"
                                             />
                                             <textarea
                                                 value={data.excerpt}
@@ -678,7 +688,7 @@ export default function Edit({ berita, temas = [], flash }) {
                                                         e.target.value,
                                                     )
                                                 }
-                                                className="w-full rounded-xl border-slate-200 focus:border-blue-500 focus:ring-blue-500 bg-slate-50 text-sm"
+                                                className="field-input"
                                                 rows="4"
                                                 placeholder="Tulis ringkasan singkat berita..."
                                                 required
@@ -692,13 +702,13 @@ export default function Edit({ berita, temas = [], flash }) {
                                         <div>
                                             <InputLabel
                                                 value="Foto Berita"
-                                                className="text-slate-700 font-medium mb-2"
+                                                className="mb-1.5"
                                             />
                                             <div className="space-y-4">
                                                 {/* Existing Photos */}
                                                 {existingPhotos.length > 0 && (
                                                     <div className="space-y-2">
-                                                        <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                                                        <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-[0.12em]">
                                                             Foto Saat Ini
                                                         </p>
                                                         <div className="grid grid-cols-2 gap-2">
@@ -709,7 +719,7 @@ export default function Edit({ berita, temas = [], flash }) {
                                                                 ) => (
                                                                     <div
                                                                         key={`existing-${index}`}
-                                                                        className="relative group aspect-square rounded-lg overflow-hidden bg-slate-100"
+                                                                        className="relative group aspect-square rounded-xl overflow-hidden border border-slate-200 bg-slate-100"
                                                                     >
                                                                         <img
                                                                             src={`/storage/berita/${photo}`}
@@ -723,7 +733,8 @@ export default function Edit({ berita, temas = [], flash }) {
                                                                                     index,
                                                                                 )
                                                                             }
-                                                                            className="absolute top-1 right-1 bg-red-500 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                                                                            className="absolute top-1.5 right-1.5 bg-rose-600 text-white p-1.5 rounded-full opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity shadow-soft hover:bg-rose-700"
+                                                                            aria-label={`Hapus foto ${index + 1}`}
                                                                         >
                                                                             <FaTrash
                                                                                 size={
@@ -741,7 +752,7 @@ export default function Edit({ berita, temas = [], flash }) {
                                                 {/* New Photos */}
                                                 {previewPhotos.length > 0 && (
                                                     <div className="space-y-2">
-                                                        <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                                                        <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-[0.12em]">
                                                             Foto Baru
                                                         </p>
                                                         <div className="grid grid-cols-2 gap-2">
@@ -752,7 +763,7 @@ export default function Edit({ berita, temas = [], flash }) {
                                                                 ) => (
                                                                     <div
                                                                         key={`new-${index}`}
-                                                                        className="relative group aspect-square rounded-lg overflow-hidden bg-slate-100"
+                                                                        className="relative group aspect-square rounded-xl overflow-hidden border border-slate-200 bg-slate-100"
                                                                     >
                                                                         <img
                                                                             src={
@@ -768,7 +779,8 @@ export default function Edit({ berita, temas = [], flash }) {
                                                                                     index,
                                                                                 )
                                                                             }
-                                                                            className="absolute top-1 right-1 bg-red-500 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                                                                            className="absolute top-1.5 right-1.5 bg-rose-600 text-white p-1.5 rounded-full opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity shadow-soft hover:bg-rose-700"
+                                                                            aria-label={`Hapus foto baru ${index + 1}`}
                                                                         >
                                                                             <FaTrash
                                                                                 size={
@@ -788,13 +800,15 @@ export default function Edit({ berita, temas = [], flash }) {
                                                     onClick={() =>
                                                         fileInputRef.current.click()
                                                     }
-                                                    className="border-2 border-dashed border-slate-300 rounded-xl p-6 flex flex-col items-center justify-center text-slate-400 hover:border-blue-500 hover:text-blue-500 hover:bg-blue-50 transition-all cursor-pointer"
+                                                    className="group border-2 border-dashed border-slate-200 rounded-xl p-6 flex flex-col items-center justify-center text-slate-500 hover:border-brand-300 hover:bg-brand-50/40 transition-colors cursor-pointer"
                                                 >
-                                                    <FaImage className="w-8 h-8 mb-2" />
-                                                    <span className="text-sm font-medium">
+                                                    <span className="mb-2 flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-slate-500 transition-colors group-hover:bg-brand-50 group-hover:text-brand-600">
+                                                        <FaImage className="w-4 h-4" />
+                                                    </span>
+                                                    <span className="text-sm font-semibold text-ink-900">
                                                         Tambah Foto
                                                     </span>
-                                                    <span className="text-xs mt-1 text-slate-300">
+                                                    <span className="text-xs mt-0.5 text-slate-500">
                                                         Maks. 5 foto total
                                                     </span>
                                                     <input
@@ -810,11 +824,12 @@ export default function Edit({ berita, temas = [], flash }) {
                                                 </div>
                                             </div>
                                         </div>
-                                    </div>
+                                    </Card>
                                 </div>
                             </div>
                         </div>
                     </form>
+
                 </div>
             </div>
         </DashboardLayout>

@@ -120,15 +120,18 @@ export default function Detail({ berita }) {
         <>
             <Head title={`Berita - ${berita.judul}`} />
             <DashboardLayout title="Detail Berita">
-                <div className="py-8 px-4 sm:px-6 lg:px-8 max-w-5xl mx-auto">
+                <div className="mx-auto max-w-4xl space-y-6">
                     {/* Title */}
-                    <h1 className="text-3xl md:text-4xl font-bold text-center text-gray-800 mb-8">
-                        {berita.judul}
-                    </h1>
+                    <header>
+                        <p className="eyebrow">Detail Berita</p>
+                        <h1 className="mt-3 font-display text-2xl font-extrabold leading-tight text-ink-900 md:text-3xl">
+                            {berita.judul}
+                        </h1>
+                    </header>
 
                     {/* Carousel */}
                     {gambarArray.length > 0 && (
-                        <div className="relative w-full aspect-video overflow-hidden rounded-2xl shadow-xl">
+                        <div className="surface relative w-full aspect-video overflow-hidden">
                             {gambarArray.map((item, index) => (
                                 <div
                                     key={index}
@@ -136,7 +139,7 @@ export default function Detail({ berita }) {
                                         index === currentSlide
                                             ? "opacity-100"
                                             : "opacity-0 pointer-events-none"
-                                    } flex justify-center items-center bg-gray-100`}
+                                    } flex justify-center items-center bg-slate-100`}
                                 >
                                     {/* Use img tag instead of background image for better loading control */}
                                     <img
@@ -154,7 +157,7 @@ export default function Detail({ berita }) {
                                     />
                                     {/* Show placeholder if image failed to load */}
                                     {loadedImages[index] === false && (
-                                        <div className="absolute inset-0 flex justify-center items-center bg-gray-200 text-gray-500">
+                                        <div className="absolute inset-0 flex justify-center items-center bg-slate-100 text-sm text-slate-500">
                                             Image not available
                                         </div>
                                     )}
@@ -167,10 +170,10 @@ export default function Detail({ berita }) {
                                     <button
                                         key={index}
                                         onClick={() => goToSlide(index)}
-                                        className={`w-3 h-3 rounded-full transition-all duration-300 ${
+                                        className={`h-2 w-2 rounded-full transition-all duration-300 ${
                                             index === currentSlide
-                                                ? "bg-blue-500 w-6"
-                                                : "bg-white/60"
+                                                ? "bg-white w-6"
+                                                : "bg-white/50"
                                         }`}
                                     ></button>
                                 ))}
@@ -178,12 +181,12 @@ export default function Detail({ berita }) {
                         </div>
                     )}
 
-                    <div className="mb-6 text-xs italic  text-gray-500">
+                    <p className="border-l-2 border-brand-500 pl-4 text-sm leading-relaxed text-slate-600">
                         {berita.excerpt}
-                    </div>
+                    </p>
 
                     {/* Berita description - Using EditorJS ReadOnly or Fallback */}
-                    <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 md:p-8">
+                    <div className="surface p-6 md:p-8">
                         {berita.content_json ? (
                             <div
                                 id="editorjs"

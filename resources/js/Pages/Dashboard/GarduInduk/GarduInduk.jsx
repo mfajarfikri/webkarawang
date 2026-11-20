@@ -13,6 +13,7 @@ import {
     FaTimes,
 } from "react-icons/fa";
 import ErrorBoundary from "@/Components/ErrorBoundary";
+import { Badge, Card, EmptyState } from "@/Components/Dashboard/ui";
 import { useState, useEffect, Fragment } from "react";
 import { Listbox, Transition, Dialog } from "@headlessui/react";
 import React from "react";
@@ -63,277 +64,238 @@ export default function GarduInduk({ garduInduks = [] }) {
     return (
         <DashboardLayout title="Manajemen Gardu Induk">
             <Head title="Gardu Induk" />
-            <div className="min-h-full">
-                <div className="max-w-full">
-                    <PageHeader
-                        icon={GiElectric}
-                        title="Manajemen Gardu Induk"
-                        description="Kelola data gardu induk dan lokasi operasional kelistrikan."
+            <div className="space-y-6">
+                <PageHeader
+                    icon={GiElectric}
+                    title="Manajemen Gardu Induk"
+                    description="Kelola data gardu induk dan lokasi operasional kelistrikan."
+                >
+                    <button
+                        onClick={() => setShowTambahGardu(true)}
+                        className="btn-brand"
                     >
-                        <button
-                            onClick={() => setShowTambahGardu(true)}
-                            className="btn-brand"
-                        >
-                            <FaPlus className="h-3.5 w-3.5" />
-                            <span>Tambah Gardu</span>
-                        </button>
-                    </PageHeader>
+                        <FaPlus className="h-3.5 w-3.5" />
+                        <span>Tambah Gardu</span>
+                    </button>
+                </PageHeader>
 
-                    {/* Table Card */}
-                    <div className="surface overflow-hidden">
-                        <div className="px-6 py-4 border-b border-gray-100">
-                            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                                <div>
-                                    <h2 className="text-base md:text-lg font-semibold text-gray-900">
-                                        Daftar Gardu Induk
-                                    </h2>
-                                    <p className="text-xs md:text-sm text-gray-500 mt-0.5">
-                                        Total {totalRows} gardu induk terdaftar.
-                                    </p>
-                                </div>
+                {/* Table Card */}
+                <Card
+                    padded={false}
+                    icon={FaBolt}
+                    title="Daftar Gardu Induk"
+                    description={`Total ${totalRows} gardu induk terdaftar.`}
+                    actions={
+                        <>
+                            {/* Filter Button */}
+                            <button
+                                type="button"
+                                className={`btn-ghost btn-sm ${
+                                    filterOpen
+                                        ? "!border-brand-200 !bg-brand-50 !text-brand-800"
+                                        : ""
+                                }`}
+                                onClick={() => setFilterOpen(!filterOpen)}
+                                aria-expanded={filterOpen}
+                            >
+                                <FaFilter
+                                    className={`h-3 w-3 ${
+                                        filterOpen
+                                            ? "text-brand-600"
+                                            : "text-slate-400"
+                                    }`}
+                                />
+                                Filter
+                            </button>
 
-                                <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
-                                    {/* Filter Button */}
-                                    <button
-                                        className={`px-4 py-2 rounded-lg border text-sm font-medium flex items-center justify-center gap-2 transition-colors ${
-                                            filterOpen
-                                                ? "bg-blue-50 border-blue-200 text-blue-700"
-                                                : "bg-white border-gray-200 text-gray-700 hover:bg-gray-50"
-                                        }`}
-                                        onClick={() =>
-                                            setFilterOpen(!filterOpen)
-                                        }
-                                    >
-                                        <FaFilter
-                                            className={
-                                                filterOpen
-                                                    ? "text-blue-600"
-                                                    : "text-gray-400"
-                                            }
-                                        />
-                                        Filter
-                                    </button>
-
-                                    {/* Rows Per Page */}
-                                    <div className="flex items-center gap-2 bg-white border border-gray-200 rounded-lg px-3 py-2 shadow-sm">
-                                        <span className="text-gray-500 text-xs font-medium">
-                                            Show
-                                        </span>
-                                        <Listbox
-                                            value={rowsPerPage}
-                                            onChange={setRowsPerPage}
-                                        >
-                                            <div className="relative">
-                                                <Listbox.Button className="text-sm font-semibold text-gray-800 focus:outline-none cursor-pointer flex items-center gap-1">
-                                                    {rowsPerPage}
-                                                    <span className="text-gray-400 text-xs">
-                                                        ▼
-                                                    </span>
-                                                </Listbox.Button>
-                                                <Listbox.Options className="absolute right-0 z-10 mt-2 w-20 bg-white border border-gray-100 rounded-lg shadow-lg text-sm overflow-hidden py-1">
-                                                    {[8, 10, 16, 32].map(
-                                                        (option) => (
-                                                            <Listbox.Option
-                                                                key={option}
-                                                                value={option}
-                                                                className={({
-                                                                    active,
-                                                                    selected,
-                                                                }) =>
-                                                                    `cursor-pointer select-none px-3 py-2 ${
-                                                                        active
-                                                                            ? "bg-blue-50 text-blue-900"
-                                                                            : "text-gray-700"
-                                                                    } ${
-                                                                        selected
-                                                                            ? "font-semibold bg-blue-50"
-                                                                            : ""
-                                                                    }`
-                                                                }
-                                                            >
-                                                                {option}
-                                                            </Listbox.Option>
-                                                        )
-                                                    )}
-                                                </Listbox.Options>
-                                            </div>
-                                        </Listbox>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Filter Section */}
-                            {filterOpen && (
-                                <div className="mt-4 pt-4 border-t border-gray-100 animate-fadeIn">
+                            {/* Rows Per Page */}
+                            <div className="flex items-center gap-2 rounded-full border border-slate-200 bg-white py-1.5 pl-3.5 pr-3 text-xs">
+                                <span className="font-medium text-slate-500">
+                                    Tampilkan
+                                </span>
+                                <Listbox
+                                    value={rowsPerPage}
+                                    onChange={setRowsPerPage}
+                                >
                                     <div className="relative">
-                                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                            <FaSearch className="text-gray-400" />
-                                        </div>
-                                        <input
-                                            type="text"
-                                            className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition-shadow"
-                                            placeholder="Cari nama gardu induk..."
-                                            value={searchTerm}
-                                            onChange={(e) =>
-                                                setSearchTerm(e.target.value)
-                                            }
-                                        />
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-
-                        <div className="overflow-x-auto">
-                            <ErrorBoundary>
-                                <table className="min-w-full divide-y divide-gray-100">
-                                    <thead className="bg-gray-50/80">
-                                        <tr>
-                                            <th className="px-6 py-4 text-center text-xs font-semibold text-gray-600 uppercase tracking-wide w-16">
-                                                No
-                                            </th>
-                                            <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wide">
-                                                Wilayah (ULTG)
-                                            </th>
-                                            <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wide">
-                                                Nama Gardu
-                                            </th>
-                                            <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wide">
-                                                Koordinat
-                                            </th>
-                                            <th className="px-6 py-4 text-center text-xs font-semibold text-gray-600 uppercase tracking-wide">
-                                                Aksi
-                                            </th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="bg-white divide-y divide-gray-100">
-                                        {paginatedRows.length === 0 ? (
-                                            <tr>
-                                                <td
-                                                    colSpan={5}
-                                                    className="px-6 py-12 text-center"
+                                        <Listbox.Button className="flex cursor-pointer items-center gap-1 rounded text-sm font-semibold tabular-nums text-ink-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/40">
+                                            {rowsPerPage}
+                                            <span className="text-[10px] text-slate-400">
+                                                ▼
+                                            </span>
+                                        </Listbox.Button>
+                                        <Listbox.Options className="absolute right-0 z-10 mt-2 w-20 overflow-hidden rounded-xl border border-slate-200 bg-white py-1 text-sm shadow-lift focus:outline-none">
+                                            {[8, 10, 16, 32].map((option) => (
+                                                <Listbox.Option
+                                                    key={option}
+                                                    value={option}
+                                                    className={({
+                                                        active,
+                                                        selected,
+                                                    }) =>
+                                                        `cursor-pointer select-none px-3 py-2 tabular-nums ${
+                                                            active
+                                                                ? "bg-slate-50 text-ink-900"
+                                                                : "text-slate-700"
+                                                        } ${
+                                                            selected
+                                                                ? "font-semibold text-brand-700"
+                                                                : ""
+                                                        }`
+                                                    }
                                                 >
-                                                    <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-gray-100 text-gray-400 mb-3">
-                                                        <GiElectric className="w-6 h-6" />
+                                                    {option}
+                                                </Listbox.Option>
+                                            ))}
+                                        </Listbox.Options>
+                                    </div>
+                                </Listbox>
+                            </div>
+                        </>
+                    }
+                >
+                    {/* Filter Section */}
+                    {filterOpen && (
+                        <div className="border-b border-slate-100 bg-slate-50/60 px-5 py-4 sm:px-6">
+                            <div className="relative max-w-md">
+                                <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5">
+                                    <FaSearch className="h-3.5 w-3.5 text-slate-400" />
+                                </div>
+                                <input
+                                    type="text"
+                                    className="field-input pl-10"
+                                    placeholder="Cari nama gardu induk..."
+                                    aria-label="Cari nama gardu induk"
+                                    value={searchTerm}
+                                    onChange={(e) =>
+                                        setSearchTerm(e.target.value)
+                                    }
+                                />
+                            </div>
+                        </div>
+                    )}
+
+                    <div className="overflow-x-auto">
+                        <ErrorBoundary>
+                            <table className="data-table">
+                                <thead>
+                                    <tr>
+                                        <th className="w-16 text-center">No</th>
+                                        <th>Wilayah (ULTG)</th>
+                                        <th>Nama Gardu</th>
+                                        <th>Koordinat</th>
+                                        <th className="text-right">Aksi</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {paginatedRows.length === 0 ? (
+                                        <tr>
+                                            <td colSpan={5}>
+                                                <EmptyState
+                                                    icon={GiElectric}
+                                                    title="Tidak ada data gardu induk ditemukan."
+                                                    description="Ubah kata kunci pencarian atau tambahkan gardu induk baru."
+                                                />
+                                            </td>
+                                        </tr>
+                                    ) : (
+                                        paginatedRows.map((gardu, idx) => (
+                                            <tr key={gardu.id}>
+                                                <td className="whitespace-nowrap text-center tabular-nums text-slate-500">
+                                                    {(page - 1) * rowsPerPage +
+                                                        idx +
+                                                        1}
+                                                </td>
+                                                <td className="whitespace-nowrap">
+                                                    <Badge tone="slate">
+                                                        {gardu.ultg}
+                                                    </Badge>
+                                                </td>
+                                                <td className="whitespace-nowrap font-semibold text-ink-900">
+                                                    {gardu.name}
+                                                </td>
+                                                <td className="whitespace-nowrap">
+                                                    <div className="flex flex-col gap-0.5 font-mono text-xs tabular-nums text-slate-600">
+                                                        <span>
+                                                            <span className="mr-1.5 font-sans font-semibold text-slate-400">
+                                                                Lat:
+                                                            </span>
+                                                            {parseFloat(
+                                                                gardu.latitude
+                                                            ).toFixed(6)}
+                                                        </span>
+                                                        <span>
+                                                            <span className="mr-1.5 font-sans font-semibold text-slate-400">
+                                                                Long:
+                                                            </span>
+                                                            {parseFloat(
+                                                                gardu.longitude
+                                                            ).toFixed(6)}
+                                                        </span>
                                                     </div>
-                                                    <p className="text-gray-500 font-medium">
-                                                        Tidak ada data gardu
-                                                        induk ditemukan.
-                                                    </p>
+                                                </td>
+                                                <td className="whitespace-nowrap text-right">
+                                                    <a
+                                                        href={`https://www.google.com/maps/search/?api=1&query=${gardu.latitude},${gardu.longitude}`}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="btn-ghost btn-sm"
+                                                        title="Lihat lokasi di Google Maps"
+                                                    >
+                                                        <FaMapMarkerAlt className="h-3 w-3 text-brand-600" />
+                                                        Maps
+                                                    </a>
                                                 </td>
                                             </tr>
-                                        ) : (
-                                            paginatedRows.map((gardu, idx) => (
-                                                <tr
-                                                    key={gardu.id}
-                                                    className="hover:bg-blue-50/50 transition-colors duration-150"
-                                                >
-                                                    <td className="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-500">
-                                                        {(page - 1) *
-                                                            rowsPerPage +
-                                                            idx +
-                                                            1}
-                                                    </td>
-                                                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                                                        {gardu.ultg}
-                                                    </td>
-                                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                                                        {gardu.name}
-                                                    </td>
-                                                    <td className="px-6 py-4 whitespace-nowrap text-sm">
-                                                        <div className="flex flex-col gap-1">
-                                                            <span className="inline-flex items-center gap-1 text-gray-600 text-xs bg-gray-100 px-2 py-1 rounded border border-gray-200 w-fit">
-                                                                <span className="font-semibold text-blue-700">
-                                                                    Lat:
-                                                                </span>
-                                                                {parseFloat(
-                                                                    gardu.latitude
-                                                                ).toFixed(6)}
-                                                            </span>
-                                                            <span className="inline-flex items-center gap-1 text-gray-600 text-xs bg-gray-100 px-2 py-1 rounded border border-gray-200 w-fit">
-                                                                <span className="font-semibold text-green-700">
-                                                                    Long:
-                                                                </span>
-                                                                {parseFloat(
-                                                                    gardu.longitude
-                                                                ).toFixed(6)}
-                                                            </span>
-                                                        </div>
-                                                    </td>
-                                                    <td className="px-6 py-4 whitespace-nowrap text-center">
-                                                        <a
-                                                            href={`https://www.google.com/maps/search/?api=1&query=${gardu.latitude},${gardu.longitude}`}
-                                                            target="_blank"
-                                                            rel="noopener noreferrer"
-                                                            className="inline-flex items-center px-3 py-1.5 border border-blue-200 rounded-lg text-xs font-medium text-blue-700 bg-blue-50 hover:bg-blue-100 hover:border-blue-300 transition-all shadow-sm"
-                                                            title="Lihat lokasi di Google Maps"
-                                                        >
-                                                            <FaMapMarkerAlt className="mr-1.5" />
-                                                            Maps
-                                                        </a>
-                                                    </td>
-                                                </tr>
-                                            ))
-                                        )}
-                                    </tbody>
-                                </table>
-                            </ErrorBoundary>
-                        </div>
+                                        ))
+                                    )}
+                                </tbody>
+                            </table>
+                        </ErrorBoundary>
+                    </div>
 
-                        {/* Pagination */}
-                        <div className="px-6 py-4 border-t border-gray-100 bg-gray-50/50 flex flex-col sm:flex-row items-center justify-between gap-4">
-                            <div className="text-sm text-gray-500">
-                                Menampilkan{" "}
-                                <span className="font-medium text-gray-900">
-                                    {(page - 1) * rowsPerPage + 1}
+                    {/* Pagination */}
+                    <div className="flex flex-col items-center justify-between gap-3 border-t border-slate-100 px-4 py-3 text-sm text-slate-500 sm:flex-row sm:px-6">
+                        <div>
+                            Menampilkan{" "}
+                            <span className="font-semibold tabular-nums text-ink-900">
+                                {(page - 1) * rowsPerPage + 1}–
+                                {Math.min(page * rowsPerPage, totalRows)}
+                            </span>{" "}
+                            dari{" "}
+                            <span className="font-semibold tabular-nums text-ink-900">
+                                {totalRows}
+                            </span>{" "}
+                            data
+                        </div>
+                        <div className="flex items-center gap-1">
+                            <button
+                                type="button"
+                                onClick={handlePrev}
+                                disabled={page === 1}
+                                aria-label="Halaman sebelumnya"
+                                className="flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 text-slate-600 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-40"
+                            >
+                                <FaChevronLeft className="h-3 w-3" />
+                            </button>
+                            <span className="px-2 tabular-nums">
+                                <span className="font-semibold text-ink-900">
+                                    {page}
                                 </span>{" "}
-                                sampai{" "}
-                                <span className="font-medium text-gray-900">
-                                    {Math.min(page * rowsPerPage, totalRows)}
-                                </span>{" "}
-                                dari{" "}
-                                <span className="font-medium text-gray-900">
-                                    {totalRows}
-                                </span>{" "}
-                                data
-                            </div>
-                            <div className="flex items-center gap-2">
-                                <button
-                                    onClick={handlePrev}
-                                    disabled={page === 1}
-                                    className={`p-2 rounded-lg border transition-colors ${
-                                        page === 1
-                                            ? "bg-gray-100 border-gray-200 text-gray-400 cursor-not-allowed"
-                                            : "bg-white border-gray-300 text-gray-700 hover:bg-gray-50 hover:text-blue-600"
-                                    }`}
-                                >
-                                    <FaChevronLeft className="w-4 h-4" />
-                                </button>
-                                <div className="flex items-center gap-1">
-                                    <span className="px-3 py-1 rounded-md bg-blue-50 text-blue-700 text-sm font-semibold border border-blue-100">
-                                        {page}
-                                    </span>
-                                    <span className="text-gray-400 text-sm">
-                                        /
-                                    </span>
-                                    <span className="px-2 text-gray-600 text-sm">
-                                        {totalPages}
-                                    </span>
-                                </div>
-                                <button
-                                    onClick={handleNext}
-                                    disabled={page === totalPages}
-                                    className={`p-2 rounded-lg border transition-colors ${
-                                        page === totalPages
-                                            ? "bg-gray-100 border-gray-200 text-gray-400 cursor-not-allowed"
-                                            : "bg-white border-gray-300 text-gray-700 hover:bg-gray-50 hover:text-blue-600"
-                                    }`}
-                                >
-                                    <FaChevronRight className="w-4 h-4" />
-                                </button>
-                            </div>
+                                / {totalPages}
+                            </span>
+                            <button
+                                type="button"
+                                onClick={handleNext}
+                                disabled={page === totalPages}
+                                aria-label="Halaman berikutnya"
+                                className="flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 text-slate-600 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-40"
+                            >
+                                <FaChevronRight className="h-3 w-3" />
+                            </button>
                         </div>
                     </div>
-                </div>
+                </Card>
 
                 {/* Tambah Gardu Modal */}
                 <Transition appear show={showTambahGardu} as={Fragment}>
@@ -351,7 +313,7 @@ export default function GarduInduk({ garduInduks = [] }) {
                             leaveFrom="opacity-100"
                             leaveTo="opacity-0"
                         >
-                            <div className="fixed inset-0 bg-black/25 backdrop-blur-sm" />
+                            <div className="fixed inset-0 bg-ink-950/50 backdrop-blur-sm" />
                         </Transition.Child>
 
                         <div className="fixed inset-0 overflow-y-auto">
@@ -365,246 +327,261 @@ export default function GarduInduk({ garduInduks = [] }) {
                                     leaveFrom="opacity-100 scale-100"
                                     leaveTo="opacity-0 scale-95"
                                 >
-                                    <Dialog.Panel className="w-full max-w-2xl transform overflow-hidden rounded-2xl bg-white text-left align-middle shadow-xl transition-all border border-gray-100">
-                                        <div className="bg-gradient-to-r from-blue-600 to-blue-500 px-6 py-4 flex justify-between items-center">
-                                            <Dialog.Title
-                                                as="h3"
-                                                className="text-lg font-semibold leading-6 text-white flex items-center gap-2"
-                                            >
-                                                <FaPlus className="w-4 h-4" />
-                                                Tambah Gardu Induk Baru
-                                            </Dialog.Title>
+                                    <Dialog.Panel className="w-full max-w-2xl transform overflow-hidden rounded-2xl border border-slate-200/80 bg-white text-left align-middle shadow-lift transition-all">
+                                        <div className="flex items-center justify-between gap-3 border-b border-slate-100 px-6 py-4">
+                                            <div className="flex items-center gap-3">
+                                                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-brand-50 text-brand-700">
+                                                    <FaPlus className="h-3.5 w-3.5" />
+                                                </span>
+                                                <Dialog.Title
+                                                    as="h3"
+                                                    className="text-base font-bold text-ink-900"
+                                                >
+                                                    Tambah Gardu Induk Baru
+                                                </Dialog.Title>
+                                            </div>
                                             <button
+                                                type="button"
                                                 onClick={() =>
                                                     setShowTambahGardu(false)
                                                 }
-                                                className="text-white/80 hover:text-white transition-colors"
+                                                className="btn-icon"
+                                                aria-label="Tutup"
                                             >
-                                                <FaTimes className="w-5 h-5" />
+                                                <FaTimes className="h-4 w-4" />
                                             </button>
                                         </div>
 
-                                        <div className="p-6">
-                                            <form
-                                                onSubmit={handleSubmit}
-                                                className="space-y-4"
-                                            >
-                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                    <div className="col-span-2">
-                                                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                                                            Nama Gardu Induk
-                                                        </label>
-                                                        <input
-                                                            type="text"
-                                                            className="w-full rounded-lg border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-                                                            placeholder="Contoh: GI 150KV DELTAMAS"
-                                                            value={data.name}
-                                                            onChange={(e) =>
-                                                                setData(
-                                                                    "name",
-                                                                    e.target
-                                                                        .value
-                                                                )
-                                                            }
-                                                        />
-                                                        {errors.name && (
-                                                            <div className="text-red-500 text-xs mt-1">
-                                                                {errors.name}
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                    <div>
-                                                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                                                            Latitude
-                                                        </label>
-                                                        <input
-                                                            type="number"
-                                                            step="any"
-                                                            className="w-full rounded-lg border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-                                                            placeholder="-6.405..."
-                                                            value={
-                                                                data.latitude
-                                                            }
-                                                            onChange={(e) =>
-                                                                setData(
-                                                                    "latitude",
-                                                                    e.target
-                                                                        .value
-                                                                )
-                                                            }
-                                                        />
-                                                        {errors.latitude && (
-                                                            <div className="text-red-500 text-xs mt-1">
-                                                                {
-                                                                    errors.latitude
-                                                                }
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                    <div>
-                                                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                                                            Longitude
-                                                        </label>
-                                                        <input
-                                                            type="number"
-                                                            step="any"
-                                                            className="w-full rounded-lg border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-                                                            placeholder="107.175..."
-                                                            value={
-                                                                data.longitude
-                                                            }
-                                                            onChange={(e) =>
-                                                                setData(
-                                                                    "longitude",
-                                                                    e.target
-                                                                        .value
-                                                                )
-                                                            }
-                                                        />
-                                                        {errors.longitude && (
-                                                            <div className="text-red-500 text-xs mt-1">
-                                                                {
-                                                                    errors.longitude
-                                                                }
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                    <div className="col-span-2">
-                                                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                                                            ULTG
-                                                        </label>
-                                                        <input
-                                                            type="text"
-                                                            className="w-full rounded-lg border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-                                                            placeholder="Contoh: ULTG Karawang"
-                                                            value={data.ultg}
-                                                            onChange={(e) =>
-                                                                setData(
-                                                                    "ultg",
-                                                                    e.target
-                                                                        .value
-                                                                )
-                                                            }
-                                                        />
-                                                        {errors.ultg && (
-                                                            <div className="text-red-500 text-xs mt-1">
-                                                                {errors.ultg}
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                    <div className="col-span-2">
-                                                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                                                            Kondisi
-                                                        </label>
-                                                        <Listbox
-                                                            value={data.kondisi}
-                                                            onChange={(val) =>
-                                                                setData(
-                                                                    "kondisi",
-                                                                    val
-                                                                )
-                                                            }
-                                                        >
-                                                            <div className="relative">
-                                                                <Listbox.Button className="relative w-full cursor-default rounded-lg bg-white py-2 pl-3 pr-10 text-left border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 sm:text-sm">
+                                        <form onSubmit={handleSubmit}>
+                                            <div className="grid grid-cols-1 gap-4 p-6 md:grid-cols-2">
+                                                <div className="md:col-span-2">
+                                                    <label
+                                                        htmlFor="gi-name"
+                                                        className="field-label"
+                                                    >
+                                                        Nama Gardu Induk
+                                                    </label>
+                                                    <input
+                                                        id="gi-name"
+                                                        type="text"
+                                                        className="field-input"
+                                                        placeholder="Contoh: GI 150KV DELTAMAS"
+                                                        value={data.name}
+                                                        onChange={(e) =>
+                                                            setData(
+                                                                "name",
+                                                                e.target.value
+                                                            )
+                                                        }
+                                                    />
+                                                    {errors.name && (
+                                                        <p className="field-error">
+                                                            {errors.name}
+                                                        </p>
+                                                    )}
+                                                </div>
+                                                <div>
+                                                    <label
+                                                        htmlFor="gi-latitude"
+                                                        className="field-label"
+                                                    >
+                                                        Latitude
+                                                    </label>
+                                                    <input
+                                                        id="gi-latitude"
+                                                        type="number"
+                                                        step="any"
+                                                        className="field-input tabular-nums"
+                                                        placeholder="-6.405..."
+                                                        value={data.latitude}
+                                                        onChange={(e) =>
+                                                            setData(
+                                                                "latitude",
+                                                                e.target.value
+                                                            )
+                                                        }
+                                                    />
+                                                    {errors.latitude && (
+                                                        <p className="field-error">
+                                                            {errors.latitude}
+                                                        </p>
+                                                    )}
+                                                </div>
+                                                <div>
+                                                    <label
+                                                        htmlFor="gi-longitude"
+                                                        className="field-label"
+                                                    >
+                                                        Longitude
+                                                    </label>
+                                                    <input
+                                                        id="gi-longitude"
+                                                        type="number"
+                                                        step="any"
+                                                        className="field-input tabular-nums"
+                                                        placeholder="107.175..."
+                                                        value={data.longitude}
+                                                        onChange={(e) =>
+                                                            setData(
+                                                                "longitude",
+                                                                e.target.value
+                                                            )
+                                                        }
+                                                    />
+                                                    {errors.longitude && (
+                                                        <p className="field-error">
+                                                            {errors.longitude}
+                                                        </p>
+                                                    )}
+                                                </div>
+                                                <div className="md:col-span-2">
+                                                    <label
+                                                        htmlFor="gi-ultg"
+                                                        className="field-label"
+                                                    >
+                                                        ULTG
+                                                    </label>
+                                                    <input
+                                                        id="gi-ultg"
+                                                        type="text"
+                                                        className="field-input"
+                                                        placeholder="Contoh: ULTG Karawang"
+                                                        value={data.ultg}
+                                                        onChange={(e) =>
+                                                            setData(
+                                                                "ultg",
+                                                                e.target.value
+                                                            )
+                                                        }
+                                                    />
+                                                    {errors.ultg && (
+                                                        <p className="field-error">
+                                                            {errors.ultg}
+                                                        </p>
+                                                    )}
+                                                </div>
+                                                <div className="md:col-span-2">
+                                                    <span className="field-label">
+                                                        Kondisi
+                                                    </span>
+                                                    <Listbox
+                                                        value={data.kondisi}
+                                                        onChange={(val) =>
+                                                            setData(
+                                                                "kondisi",
+                                                                val
+                                                            )
+                                                        }
+                                                    >
+                                                        <div className="relative">
+                                                            <Listbox.Button className="field-input relative cursor-pointer pr-10 text-left">
+                                                                <span className="flex items-center gap-2 truncate font-semibold">
                                                                     <span
-                                                                        className={`block truncate ${
+                                                                        className={`h-2 w-2 shrink-0 rounded-full ${
                                                                             data.kondisi ===
                                                                             "Operasi"
-                                                                                ? "text-green-600 font-medium"
-                                                                                : "text-red-600 font-medium"
+                                                                                ? "bg-emerald-500"
+                                                                                : "bg-rose-500"
                                                                         }`}
+                                                                    />
+                                                                    <span
+                                                                        className={
+                                                                            data.kondisi ===
+                                                                            "Operasi"
+                                                                                ? "text-emerald-700"
+                                                                                : "text-rose-700"
+                                                                        }
                                                                     >
                                                                         {
                                                                             data.kondisi
                                                                         }
                                                                     </span>
-                                                                    <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2">
-                                                                        <FaChevronLeft
-                                                                            className="h-4 w-4 text-gray-400 rotate-270 -rotate-90"
-                                                                            aria-hidden="true"
-                                                                        />
-                                                                    </span>
-                                                                </Listbox.Button>
-                                                                <Transition
-                                                                    as={
-                                                                        Fragment
-                                                                    }
-                                                                    leave="transition ease-in duration-100"
-                                                                    leaveFrom="opacity-100"
-                                                                    leaveTo="opacity-0"
-                                                                >
-                                                                    <Listbox.Options className="absolute mt-1 max-h-60 w-full overflow-auto rounded-md bg-white py-1 text-base shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm z-10">
-                                                                        <Listbox.Option
-                                                                            value="Operasi"
-                                                                            className={({
-                                                                                active,
-                                                                            }) =>
-                                                                                `relative cursor-default select-none py-2 pl-10 pr-4 ${
-                                                                                    active
-                                                                                        ? "bg-blue-100 text-blue-900"
-                                                                                        : "text-gray-900"
-                                                                                }`
-                                                                            }
-                                                                        >
-                                                                            <span className="block truncate font-medium text-green-600">
-                                                                                Operasi
-                                                                            </span>
-                                                                        </Listbox.Option>
-                                                                        <Listbox.Option
-                                                                            value="Tidak Operasi"
-                                                                            className={({
-                                                                                active,
-                                                                            }) =>
-                                                                                `relative cursor-default select-none py-2 pl-10 pr-4 ${
-                                                                                    active
-                                                                                        ? "bg-blue-100 text-blue-900"
-                                                                                        : "text-gray-900"
-                                                                                }`
-                                                                            }
-                                                                        >
-                                                                            <span className="block truncate font-medium text-red-600">
-                                                                                Tidak
-                                                                                Operasi
-                                                                            </span>
-                                                                        </Listbox.Option>
-                                                                    </Listbox.Options>
-                                                                </Transition>
-                                                            </div>
-                                                        </Listbox>
-                                                        {errors.kondisi && (
-                                                            <div className="text-red-500 text-xs mt-1">
-                                                                {errors.kondisi}
-                                                            </div>
-                                                        )}
-                                                    </div>
+                                                                </span>
+                                                                <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
+                                                                    <FaChevronLeft
+                                                                        className="h-3 w-3 -rotate-90 text-slate-400"
+                                                                        aria-hidden="true"
+                                                                    />
+                                                                </span>
+                                                            </Listbox.Button>
+                                                            <Transition
+                                                                as={Fragment}
+                                                                leave="transition ease-in duration-100"
+                                                                leaveFrom="opacity-100"
+                                                                leaveTo="opacity-0"
+                                                            >
+                                                                <Listbox.Options className="absolute z-10 mt-1.5 max-h-60 w-full overflow-auto rounded-xl border border-slate-200 bg-white py-1 text-sm shadow-lift focus:outline-none">
+                                                                    <Listbox.Option
+                                                                        value="Operasi"
+                                                                        className={({
+                                                                            active,
+                                                                        }) =>
+                                                                            `relative flex cursor-pointer select-none items-center gap-2 px-3.5 py-2 ${
+                                                                                active
+                                                                                    ? "bg-slate-50"
+                                                                                    : ""
+                                                                            }`
+                                                                        }
+                                                                    >
+                                                                        <span className="h-2 w-2 rounded-full bg-emerald-500" />
+                                                                        <span className="block truncate font-semibold text-emerald-700">
+                                                                            Operasi
+                                                                        </span>
+                                                                    </Listbox.Option>
+                                                                    <Listbox.Option
+                                                                        value="Tidak Operasi"
+                                                                        className={({
+                                                                            active,
+                                                                        }) =>
+                                                                            `relative flex cursor-pointer select-none items-center gap-2 px-3.5 py-2 ${
+                                                                                active
+                                                                                    ? "bg-slate-50"
+                                                                                    : ""
+                                                                            }`
+                                                                        }
+                                                                    >
+                                                                        <span className="h-2 w-2 rounded-full bg-rose-500" />
+                                                                        <span className="block truncate font-semibold text-rose-700">
+                                                                            Tidak
+                                                                            Operasi
+                                                                        </span>
+                                                                    </Listbox.Option>
+                                                                </Listbox.Options>
+                                                            </Transition>
+                                                        </div>
+                                                    </Listbox>
+                                                    {errors.kondisi && (
+                                                        <p className="field-error">
+                                                            {errors.kondisi}
+                                                        </p>
+                                                    )}
                                                 </div>
+                                            </div>
 
-                                                <div className="mt-6 flex justify-end gap-3">
-                                                    <button
-                                                        type="button"
-                                                        className="inline-flex justify-center rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
-                                                        onClick={() =>
-                                                            setShowTambahGardu(
-                                                                false
-                                                            )
-                                                        }
-                                                        disabled={processing}
-                                                    >
-                                                        Batal
-                                                    </button>
-                                                    <button
-                                                        type="submit"
-                                                        className="inline-flex justify-center rounded-lg border border-transparent bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:opacity-50"
-                                                        disabled={processing}
-                                                    >
-                                                        {processing
-                                                            ? "Menyimpan..."
-                                                            : "Simpan"}
-                                                    </button>
-                                                </div>
-                                            </form>
-                                        </div>
+                                            <div className="flex justify-end gap-2 border-t border-slate-100 bg-slate-50/60 px-6 py-3">
+                                                <button
+                                                    type="button"
+                                                    className="btn-ghost"
+                                                    onClick={() =>
+                                                        setShowTambahGardu(
+                                                            false
+                                                        )
+                                                    }
+                                                    disabled={processing}
+                                                >
+                                                    Batal
+                                                </button>
+                                                <button
+                                                    type="submit"
+                                                    className="btn-brand"
+                                                    disabled={processing}
+                                                >
+                                                    {processing
+                                                        ? "Menyimpan..."
+                                                        : "Simpan"}
+                                                </button>
+                                            </div>
+                                        </form>
                                     </Dialog.Panel>
                                 </Transition.Child>
                             </div>

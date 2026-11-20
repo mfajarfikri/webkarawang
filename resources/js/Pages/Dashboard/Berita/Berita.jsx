@@ -6,6 +6,8 @@ import React, {
     useRef,
 } from "react";
 import DashboardLayout from "@/Layouts/DashboardLayout";
+import PageHeader from "@/Components/Dashboard/PageHeader";
+import { Badge, Card } from "@/Components/Dashboard/ui";
 import { Head, Link, usePage } from "@inertiajs/react";
 import {
     FaPlus,
@@ -196,8 +198,7 @@ export default function Berita({ berita: initialBerita }) {
     };
 
     const renderLoading = () => {
-        const common =
-            "rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden";
+        const common = "surface overflow-hidden";
         if (viewMode === "table") {
             return (
                 <div className={`${common} animate-pulse`} aria-hidden="true">
@@ -264,31 +265,31 @@ export default function Berita({ berita: initialBerita }) {
             : "Belum ada artikel yang tersedia saat ini.";
 
         return (
-            <div className="rounded-2xl border border-slate-200 bg-white shadow-sm p-8 sm:p-10 text-center">
-                <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-50 border border-slate-100 text-slate-500">
-                    <FaInbox className="h-6 w-6" aria-hidden="true" />
+            <div className="surface px-6 py-14 text-center">
+                <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 text-slate-500">
+                    <FaInbox className="h-5 w-5" aria-hidden="true" />
                 </div>
-                <h3 className="mt-5 text-lg font-bold text-slate-900">
+                <h3 className="mt-4 text-base font-bold text-ink-900">
                     {title}
                 </h3>
-                <p className="mt-2 text-sm text-slate-600 max-w-lg mx-auto">
+                <p className="mt-1 text-sm text-slate-600 max-w-sm mx-auto">
                     {desc}
                 </p>
-                <div className="mt-6 flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-3">
+                <div className="mt-5 flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-3">
                     {searchTerm ? (
                         <button
                             type="button"
                             onClick={resetSearch}
-                            className="inline-flex items-center justify-center rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-bold text-sky-700 hover:bg-sky-50 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/30"
+                            className="btn-ghost"
                         >
                             Reset Pencarian
                         </button>
                     ) : (
                         <Link
                             href={route("dashboard.berita.create")}
-                            className="inline-flex items-center justify-center gap-2 rounded-2xl bg-brand-600 px-5 py-3 text-sm font-bold text-white shadow-sm hover:bg-brand-700 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/30"
+                            className="btn-brand"
                         >
-                            <FaPlus className="h-4 w-4" aria-hidden="true" />
+                            <FaPlus className="h-3.5 w-3.5" aria-hidden="true" />
                             Buat Berita Pertama
                         </Link>
                     )}
@@ -297,7 +298,7 @@ export default function Berita({ berita: initialBerita }) {
                         onClick={() =>
                             fetchBerita(pagination.current_page || 1)
                         }
-                        className="inline-flex items-center justify-center rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/30"
+                        className="btn-ghost"
                     >
                         Muat ulang
                     </button>
@@ -309,7 +310,7 @@ export default function Berita({ berita: initialBerita }) {
     const renderError = () => {
         return (
             <div
-                className="rounded-2xl border border-rose-200 bg-rose-50 px-6 py-5 text-rose-900 shadow-sm"
+                className="rounded-2xl border border-rose-200 bg-rose-50 px-6 py-5 text-rose-900"
                 role="alert"
                 aria-live="polite"
             >
@@ -333,7 +334,7 @@ export default function Berita({ berita: initialBerita }) {
                                 onClick={() =>
                                     fetchBerita(pagination.current_page || 1)
                                 }
-                                className="inline-flex items-center justify-center rounded-2xl bg-rose-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-rose-700 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-500/30"
+                                className="btn-danger btn-sm"
                             >
                                 Coba lagi
                             </button>
@@ -426,56 +427,37 @@ export default function Berita({ berita: initialBerita }) {
         <DashboardLayout title="Berita">
             <Head title="Berita" />
 
-            <div className="w-full">
-                <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
-                    <div className="p-6 sm:p-8 border-b border-slate-100">
-                        <div className="flex flex-col gap-5 md:flex-row md:items-start md:justify-between">
-                            <div className="flex items-start gap-4">
-                                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-ink-900 text-volt shadow-soft">
-                                    <FaNewspaper
-                                        className="text-lg"
-                                        aria-hidden="true"
-                                    />
-                                </div>
-                                <div>
-                                    <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900">
-                                        Manajemen Berita
-                                    </h1>
-                                    <p className="mt-2 text-sm sm:text-base text-slate-600 max-w-2xl">
-                                        Kelola publikasi dan artikel PLN UPT
-                                        Karawang dengan tampilan yang konsisten.
-                                    </p>
-                                    <div
-                                        id={statusId}
-                                        className="mt-4 inline-flex items-center gap-2 rounded-full bg-slate-50 px-4 py-1.5 text-xs font-semibold text-slate-600 ring-1 ring-slate-200"
-                                    >
-                                        <span
-                                            className="inline-flex h-2 w-2 rounded-full bg-emerald-500"
-                                            aria-hidden="true"
-                                        />
-                                        <span className="text-slate-900">
-                                            {pagination?.total || 0}
-                                        </span>
-                                        <span>Artikel</span>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <Link
-                                href={route("dashboard.berita.create")}
-                                className="inline-flex items-center justify-center gap-2 rounded-2xl bg-brand-600 px-5 py-3 text-sm font-bold text-white shadow-sm hover:bg-brand-700 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/30"
-                            >
-                                <FaPlus
-                                    className="h-4 w-4"
-                                    aria-hidden="true"
-                                />
-                                Buat Berita Baru
-                            </Link>
-                        </div>
+            <div className="w-full space-y-6">
+                <PageHeader
+                    icon={FaNewspaper}
+                    title="Manajemen Berita"
+                    description="Kelola publikasi dan artikel PLN UPT Karawang dengan tampilan yang konsisten."
+                >
+                    <div
+                        id={statusId}
+                        className="inline-flex items-center gap-2 rounded-full border border-slate-200/80 bg-white px-4 py-2 text-xs font-semibold text-slate-600 shadow-soft"
+                    >
+                        <span
+                            className="inline-flex h-2 w-2 rounded-full bg-emerald-500"
+                            aria-hidden="true"
+                        />
+                        <span className="text-ink-900">
+                            {pagination?.total || 0}
+                        </span>
+                        <span>Artikel</span>
                     </div>
+                    <Link
+                        href={route("dashboard.berita.create")}
+                        className="btn-brand"
+                    >
+                        <FaPlus className="h-3.5 w-3.5" aria-hidden="true" />
+                        Buat Berita Baru
+                    </Link>
+                </PageHeader>
 
-                    <div className="p-6 sm:p-8">
-                        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-5">
+                <div className="surface">
+                    <div className="p-4 sm:p-5">
+                        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
                             <div className="w-full lg:max-w-md">
                                 <label
                                     htmlFor="search-input"
@@ -488,19 +470,19 @@ export default function Berita({ berita: initialBerita }) {
                                         id="search-input"
                                         type="text"
                                         placeholder="Cari berita..."
-                                        className="w-full rounded-2xl border border-slate-200 bg-white px-12 py-3 text-[15px] text-slate-900 shadow-sm placeholder:text-slate-400 transition hover:border-slate-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/20 focus:border-sky-500"
+                                        className="field-input pl-11 pr-12"
                                         defaultValue={searchTerm}
                                         onChange={handleSearch}
                                         aria-describedby={statusId}
                                     />
-                                    <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-sky-600 transition-colors">
+                                    <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-brand-600 transition-colors">
                                         <FaSearch
                                             className="h-4 w-4"
                                             aria-hidden="true"
                                         />
                                     </div>
                                     {isLoading ? (
-                                        <div className="absolute right-4 top-1/2 -translate-y-1/2 text-sky-600">
+                                        <div className="absolute right-4 top-1/2 -translate-y-1/2 text-brand-600">
                                             <FaSpinner
                                                 className="h-4 w-4 animate-spin"
                                                 aria-hidden="true"
@@ -511,7 +493,7 @@ export default function Berita({ berita: initialBerita }) {
                                         <button
                                             type="button"
                                             onClick={resetSearch}
-                                            className="absolute right-3 top-1/2 -translate-y-1/2 inline-flex h-10 w-10 items-center justify-center rounded-2xl text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-500/30"
+                                            className="btn-icon absolute right-1.5 top-1/2 h-8 w-8 -translate-y-1/2 hover:bg-rose-50 hover:text-rose-600"
                                             aria-label="Hapus pencarian"
                                         >
                                             <FaTimes
@@ -524,7 +506,7 @@ export default function Berita({ berita: initialBerita }) {
                                 {searchTerm ? (
                                     <div className="mt-3 text-sm text-slate-600">
                                         Menampilkan hasil pencarian untuk{" "}
-                                        <span className="font-bold text-slate-900">
+                                        <span className="font-bold text-ink-900">
                                             “{searchTerm}”
                                         </span>
                                     </div>
@@ -533,7 +515,7 @@ export default function Berita({ berita: initialBerita }) {
 
                             <div className="flex flex-col sm:flex-row sm:items-center gap-3 justify-between">
                                 <div className="text-sm text-slate-600">
-                                    <span className="font-bold text-slate-900">
+                                    <span className="font-bold text-ink-900">
                                         {filteredBerita.length}
                                     </span>{" "}
                                     artikel ditampilkan
@@ -544,7 +526,7 @@ export default function Berita({ berita: initialBerita }) {
                                     role="tablist"
                                     aria-label="Mode tampilan berita"
                                     onKeyDown={onTabKeyDown}
-                                    className="inline-flex items-center rounded-2xl border border-slate-200 bg-slate-50 p-1"
+                                    className="inline-flex items-center rounded-full border border-slate-200 bg-slate-50 p-1"
                                 >
                                     {viewTabs.map((t) => {
                                         const isActive = t.id === viewMode;
@@ -560,10 +542,10 @@ export default function Berita({ berita: initialBerita }) {
                                                 onClick={() =>
                                                     setViewMode(t.id)
                                                 }
-                                                className={`inline-flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-bold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/30 ${
+                                                className={`inline-flex items-center gap-2 rounded-full px-3.5 py-1.5 text-xs font-semibold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/30 ${
                                                     isActive
-                                                        ? "bg-white text-sky-700 shadow-sm"
-                                                        : "text-slate-600 hover:text-slate-800 hover:bg-white/60"
+                                                        ? "bg-white text-ink-900 shadow-soft"
+                                                        : "text-slate-500 hover:text-ink-900"
                                                 }`}
                                             >
                                                 <Icon
@@ -580,7 +562,7 @@ export default function Berita({ berita: initialBerita }) {
                     </div>
                 </div>
 
-                <div className="mt-8">
+                <div>
                     {loadError && !hasData ? (
                         renderError()
                     ) : isLoading && !hasData ? (
@@ -593,56 +575,49 @@ export default function Berita({ berita: initialBerita }) {
                     ) : hasData ? (
                         <>
                             {viewMode === "table" ? (
-                                <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+                                <Card padded={false}>
                                     <div className="overflow-x-auto">
-                                        <table className="min-w-full text-sm">
-                                            <thead className="bg-slate-50 border-b border-slate-200">
+                                        <table className="data-table">
+                                            <thead>
                                                 <tr>
                                                     <th
                                                         scope="col"
-                                                        className="px-6 py-3 text-left text-[11px] font-semibold uppercase tracking-widest text-slate-500"
                                                     >
                                                         Judul
                                                     </th>
                                                     <th
                                                         scope="col"
-                                                        className="px-6 py-3 text-left text-[11px] font-semibold uppercase tracking-widest text-slate-500"
                                                     >
                                                         Tema
                                                     </th>
                                                     <th
                                                         scope="col"
-                                                        className="px-6 py-3 text-left text-[11px] font-semibold uppercase tracking-widest text-slate-500"
                                                     >
                                                         Penulis
                                                     </th>
                                                     <th
                                                         scope="col"
-                                                        className="px-6 py-3 text-left text-[11px] font-semibold uppercase tracking-widest text-slate-500"
                                                     >
                                                         Tanggal
                                                     </th>
                                                     <th
                                                         scope="col"
-                                                        className="px-6 py-3 text-right text-[11px] font-semibold uppercase tracking-widest text-slate-500"
+                                                        className="text-right"
                                                     >
                                                         Aksi
                                                     </th>
                                                 </tr>
                                             </thead>
-                                            <tbody className="divide-y divide-slate-100">
+                                            <tbody>
                                                 {filteredBerita.map((item) => (
-                                                    <tr
-                                                        key={item.id}
-                                                        className="hover:bg-slate-50/60 transition"
-                                                    >
-                                                        <td className="px-6 py-4">
+                                                    <tr key={item.id}>
+                                                        <td className="min-w-[16rem]">
                                                             <Link
                                                                 href={route(
                                                                     "dashboard.berita.show",
                                                                     item.slug,
                                                                 )}
-                                                                className="font-bold text-slate-900 hover:text-sky-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/30 rounded"
+                                                                className="font-semibold text-ink-900 hover:text-brand-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/30 rounded"
                                                             >
                                                                 {item.judul}
                                                             </Link>
@@ -667,30 +642,33 @@ export default function Berita({ berita: initialBerita }) {
                                                                 )}
                                                             </div>
                                                         </td>
-                                                        <td className="px-6 py-4 text-slate-600">
-                                                            {item.tema?.nama ||
-                                                                "Umum"}
+                                                        <td>
+                                                            <Badge tone="brand">
+                                                                {item.tema
+                                                                    ?.nama ||
+                                                                    "Umum"}
+                                                            </Badge>
                                                         </td>
-                                                        <td className="px-6 py-4 text-slate-600">
+                                                        <td className="whitespace-nowrap">
                                                             {item.user?.name ||
                                                                 "Admin"}
                                                         </td>
-                                                        <td className="px-6 py-4 text-slate-600">
+                                                        <td className="whitespace-nowrap text-slate-500">
                                                             {formatDateShort(
                                                                 item.created_at,
                                                             )}
                                                         </td>
-                                                        <td className="px-6 py-4">
-                                                            <div className="flex items-center justify-end gap-2">
+                                                        <td>
+                                                            <div className="flex items-center justify-end gap-1">
                                                                 <Link
                                                                     href={route(
                                                                         "dashboard.berita.edit",
                                                                         item.slug,
                                                                     )}
-                                                                    className="inline-flex h-9 items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-xs font-bold text-slate-700 hover:bg-slate-50 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/30"
+                                                                    className="btn-ghost btn-sm"
                                                                 >
                                                                     <FaEdit
-                                                                        className="mr-2 h-3.5 w-3.5"
+                                                                        className="h-3 w-3"
                                                                         aria-hidden="true"
                                                                     />
                                                                     Edit
@@ -705,10 +683,10 @@ export default function Berita({ berita: initialBerita }) {
                                                                             true,
                                                                         );
                                                                     }}
-                                                                    className="inline-flex h-9 items-center justify-center rounded-xl border border-rose-200 bg-rose-50 px-3 text-xs font-bold text-rose-700 hover:bg-rose-100 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-500/30"
+                                                                    className="btn btn-sm text-rose-600 hover:bg-rose-50"
                                                                 >
                                                                     <FaTrash
-                                                                        className="mr-2 h-3.5 w-3.5"
+                                                                        className="h-3 w-3"
                                                                         aria-hidden="true"
                                                                     />
                                                                     Hapus
@@ -720,20 +698,20 @@ export default function Berita({ berita: initialBerita }) {
                                             </tbody>
                                         </table>
                                     </div>
-                                </div>
+                                </Card>
                             ) : viewMode === "list" ? (
                                 <div className="space-y-3">
                                     {filteredBerita.map((item) => (
                                         <div
                                             key={item.id}
-                                            className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden"
+                                            className="surface overflow-hidden transition hover:shadow-lift"
                                         >
-                                            <div className="p-6 flex flex-col sm:flex-row gap-5">
+                                            <div className="p-5 flex flex-col sm:flex-row gap-5">
                                                 <img
                                                     src={getThumbnailUrl(item)}
                                                     alt={item.judul}
                                                     loading="lazy"
-                                                    className="h-36 w-full sm:w-52 rounded-2xl object-cover border border-slate-100"
+                                                    className="h-36 w-full sm:w-52 rounded-xl object-cover bg-slate-100"
                                                     onError={(e) => {
                                                         e.target.onerror = null;
                                                         e.target.src =
@@ -742,10 +720,10 @@ export default function Berita({ berita: initialBerita }) {
                                                 />
                                                 <div className="min-w-0 flex-1">
                                                     <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500">
-                                                        <span className="inline-flex items-center rounded-full bg-slate-50 px-3 py-1 font-semibold ring-1 ring-slate-200">
+                                                        <Badge tone="brand">
                                                             {item.tema?.nama ||
                                                                 "Umum"}
-                                                        </span>
+                                                        </Badge>
                                                         <span className="inline-flex items-center gap-1.5">
                                                             <FaUser
                                                                 className="h-3 w-3"
@@ -769,7 +747,7 @@ export default function Berita({ berita: initialBerita }) {
                                                             "dashboard.berita.show",
                                                             item.slug,
                                                         )}
-                                                        className="mt-3 block text-lg font-extrabold tracking-tight text-slate-900 hover:text-sky-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/30 rounded"
+                                                        className="mt-3 block font-display text-lg font-bold tracking-tight text-ink-900 hover:text-brand-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/30 rounded"
                                                     >
                                                         {item.judul}
                                                     </Link>
@@ -798,7 +776,7 @@ export default function Berita({ berita: initialBerita }) {
                                                                 "dashboard.berita.show",
                                                                 item.slug,
                                                             )}
-                                                            className="inline-flex items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-sky-700 hover:bg-sky-50 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/30"
+                                                            className="inline-flex items-center text-sm font-semibold text-brand-700 hover:text-brand-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/30 rounded"
                                                         >
                                                             Baca Selengkapnya
                                                         </Link>
@@ -808,10 +786,10 @@ export default function Berita({ berita: initialBerita }) {
                                                                     "dashboard.berita.edit",
                                                                     item.slug,
                                                                 )}
-                                                                className="inline-flex items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-700 hover:bg-slate-50 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/30"
+                                                                className="btn-ghost btn-sm"
                                                             >
                                                                 <FaEdit
-                                                                    className="mr-2 h-4 w-4"
+                                                                    className="h-3 w-3"
                                                                     aria-hidden="true"
                                                                 />
                                                                 Edit
@@ -826,10 +804,10 @@ export default function Berita({ berita: initialBerita }) {
                                                                         true,
                                                                     );
                                                                 }}
-                                                                className="inline-flex items-center justify-center rounded-2xl border border-rose-200 bg-rose-50 px-4 py-2.5 text-sm font-bold text-rose-700 hover:bg-rose-100 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-500/30"
+                                                                className="btn btn-sm text-rose-600 hover:bg-rose-50"
                                                             >
                                                                 <FaTrash
-                                                                    className="mr-2 h-4 w-4"
+                                                                    className="h-3 w-3"
                                                                     aria-hidden="true"
                                                                 />
                                                                 Hapus
@@ -846,7 +824,7 @@ export default function Berita({ berita: initialBerita }) {
                                     {filteredBerita.map((item) => (
                                         <div
                                             key={item.id}
-                                            className="group rounded-2xl border border-slate-200 bg-white shadow-sm hover:shadow-md transition overflow-hidden flex flex-col"
+                                            className="group surface overflow-hidden flex flex-col transition hover:-translate-y-0.5 hover:shadow-lift"
                                         >
                                             <div className="relative h-44 overflow-hidden">
                                                 <img
@@ -861,7 +839,7 @@ export default function Berita({ berita: initialBerita }) {
                                                     }}
                                                 />
                                                 <div className="absolute inset-0 bg-gradient-to-t from-slate-950/70 via-slate-950/20 to-transparent" />
-                                                <div className="absolute left-4 top-4 inline-flex items-center rounded-full bg-white/15 px-3 py-1 text-xs font-bold text-white ring-1 ring-white/20 backdrop-blur">
+                                                <div className="absolute left-4 top-4 inline-flex items-center rounded-full bg-white/90 px-2.5 py-0.5 text-xs font-semibold text-ink-900 shadow-soft">
                                                     {item.tema?.nama || "Umum"}
                                                 </div>
                                                 <div className="absolute right-4 top-4">
@@ -878,7 +856,7 @@ export default function Berita({ berita: initialBerita }) {
                                                             actionDropdown ===
                                                             item.id
                                                         }
-                                                        className="inline-flex h-9 w-9 items-center justify-center rounded-2xl bg-black/20 text-white ring-1 ring-white/10 backdrop-blur hover:bg-black/35 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-white/40"
+                                                        className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-white/90 text-ink-900 shadow-soft hover:bg-white transition focus:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
                                                         aria-label="Buka menu aksi"
                                                     >
                                                         <FaEllipsisV
@@ -890,7 +868,7 @@ export default function Berita({ berita: initialBerita }) {
                                                     item.id ? (
                                                         <div
                                                             role="menu"
-                                                            className="absolute right-0 top-full mt-2 w-52 rounded-2xl border border-slate-200 bg-white shadow-lg overflow-hidden z-10"
+                                                            className="absolute right-0 top-full mt-2 w-52 rounded-2xl border border-slate-200/80 bg-white shadow-lift overflow-hidden z-10"
                                                             onClick={(e) =>
                                                                 e.stopPropagation()
                                                             }
@@ -902,7 +880,7 @@ export default function Berita({ berita: initialBerita }) {
                                                                         "dashboard.berita.edit",
                                                                         item.slug,
                                                                     )}
-                                                                    className="flex items-center rounded-xl px-3 py-2.5 text-sm font-semibold text-slate-700 hover:bg-sky-50 hover:text-sky-800 transition"
+                                                                    className="flex items-center rounded-xl px-3 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 hover:text-ink-900 transition"
                                                                 >
                                                                     <FaEdit
                                                                         className="mr-3 h-3.5 w-3.5"
@@ -973,7 +951,7 @@ export default function Berita({ berita: initialBerita }) {
                                                             "dashboard.berita.show",
                                                             item.slug,
                                                         )}
-                                                        className="mt-2 block text-lg font-extrabold tracking-tight text-white hover:text-sky-200 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-white/40 rounded"
+                                                        className="mt-2 block font-display text-lg font-bold tracking-tight text-white hover:text-brand-100 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-white/40 rounded"
                                                     >
                                                         <span className="line-clamp-2">
                                                             {item.judul}
@@ -981,7 +959,7 @@ export default function Berita({ berita: initialBerita }) {
                                                     </Link>
                                                 </div>
                                             </div>
-                                            <div className="p-6 flex flex-col flex-1">
+                                            <div className="p-5 flex flex-col flex-1">
                                                 <div
                                                     className="text-sm text-slate-600 leading-relaxed line-clamp-3"
                                                     dangerouslySetInnerHTML={{
@@ -1001,13 +979,13 @@ export default function Berita({ berita: initialBerita }) {
                                                                   ) + "...",
                                                     }}
                                                 />
-                                                <div className="mt-6 pt-5 border-t border-slate-100 flex items-center justify-between">
+                                                <div className="mt-auto pt-5 flex items-center justify-between">
                                                     <Link
                                                         href={route(
                                                             "dashboard.berita.show",
                                                             item.slug,
                                                         )}
-                                                        className="text-sm font-bold text-sky-700 hover:text-sky-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/30 rounded inline-flex items-center"
+                                                        className="text-sm font-semibold text-brand-700 hover:text-brand-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/30 rounded inline-flex items-center"
                                                     >
                                                         Baca Selengkapnya
                                                         <FaChevronRight
@@ -1031,18 +1009,18 @@ export default function Berita({ berita: initialBerita }) {
 
                 {/* Pagination */}
                 {!isLoading && filteredBerita.length > 0 && (
-                    <div className="mt-12 flex flex-col md:flex-row items-center justify-between gap-6 border-t border-gray-200 pt-8">
-                        <div className="text-sm text-gray-500 font-medium">
+                    <div className="surface flex flex-col md:flex-row items-center justify-between gap-4 px-5 py-4">
+                        <div className="text-sm text-slate-500">
                             Menampilkan{" "}
-                            <span className="text-gray-900 font-bold">
+                            <span className="text-ink-900 font-semibold tabular-nums">
                                 {pagination.from}
                             </span>{" "}
                             sampai{" "}
-                            <span className="text-gray-900 font-bold">
+                            <span className="text-ink-900 font-semibold tabular-nums">
                                 {pagination.to}
                             </span>{" "}
                             dari{" "}
-                            <span className="text-gray-900 font-bold">
+                            <span className="text-ink-900 font-semibold tabular-nums">
                                 {pagination.total}
                             </span>{" "}
                             data
@@ -1056,13 +1034,9 @@ export default function Berita({ berita: initialBerita }) {
                                     )
                                 }
                                 disabled={pagination.current_page <= 1}
-                                className={`h-10 px-4 flex items-center justify-center rounded-xl border text-sm font-semibold transition-all duration-200 ${
-                                    pagination.current_page <= 1
-                                        ? "border-gray-200 text-gray-300 cursor-not-allowed bg-gray-50"
-                                        : "border-gray-200 text-gray-700 hover:bg-white hover:border-sky-300 hover:text-sky-600 hover:shadow-sm"
-                                }`}
+                                className="btn-ghost btn-sm"
                             >
-                                <FaChevronLeft className="mr-1.5 h-3 w-3" />
+                                <FaChevronLeft className="h-3 w-3" />
                                 Sebelumnya
                             </button>
 
@@ -1095,11 +1069,11 @@ export default function Berita({ berita: initialBerita }) {
                                                 onClick={() =>
                                                     handlePageChange(pageNum)
                                                 }
-                                                className={`h-10 w-10 flex items-center justify-center rounded-xl text-sm font-bold transition-all duration-200 ${
+                                                className={`h-8 min-w-[2rem] px-2 flex items-center justify-center rounded-full text-xs font-semibold tabular-nums transition ${
                                                     pagination.current_page ===
                                                     pageNum
-                                                        ? "bg-sky-700 text-white shadow-lg shadow-sky-700/20 scale-105"
-                                                        : "text-gray-600 hover:bg-sky-50 hover:text-sky-700"
+                                                        ? "bg-ink-900 text-white"
+                                                        : "text-slate-600 hover:bg-slate-100 hover:text-ink-900"
                                                 }`}
                                             >
                                                 {pageNum}
@@ -1119,15 +1093,10 @@ export default function Berita({ berita: initialBerita }) {
                                     pagination.current_page >=
                                     pagination.last_page
                                 }
-                                className={`h-10 px-4 flex items-center justify-center rounded-xl border text-sm font-semibold transition-all duration-200 ${
-                                    pagination.current_page >=
-                                    pagination.last_page
-                                        ? "border-gray-200 text-gray-300 cursor-not-allowed bg-gray-50"
-                                        : "border-gray-200 text-gray-700 hover:bg-white hover:border-sky-300 hover:text-sky-600 hover:shadow-sm"
-                                }`}
+                                className="btn-ghost btn-sm"
                             >
                                 Selanjutnya
-                                <FaChevronRight className="ml-1.5 h-3 w-3" />
+                                <FaChevronRight className="h-3 w-3" />
                             </button>
                         </div>
                     </div>
@@ -1138,7 +1107,7 @@ export default function Berita({ berita: initialBerita }) {
                     <div className="fixed inset-0 z-[100] overflow-y-auto">
                         <div className="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
                             <div
-                                className="fixed inset-0 transition-opacity bg-gray-900/60 backdrop-blur-sm"
+                                className="fixed inset-0 transition-opacity bg-ink-950/50 backdrop-blur-sm"
                                 aria-hidden="true"
                                 onClick={() => {
                                     setShowDeleteModal(false);
@@ -1153,27 +1122,39 @@ export default function Berita({ berita: initialBerita }) {
                                 &#8203;
                             </span>
 
-                            <div className="inline-block w-full max-w-md p-6 my-8 overflow-hidden text-left align-middle transition-all transform bg-white shadow-2xl rounded-3xl sm:align-middle animate-in fade-in zoom-in-95 duration-300">
+                            <div
+                                role="dialog"
+                                aria-modal="true"
+                                aria-labelledby={deleteTitleId}
+                                aria-describedby={deleteDescId}
+                                className="inline-block w-full max-w-md p-6 my-8 overflow-hidden text-left align-middle transition-all transform bg-white shadow-lift rounded-2xl border border-slate-200/80 sm:align-middle animate-in fade-in zoom-in-95 duration-300"
+                            >
                                 <div className="text-center">
-                                    <div className="flex items-center justify-center w-20 h-20 mx-auto bg-red-50 rounded-full ring-8 ring-red-50/50 mb-6">
-                                        <FaTrash className="w-8 h-8 text-red-500" />
+                                    <div className="flex items-center justify-center w-12 h-12 mx-auto bg-rose-50 rounded-full mb-4">
+                                        <FaTrash className="w-5 h-5 text-rose-600" />
                                     </div>
-                                    <h3 className="text-2xl font-bold leading-6 text-gray-900 mb-2">
+                                    <h3
+                                        id={deleteTitleId}
+                                        className="text-lg font-bold text-ink-900 mb-2"
+                                    >
                                         Hapus Berita?
                                     </h3>
-                                    <p className="text-sm text-gray-500 mb-6">
+                                    <p
+                                        id={deleteDescId}
+                                        className="text-sm text-slate-600"
+                                    >
                                         Apakah Anda yakin ingin menghapus berita{" "}
-                                        <span className="font-semibold text-gray-900">
+                                        <span className="font-semibold text-ink-900">
                                             "{beritaToDelete.judul}"
                                         </span>
                                         ? Tindakan ini tidak dapat dibatalkan.
                                     </p>
                                 </div>
 
-                                <div className="flex flex-col sm:flex-row-reverse gap-3 mt-6">
+                                <div className="flex flex-col sm:flex-row-reverse sm:justify-center gap-3 mt-6">
                                     <button
                                         type="button"
-                                        className="w-full inline-flex justify-center items-center px-6 py-3 border border-transparent text-sm font-bold rounded-xl text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 shadow-lg shadow-red-600/20 transition-all duration-200"
+                                        className="btn-danger w-full sm:w-auto"
                                         onClick={(e) => {
                                             e.preventDefault();
                                             handleDelete(beritaToDelete);
@@ -1182,7 +1163,8 @@ export default function Berita({ berita: initialBerita }) {
                                     >
                                         {isLoading ? (
                                             <>
-                                                <FaSpinner className="w-4 h-4 mr-2 animate-spin" />
+                                                <FaSpinner className="w-4 h-4 animate-spin" />
+
                                                 Menghapus...
                                             </>
                                         ) : (
@@ -1191,7 +1173,7 @@ export default function Berita({ berita: initialBerita }) {
                                     </button>
                                     <button
                                         type="button"
-                                        className="w-full inline-flex justify-center items-center px-6 py-3 border border-gray-200 text-sm font-bold rounded-xl text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-200 transition-all duration-200"
+                                        className="btn-ghost w-full sm:w-auto"
                                         onClick={() => {
                                             setShowDeleteModal(false);
                                             setBeritaToDelete(null);

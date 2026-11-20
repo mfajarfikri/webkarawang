@@ -6,6 +6,7 @@ import { SnackbarProvider, useSnackbar } from "notistack";
 import { Listbox, Transition } from "@headlessui/react";
 import PdfDownloadButton from "@/Components/Dashboard/Anomali/PdfDownloadButton";
 import {
+    FaArrowLeft,
     FaCalendarAlt,
     FaBuilding,
     FaList,
@@ -38,66 +39,88 @@ import {
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
 import { formatRupiah } from "@/utils/formatter";
+import PageHeader from "@/Components/Dashboard/PageHeader";
+import { Card, EmptyState } from "@/Components/Dashboard/ui";
+import StageBadge from "@/Components/Anomali/StageBadge";
+
+const TABS = [
+    { id: "informasi", label: "Informasi Umum", icon: FaInfoCircle },
+    { id: "detail", label: "Detail Peralatan", icon: FaTools },
+    { id: "analisis", label: "Analisis Anomali", icon: FaChartLine },
+    { id: "lampiran", label: "Lampiran", icon: FaClipboardList },
+];
 
 // Komponen untuk menampilkan item data dengan ikon
 const DataItem = ({ icon, label, value, className = "" }) => {
     const Icon = icon;
     return (
         <div
-            className={`group bg-white p-5 rounded-2xl border border-slate-100 shadow-[0_2px_15px_-3px_rgba(0,0,0,0.07),0_10px_20px_-2px_rgba(0,0,0,0.04)] hover:shadow-xl hover:-translate-y-1 transition-all duration-300 ${className}`}
+            className={`rounded-xl border border-slate-200/80 bg-white p-4 transition hover:border-slate-300 ${className}`}
         >
-            <div className="flex items-center mb-3">
-                <div className="p-2.5 bg-slate-50 text-slate-400 rounded-xl group-hover:bg-blue-600 group-hover:text-white transition-colors duration-300 shadow-sm">
-                    <Icon className="text-sm" />
-                </div>
-                <span className="ml-3 text-xs font-bold text-slate-400 uppercase tracking-wider group-hover:text-blue-600 transition-colors">
-                    {label}
-                </span>
+            <div className="flex items-center gap-2 text-xs font-medium text-slate-500">
+                <Icon className="h-3.5 w-3.5 text-slate-400" aria-hidden="true" />
+                <span>{label}</span>
             </div>
-            <div className="font-semibold text-slate-800 text-lg tracking-tight pl-1">
+            <div className="mt-1.5 text-sm font-semibold text-ink-900">
                 {value || "-"}
             </div>
         </div>
     );
 };
 
-// Komponen untuk menampilkan status anomali
-const StatusBadge = ({ status }) => {
-    let styles = "bg-slate-50 text-slate-700 ring-slate-600/20";
-    let icon = FaInfoCircle;
-
-    switch (status) {
-        case "New":
-            styles = "bg-blue-50 text-blue-700 ring-blue-700/10";
-            icon = FaInfoCircle;
-            break;
-        case "Open":
-            styles = "bg-yellow-50 text-yellow-800 ring-yellow-600/20";
-            icon = FaExclamationCircle;
-            break;
-        case "Pending":
-            styles = "bg-orange-50 text-orange-800 ring-orange-600/20";
-            icon = FaUserClock;
-            break;
-        case "Close":
-            styles = "bg-emerald-50 text-emerald-700 ring-emerald-600/20";
-            icon = FaCheckCircle;
-            break;
-        default:
-            break;
-    }
-
-    const Icon = icon;
-
+function AnalysisBlock({ icon: Icon, tone, label, children }) {
     return (
-        <div
-            className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide ring-1 ring-inset shadow-sm ${styles}`}
-        >
-            <Icon className="mr-1.5" />
-            {status}
+        <div className="rounded-xl border border-slate-200/80 bg-white p-5">
+            <div className="flex items-center gap-3">
+                <span
+                    className={`flex h-8 w-8 items-center justify-center rounded-lg ${tone}`}
+                >
+                    <Icon className="h-3.5 w-3.5" aria-hidden="true" />
+                </span>
+                <h3 className="text-sm font-bold text-ink-900">{label}</h3>
+            </div>
+            <div className="mt-3 whitespace-pre-line text-sm leading-relaxed text-slate-700">
+                {children}
+            </div>
         </div>
     );
-};
+}
+
+function SummaryItem({ label, children }) {
+    return (
+        <div className="flex items-start justify-between gap-4 py-2.5">
+            <dt className="text-sm text-slate-500">{label}</dt>
+            <dd className="min-w-0 text-right text-sm font-semibold text-ink-900">
+                {children}
+            </dd>
+        </div>
+    );
+}
+
+function Spinner() {
+    return (
+        <svg
+            className="h-4 w-4 animate-spin text-white"
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+        >
+            <circle
+                className="opacity-25"
+                cx="12"
+                cy="12"
+                r="10"
+                stroke="currentColor"
+                strokeWidth="4"
+            ></circle>
+            <path
+                className="opacity-75"
+                fill="currentColor"
+                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+            ></path>
+        </svg>
+    );
+}
 
 // Snackbar custom styles
 const StyledSnackbar = forwardRef(({ id, message, variant, ...props }, ref) => {
@@ -112,13 +135,13 @@ const StyledSnackbar = forwardRef(({ id, message, variant, ...props }, ref) => {
         <div
             ref={ref}
             className={`${
-                variant === "success" ? "bg-green-600" : "bg-red-600"
-            } text-white px-4 py-3 rounded-xl shadow-lg flex items-center max-w-md`}
+                variant === "success" ? "bg-emerald-600" : "bg-rose-600"
+            } flex max-w-md items-center rounded-xl px-4 py-3 text-white shadow-lift`}
             {...props}
         >
             <div className="mr-3">{icon}</div>
             <div className="flex-1">
-                <p className="font-medium">{message}</p>
+                <p className="text-sm font-medium">{message}</p>
             </div>
         </div>
     );
@@ -169,22 +192,18 @@ function ReviewContent({ anomalis, users }) {
     if (!anomalis) {
         return (
             <DashboardLayout title="Review Anomali">
-                <div className="p-8 text-center text-slate-500 bg-white rounded-xl shadow-sm border border-slate-200">
-                    <FaExclamationCircle className="mx-auto text-4xl text-slate-400 mb-4" />
-                    <h3 className="text-xl font-semibold mb-2 text-slate-900">
-                        Data Anomali Tidak Ditemukan
-                    </h3>
-                    <p>
-                        Maaf, data anomali yang Anda cari tidak tersedia atau
-                        telah dihapus.
-                    </p>
-                    <Link
-                        href="/dashboard/anomali"
-                        className="mt-4 inline-block px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors"
-                    >
-                        Kembali ke Daftar Anomali
-                    </Link>
-                </div>
+                <Card>
+                    <EmptyState
+                        icon={FaExclamationCircle}
+                        title="Data Anomali Tidak Ditemukan"
+                        description="Maaf, data anomali yang Anda cari tidak tersedia atau telah dihapus."
+                        action={
+                            <Link href="/dashboard/anomali" className="btn-brand">
+                                Kembali ke Daftar Anomali
+                            </Link>
+                        }
+                    />
+                </Card>
             </DashboardLayout>
         );
     }
@@ -307,199 +326,193 @@ function ReviewContent({ anomalis, users }) {
             });
     };
 
+    const isDecided = anomalis.approve !== null;
+
     return (
         <>
             <Head title={`Review Anomali - ${anomalis.judul || ""}`} />
             <DashboardLayout title="Review Anomali">
-                <div className="container bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
-                    {/* Header */}
-                    <div className="relative bg-white rounded-2xl shadow-[0_20px_50px_-12px_rgba(0,0,0,0.1)] border border-slate-100 p-8 mb-8 overflow-hidden">
-                        {/* Decorative Background Elements */}
-                        <div className="absolute top-0 right-0 -mr-20 -mt-20 w-64 h-64 rounded-full bg-blue-50 blur-3xl opacity-60 pointer-events-none"></div>
-                        <div className="absolute bottom-0 left-0 -ml-20 -mb-20 w-64 h-64 rounded-full bg-indigo-50 blur-3xl opacity-60 pointer-events-none"></div>
-
-                        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-8">
-                            <div className="flex items-start gap-5">
-                                <div className="bg-ink-900 p-4 rounded-2xl shadow-soft text-volt shrink-0">
-                                    <FaShieldAlt className="text-2xl" />
-                                </div>
-                                <div>
-                                    <div className="flex items-center gap-2 mb-2">
-                                        <span className="px-2.5 py-0.5 rounded-md bg-blue-50 text-blue-600 text-[10px] font-bold uppercase tracking-wider border border-blue-100">
-                                            Review Anomali
-                                        </span>
-                                        <StatusBadge status={anomalis.status} />
-                                    </div>
-                                    <h2 className="text-3xl font-extrabold text-slate-900 tracking-tight mb-3 leading-tight">
-                                        {anomalis.judul}
-                                    </h2>
-                                    <div className="flex flex-wrap items-center gap-4 text-sm font-medium text-slate-500">
-                                        <div className="flex items-center gap-2">
-                                            <FaCalendarAlt className="text-blue-400" />
-                                            {formatDate(
-                                                anomalis.tanggal_kejadian,
-                                            )}
-                                        </div>
-                                        <div className="w-1 h-1 rounded-full bg-slate-300"></div>
-                                        <div className="flex items-center gap-2">
-                                            <FaUser className="text-blue-400" />
-                                            {anomalis.user?.name || "-"}
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-                                <PdfDownloadButton
-                                    url={`/dashboard/anomali/${anomalis.slug}/pdf`}
-                                    fileName={`anomali_${anomalis.slug}.pdf`}
+                <PageHeader
+                    title={anomalis.judul}
+                    description={
+                        <span className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                            <span className="inline-flex items-center gap-1.5">
+                                <FaCalendarAlt
+                                    className="h-3 w-3 text-slate-400"
+                                    aria-hidden="true"
                                 />
-                            </div>
-                        </div>
-                    </div>
+                                {formatDate(anomalis.tanggal_kejadian)}
+                            </span>
+                            <span className="inline-flex items-center gap-1.5">
+                                <FaUser
+                                    className="h-3 w-3 text-slate-400"
+                                    aria-hidden="true"
+                                />
+                                {anomalis.user?.name || "-"}
+                            </span>
+                        </span>
+                    }
+                    leading={
+                        <Link
+                            href={route("dashboard.anomali.index")}
+                            className="btn-icon shrink-0 border border-slate-200 bg-white"
+                            aria-label="Kembali"
+                            title="Kembali ke daftar anomali"
+                        >
+                            <FaArrowLeft
+                                className="h-3.5 w-3.5"
+                                aria-hidden="true"
+                            />
+                        </Link>
+                    }
+                >
+                    <StageBadge anomali={anomalis} />
+                    <PdfDownloadButton
+                        url={`/dashboard/anomali/${anomalis.slug}/pdf`}
+                        fileName={`anomali_${anomalis.slug}.pdf`}
+                    />
+                </PageHeader>
 
-                    {/* Action Card */}
-                    <div className="bg-white rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 p-8 mb-8">
-                        <div className="flex items-center gap-4 mb-8">
-                            <div className="bg-blue-50 p-3 rounded-xl text-blue-600 ring-1 ring-blue-100">
-                                <FaUserCheck className="text-xl" />
-                            </div>
-                            <div>
-                                <h2 className="text-xl font-bold text-slate-900">
-                                    Tindakan Persetujuan
-                                </h2>
-                                <p className="text-sm text-slate-500 mt-1">
-                                    Silakan tinjau laporan ini dan berikan
-                                    keputusan persetujuan.
-                                </p>
-                            </div>
-                        </div>
-                        <div className="flex flex-col md:flex-row gap-5">
-                            <button
-                                onClick={() => setShowApproveModal(true)}
-                                className={`${
-                                    anomalis.approve !== null
-                                        ? "cursor-not-allowed bg-slate-100 text-slate-400 border border-slate-200"
-                                        : "bg-gradient-to-br from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white shadow-lg shadow-emerald-500/30 hover:shadow-emerald-500/40 hover:-translate-y-0.5"
-                                } flex-1 py-4 px-6 rounded-xl transition-all duration-300 flex items-center justify-center font-bold text-lg group`}
-                                disabled={anomalis.approve !== null}
-                            >
-                                <div
-                                    className={`p-1 rounded-full mr-3 ${anomalis.approve !== null ? "bg-slate-200" : "bg-white/20"}`}
-                                >
-                                    <FaCheckCircle className="text-xl" />
-                                </div>
-                                Setujui Anomali
-                            </button>
-                            <button
-                                onClick={() => setShowRejectModal(true)}
-                                className={`${
-                                    anomalis.approve !== null
-                                        ? "cursor-not-allowed bg-slate-100 text-slate-400 border border-slate-200"
-                                        : "bg-gradient-to-br from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white shadow-lg shadow-red-500/30 hover:shadow-red-500/40 hover:-translate-y-0.5"
-                                } flex-1 py-4 px-6 rounded-xl transition-all duration-300 flex items-center justify-center font-bold text-lg group`}
-                                disabled={anomalis.approve !== null}
-                            >
-                                <div
-                                    className={`p-1 rounded-full mr-3 ${anomalis.approve !== null ? "bg-slate-200" : "bg-white/20"}`}
-                                >
-                                    <FaTimesCircle className="text-xl" />
-                                </div>
-                                Tolak Anomali
-                            </button>
-                        </div>
-
-                        {anomalis.approve !== null && (
-                            <div
-                                className={`mt-8 p-6 rounded-2xl border ${anomalis.approve === "Yes" ? "bg-emerald-50 border-emerald-100" : "bg-red-50 border-red-100"} animate-fade-in`}
-                            >
-                                <div className="flex items-center">
-                                    {anomalis.approve === "Yes" ? (
-                                        <div className="bg-emerald-100 p-2 rounded-full mr-4 ring-4 ring-emerald-50">
-                                            <FaCheckCircle className="text-emerald-600 text-xl" />
-                                        </div>
-                                    ) : (
-                                        <div className="bg-red-100 p-2 rounded-full mr-4 ring-4 ring-red-50">
-                                            <FaTimesCircle className="text-red-600 text-xl" />
-                                        </div>
-                                    )}
+                <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
+                    {/* Keputusan + ringkasan */}
+                    <div className="space-y-6 lg:order-2 lg:col-span-4">
+                        <section className="surface overflow-hidden lg:sticky lg:top-24">
+                            <div className="border-b border-slate-100 px-5 py-4">
+                                <div className="flex items-center gap-3">
+                                    <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-ink-900 text-volt">
+                                        <FaShieldAlt
+                                            className="h-4 w-4"
+                                            aria-hidden="true"
+                                        />
+                                    </span>
                                     <div>
-                                        <span
-                                            className={`font-bold text-lg ${anomalis.approve === "Yes" ? "text-emerald-900" : "text-red-900"}`}
-                                        >
-                                            Anomali ini telah{" "}
-                                            {anomalis.approve === "Yes"
-                                                ? "disetujui"
-                                                : "ditolak"}
-                                        </span>
-                                        <p
-                                            className={`text-sm ${anomalis.approve === "Yes" ? "text-emerald-700" : "text-red-700"}`}
-                                        >
-                                            Keputusan telah direkam dalam
-                                            sistem.
+                                        <h2 className="text-base font-bold text-ink-900">
+                                            Tindakan Persetujuan
+                                        </h2>
+                                        <p className="mt-0.5 text-sm text-slate-500">
+                                            Silakan tinjau laporan ini dan
+                                            berikan keputusan persetujuan.
                                         </p>
                                     </div>
                                 </div>
-                                {anomalis.reject_reason && (
-                                    <div className="mt-4 ml-14 bg-white p-4 rounded-xl border border-red-100 shadow-sm">
-                                        <span className="block text-xs font-bold text-red-500 uppercase tracking-wide mb-1">
-                                            Alasan Penolakan
-                                        </span>
-                                        <p className="text-slate-700 font-medium">
-                                            {anomalis.reject_reason}
-                                        </p>
+                            </div>
+
+                            <div className="space-y-3 p-5">
+                                <button
+                                    onClick={() => setShowApproveModal(true)}
+                                    className="btn-brand w-full py-3"
+                                    disabled={isDecided}
+                                >
+                                    <FaCheckCircle aria-hidden="true" />
+                                    Setujui Anomali
+                                </button>
+                                <button
+                                    onClick={() => setShowRejectModal(true)}
+                                    className="btn-ghost w-full border-rose-200 py-3 text-rose-700 hover:border-rose-300 hover:bg-rose-50"
+                                    disabled={isDecided}
+                                >
+                                    <FaTimesCircle aria-hidden="true" />
+                                    Tolak Anomali
+                                </button>
+
+                                {isDecided && (
+                                    <div
+                                        className={`mt-2 rounded-xl border p-4 ${anomalis.approve === "Yes" ? "border-emerald-200 bg-emerald-50" : "border-rose-200 bg-rose-50"}`}
+                                    >
+                                        <div className="flex items-start gap-3">
+                                            {anomalis.approve === "Yes" ? (
+                                                <FaCheckCircle className="mt-0.5 h-5 w-5 shrink-0 text-emerald-600" />
+                                            ) : (
+                                                <FaTimesCircle className="mt-0.5 h-5 w-5 shrink-0 text-rose-600" />
+                                            )}
+                                            <div>
+                                                <span
+                                                    className={`text-sm font-bold ${anomalis.approve === "Yes" ? "text-emerald-800" : "text-rose-800"}`}
+                                                >
+                                                    Anomali ini telah{" "}
+                                                    {anomalis.approve === "Yes"
+                                                        ? "disetujui"
+                                                        : "ditolak"}
+                                                </span>
+                                                <p
+                                                    className={`mt-0.5 text-sm ${anomalis.approve === "Yes" ? "text-emerald-700" : "text-rose-700"}`}
+                                                >
+                                                    Keputusan telah direkam
+                                                    dalam sistem.
+                                                </p>
+                                            </div>
+                                        </div>
+                                        {anomalis.reject_reason && (
+                                            <div className="mt-3 rounded-lg border border-rose-100 bg-white p-3">
+                                                <span className="mb-1 block text-xs font-semibold text-rose-700">
+                                                    Alasan Penolakan
+                                                </span>
+                                                <p className="text-sm text-slate-700">
+                                                    {anomalis.reject_reason}
+                                                </p>
+                                            </div>
+                                        )}
                                     </div>
                                 )}
                             </div>
-                        )}
+                        </section>
+
+                        <Card title="Ringkasan">
+                            <dl className="-my-2.5 divide-y divide-slate-100">
+                                <SummaryItem label="Gardu Induk">
+                                    {anomalis.gardu_induk?.name || "-"}
+                                </SummaryItem>
+                                <SummaryItem label="ULTG">
+                                    {anomalis.ultg || "-"}
+                                </SummaryItem>
+                                <SummaryItem label="Peralatan">
+                                    {anomalis.peralatan || "-"}
+                                </SummaryItem>
+                                <SummaryItem label="Tipe">
+                                    {anomalis.tipe || "-"}
+                                </SummaryItem>
+                                <SummaryItem label="Kategori">
+                                    {anomalis.kategori?.name || "-"}
+                                </SummaryItem>
+                            </dl>
+                        </Card>
                     </div>
 
                     {/* Tabs */}
-                    <div className="mb-8 p-8">
-                        <div className="flex p-1.5 bg-slate-100/80 backdrop-blur-sm rounded-2xl overflow-x-auto gap-1 border border-slate-200">
-                            {[
-                                {
-                                    id: "informasi",
-                                    label: "Informasi Umum",
-                                    icon: FaInfoCircle,
-                                },
-                                {
-                                    id: "detail",
-                                    label: "Detail Peralatan",
-                                    icon: FaTools,
-                                },
-                                {
-                                    id: "analisis",
-                                    label: "Analisis Anomali",
-                                    icon: FaChartLine,
-                                },
-                                {
-                                    id: "lampiran",
-                                    label: "Lampiran",
-                                    icon: FaClipboardList,
-                                },
-                            ].map((tab) => (
-                                <button
-                                    key={tab.id}
-                                    onClick={() => setActiveTab(tab.id)}
-                                    className={`px-5 py-3 rounded-xl font-bold text-sm flex items-center transition-all duration-300 whitespace-nowrap ${
-                                        activeTab === tab.id
-                                            ? "bg-white text-blue-600 shadow-md shadow-slate-200/50 ring-1 ring-slate-100"
-                                            : "text-slate-500 hover:text-slate-700 hover:bg-white/50"
-                                    }`}
-                                >
-                                    <tab.icon
-                                        className={`mr-2.5 ${activeTab === tab.id ? "text-blue-500" : "text-slate-400"}`}
-                                    />
-                                    {tab.label}
-                                </button>
-                            ))}
+                    <section className="surface overflow-hidden lg:order-1 lg:col-span-8">
+                        <div className="overflow-x-auto border-b border-slate-100 px-3 sm:px-4">
+                            <div className="flex gap-1">
+                                {TABS.map((tab) => {
+                                    const isActive = activeTab === tab.id;
+                                    return (
+                                        <button
+                                            key={tab.id}
+                                            onClick={() =>
+                                                setActiveTab(tab.id)
+                                            }
+                                            aria-current={
+                                                isActive ? "page" : undefined
+                                            }
+                                            className={`-mb-px flex items-center gap-2 whitespace-nowrap border-b-2 px-3 py-3.5 text-sm font-semibold transition ${
+                                                isActive
+                                                    ? "border-brand-600 text-ink-900"
+                                                    : "border-transparent text-slate-500 hover:text-ink-900"
+                                            }`}
+                                        >
+                                            <tab.icon
+                                                className={`h-3.5 w-3.5 ${isActive ? "text-brand-600" : "text-slate-400"}`}
+                                            />
+                                            {tab.label}
+                                        </button>
+                                    );
+                                })}
+                            </div>
                         </div>
 
-                        <div className="p-6">
+                        <div className="p-5 sm:p-6">
                             {/* Tab Informasi Umum */}
                             {activeTab === "informasi" && (
-                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
                                     <DataItem
                                         icon={FaBuilding}
                                         label="ULTG"
@@ -535,7 +548,7 @@ function ReviewContent({ anomalis, users }) {
 
                             {/* Tab Detail Peralatan */}
                             {activeTab === "detail" && (
-                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
                                     <DataItem
                                         icon={FaTools}
                                         label="Peralatan"
@@ -585,122 +598,95 @@ function ReviewContent({ anomalis, users }) {
 
                             {/* Tab Analisis Anomali */}
                             {activeTab === "analisis" && (
-                                <div className="grid grid-cols-1 gap-6">
-                                    <div className="bg-white p-6 rounded-2xl shadow-[0_2px_15px_-3px_rgba(0,0,0,0.07),0_10px_20px_-2px_rgba(0,0,0,0.04)] border border-slate-100 hover:shadow-xl transition-all duration-300 group">
-                                        <div className="flex items-center mb-4">
-                                            <div className="p-2.5 bg-yellow-50 text-yellow-600 rounded-xl group-hover:bg-yellow-500 group-hover:text-white transition-colors duration-300 shadow-sm ring-1 ring-yellow-100">
-                                                <FaExclamationTriangle className="text-lg" />
-                                            </div>
-                                            <span className="ml-3 text-sm font-bold text-slate-500 uppercase tracking-wider">
-                                                Penyebab Anomali
-                                            </span>
-                                        </div>
-                                        <div className="text-slate-800 whitespace-pre-line text-lg leading-relaxed font-medium pl-1">
-                                            {anomalis.penyebab}
-                                        </div>
-                                    </div>
-
-                                    <div className="bg-white p-6 rounded-2xl shadow-[0_2px_15px_-3px_rgba(0,0,0,0.07),0_10px_20px_-2px_rgba(0,0,0,0.04)] border border-slate-100 hover:shadow-xl transition-all duration-300 group">
-                                        <div className="flex items-center mb-4">
-                                            <div className="p-2.5 bg-red-50 text-red-600 rounded-xl group-hover:bg-red-500 group-hover:text-white transition-colors duration-300 shadow-sm ring-1 ring-red-100">
-                                                <FaBolt className="text-lg" />
-                                            </div>
-                                            <span className="ml-3 text-sm font-bold text-slate-500 uppercase tracking-wider">
-                                                Akibat yang Ditimbulkan
-                                            </span>
-                                        </div>
-                                        <div className="text-slate-800 whitespace-pre-line text-lg leading-relaxed font-medium pl-1">
-                                            {anomalis.akibat}
-                                        </div>
-                                    </div>
-
-                                    <div className="bg-white p-6 rounded-2xl shadow-[0_2px_15px_-3px_rgba(0,0,0,0.07),0_10px_20px_-2px_rgba(0,0,0,0.04)] border border-slate-100 hover:shadow-xl transition-all duration-300 group">
-                                        <div className="flex items-center mb-4">
-                                            <div className="p-2.5 bg-blue-50 text-blue-600 rounded-xl group-hover:bg-blue-500 group-hover:text-white transition-colors duration-300 shadow-sm ring-1 ring-blue-100">
-                                                <FaLightbulb className="text-lg" />
-                                            </div>
-                                            <span className="ml-3 text-sm font-bold text-slate-500 uppercase tracking-wider">
-                                                Usulan & Saran Perbaikan
-                                            </span>
-                                        </div>
-                                        <div className="text-slate-800 whitespace-pre-line text-lg leading-relaxed font-medium pl-1">
-                                            {anomalis.usul_saran || "-"}
-                                        </div>
-                                    </div>
+                                <div className="grid grid-cols-1 gap-4">
+                                    <AnalysisBlock
+                                        icon={FaExclamationTriangle}
+                                        tone="bg-amber-50 text-amber-700"
+                                        label="Penyebab Anomali"
+                                    >
+                                        {anomalis.penyebab}
+                                    </AnalysisBlock>
+                                    <AnalysisBlock
+                                        icon={FaBolt}
+                                        tone="bg-rose-50 text-rose-700"
+                                        label="Akibat yang Ditimbulkan"
+                                    >
+                                        {anomalis.akibat}
+                                    </AnalysisBlock>
+                                    <AnalysisBlock
+                                        icon={FaLightbulb}
+                                        tone="bg-brand-50 text-brand-700"
+                                        label="Usulan & Saran Perbaikan"
+                                    >
+                                        {anomalis.usul_saran || "-"}
+                                    </AnalysisBlock>
                                 </div>
                             )}
 
                             {/* Tab Lampiran */}
                             {activeTab === "lampiran" && (
                                 <div>
-                                    <div className="flex items-center mb-6">
-                                        <div className="bg-blue-50 p-2 rounded-lg text-blue-600 mr-3">
-                                            <FaClipboardList className="text-xl" />
-                                        </div>
-                                        <h3 className="text-xl font-bold text-slate-900">
-                                            Lampiran Foto
-                                        </h3>
-                                    </div>
+                                    <h3 className="mb-4 text-base font-bold text-ink-900">
+                                        Lampiran Foto
+                                    </h3>
 
                                     {lampiranFoto && lampiranFoto.length > 0 ? (
-                                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
+                                        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
                                             {lampiranFoto.map((foto, idx) => (
                                                 <div
                                                     key={idx}
-                                                    className="relative group cursor-pointer"
+                                                    className="group relative cursor-pointer"
                                                     onClick={() =>
                                                         setSelectedImage(
                                                             `/storage/${foto}`,
                                                         )
                                                     }
                                                 >
-                                                    <div className="aspect-w-1 aspect-h-1 overflow-hidden rounded-2xl shadow-sm border border-slate-200 group-hover:shadow-lg transition-all duration-300 group-hover:-translate-y-1">
+                                                    <div className="aspect-w-1 aspect-h-1 overflow-hidden rounded-xl border border-slate-200">
                                                         <img
                                                             src={`/storage/${foto}`}
                                                             alt={`Lampiran Foto ${
                                                                 idx + 1
                                                             }`}
-                                                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                                                            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
                                                         />
                                                     </div>
-                                                    <div className="absolute inset-0 bg-slate-900/0 group-hover:bg-slate-900/20 flex items-center justify-center transition-all duration-300 rounded-2xl">
-                                                        <div className="bg-white/90 backdrop-blur-sm p-3 rounded-full opacity-0 group-hover:opacity-100 transform translate-y-4 group-hover:translate-y-0 transition-all duration-300 shadow-lg">
-                                                            <FaSearch className="text-blue-600 text-lg" />
+                                                    <div className="absolute inset-0 flex items-center justify-center rounded-xl bg-ink-900/0 transition-all duration-300 group-hover:bg-ink-900/30">
+                                                        <div className="rounded-full bg-white p-3 opacity-0 shadow-soft transition-all duration-300 group-hover:opacity-100">
+                                                            <FaSearch className="text-brand-600" />
                                                         </div>
                                                     </div>
                                                 </div>
                                             ))}
                                         </div>
                                     ) : (
-                                        <div className="text-center py-12 bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200">
-                                            <div className="bg-white p-4 rounded-full shadow-sm inline-block mb-4">
-                                                <FaClipboardList className="text-4xl text-slate-300" />
-                                            </div>
-                                            <p className="text-slate-500 font-medium">
-                                                Tidak ada lampiran foto tersedia
-                                            </p>
+                                        <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50/70">
+                                            <EmptyState
+                                                icon={FaClipboardList}
+                                                title="Tidak ada lampiran foto tersedia"
+                                            />
                                         </div>
                                     )}
 
                                     {/* Modal untuk preview gambar */}
                                     {selectedImage && (
                                         <div
-                                            className="fixed inset-0 bg-slate-900/90 backdrop-blur-sm flex items-center justify-center z-[100] p-4 transition-all duration-300"
+                                            className="fixed inset-0 z-[100] flex items-center justify-center bg-ink-950/90 p-4 backdrop-blur-sm transition-all duration-300"
                                             onClick={() =>
                                                 setSelectedImage(null)
                                             }
                                         >
-                                            <div className="relative max-w-5xl max-h-[90vh] w-full flex justify-center">
+                                            <div className="relative flex max-h-[90vh] w-full max-w-5xl justify-center">
                                                 <img
                                                     src={selectedImage}
                                                     alt="Preview"
-                                                    className="max-w-full max-h-[85vh] object-contain rounded-lg shadow-2xl ring-1 ring-white/20"
+                                                    className="max-h-[85vh] max-w-full rounded-xl object-contain shadow-lift ring-1 ring-white/20"
                                                     onClick={(e) =>
                                                         e.stopPropagation()
                                                     }
                                                 />
                                                 <button
-                                                    className="absolute -top-12 right-0 text-white hover:text-red-400 transition-colors bg-white/10 hover:bg-white/20 p-2 rounded-full backdrop-blur-md"
+                                                    className="absolute -top-12 right-0 rounded-full bg-white/10 p-2 text-white backdrop-blur-md transition-colors hover:bg-white/20"
                                                     onClick={() =>
                                                         setSelectedImage(null)
                                                     }
@@ -726,30 +712,30 @@ function ReviewContent({ anomalis, users }) {
                                 </div>
                             )}
                         </div>
-                    </div>
+                    </section>
                 </div>
 
                 {/* Modal Approve */}
                 {showApproveModal && (
-                    <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-[100] p-4 transition-all duration-300">
-                        <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full max-h-[90vh] flex flex-col overflow-hidden ring-1 ring-slate-900/5 transform transition-all scale-100">
-                            <div className="bg-emerald-50 px-6 py-5 border-b border-emerald-100 flex items-center shrink-0">
-                                <div className="bg-emerald-100 p-2.5 rounded-xl mr-4 shadow-sm ring-1 ring-emerald-200">
-                                    <FaCheckCircle className="text-emerald-600 text-xl" />
-                                </div>
+                    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-ink-950/50 p-4 backdrop-blur-sm transition-all duration-300">
+                        <div className="flex max-h-[90vh] w-full max-w-md flex-col overflow-hidden rounded-2xl bg-white shadow-lift ring-1 ring-slate-900/5">
+                            <div className="flex shrink-0 items-center gap-4 border-b border-slate-100 px-6 py-5">
+                                <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600">
+                                    <FaCheckCircle className="h-5 w-5" />
+                                </span>
                                 <div>
-                                    <h3 className="text-lg font-bold text-slate-900">
+                                    <h3 className="text-lg font-bold text-ink-900">
                                         Setujui Anomali
                                     </h3>
-                                    <p className="text-sm text-emerald-700 font-medium">
+                                    <p className="text-sm text-slate-500">
                                         Konfirmasi persetujuan laporan
                                     </p>
                                 </div>
                             </div>
 
-                            <div className="p-6 overflow-y-auto">
+                            <div className="overflow-y-auto p-6">
                                 <div>
-                                    <label className="block text-sm font-bold text-slate-700 mb-2">
+                                    <label className="field-label">
                                         Ditugaskan Kepada Bidang
                                     </label>
                                     <div className="relative">
@@ -757,9 +743,11 @@ function ReviewContent({ anomalis, users }) {
                                             value={assignTo}
                                             onChange={setAssignTo}
                                         >
-                                            <div className="relative mt-1">
-                                                <Listbox.Button className="relative w-full cursor-default rounded-xl bg-slate-50 py-3 pl-4 pr-10 text-left border border-slate-200 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-200 focus:ring-opacity-50 transition-all hover:bg-white hover:border-emerald-300">
-                                                    <span className="block truncate font-medium text-slate-700">
+                                            <div className="relative">
+                                                <Listbox.Button className="field-input relative cursor-default pr-10 text-left">
+                                                    <span
+                                                        className={`block truncate ${assignTo ? "text-ink-900" : "text-slate-400"}`}
+                                                    >
                                                         {assignTo
                                                             ? assignTo
                                                             : "Pilih Bidang..."}
@@ -782,7 +770,7 @@ function ReviewContent({ anomalis, users }) {
                                                 <Listbox.Options
                                                     anchor="bottom"
                                                     transition
-                                                    className="z-[100] w-[var(--button-width)] max-h-60 overflow-auto rounded-xl bg-white py-1 text-base shadow-xl ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm transition duration-100 ease-out data-[closed]:scale-95 data-[closed]:opacity-0"
+                                                    className="z-[100] mt-1 max-h-60 w-[var(--button-width)] overflow-auto rounded-xl border border-slate-200 bg-white py-1 text-sm shadow-lift transition duration-100 ease-out focus:outline-none data-[closed]:scale-95 data-[closed]:opacity-0"
                                                 >
                                                     {availableBidang &&
                                                         availableBidang.map(
@@ -795,9 +783,9 @@ function ReviewContent({ anomalis, users }) {
                                                                     className={({
                                                                         active,
                                                                     }) =>
-                                                                        `relative cursor-pointer select-none py-3 pl-10 pr-4 transition-colors ${
+                                                                        `relative cursor-pointer select-none py-2.5 pl-10 pr-4 transition-colors ${
                                                                             active
-                                                                                ? "bg-emerald-50 text-emerald-900"
+                                                                                ? "bg-brand-50 text-brand-900"
                                                                                 : "text-slate-700"
                                                                         }`
                                                                     }
@@ -810,7 +798,7 @@ function ReviewContent({ anomalis, users }) {
                                                                             <span
                                                                                 className={`block truncate ${
                                                                                     selected
-                                                                                        ? "font-bold"
+                                                                                        ? "font-semibold text-ink-900"
                                                                                         : "font-medium"
                                                                                 }`}
                                                                             >
@@ -819,8 +807,8 @@ function ReviewContent({ anomalis, users }) {
                                                                                 }
                                                                             </span>
                                                                             {selected ? (
-                                                                                <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-emerald-600">
-                                                                                    <FaCheckCircle className="h-5 w-5" />
+                                                                                <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-brand-600">
+                                                                                    <FaCheckCircle className="h-4 w-4" />
                                                                                 </span>
                                                                             ) : null}
                                                                         </>
@@ -835,11 +823,11 @@ function ReviewContent({ anomalis, users }) {
                                 </div>
                             </div>
 
-                            <div className="px-6 py-5 bg-slate-50 border-t border-slate-100 flex justify-end gap-3 shrink-0 rounded-b-2xl">
+                            <div className="flex shrink-0 justify-end gap-3 border-t border-slate-100 bg-slate-50/60 px-6 py-4">
                                 <button
                                     type="button"
                                     onClick={() => setShowApproveModal(false)}
-                                    className="px-5 py-2.5 bg-white text-slate-700 border border-slate-200 rounded-xl hover:bg-slate-50 hover:text-slate-900 transition-all font-bold text-sm shadow-sm"
+                                    className="btn-ghost"
                                     disabled={isSubmitting}
                                 >
                                     Batal
@@ -847,36 +835,17 @@ function ReviewContent({ anomalis, users }) {
                                 <button
                                     type="button"
                                     onClick={handleApprove}
-                                    className="px-5 py-2.5 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-xl hover:from-emerald-600 hover:to-emerald-700 transition-all flex items-center shadow-lg shadow-emerald-500/30 hover:shadow-emerald-500/40 hover:-translate-y-0.5 font-bold text-sm disabled:opacity-70 disabled:cursor-not-allowed"
+                                    className="btn-brand"
                                     disabled={isSubmitting || !assignTo}
                                 >
                                     {isSubmitting ? (
                                         <>
-                                            <svg
-                                                className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
-                                                xmlns="http://www.w3.org/2000/svg"
-                                                fill="none"
-                                                viewBox="0 0 24 24"
-                                            >
-                                                <circle
-                                                    className="opacity-25"
-                                                    cx="12"
-                                                    cy="12"
-                                                    r="10"
-                                                    stroke="currentColor"
-                                                    strokeWidth="4"
-                                                ></circle>
-                                                <path
-                                                    className="opacity-75"
-                                                    fill="currentColor"
-                                                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                                                ></path>
-                                            </svg>
+                                            <Spinner />
                                             Memproses...
                                         </>
                                     ) : (
                                         <>
-                                            <FaCheckCircle className="mr-2" />
+                                            <FaCheckCircle />
                                             Setujui
                                         </>
                                     )}
@@ -888,42 +857,46 @@ function ReviewContent({ anomalis, users }) {
 
                 {/* Modal Reject */}
                 {showRejectModal && (
-                    <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-[100] p-4 transition-all duration-300">
-                        <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full max-h-[90vh] flex flex-col overflow-hidden ring-1 ring-slate-900/5 transform transition-all scale-100">
-                            <div className="bg-red-50 px-6 py-5 border-b border-red-100 flex items-center shrink-0">
-                                <div className="bg-red-100 p-2.5 rounded-xl mr-4 shadow-sm ring-1 ring-red-200">
-                                    <FaTimesCircle className="text-red-600 text-xl" />
-                                </div>
+                    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-ink-950/50 p-4 backdrop-blur-sm transition-all duration-300">
+                        <div className="flex max-h-[90vh] w-full max-w-md flex-col overflow-hidden rounded-2xl bg-white shadow-lift ring-1 ring-slate-900/5">
+                            <div className="flex shrink-0 items-center gap-4 border-b border-slate-100 px-6 py-5">
+                                <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-rose-50 text-rose-600">
+                                    <FaTimesCircle className="h-5 w-5" />
+                                </span>
                                 <div>
-                                    <h3 className="text-lg font-bold text-slate-900">
+                                    <h3 className="text-lg font-bold text-ink-900">
                                         Tolak Anomali
                                     </h3>
-                                    <p className="text-sm text-red-700 font-medium">
+                                    <p className="text-sm text-slate-500">
                                         Konfirmasi penolakan laporan
                                     </p>
                                 </div>
                             </div>
 
-                            <div className="p-6 overflow-y-auto">
-                                <label className="block text-sm font-bold text-slate-700 mb-2">
+                            <div className="overflow-y-auto p-6">
+                                <label
+                                    htmlFor="reject_reason"
+                                    className="field-label"
+                                >
                                     Alasan Penolakan
                                 </label>
                                 <textarea
+                                    id="reject_reason"
                                     value={rejectReason}
                                     onChange={(e) =>
                                         setRejectReason(e.target.value)
                                     }
-                                    className="w-full bg-slate-50 border-slate-200 rounded-xl shadow-sm focus:border-red-500 focus:ring focus:ring-red-200 focus:ring-opacity-50 min-h-[120px] p-4 font-medium text-slate-700 placeholder:text-slate-400"
+                                    className="field-input min-h-[120px]"
                                     placeholder="Jelaskan alasan penolakan secara rinci..."
                                     required
                                 ></textarea>
                             </div>
 
-                            <div className="px-6 py-5 bg-slate-50 border-t border-slate-100 flex justify-end gap-3 shrink-0 rounded-b-2xl">
+                            <div className="flex shrink-0 justify-end gap-3 border-t border-slate-100 bg-slate-50/60 px-6 py-4">
                                 <button
                                     type="button"
                                     onClick={() => setShowRejectModal(false)}
-                                    className="px-5 py-2.5 bg-white text-slate-700 border border-slate-200 rounded-xl hover:bg-slate-50 hover:text-slate-900 transition-all font-bold text-sm shadow-sm"
+                                    className="btn-ghost"
                                     disabled={isSubmitting}
                                 >
                                     Batal
@@ -931,36 +904,17 @@ function ReviewContent({ anomalis, users }) {
                                 <button
                                     type="button"
                                     onClick={handleReject}
-                                    className="px-5 py-2.5 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-xl hover:from-red-600 hover:to-red-700 transition-all flex items-center shadow-lg shadow-red-500/30 hover:shadow-red-500/40 hover:-translate-y-0.5 font-bold text-sm disabled:opacity-70 disabled:cursor-not-allowed"
+                                    className="btn-danger"
                                     disabled={isSubmitting || !rejectReason}
                                 >
                                     {isSubmitting ? (
                                         <>
-                                            <svg
-                                                className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
-                                                xmlns="http://www.w3.org/2000/svg"
-                                                fill="none"
-                                                viewBox="0 0 24 24"
-                                            >
-                                                <circle
-                                                    className="opacity-25"
-                                                    cx="12"
-                                                    cy="12"
-                                                    r="10"
-                                                    stroke="currentColor"
-                                                    strokeWidth="4"
-                                                ></circle>
-                                                <path
-                                                    className="opacity-75"
-                                                    fill="currentColor"
-                                                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                                                ></path>
-                                            </svg>
+                                            <Spinner />
                                             Memproses...
                                         </>
                                     ) : (
                                         <>
-                                            <FaTimesCircle className="mr-2" />
+                                            <FaTimesCircle />
                                             Tolak
                                         </>
                                     )}

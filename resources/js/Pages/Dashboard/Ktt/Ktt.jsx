@@ -17,20 +17,20 @@ import PrimaryButton from "@/Components/PrimaryButton";
 import { Dialog, DialogTitle, DialogContent, IconButton } from "@mui/material";
 import { toast, ToastContainer } from "react-toastify";
 import axios from "axios";
+import PageHeader from "@/Components/Dashboard/PageHeader";
+import { Badge, Card, EmptyState } from "@/Components/Dashboard/ui";
 
-// Fungsi untuk membuat badge tipe, sama seperti di file Anomali.jsx
+const TIPE_TONES = {
+    Khusus: "violet",
+    Gold: "amber",
+    Silver: "slate",
+    Bronze: "amber",
+    Reguler: "brand",
+};
+
+// Badge tipe KTT, selaras dengan badge tipe di halaman Anomali
 function TipeBadge({ tipe }) {
-    let color = "bg-slate-100 text-slate-700";
-    if (tipe === "Gold") color = "bg-amber-100 text-amber-800";
-    else if (tipe === "Silver") color = "bg-slate-200 text-slate-700";
-    else if (tipe === "Bronze") color = "bg-amber-100 text-amber-800";
-    else if (tipe === "Khusus") color = "bg-slate-800 text-white";
-    else if (tipe === "Reguler") color = "bg-sky-100 text-sky-800";
-    return (
-        <span className={`px-2 py-1 rounded text-xs font-semibold ${color}`}>
-            {tipe}
-        </span>
-    );
+    return <Badge tone={TIPE_TONES[tipe] ?? "slate"}>{tipe}</Badge>;
 }
 
 export default function Ktt({ ktts }) {
@@ -195,447 +195,269 @@ export default function Ktt({ ktts }) {
         };
     }, [rows]);
 
+    const regions = [
+        { key: "karawang", name: "Karawang", stat: stats.karawang },
+        { key: "purwakarta", name: "Purwakarta", stat: stats.purwakarta },
+    ];
+
     return (
         <>
             <Head title="Ktt" />
             <DashboardLayout title="KTT">
                 <ToastContainer />
-                <div className="w-full">
-                    <div className="mb-8 rounded-2xl border border-slate-200 bg-white shadow-sm">
-                        <div className="px-6 py-6 md:px-8 md:py-8">
-                            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-                                <div>
-                                    <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-600 mb-3">
-                                        <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
-                                        Ringkasan KTT
-                                    </div>
-                                    <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight text-slate-900 flex items-center">
-                                        <div className="flex items-center justify-center bg-slate-50 border border-slate-200 rounded-2xl w-11 h-11 mr-3 shadow-sm">
-                                            <FaBuilding className="text-slate-600" />
-                                        </div>
-                                        Konsumen Tegangan Tinggi
-                                    </h1>
-                                    <p className="mt-2 text-sm md:text-base text-slate-600 max-w-2xl">
-                                        Data konsumen tegangan tinggi (KTT) yang
-                                        terdaftar dan dimonitor pada sistem UPT
-                                        Karawang.
-                                    </p>
-                                </div>
-                                <button
-                                    onClick={handleOpen}
-                                    className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50"
-                                    aria-label="Tambah data KTT"
-                                >
-                                    <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-sky-600 text-white">
-                                        <FaPlus className="h-3.5 w-3.5" />
-                                    </span>
-                                    <span>Tambah KTT</span>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div className="group relative overflow-hidden rounded-2xl bg-white border border-slate-200 shadow-sm transition-colors hover:bg-slate-50">
-                            <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-sky-500 via-sky-400 to-cyan-400 opacity-80" />
-                            <div className="p-6">
-                                <div className="flex items-center justify-between mb-5">
-                                    <div className="flex items-center gap-4">
-                                        <div className="flex items-center justify-center w-14 h-14 rounded-2xl bg-sky-600 text-white shadow-md">
-                                            {/* <FaMapMarkerAlt className="w-7 h-7" /> */}
-                                            <svg
-                                                width="24"
-                                                height="18"
-                                                xmlns="http://www.w3.org/2000/svg"
-                                                viewBox="0 0 24 18"
-                                            >
-                                                {/* <!-- Background --> */}
-                                                <rect
-                                                    width="24"
-                                                    height="18"
-                                                    fill="#e0f7fa"
-                                                />
+                <div className="space-y-6">
+                    <PageHeader
+                        icon={FaBuilding}
+                        title="Konsumen Tegangan Tinggi"
+                        description="Data konsumen tegangan tinggi (KTT) yang terdaftar dan dimonitor pada sistem UPT Karawang."
+                    >
+                        <button
+                            onClick={handleOpen}
+                            className="btn-brand"
+                            aria-label="Tambah data KTT"
+                        >
+                            <FaPlus className="h-3.5 w-3.5" />
+                            <span>Tambah KTT</span>
+                        </button>
+                    </PageHeader>
 
-                                                {/* <!-- Outline of Karawang region (simplified path based on general geography) --> */}
-                                                <path
-                                                    d="M3 4 L21 4 L21 14 L14 14 L11 11 L7 11 L3 8 Z"
-                                                    fill="#4caf50"
-                                                    stroke="#2e7d32"
-                                                    strokeWidth="1"
-                                                />
-
-                                                {/* <!-- Rivers (simplified) --> */}
-                                                <path
-                                                    d="M6 7 L12 7 L15 10"
-                                                    fill="none"
-                                                    stroke="#2196f3"
-                                                    strokeWidth="1.5"
-                                                />
-
-                                                {/* <!-- Coastline (northern part) --> */}
-                                                <line
-                                                    x1="3"
-                                                    y1="4"
-                                                    x2="21"
-                                                    y2="4"
-                                                    stroke="#0277bd"
-                                                    strokeWidth="2"
-                                                />
-                                            </svg>
-                                        </div>
+                    <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                        {regions.map((region) => (
+                            <section
+                                key={region.key}
+                                className="surface p-5 sm:p-6"
+                            >
+                                <div className="flex items-center justify-between gap-3">
+                                    <div className="flex items-center gap-3">
+                                        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-brand-50 text-brand-700">
+                                            <FaMapMarkerAlt className="h-4 w-4" />
+                                        </span>
                                         <div>
-                                            <h3 className="text-xl font-bold text-slate-900">
-                                                Karawang
-                                            </h3>
-                                            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-600 mt-1">
+                                            <p className="eyebrow">
                                                 Wilayah Operasional
                                             </p>
-                                        </div>
-                                    </div>
-                                    <span className="hidden md:inline-flex items-center rounded-full bg-sky-50 px-3 py-1 text-[11px] font-semibold text-sky-700 border border-sky-100">
-                                        ULTG Karawang
-                                    </span>
-                                </div>
-                                <div className="grid grid-cols-2 gap-5">
-                                    <div className="relative overflow-hidden rounded-xl bg-white p-4 shadow-sm border border-slate-200">
-                                        <div className="absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-sky-500 to-cyan-400" />
-                                        <p className="text-xs font-medium text-slate-500 mb-1">
-                                            Total KTT
-                                        </p>
-                                        <p className="text-2xl font-extrabold text-slate-900">
-                                            {stats.karawang.total} Unit
-                                        </p>
-                                    </div>
-                                    <div className="relative overflow-hidden rounded-xl bg-white p-4 shadow-sm border border-slate-200">
-                                        <div className="absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-cyan-400 to-sky-500" />
-                                        <p className="text-xs font-medium text-slate-500 mb-1">
-                                            Kapasitas
-                                        </p>
-                                        <p className="text-2xl font-extrabold text-slate-900">
-                                            {stats.karawang.kapasitas} MVA
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="group relative overflow-hidden rounded-2xl bg-white border border-slate-200 shadow-sm transition-colors hover:bg-slate-50">
-                            <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-indigo-500 via-sky-500 to-cyan-400 opacity-80" />
-                            <div className="p-6">
-                                <div className="flex items-center justify-between mb-5">
-                                    <div className="flex items-center gap-4">
-                                        <div className="flex items-center justify-center w-14 h-14 rounded-2xl bg-indigo-600 text-white shadow-md">
-                                            <svg
-                                                className="w-7 h-7"
-                                                viewBox="0 0 24 24"
-                                                fill="none"
-                                                xmlns="http://www.w3.org/2000/svg"
-                                            >
-                                                <path
-                                                    d="M12 2L2 7L12 12L22 7L12 2Z"
-                                                    stroke="currentColor"
-                                                    strokeWidth="2"
-                                                    strokeLinecap="round"
-                                                    strokeLinejoin="round"
-                                                />
-                                                <path
-                                                    d="M2 17L12 22L22 17"
-                                                    stroke="currentColor"
-                                                    strokeWidth="2"
-                                                    strokeLinecap="round"
-                                                    strokeLinejoin="round"
-                                                />
-                                                <path
-                                                    d="M2 12L12 17L22 12"
-                                                    stroke="currentColor"
-                                                    strokeWidth="2"
-                                                    strokeLinecap="round"
-                                                    strokeLinejoin="round"
-                                                />
-                                            </svg>
-                                        </div>
-                                        <div>
-                                            <h3 className="text-xl font-bold text-slate-900">
-                                                Purwakarta
+                                            <h3 className="mt-1 font-display text-lg font-bold text-ink-900">
+                                                {region.name}
                                             </h3>
-                                            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-600 mt-1">
-                                                Wilayah Operasional
-                                            </p>
                                         </div>
                                     </div>
-                                    <span className="hidden md:inline-flex items-center rounded-full bg-indigo-50 px-3 py-1 text-[11px] font-semibold text-indigo-700 border border-indigo-100">
-                                        ULTG Purwakarta
-                                    </span>
+                                    <Badge
+                                        tone="slate"
+                                        className="hidden md:inline-flex"
+                                    >
+                                        ULTG {region.name}
+                                    </Badge>
                                 </div>
-                                <div className="grid grid-cols-2 gap-5">
-                                    <div className="relative overflow-hidden rounded-xl bg-white p-4 shadow-sm border border-slate-200">
-                                        <div className="absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-indigo-500 to-sky-500" />
-                                        <p className="text-xs font-medium text-slate-500 mb-1">
+                                <dl className="mt-5 grid grid-cols-2 divide-x divide-slate-100 rounded-xl border border-slate-100 bg-slate-50/60">
+                                    <div className="px-4 py-3">
+                                        <dt className="text-xs font-medium text-slate-500">
                                             Total KTT
-                                        </p>
-                                        <p className="text-2xl font-extrabold text-slate-900">
-                                            {stats.purwakarta.total} Unit
-                                        </p>
+                                        </dt>
+                                        <dd className="mt-1 font-display text-2xl font-extrabold tabular-nums text-ink-900">
+                                            {region.stat.total}{" "}
+                                            <span className="text-sm font-semibold text-slate-500">
+                                                Unit
+                                            </span>
+                                        </dd>
                                     </div>
-                                    <div className="relative overflow-hidden rounded-xl bg-white p-4 shadow-sm border border-slate-200">
-                                        <div className="absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-sky-500 to-indigo-500" />
-                                        <p className="text-xs font-medium text-slate-500 mb-1">
+                                    <div className="px-4 py-3">
+                                        <dt className="text-xs font-medium text-slate-500">
                                             Kapasitas
-                                        </p>
-                                        <p className="text-2xl font-extrabold text-slate-900">
-                                            {stats.purwakarta.kapasitas} MVA
-                                        </p>
+                                        </dt>
+                                        <dd className="mt-1 font-display text-2xl font-extrabold tabular-nums text-ink-900">
+                                            {region.stat.kapasitas}{" "}
+                                            <span className="text-sm font-semibold text-slate-500">
+                                                MVA
+                                            </span>
+                                        </dd>
                                     </div>
-                                </div>
-                            </div>
-                        </div>
+                                </dl>
+                            </section>
+                        ))}
                     </div>
 
-                    {/* Mengganti DataGrid dengan tabel HTML manual */}
-                    <div className="bg-white rounded-2xl mt-6 shadow-sm border border-slate-200 overflow-hidden">
-                        <div className="p-6">
-                            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                                <div className="w-full">
-                                    <h2 className="text-2xl font-extrabold tracking-tight text-slate-900">
-                                        Data KTT UPT Karawang
-                                    </h2>
-                                    <p className="text-sm text-slate-600 mt-1">
-                                        Kelola data KTT di wilayah Karawang
-                                    </p>
-                                </div>
-                                <div className="flex flex-row flex-wrap items-center gap-2">
-                                    <div className="relative">
-                                        <input
-                                            type="text"
-                                            placeholder="Cari nama KTT..."
-                                            className="w-full pl-12 pr-4 py-2 border border-slate-300 rounded-lg focus:border-sky-500 focus:ring-2 focus:ring-sky-500"
-                                            value={searchTerm}
-                                            onChange={(e) =>
-                                                handleSearch(e.target.value)
-                                            }
-                                            aria-label="Cari nama KTT"
-                                        />
-                                        <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-lg" />
-                                    </div>
-                                </div>
+                    <Card
+                        padded={false}
+                        clip={false}
+                        title="Data KTT UPT Karawang"
+                        description="Kelola data KTT di wilayah Karawang"
+                        actions={
+                            <div className="relative w-full sm:w-64">
+                                <FaSearch className="pointer-events-none absolute left-3.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
+                                <input
+                                    type="text"
+                                    placeholder="Cari nama KTT..."
+                                    className="field-input pl-10"
+                                    value={searchTerm}
+                                    onChange={(e) =>
+                                        handleSearch(e.target.value)
+                                    }
+                                    aria-label="Cari nama KTT"
+                                />
                             </div>
-                        </div>
-                        <div className="px-2 md:px-6 pb-6 pt-4">
-                            <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">
-                                <div className="overflow-y-auto custom-scrollbar">
-                                    <table className="min-w-full w-full table-auto">
-                                        <thead className="bg-slate-50 text-slate-700 sticky top-0">
-                                            <tr>
-                                                <th className="w-[5%] px-3 py-3 text-left text-xs sm:text-sm font-semibold whitespace-nowrap">
-                                                    No
-                                                </th>
-                                                <th className="w-[20%] px-3 py-3 text-left text-xs sm:text-sm font-semibold">
-                                                    Nama KTT
-                                                </th>
-                                                <th className="w-[15%] px-3 py-3 text-left text-xs sm:text-sm font-semibold">
-                                                    Lokasi
-                                                </th>
-                                                <th className="w-[15%] px-3 py-3 text-left text-xs sm:text-sm font-semibold whitespace-nowrap">
-                                                    Tipe
-                                                </th>
-                                                <th className="w-[15%] px-3 py-3 text-left text-xs sm:text-sm font-semibold">
-                                                    Kapasitas
-                                                </th>
-                                                <th className="w-[20%] px-3 py-3 text-left text-xs sm:text-sm font-semibold">
-                                                    Koordinat
-                                                </th>
+                        }
+                    >
+                        <div className="overflow-x-auto">
+                            <table className="data-table table-auto">
+                                <thead>
+                                    <tr>
+                                        <th className="w-[5%]">No</th>
+                                        <th className="w-[20%]">Nama KTT</th>
+                                        <th className="w-[15%]">Lokasi</th>
+                                        <th className="w-[15%]">Tipe</th>
+                                        <th className="w-[15%]">Kapasitas</th>
+                                        <th className="w-[20%]">Koordinat</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {paginatedData.length === 0 ? (
+                                        <tr>
+                                            <td colSpan={6}>
+                                                <EmptyState
+                                                    icon={FaBuilding}
+                                                    title="Tidak ada data KTT."
+                                                    description="Ubah kata kunci pencarian atau tambahkan KTT baru."
+                                                />
+                                            </td>
+                                        </tr>
+                                    ) : (
+                                        paginatedData.map((ktt, idx) => (
+                                            <tr key={ktt.id}>
+                                                <td className="whitespace-nowrap tabular-nums text-slate-500">
+                                                    {(page - 1) * rowsPerPage +
+                                                        idx +
+                                                        1}
+                                                </td>
+                                                <td
+                                                    className="max-w-[8rem] truncate font-semibold text-ink-900 sm:max-w-[12rem]"
+                                                    title={ktt.name}
+                                                >
+                                                    {ktt.name}
+                                                </td>
+                                                <td>{ktt.lokasi}</td>
+                                                <td className="whitespace-nowrap">
+                                                    <TipeBadge tipe={ktt.tipe} />
+                                                </td>
+                                                <td className="whitespace-nowrap tabular-nums">
+                                                    {ktt.kapasitas}{" "}
+                                                    <span className="text-slate-500">
+                                                        MVA
+                                                    </span>
+                                                </td>
+                                                <td className="whitespace-nowrap">
+                                                    <div className="flex items-center gap-1.5 font-mono text-xs tabular-nums text-slate-600">
+                                                        <FaMapMarkerAlt className="h-3 w-3 text-slate-400" />
+                                                        <span>
+                                                            {ktt.latitude},{" "}
+                                                            {ktt.longitude}
+                                                        </span>
+                                                    </div>
+                                                </td>
                                             </tr>
-                                        </thead>
-                                        <tbody className="bg-white divide-y divide-slate-200">
-                                            {paginatedData.length === 0 ? (
-                                                <tr>
-                                                    <td
-                                                        colSpan={6}
-                                                        className="text-center py-10 text-slate-400 font-semibold text-base"
+                                        ))
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
+                        <div className="flex flex-col gap-3 border-t border-slate-100 px-4 py-3 text-sm text-slate-500 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+                            <div className="flex items-center gap-2">
+                                <span className="font-medium">Tampil</span>
+                                <div className="min-w-[4.5rem]">
+                                    <Listbox
+                                        value={rowsPerPage}
+                                        onChange={handleRowsPerPageChange}
+                                    >
+                                        <div className="relative">
+                                            <Listbox.Button className="w-full rounded-full border border-slate-200 bg-white px-3 py-1 text-left text-sm font-semibold tabular-nums text-ink-900 transition hover:border-slate-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/40">
+                                                {rowsPerPage}
+                                            </Listbox.Button>
+                                            <Listbox.Options className="absolute bottom-full left-0 z-50 mb-1 w-full overflow-hidden rounded-xl border border-slate-200 bg-white py-1 shadow-lift focus:outline-none">
+                                                {[10, 20, 50].map((option) => (
+                                                    <Listbox.Option
+                                                        key={option}
+                                                        value={option}
+                                                        className={({
+                                                            active,
+                                                            selected,
+                                                        }) =>
+                                                            `relative cursor-pointer select-none px-3 py-1.5 text-sm tabular-nums transition-colors ${
+                                                                active
+                                                                    ? "bg-slate-50 text-ink-900"
+                                                                    : selected
+                                                                    ? "text-brand-700"
+                                                                    : "text-slate-700"
+                                                            }`
+                                                        }
                                                     >
-                                                        Tidak ada data KTT.
-                                                    </td>
-                                                </tr>
-                                            ) : (
-                                                paginatedData.map(
-                                                    (ktt, idx) => (
-                                                        <tr
-                                                            className="hover:bg-slate-50"
-                                                            key={ktt.id}
-                                                        >
-                                                            <td className="px-3 py-3 text-left text-xs sm:text-sm text-slate-600 whitespace-nowrap">
-                                                                {(page - 1) *
-                                                                    rowsPerPage +
-                                                                    idx +
-                                                                    1}
-                                                            </td>
-                                                            <td
-                                                                className="px-3 py-3 text-left text-xs sm:text-sm text-slate-800 truncate max-w-[8rem] sm:max-w-[12rem]"
-                                                                title={ktt.name}
-                                                            >
-                                                                {ktt.name}
-                                                            </td>
-                                                            <td className="px-3 py-3 text-left text-xs sm:text-sm text-slate-700">
-                                                                {ktt.lokasi}
-                                                            </td>
-                                                            <td className="px-3 py-3 text-left text-xs sm:text-sm whitespace-nowrap">
-                                                                <TipeBadge
-                                                                    tipe={
-                                                                        ktt.tipe
-                                                                    }
-                                                                />
-                                                            </td>
-                                                            <td className="px-3 py-3 text-left text-xs sm:text-sm text-slate-700">
-                                                                {ktt.kapasitas}{" "}
-                                                                MVA
-                                                            </td>
-                                                            <td className="px-3 py-3 text-left text-xs sm:text-sm text-slate-600 whitespace-nowrap">
-                                                                <div className="flex items-center gap-1">
-                                                                    <FaMapMarkerAlt className="text-red-500" />
-                                                                    <span>
-                                                                        {
-                                                                            ktt.latitude
-                                                                        }
-                                                                        ,{" "}
-                                                                        {
-                                                                            ktt.longitude
-                                                                        }
-                                                                    </span>
-                                                                </div>
-                                                            </td>
-                                                        </tr>
-                                                    )
-                                                )
-                                            )}
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
-                            <div className="flex flex-col gap-2 mt-4 px-2 w-full">
-                                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 w-full">
-                                    <div className="flex items-center gap-2">
-                                        <label className="text-slate-600 text-sm font-medium mr-1">
-                                            Tampil
-                                        </label>
-                                        <div className="min-w-[4.5rem]">
-                                            <Listbox
-                                                value={rowsPerPage}
-                                                onChange={
-                                                    handleRowsPerPageChange
-                                                }
-                                            >
-                                                <div className="relative">
-                                                    <Listbox.Button className="border border-slate-300 rounded-lg px-2 py-1 text-sm w-full text-left bg-white focus:ring-2 focus:ring-sky-500 focus:border-sky-500 transition">
-                                                        {rowsPerPage}
-                                                    </Listbox.Button>
-                                                    <Listbox.Options className="absolute left-0 mt-1 w-full bg-white border border-slate-200 rounded-lg shadow-lg z-50 overflow-hidden">
-                                                        {[10, 20, 50].map(
-                                                            (option) => (
-                                                                <Listbox.Option
-                                                                    key={option}
-                                                                    value={
-                                                                        option
-                                                                    }
-                                                                    className={({
-                                                                        active,
-                                                                        selected,
-                                                                    }) =>
-                                                                        `relative cursor-pointer select-none px-2 py-1 text-sm transition-colors ${
-                                                                            active
-                                                                                ? "bg-sky-50 text-sky-800"
-                                                                                : selected
-                                                                                ? "bg-slate-100 text-slate-900"
-                                                                                : "text-slate-700"
-                                                                        }`
-                                                                    }
+                                                        {({ selected }) => (
+                                                            <div className="flex items-center">
+                                                                <span
+                                                                    className={`block truncate ${
+                                                                        selected
+                                                                            ? "font-semibold"
+                                                                            : "font-normal"
+                                                                    }`}
                                                                 >
-                                                                    {({
-                                                                        selected,
-                                                                    }) => (
-                                                                        <div className="flex items-center">
-                                                                            <span
-                                                                                className={`block truncate ${
-                                                                                    selected
-                                                                                        ? "font-semibold"
-                                                                                        : "font-normal"
-                                                                                }`}
-                                                                            >
-                                                                                {
-                                                                                    option
-                                                                                }
-                                                                            </span>
-                                                                            {selected && (
-                                                                                <span className="ml-auto flex items-center text-sky-600">
-                                                                                    <FaCheck
-                                                                                        className="h-4 w-4"
-                                                                                        aria-hidden="true"
-                                                                                    />
-                                                                                </span>
-                                                                            )}
-                                                                        </div>
-                                                                    )}
-                                                                </Listbox.Option>
-                                                            )
+                                                                    {option}
+                                                                </span>
+                                                                {selected && (
+                                                                    <span className="ml-auto flex items-center text-brand-600">
+                                                                        <FaCheck
+                                                                            className="h-3 w-3"
+                                                                            aria-hidden="true"
+                                                                        />
+                                                                    </span>
+                                                                )}
+                                                            </div>
                                                         )}
-                                                    </Listbox.Options>
-                                                </div>
-                                            </Listbox>
+                                                    </Listbox.Option>
+                                                ))}
+                                            </Listbox.Options>
                                         </div>
-                                        <span className="text-slate-500 text-xs ml-1">
-                                            / halaman
-                                        </span>
-                                    </div>
-                                    <div className="text-sm text-slate-600 mb-1 sm:mb-0 text-center sm:text-left">
-                                        Halaman{" "}
-                                        <span className="font-semibold text-slate-800">
-                                            {page}
-                                        </span>{" "}
-                                        dari{" "}
-                                        <span className="font-semibold text-slate-800">
-                                            {totalPages}
-                                        </span>
-                                        <span className="mx-2">|</span>
-                                        Total{" "}
-                                        <span className="font-semibold text-slate-800">
-                                            {totalRows}
-                                        </span>{" "}
-                                        data
-                                    </div>
-                                    <div className="flex items-center gap-0.5 justify-center sm:justify-end w-full sm:w-auto">
-                                        <button
-                                            onClick={handlePrev}
-                                            disabled={page === 1}
-                                            className={`px-3 py-2 rounded-l-md border border-r-0 text-sm flex items-center gap-1 font-semibold transition-colors ${
-                                                page === 1
-                                                    ? "bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed"
-                                                    : "bg-white text-slate-700 border-slate-300 hover:bg-slate-50"
-                                            }`}
-                                            aria-label="Halaman sebelumnya"
-                                        >
-                                            <FaChevronLeft />
-                                        </button>
-                                        <span
-                                            className="px-4 py-2 text-sm bg-slate-50 text-slate-800 select-none font-bold tracking-wide border-t border-b border-slate-200"
-                                            aria-live="polite"
-                                        >
-                                            {page}
-                                        </span>
-                                        <button
-                                            onClick={handleNext}
-                                            disabled={page === totalPages}
-                                            className={`px-3 py-2 rounded-r-md border border-l-0 text-sm flex items-center gap-1 font-semibold transition-colors ${
-                                                page === totalPages
-                                                    ? "bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed"
-                                                    : "bg-white text-slate-700 border-slate-300 hover:bg-slate-50"
-                                            }`}
-                                            aria-label="Halaman berikutnya"
-                                        >
-                                            <FaChevronRight />
-                                        </button>
-                                    </div>
+                                    </Listbox>
                                 </div>
+                                <span className="text-xs">/ halaman</span>
+                            </div>
+                            <div className="flex items-center justify-between gap-3 sm:justify-end">
+                                <span>
+                                    Total{" "}
+                                    <span className="font-semibold tabular-nums text-ink-900">
+                                        {totalRows}
+                                    </span>{" "}
+                                    data
+                                </span>
+                                <span className="flex items-center gap-1">
+                                    <button
+                                        type="button"
+                                        onClick={handlePrev}
+                                        disabled={page === 1}
+                                        className="flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 text-slate-600 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-40"
+                                        aria-label="Halaman sebelumnya"
+                                    >
+                                        <FaChevronLeft className="h-3 w-3" />
+                                    </button>
+                                    <span
+                                        className="px-2 tabular-nums"
+                                        aria-live="polite"
+                                    >
+                                        <span className="font-semibold text-ink-900">
+                                            {page}
+                                        </span>{" "}
+                                        / {totalPages}
+                                    </span>
+                                    <button
+                                        type="button"
+                                        onClick={handleNext}
+                                        disabled={page === totalPages}
+                                        className="flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 text-slate-600 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-40"
+                                        aria-label="Halaman berikutnya"
+                                    >
+                                        <FaChevronRight className="h-3 w-3" />
+                                    </button>
+                                </span>
                             </div>
                         </div>
-                    </div>
+                    </Card>
                 </div>
 
                 <Dialog
@@ -648,57 +470,82 @@ export default function Ktt({ ktts }) {
                     PaperProps={{
                         sx: {
                             borderRadius: "1rem",
+                            border: "1px solid rgb(226 232 240)",
                             boxShadow:
-                                "0 4px 4px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)",
+                                "0 24px 48px -16px rgb(15 23 42 / 0.25)",
                         },
                     }}
                 >
-                    <DialogTitle className="flex items-center justify-between p-6 border-b border-slate-100 bg-gradient-to-r from-sky-600 to-sky-700">
-                        <span className="text-xl font-semibold text-white">
-                            Tambah Data KTT
-                        </span>
+                    <DialogTitle
+                        component="div"
+                        className="flex items-center justify-between gap-3 border-b border-slate-100"
+                        sx={{ px: 3, py: 2 }}
+                    >
+                        <div className="flex items-center gap-3">
+                            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-brand-50 text-brand-700">
+                                <FaBuilding className="h-4 w-4" />
+                            </span>
+                            <h2 className="text-base font-bold text-ink-900">
+                                Tambah Data KTT
+                            </h2>
+                        </div>
                         <IconButton
                             onClick={handleClose}
                             size="small"
-                            sx={{ color: "white" }}
+                            sx={{
+                                width: 36,
+                                height: 36,
+                                color: "rgb(100 116 139)",
+                                "&:hover": {
+                                    backgroundColor: "rgb(241 245 249)",
+                                    color: "rgb(15 23 42)",
+                                },
+                            }}
                             aria-label="close"
                         >
-                            <FaPlus className="transform rotate-45" />
+                            <FaPlus className="h-3.5 w-3.5 rotate-45 transform" />
                         </IconButton>
                     </DialogTitle>
-                    <DialogContent className="p-6 bg-white">
+                    <DialogContent sx={{ p: 0 }}>
                         <form
                             onSubmit={handleSubmit}
-                            className="space-y-4"
                             role="form"
                             aria-label="Form tambah data KTT"
                         >
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4">
-                                <div className="flex flex-col">
-                                    <label className="text-sm font-medium text-slate-700 mb-1">
+                            <div className="grid grid-cols-1 gap-4 px-6 py-5 md:grid-cols-2">
+                                <div>
+                                    <label
+                                        htmlFor="ktt-name"
+                                        className="field-label"
+                                    >
                                         Nama KTT
                                     </label>
                                     <input
+                                        id="ktt-name"
                                         type="text"
                                         name="name"
                                         value={data.name}
                                         onChange={handleChange}
                                         required
-                                        className="w-full px-4 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-colors"
+                                        className="field-input"
                                         placeholder="Masukkan nama KTT"
                                     />
                                 </div>
 
-                                <div className="flex flex-col">
-                                    <label className="text-sm font-medium text-slate-700 mb-1">
+                                <div>
+                                    <label
+                                        htmlFor="ktt-lokasi"
+                                        className="field-label"
+                                    >
                                         Lokasi
                                     </label>
                                     <select
+                                        id="ktt-lokasi"
                                         name="lokasi"
                                         value={data.lokasi}
                                         onChange={handleChange}
                                         required
-                                        className="w-full px-4 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-colors"
+                                        className="field-input"
                                     >
                                         <option value="">Pilih Lokasi</option>
                                         <option value="Karawang">
@@ -710,16 +557,20 @@ export default function Ktt({ ktts }) {
                                     </select>
                                 </div>
 
-                                <div className="flex flex-col">
-                                    <label className="text-sm font-medium text-slate-700 mb-1">
+                                <div>
+                                    <label
+                                        htmlFor="ktt-tipe"
+                                        className="field-label"
+                                    >
                                         Tipe
                                     </label>
                                     <select
+                                        id="ktt-tipe"
                                         name="tipe"
                                         value={data.tipe}
                                         onChange={handleChange}
                                         required
-                                        className="w-full px-4 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-colors"
+                                        className="field-input"
                                     >
                                         <option value="">Pilih Tipe</option>
                                         <option value="Khusus">Khusus</option>
@@ -731,64 +582,80 @@ export default function Ktt({ ktts }) {
                                     </select>
                                 </div>
 
-                                <div className="flex flex-col">
-                                    <label className="text-sm font-medium text-slate-700 mb-1">
+                                <div>
+                                    <label
+                                        htmlFor="ktt-kapasitas"
+                                        className="field-label"
+                                    >
                                         Kapasitas
                                     </label>
                                     <div className="relative">
                                         <input
+                                            id="ktt-kapasitas"
                                             type="number"
                                             name="kapasitas"
                                             value={data.kapasitas}
                                             onChange={handleChange}
                                             required
                                             min="0"
-                                            className="w-full px-4 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-colors pr-12"
+                                            className="field-input pr-14"
                                             placeholder="Masukkan kapasitas"
                                         />
-                                        <span className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500">
+                                        <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-xs font-semibold text-slate-500">
                                             MVA
                                         </span>
                                     </div>
                                 </div>
 
-                                <div className="flex flex-col">
-                                    <label className="text-sm font-medium text-slate-700 mb-1">
+                                <div>
+                                    <label
+                                        htmlFor="ktt-latitude"
+                                        className="field-label"
+                                    >
                                         Latitude
                                     </label>
                                     <input
+                                        id="ktt-latitude"
                                         type="number"
                                         name="latitude"
                                         value={data.latitude}
                                         onChange={handleChange}
                                         required
                                         step="any"
-                                        className="w-full px-4 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-colors"
+                                        className="field-input"
                                         placeholder="Masukkan latitude"
                                     />
                                 </div>
 
-                                <div className="flex flex-col">
-                                    <label className="text-sm font-medium text-slate-700 mb-1">
+                                <div>
+                                    <label
+                                        htmlFor="ktt-longitude"
+                                        className="field-label"
+                                    >
                                         Longitude
                                     </label>
                                     <input
+                                        id="ktt-longitude"
                                         type="number"
                                         name="longitude"
                                         value={data.longitude}
                                         onChange={handleChange}
                                         required
                                         step="any"
-                                        className="w-full px-4 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-colors"
+                                        className="field-input"
                                         placeholder="Masukkan longitude"
                                     />
                                 </div>
                             </div>
-                            <div className="flex pt-2 justify-end">
+                            <div className="flex justify-end gap-2 border-t border-slate-100 bg-slate-50/60 px-6 py-3">
                                 <button
-                                    type="submit"
-                                    className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-semibold rounded-md text-white bg-sky-600 hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sky-500 disabled:opacity-50"
+                                    type="button"
+                                    onClick={handleClose}
+                                    className="btn-ghost"
                                 >
+                                    Batal
+                                </button>
+                                <button type="submit" className="btn-brand">
                                     Simpan
                                 </button>
                             </div>

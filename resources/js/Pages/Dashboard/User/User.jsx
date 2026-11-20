@@ -19,6 +19,7 @@ import { useState, Fragment, useEffect, useCallback } from "react";
 import { router } from "@inertiajs/react";
 import React from "react";
 import ErrorBoundary from "@/Components/ErrorBoundary";
+import { Badge, EmptyState } from "@/Components/Dashboard/ui";
 import { Listbox, Combobox, Dialog, Transition } from "@headlessui/react";
 import { useSnackbar } from "notistack";
 import axios from "axios";
@@ -36,7 +37,7 @@ const BIDANG_OPTIONS = [
 const WILAYAH_OPTIONS = ["UPT Karawang", "ULTG Karawang", "ULTG Purwakarta"];
 
 // Helper Spinner Component
-const Spinner = ({ size = 20, color = "text-blue-600" }) => (
+const Spinner = ({ size = 20, color = "text-brand-600" }) => (
     <svg
         className={`animate-spin ${color}`}
         width={size}
@@ -61,6 +62,41 @@ const Spinner = ({ size = 20, color = "text-blue-600" }) => (
     </svg>
 );
 
+// Avatar user: foto profil atau inisial nama
+function UserAvatar({ row }) {
+    return (
+        <div className="h-10 w-10 flex-shrink-0">
+            {row.foto_profil ? (
+                <img
+                    className="h-10 w-10 rounded-full object-cover ring-1 ring-slate-200"
+                    src={row.foto_profil}
+                    alt=""
+                />
+            ) : (
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 font-display text-sm font-bold text-slate-600 ring-1 ring-slate-200">
+                    {row.name.charAt(0).toUpperCase()}
+                </div>
+            )}
+        </div>
+    );
+}
+
+// Chip kecil untuk daftar gardu induk milik user
+function GiChip({ muted = false, className = "", children, ...rest }) {
+    return (
+        <span
+            {...rest}
+            className={`inline-flex items-center whitespace-nowrap rounded-full px-2 py-0.5 text-[11px] font-medium ring-1 ring-inset ${
+                muted
+                    ? "bg-slate-50 text-slate-600 ring-slate-200"
+                    : "bg-emerald-50 text-emerald-700 ring-emerald-200"
+            } ${className}`}
+        >
+            {children}
+        </span>
+    );
+}
+
 function ComboboxMultiple({ options, value, onChange }) {
     const [query, setQuery] = useState("");
     const filtered =
@@ -78,7 +114,7 @@ function ComboboxMultiple({ options, value, onChange }) {
                         return (
                             <span
                                 key={id}
-                                className="bg-sky-50 text-sky-700 px-2.5 py-1 transition-all ease-in-out rounded-lg text-xs font-medium border border-sky-100"
+                                className="inline-flex items-center rounded-full bg-brand-50 px-2.5 py-0.5 text-xs font-semibold text-brand-800 ring-1 ring-inset ring-brand-200"
                             >
                                 {opt ? opt.name : id}
                             </span>
@@ -86,7 +122,7 @@ function ComboboxMultiple({ options, value, onChange }) {
                     })}
                 </div>
                 <Combobox.Input
-                    className="w-full rounded-xl border-gray-200 focus:border-sky-500 focus:ring-sky-500 text-sm py-2.5"
+                    className="field-input"
                     onChange={(e) => setQuery(e.target.value)}
                     displayValue={() => ""}
                     placeholder="Cari Gardu Induk..."
@@ -98,9 +134,9 @@ function ComboboxMultiple({ options, value, onChange }) {
                     leaveTo="opacity-0"
                     afterLeave={() => setQuery("")}
                 >
-                    <Combobox.Options className="absolute z-10 mt-1 max-h-60 w-full overflow-auto rounded-xl bg-white py-1 text-base shadow-xl ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm border border-gray-100">
+                    <Combobox.Options className="absolute z-10 mt-1.5 max-h-60 w-full overflow-auto rounded-xl border border-slate-200 bg-white py-1 text-sm shadow-lift focus:outline-none">
                         {filtered.length === 0 && query !== "" ? (
-                            <div className="relative cursor-default select-none py-2 px-4 text-gray-700">
+                            <div className="relative cursor-default select-none px-4 py-2 text-slate-500">
                                 Tidak ada data.
                             </div>
                         ) : (
@@ -109,10 +145,10 @@ function ComboboxMultiple({ options, value, onChange }) {
                                     key={o.id}
                                     value={o.id}
                                     className={({ active }) =>
-                                        `relative cursor-default select-none py-2.5 pl-10 pr-4 ${
+                                        `relative cursor-pointer select-none py-2 pl-10 pr-4 ${
                                             active
-                                                ? "bg-sky-50 text-sky-900"
-                                                : "text-gray-900"
+                                                ? "bg-slate-50 text-ink-900"
+                                                : "text-slate-700"
                                         }`
                                     }
                                 >
@@ -126,7 +162,7 @@ function ComboboxMultiple({ options, value, onChange }) {
                                                 }`}
                                             >
                                                 {o.name}{" "}
-                                                <span className="text-xs text-gray-500 ml-1">
+                                                <span className="ml-1 text-xs text-slate-500">
                                                     ({o.ultg})
                                                 </span>
                                             </span>
@@ -134,8 +170,8 @@ function ComboboxMultiple({ options, value, onChange }) {
                                                 <span
                                                     className={`absolute inset-y-0 left-0 flex items-center pl-3 ${
                                                         active
-                                                            ? "text-sky-600"
-                                                            : "text-sky-600"
+                                                            ? "text-brand-600"
+                                                            : "text-brand-600"
                                                     }`}
                                                 >
                                                     <FaCheck
@@ -454,33 +490,26 @@ export default function User() {
     return (
         <>
             <Head title="User" />
-            <DashboardLayout title="User">
-                <div className="fixed top-20 right-4 sm:right-8 z-40 pointer-events-none">
+            <DashboardLayout title="Manajemen User">
+                <div className="pointer-events-none fixed right-4 top-20 z-40 sm:right-8">
                     <div
-                        className={`flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/90 backdrop-blur-md shadow-lg border border-sky-50 transition-all duration-500 ${
+                        className={`flex items-center gap-2 rounded-full border border-slate-200/80 bg-white/95 px-3 py-1.5 shadow-lift backdrop-blur transition-all duration-500 ${
                             isSyncing
-                                ? "opacity-100 translate-y-0"
-                                : "opacity-0 -translate-y-4"
+                                ? "translate-y-0 opacity-100"
+                                : "-translate-y-4 opacity-0"
                         }`}
                     >
                         <div className="relative flex h-2 w-2">
-                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-sky-400 opacity-75"></span>
-                            <span className="relative inline-flex rounded-full h-2 w-2 bg-sky-500"></span>
+                            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-brand-400 opacity-75"></span>
+                            <span className="relative inline-flex h-2 w-2 rounded-full bg-brand-500"></span>
                         </div>
-                        <span className="text-[10px] font-bold text-sky-600 uppercase tracking-widest">
+                        <span className="text-[10px] font-semibold uppercase tracking-widest text-brand-700">
                             Sinkronisasi...
                         </span>
                     </div>
                 </div>
 
-                <div className="w-full space-y-6">
-                    <div className="flex justify-between items-center px-1">
-                        <h2 className="text-[11px] font-medium text-gray-400 flex items-center gap-1.5 uppercase tracking-wider">
-                            <FaClock className="text-[10px]" />
-                            Terakhir diperbarui:{" "}
-                            {lastUpdated.toLocaleTimeString("id-ID")}
-                        </h2>
-                    </div>
+                <div className="space-y-6">
                     <PageHeader
                         icon={FaUsers}
                         title="Manajemen User"
@@ -495,173 +524,172 @@ export default function User() {
                     {/* Main Card */}
                     <div className="surface overflow-hidden">
                         {/* Toolbar */}
-                        <div className="px-6 py-4 border-b border-gray-100 flex flex-col sm:flex-row gap-4 justify-between items-center">
-                            <div className="flex items-center gap-3 w-full sm:w-auto">
+                        <div className="flex flex-col items-center justify-between gap-3 border-b border-slate-100 px-5 py-4 sm:flex-row sm:px-6">
+                            <div className="flex w-full items-center gap-3 sm:w-auto">
                                 <button
+                                    type="button"
                                     onClick={() => setFilterOpen(true)}
-                                    className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 border ${
+                                    className={`btn-ghost btn-sm ${
                                         filterName
-                                            ? "bg-blue-50 text-blue-600 border-blue-200"
-                                            : "bg-white text-gray-600 border-gray-200 hover:bg-gray-50 hover:border-gray-300"
+                                            ? "!border-brand-200 !bg-brand-50 !text-brand-800"
+                                            : ""
                                     }`}
                                 >
                                     <FaFilter
-                                        className={
+                                        className={`h-3 w-3 ${
                                             filterName
-                                                ? "text-blue-500"
-                                                : "text-gray-400"
-                                        }
+                                                ? "text-brand-600"
+                                                : "text-slate-400"
+                                        }`}
                                     />
                                     <span>Filter</span>
                                     {filterName && (
-                                        <span className="ml-1 bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded-full text-xs">
+                                        <Badge tone="brand" className="ml-0.5 !px-2 !py-0">
                                             Aktif
-                                        </span>
+                                        </Badge>
                                     )}
                                 </button>
+                                <span className="hidden items-center gap-1.5 text-xs text-slate-500 sm:inline-flex">
+                                    <FaClock className="h-3 w-3 text-slate-400" />
+                                    Terakhir diperbarui:{" "}
+                                    <span className="font-semibold tabular-nums text-slate-700">
+                                        {lastUpdated.toLocaleTimeString("id-ID")}
+                                    </span>
+                                </span>
                             </div>
 
-                            <div className="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-end">
-                                <span className="text-sm text-gray-500">
-                                    Show
+                            <div className="flex w-full items-center justify-between gap-2 sm:w-auto sm:justify-end">
+                                <span className="inline-flex items-center gap-1.5 text-xs text-slate-500 sm:hidden">
+                                    <FaClock className="h-3 w-3 text-slate-400" />
+                                    {lastUpdated.toLocaleTimeString("id-ID")}
                                 </span>
-                                <Listbox
-                                    value={rowsPerPage}
-                                    onChange={setRowsPerPage}
-                                >
-                                    <div className="relative">
-                                        <Listbox.Button className="relative w-20 cursor-default rounded-lg bg-white py-2 pl-3 pr-10 text-left border border-gray-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-opacity-75 sm:text-sm shadow-sm">
-                                            <span className="block truncate">
-                                                {rowsPerPage}
-                                            </span>
-                                            <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2">
-                                                <FaChevronRight
-                                                    className="h-3 w-3 text-gray-400 rotate-90"
-                                                    aria-hidden="true"
-                                                />
-                                            </span>
-                                        </Listbox.Button>
-                                        <Transition
-                                            as={Fragment}
-                                            leave="transition ease-in duration-100"
-                                            leaveFrom="opacity-100"
-                                            leaveTo="opacity-0"
-                                        >
-                                            <Listbox.Options className="absolute right-0 mt-1 max-h-60 w-full overflow-auto rounded-md bg-white py-1 text-base shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm z-20">
-                                                {[8, 16, 32, 50].map(
-                                                    (option) => (
-                                                        <Listbox.Option
-                                                            key={option}
-                                                            className={({
-                                                                active,
-                                                            }) =>
-                                                                `relative cursor-default select-none py-2 pl-4 pr-4 ${
-                                                                    active
-                                                                        ? "bg-blue-50 text-blue-900"
-                                                                        : "text-gray-900"
-                                                                }`
-                                                            }
-                                                            value={option}
-                                                        >
-                                                            {({ selected }) => (
-                                                                <span
-                                                                    className={`block truncate ${
-                                                                        selected
-                                                                            ? "font-medium"
-                                                                            : "font-normal"
-                                                                    }`}
-                                                                >
-                                                                    {option}
-                                                                </span>
-                                                            )}
-                                                        </Listbox.Option>
-                                                    ),
-                                                )}
-                                            </Listbox.Options>
-                                        </Transition>
-                                    </div>
-                                </Listbox>
+                                <div className="flex items-center gap-2">
+                                    <span className="text-xs font-medium text-slate-500">
+                                        Tampilkan
+                                    </span>
+                                    <Listbox
+                                        value={rowsPerPage}
+                                        onChange={setRowsPerPage}
+                                    >
+                                        <div className="relative">
+                                            <Listbox.Button className="relative w-20 cursor-pointer rounded-full border border-slate-200 bg-white py-1.5 pl-3.5 pr-8 text-left text-sm font-semibold tabular-nums text-ink-900 transition hover:border-slate-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/40">
+                                                <span className="block truncate">
+                                                    {rowsPerPage}
+                                                </span>
+                                                <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
+                                                    <FaChevronRight
+                                                        className="h-2.5 w-2.5 rotate-90 text-slate-400"
+                                                        aria-hidden="true"
+                                                    />
+                                                </span>
+                                            </Listbox.Button>
+                                            <Transition
+                                                as={Fragment}
+                                                leave="transition ease-in duration-100"
+                                                leaveFrom="opacity-100"
+                                                leaveTo="opacity-0"
+                                            >
+                                                <Listbox.Options className="absolute right-0 z-20 mt-1.5 max-h-60 w-full overflow-auto rounded-xl border border-slate-200 bg-white py-1 text-sm shadow-lift focus:outline-none">
+                                                    {[8, 16, 32, 50].map(
+                                                        (option) => (
+                                                            <Listbox.Option
+                                                                key={option}
+                                                                className={({
+                                                                    active,
+                                                                }) =>
+                                                                    `relative cursor-pointer select-none px-3.5 py-2 tabular-nums ${
+                                                                        active
+                                                                            ? "bg-slate-50 text-ink-900"
+                                                                            : "text-slate-700"
+                                                                    }`
+                                                                }
+                                                                value={option}
+                                                            >
+                                                                {({ selected }) => (
+                                                                    <span
+                                                                        className={`block truncate ${
+                                                                            selected
+                                                                                ? "font-semibold text-brand-700"
+                                                                                : "font-normal"
+                                                                        }`}
+                                                                    >
+                                                                        {option}
+                                                                    </span>
+                                                                )}
+                                                            </Listbox.Option>
+                                                        ),
+                                                    )}
+                                                </Listbox.Options>
+                                            </Transition>
+                                        </div>
+                                    </Listbox>
+                                </div>
                             </div>
                         </div>
 
                         {/* Table */}
                         <ErrorBoundary>
                             {/* Mobile Card View */}
-                            <div className="md:hidden space-y-4 p-4 bg-gray-50/50">
+                            <div className="divide-y divide-slate-100 md:hidden">
                                 {paginatedRows.length === 0 ? (
-                                    <div className="text-center py-12 text-gray-500">
-                                        <FaUsers className="mx-auto text-4xl text-gray-300 mb-3" />
-                                        <p>Belum ada data user.</p>
-                                    </div>
+                                    <EmptyState
+                                        icon={FaUsers}
+                                        title="Belum ada data user."
+                                        description="Tambahkan user baru atau ubah filter pencarian."
+                                    />
                                 ) : (
                                     paginatedRows.map((row) => (
                                         <div
                                             key={row.id}
-                                            className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 space-y-4"
+                                            className="space-y-4 p-4"
                                         >
                                             {/* User Info */}
-                                            <div className="flex items-center gap-3 pb-3 border-b border-gray-50">
-                                                <div className="flex-shrink-0 h-10 w-10">
-                                                    {row.foto_profil ? (
-                                                        <img
-                                                            className="h-10 w-10 rounded-full object-cover border-2 border-white shadow-sm"
-                                                            src={
-                                                                row.foto_profil
-                                                            }
-                                                            alt=""
-                                                        />
-                                                    ) : (
-                                                        <div className="h-10 w-10 rounded-full bg-gradient-to-br from-blue-100 to-indigo-100 flex items-center justify-center text-blue-600 font-bold border-2 border-white shadow-sm">
-                                                            {row.name
-                                                                .charAt(0)
-                                                                .toUpperCase()}
-                                                        </div>
-                                                    )}
-                                                </div>
-                                                <div>
-                                                    <div className="text-sm font-semibold text-gray-900">
+                                            <div className="flex items-center gap-3">
+                                                <UserAvatar row={row} />
+                                                <div className="min-w-0">
+                                                    <div className="truncate text-sm font-semibold text-ink-900">
                                                         {row.name}
                                                     </div>
-                                                    <div className="text-xs text-gray-500">
+                                                    <div className="truncate text-xs text-slate-500">
                                                         {row.email}
                                                     </div>
                                                 </div>
                                             </div>
 
                                             {/* Details Grid */}
-                                            <div className="grid grid-cols-2 gap-y-3 gap-x-4 text-sm">
+                                            <div className="grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
                                                 <div>
-                                                    <span className="text-[10px] uppercase tracking-wider text-gray-400 font-semibold block mb-1">
+                                                    <span className="mb-1 block text-[10px] font-semibold uppercase tracking-wider text-slate-400">
                                                         Role
                                                     </span>
-                                                    <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-blue-50 text-blue-700 border border-blue-100">
+                                                    <Badge tone="brand">
                                                         {row.role || "No Role"}
-                                                    </span>
+                                                    </Badge>
                                                 </div>
                                                 <div>
-                                                    <span className="text-[10px] uppercase tracking-wider text-gray-400 font-semibold block mb-1">
+                                                    <span className="mb-1 block text-[10px] font-semibold uppercase tracking-wider text-slate-400">
                                                         Bidang
                                                     </span>
                                                     {row.bidang ? (
-                                                        <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-purple-50 text-purple-700 border border-purple-100">
+                                                        <Badge tone="violet">
                                                             {row.bidang}
-                                                        </span>
+                                                        </Badge>
                                                     ) : (
-                                                        <span className="text-gray-400 text-xs">
+                                                        <span className="text-xs text-slate-400">
                                                             -
                                                         </span>
                                                     )}
                                                 </div>
                                                 <div className="col-span-2">
-                                                    <span className="text-[10px] uppercase tracking-wider text-gray-400 font-semibold block mb-1">
+                                                    <span className="mb-1 block text-[10px] font-semibold uppercase tracking-wider text-slate-400">
                                                         Wilayah
                                                     </span>
-                                                    <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-gray-50 text-gray-700 border border-gray-100">
+                                                    <Badge tone="slate">
                                                         {row.wilayah || "-"}
-                                                    </span>
+                                                    </Badge>
                                                 </div>
                                                 <div className="col-span-2">
-                                                    <span className="text-[10px] uppercase tracking-wider text-gray-400 font-semibold block mb-1">
+                                                    <span className="mb-1 block text-[10px] font-semibold uppercase tracking-wider text-slate-400">
                                                         Gardu Induk
                                                     </span>
                                                     {row.gardu_induks?.length >
@@ -670,31 +698,30 @@ export default function User() {
                                                             {row.gardu_induks
                                                                 .slice(0, 5)
                                                                 .map((gi) => (
-                                                                    <span
+                                                                    <GiChip
                                                                         key={
                                                                             gi.id
                                                                         }
-                                                                        className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-green-50 text-green-600 border border-green-100 whitespace-nowrap"
                                                                     >
                                                                         {gi.name.replace(
                                                                             /^(GI|GITET|GIS|GISTET)\s+(\d+KV\s+)?/i,
                                                                             "",
                                                                         )}
-                                                                    </span>
+                                                                    </GiChip>
                                                                 ))}
                                                             {row.gardu_induks
                                                                 .length > 5 && (
-                                                                <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-gray-50 text-gray-600 border border-gray-100">
+                                                                <GiChip muted>
                                                                     +
                                                                     {row
                                                                         .gardu_induks
                                                                         .length -
                                                                         5}
-                                                                </span>
+                                                                </GiChip>
                                                             )}
                                                         </div>
                                                     ) : (
-                                                        <span className="text-gray-400 text-xs italic">
+                                                        <span className="text-xs text-slate-400">
                                                             Tidak ada GI
                                                             terhubung
                                                         </span>
@@ -703,23 +730,23 @@ export default function User() {
                                             </div>
 
                                             {/* Actions */}
-                                            <div className="pt-3 border-t border-gray-100 flex gap-2">
+                                            <div className="flex gap-2">
                                                 <button
                                                     onClick={() =>
                                                         openRoleModal(row)
                                                     }
-                                                    className="flex-1 py-2 rounded-lg bg-sky-50 text-sky-600 font-medium text-xs flex items-center justify-center gap-2 hover:bg-sky-100 transition-colors"
+                                                    className="btn-ghost btn-sm flex-1"
                                                 >
-                                                    <FaUserShield className="w-3.5 h-3.5" />{" "}
+                                                    <FaUserShield className="h-3 w-3" />{" "}
                                                     Kelola Role
                                                 </button>
                                                 <button
                                                     onClick={() =>
                                                         openDeleteModal(row)
                                                     }
-                                                    className="flex-1 py-2 rounded-lg bg-red-50 text-red-600 font-medium text-xs flex items-center justify-center gap-2 hover:bg-red-100 transition-colors"
+                                                    className="btn-ghost btn-sm flex-1 !text-rose-600 hover:!border-rose-200 hover:!bg-rose-50"
                                                 >
-                                                    <FaTrash className="w-3.5 h-3.5" />{" "}
+                                                    <FaTrash className="h-3 w-3" />{" "}
                                                     Hapus
                                                 </button>
                                             </div>
@@ -727,119 +754,85 @@ export default function User() {
                                     ))
                                 )}
                             </div>
-                            <div className="hidden md:block overflow-x-auto">
-                                <table className="w-full">
+                            <div className="hidden overflow-x-auto md:block">
+                                <table className="data-table">
                                     <thead>
-                                        <tr className="bg-gray-50/80 border-b border-gray-200">
-                                            <th className="px-6 py-4 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider w-16">
+                                        <tr>
+                                            <th className="w-16 text-center">
                                                 No
                                             </th>
-                                            <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                                                User
-                                            </th>
-                                            <th className="px-6 py-4 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                                                Role & Bidang
-                                            </th>
-                                            <th className="px-6 py-4 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                                                Wilayah
-                                            </th>
-                                            <th className="px-6 py-4 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                                                Aksi
-                                            </th>
+                                            <th>User</th>
+                                            <th>Role &amp; Bidang</th>
+                                            <th>Wilayah</th>
+                                            <th className="text-right">Aksi</th>
                                         </tr>
                                     </thead>
-                                    <tbody className="divide-y divide-gray-100 bg-white">
+                                    <tbody>
                                         {paginatedRows.length === 0 ? (
                                             <tr>
-                                                <td
-                                                    colSpan={5}
-                                                    className="px-6 py-12 text-center text-gray-400"
-                                                >
-                                                    <div className="flex flex-col items-center gap-2">
-                                                        <FaUsers className="text-4xl text-gray-200" />
-                                                        <span className="text-sm">
-                                                            Belum ada data user.
-                                                        </span>
-                                                    </div>
+                                                <td colSpan={5}>
+                                                    <EmptyState
+                                                        icon={FaUsers}
+                                                        title="Belum ada data user."
+                                                        description="Tambahkan user baru atau ubah filter pencarian."
+                                                    />
                                                 </td>
                                             </tr>
                                         ) : (
                                             paginatedRows.map((row, idx) => (
-                                                <tr
-                                                    key={row.id}
-                                                    className="hover:bg-blue-50/50 transition-colors duration-150"
-                                                >
-                                                    <td className="px-6 py-4 text-center whitespace-nowrap text-sm text-gray-500 font-medium">
+                                                <tr key={row.id}>
+                                                    <td className="whitespace-nowrap text-center tabular-nums text-slate-500">
                                                         {(page - 1) *
                                                             rowsPerPage +
                                                             idx +
                                                             1}
                                                     </td>
-                                                    <td className="px-6 py-4 whitespace-nowrap">
-                                                        <div className="flex items-center">
-                                                            <div className="flex-shrink-0 h-10 w-10">
-                                                                {row.foto_profil ? (
-                                                                    <img
-                                                                        className="h-10 w-10 rounded-full object-cover border-2 border-white shadow-sm"
-                                                                        src={
-                                                                            row.foto_profil
-                                                                        }
-                                                                        alt=""
-                                                                    />
-                                                                ) : (
-                                                                    <div className="h-10 w-10 rounded-full bg-gradient-to-br from-blue-100 to-indigo-100 flex items-center justify-center text-blue-600 font-bold border-2 border-white shadow-sm">
-                                                                        {row.name
-                                                                            .charAt(
-                                                                                0,
-                                                                            )
-                                                                            .toUpperCase()}
-                                                                    </div>
-                                                                )}
-                                                            </div>
-                                                            <div className="ml-4">
-                                                                <div className="text-sm font-semibold text-gray-900">
+                                                    <td className="whitespace-nowrap">
+                                                        <div className="flex items-center gap-3">
+                                                            <UserAvatar
+                                                                row={row}
+                                                            />
+                                                            <div>
+                                                                <div className="font-semibold text-ink-900">
                                                                     {row.name}
                                                                 </div>
-                                                                <div className="text-xs text-gray-500">
+                                                                <div className="text-xs text-slate-500">
                                                                     {row.email}
                                                                 </div>
                                                             </div>
                                                         </div>
                                                     </td>
-                                                    <td className="px-6 py-4 whitespace-nowrap text-center">
-                                                        <div className="flex flex-col items-center gap-1.5">
-                                                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                                    <td className="whitespace-nowrap">
+                                                        <div className="flex flex-wrap items-center gap-1.5">
+                                                            <Badge tone="brand">
                                                                 {row.role ||
                                                                     "No Role"}
-                                                            </span>
+                                                            </Badge>
                                                             {row.bidang && (
-                                                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                                                                <Badge tone="violet">
                                                                     {row.bidang}
-                                                                </span>
+                                                                </Badge>
                                                             )}
                                                         </div>
                                                     </td>
-                                                    <td className="px-6 py-4 whitespace-nowrap text-center">
-                                                        <div className="text-sm text-gray-900">
-                                                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                                                                {row.wilayah ||
-                                                                    "-"}
-                                                            </span>
-                                                        </div>
+                                                    <td>
+                                                        <Badge tone="slate">
+                                                            {row.wilayah ||
+                                                                "-"}
+                                                        </Badge>
                                                         {row.gardu_induks
                                                             ?.length > 0 && (
-                                                            <div className="flex flex-wrap justify-center gap-1 mt-2 max-w-[200px] mx-auto">
+                                                            <div className="mt-2 flex max-w-[240px] flex-wrap gap-1">
                                                                 {row.gardu_induks
                                                                     .slice(0, 3)
                                                                     .map(
                                                                         (
                                                                             gi,
                                                                         ) => (
-                                                                            <span
+                                                                            <GiChip
                                                                                 key={
                                                                                     gi.id
                                                                                 }
-                                                                                className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-green-50 text-green-600 border border-green-100 whitespace-nowrap"
                                                                                 title={
                                                                                     gi.name
                                                                                 }
@@ -848,15 +841,16 @@ export default function User() {
                                                                                     /^(GI|GITET|GIS|GISTET)\s+(\d+KV\s+)?/i,
                                                                                     "",
                                                                                 )}
-                                                                            </span>
+                                                                            </GiChip>
                                                                         ),
                                                                     )}
                                                                 {row
                                                                     .gardu_induks
                                                                     .length >
                                                                     3 && (
-                                                                    <span
-                                                                        className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-gray-50 text-gray-600 border border-gray-100 cursor-help"
+                                                                    <GiChip
+                                                                        muted
+                                                                        className="cursor-help"
                                                                         title={row.gardu_induks
                                                                             .slice(
                                                                                 3,
@@ -876,37 +870,37 @@ export default function User() {
                                                                             .gardu_induks
                                                                             .length -
                                                                             3}
-                                                                    </span>
+                                                                    </GiChip>
                                                                 )}
                                                             </div>
                                                         )}
                                                     </td>
-                                                    <td className="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
-                                                        <div className="flex justify-center">
-                                                            <div className="inline-flex items-center gap-1.5 rounded-xl bg-gray-50/80 border border-gray-100 px-2 py-1 shadow-sm">
-                                                                <button
-                                                                    onClick={() =>
-                                                                        openRoleModal(
-                                                                            row,
-                                                                        )
-                                                                    }
-                                                                    className="inline-flex items-center justify-center h-9 w-9 rounded-full border border-sky-100 bg-sky-50 text-sky-600 hover:bg-sky-100 hover:text-sky-700 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-0 transition-all shadow-[0_1px_2px_rgba(15,23,42,0.06)]"
-                                                                    title="Kelola Role"
-                                                                >
-                                                                    <FaUserShield className="w-4 h-4" />
-                                                                </button>
-                                                                <button
-                                                                    onClick={() =>
-                                                                        openDeleteModal(
-                                                                            row,
-                                                                        )
-                                                                    }
-                                                                    className="inline-flex items-center justify-center h-9 w-9 rounded-full border border-red-100 bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-0 transition-all shadow-[0_1px_2px_rgba(15,23,42,0.06)]"
-                                                                    title="Hapus User"
-                                                                >
-                                                                    <FaTrash className="w-4 h-4" />
-                                                                </button>
-                                                            </div>
+                                                    <td className="whitespace-nowrap text-right">
+                                                        <div className="inline-flex items-center gap-0.5">
+                                                            <button
+                                                                onClick={() =>
+                                                                    openRoleModal(
+                                                                        row,
+                                                                    )
+                                                                }
+                                                                className="btn-icon hover:!bg-brand-50 hover:!text-brand-700"
+                                                                title="Kelola Role"
+                                                                aria-label="Kelola Role"
+                                                            >
+                                                                <FaUserShield className="h-3.5 w-3.5" />
+                                                            </button>
+                                                            <button
+                                                                onClick={() =>
+                                                                    openDeleteModal(
+                                                                        row,
+                                                                    )
+                                                                }
+                                                                className="btn-icon hover:!bg-rose-50 hover:!text-rose-600"
+                                                                title="Hapus User"
+                                                                aria-label="Hapus User"
+                                                            >
+                                                                <FaTrash className="h-3.5 w-3.5" />
+                                                            </button>
                                                         </div>
                                                     </td>
                                                 </tr>
@@ -919,58 +913,59 @@ export default function User() {
 
                         {/* Pagination */}
                         {totalPages > 1 && (
-                            <div className="px-6 py-4 border-t border-gray-100 bg-gray-50/50 flex flex-col sm:flex-row items-center justify-between gap-4">
-                                <div className="text-sm text-gray-500">
+                            <div className="flex flex-col items-center justify-between gap-3 border-t border-slate-100 px-4 py-3 text-sm text-slate-500 sm:flex-row sm:px-6">
+                                <div>
                                     Menampilkan{" "}
-                                    <span className="font-medium text-gray-900">
-                                        {(page - 1) * rowsPerPage + 1}
-                                    </span>{" "}
-                                    sampai{" "}
-                                    <span className="font-medium text-gray-900">
+                                    <span className="font-semibold tabular-nums text-ink-900">
+                                        {(page - 1) * rowsPerPage + 1}–
                                         {Math.min(
                                             page * rowsPerPage,
                                             totalRows,
                                         )}
                                     </span>{" "}
                                     dari{" "}
-                                    <span className="font-medium text-gray-900">
+                                    <span className="font-semibold tabular-nums text-ink-900">
                                         {totalRows}
                                     </span>{" "}
                                     hasil
                                 </div>
-                                <div className="flex items-center gap-2">
+                                <div className="flex items-center gap-1">
                                     <button
+                                        type="button"
                                         onClick={() => setPage(page - 1)}
                                         disabled={page === 1}
-                                        className="p-2 rounded-lg border border-gray-200 bg-white text-gray-500 hover:bg-gray-50 hover:text-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                        aria-label="Halaman sebelumnya"
+                                        className="flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 text-slate-600 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-40"
                                     >
-                                        <FaChevronLeft className="w-4 h-4" />
+                                        <FaChevronLeft className="h-3 w-3" />
                                     </button>
-                                    <div className="flex items-center gap-1">
-                                        {[...Array(totalPages)].map(
-                                            (_, idx) => (
-                                                <button
-                                                    key={idx}
-                                                    onClick={() =>
-                                                        setPage(idx + 1)
-                                                    }
-                                                    className={`min-w-[32px] h-8 rounded-lg text-sm font-medium transition-colors ${
-                                                        page === idx + 1
-                                                            ? "bg-blue-600 text-white shadow-sm"
-                                                            : "bg-white text-gray-600 hover:bg-gray-50 border border-gray-200"
-                                                    }`}
-                                                >
-                                                    {idx + 1}
-                                                </button>
-                                            ),
-                                        )}
-                                    </div>
+                                    {[...Array(totalPages)].map((_, idx) => (
+                                        <button
+                                            key={idx}
+                                            type="button"
+                                            onClick={() => setPage(idx + 1)}
+                                            aria-current={
+                                                page === idx + 1
+                                                    ? "page"
+                                                    : undefined
+                                            }
+                                            className={`flex h-8 min-w-[2rem] items-center justify-center rounded-full px-2 text-sm font-semibold tabular-nums transition ${
+                                                page === idx + 1
+                                                    ? "bg-ink-900 text-white"
+                                                    : "text-slate-600 hover:bg-slate-100"
+                                            }`}
+                                        >
+                                            {idx + 1}
+                                        </button>
+                                    ))}
                                     <button
+                                        type="button"
                                         onClick={() => setPage(page + 1)}
                                         disabled={page === totalPages}
-                                        className="p-2 rounded-lg border border-gray-200 bg-white text-gray-500 hover:bg-gray-50 hover:text-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                        aria-label="Halaman berikutnya"
+                                        className="flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 text-slate-600 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-40"
                                     >
-                                        <FaChevronRight className="w-4 h-4" />
+                                        <FaChevronRight className="h-3 w-3" />
                                     </button>
                                 </div>
                             </div>
@@ -994,7 +989,7 @@ export default function User() {
                             leaveFrom="opacity-100"
                             leaveTo="opacity-0"
                         >
-                            <div className="fixed inset-0 bg-black/25 backdrop-blur-sm" />
+                            <div className="fixed inset-0 bg-ink-950/50 backdrop-blur-sm" />
                         </Transition.Child>
 
                         <div className="fixed inset-0 overflow-y-auto">
@@ -1008,17 +1003,17 @@ export default function User() {
                                     leaveFrom="opacity-100 scale-100"
                                     leaveTo="opacity-0 scale-95"
                                 >
-                                    <Dialog.Panel className="w-full max-w-md transform overflow-hidden rounded-2xl bg-white/95 backdrop-blur-sm text-left align-middle shadow-xl transition-all border border-gray-100">
-                                        <div className="px-6 py-4 border-b border-gray-100 bg-gray-50 flex items-center justify-between">
+                                    <Dialog.Panel className="w-full max-w-md transform overflow-hidden rounded-2xl border border-slate-200/80 bg-white text-left align-middle shadow-lift transition-all">
+                                        <div className="flex items-center justify-between gap-3 border-b border-slate-100 px-6 py-4">
                                             <div className="flex items-center gap-3">
-                                                <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-sky-500 via-sky-400 to-cyan-400 flex items-center justify-center text-white shadow-md">
+                                                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand-50 text-brand-700">
                                                     <FaFilter className="w-5 h-5" />
                                                 </div>
                                                 <div>
-                                                    <Dialog.Title className="text-lg font-bold text-gray-900">
+                                                    <Dialog.Title className="text-base font-bold text-ink-900">
                                                         Filter Data
                                                     </Dialog.Title>
-                                                    <p className="text-sm text-gray-500 mt-0.5">
+                                                    <p className="mt-0.5 text-sm text-slate-500">
                                                         Filter data user sesuai
                                                         kebutuhan.
                                                     </p>
@@ -1028,7 +1023,8 @@ export default function User() {
                                                 onClick={() =>
                                                     setFilterOpen(false)
                                                 }
-                                                className="text-gray-400 hover:text-gray-500 transition-colors"
+                                                className="btn-icon"
+                                                aria-label="Tutup"
                                             >
                                                 <FaTimes className="w-5 h-5" />
                                             </button>
@@ -1036,12 +1032,12 @@ export default function User() {
                                         <div className="p-6">
                                             <div className="space-y-4">
                                                 <div>
-                                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                    <label className="field-label">
                                                         Nama User
                                                     </label>
                                                     <input
                                                         type="text"
-                                                        className="w-full rounded-lg border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                                                        className="field-input"
                                                         value={filterName}
                                                         onChange={(e) =>
                                                             setFilterName(
@@ -1052,13 +1048,13 @@ export default function User() {
                                                     />
                                                 </div>
                                             </div>
-                                            <div className="mt-6 flex justify-end gap-3">
+                                            <div className="mt-6 flex justify-end gap-2">
                                                 <button
                                                     onClick={() => {
                                                         setFilterName("");
                                                         setFilterOpen(false);
                                                     }}
-                                                    className="px-4 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 border border-gray-300"
+                                                    className="btn-ghost"
                                                 >
                                                     Reset
                                                 </button>
@@ -1066,7 +1062,7 @@ export default function User() {
                                                     onClick={() =>
                                                         setFilterOpen(false)
                                                     }
-                                                    className="px-4 py-2 rounded-lg text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 shadow-sm"
+                                                    className="btn-brand"
                                                 >
                                                     Terapkan
                                                 </button>
@@ -1095,7 +1091,7 @@ export default function User() {
                             leaveFrom="opacity-100"
                             leaveTo="opacity-0"
                         >
-                            <div className="fixed inset-0 bg-black/25 backdrop-blur-sm" />
+                            <div className="fixed inset-0 bg-ink-950/50 backdrop-blur-sm" />
                         </Transition.Child>
 
                         <div className="fixed inset-0 overflow-y-auto">
@@ -1109,21 +1105,21 @@ export default function User() {
                                     leaveFrom="opacity-100 scale-100"
                                     leaveTo="opacity-0 scale-95"
                                 >
-                                    <Dialog.Panel className="w-full max-w-lg transform overflow-visible rounded-2xl bg-white/95 backdrop-blur-sm text-left align-middle shadow-xl transition-all border border-gray-100">
-                                        <div className="px-6 py-4 border-b border-gray-100 bg-gray-50">
+                                    <Dialog.Panel className="w-full max-w-lg transform overflow-visible rounded-2xl border border-slate-200/80 bg-white text-left align-middle shadow-lift transition-all">
+                                        <div className="border-b border-slate-100 px-6 py-4">
                                             <div className="flex items-center justify-between gap-3">
                                                 <div className="flex items-center gap-3">
-                                                    <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-sky-500 via-sky-400 to-cyan-400 flex items-center justify-center text-white shadow-md">
+                                                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand-50 text-brand-700">
                                                         <FaUserShield className="w-5 h-5" />
                                                     </div>
                                                     <div>
                                                         <Dialog.Title
                                                             as="h3"
-                                                            className="text-base md:text-lg font-semibold text-gray-900"
+                                                            className="text-base font-bold text-ink-900"
                                                         >
                                                             Edit Role & Akses
                                                         </Dialog.Title>
-                                                        <p className="text-xs md:text-sm text-gray-500 mt-0.5">
+                                                        <p className="mt-0.5 text-sm text-slate-500">
                                                             Kelola role dan hak
                                                             akses user.
                                                         </p>
@@ -1133,7 +1129,8 @@ export default function User() {
                                                     onClick={() =>
                                                         setRoleModalOpen(false)
                                                     }
-                                                    className="text-gray-400 hover:text-gray-500 transition-colors"
+                                                    className="btn-icon"
+                                                aria-label="Tutup"
                                                 >
                                                     <FaTimes />
                                                 </button>
@@ -1148,8 +1145,8 @@ export default function User() {
                                             ) : (
                                                 <div className="space-y-6">
                                                     {/* User Info */}
-                                                    <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-xl border border-gray-100">
-                                                        <div className="h-12 w-12 rounded-full bg-white border border-gray-200 flex items-center justify-center text-lg font-bold text-blue-600 shadow-sm">
+                                                    <div className="flex items-center gap-4 rounded-xl border border-slate-200 bg-slate-50 p-4">
+                                                        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white text-lg font-bold text-slate-600 ring-1 ring-slate-200">
                                                             <img
                                                                 src={
                                                                     roleModalUser?.foto_profil
@@ -1157,16 +1154,16 @@ export default function User() {
                                                                 alt={
                                                                     roleModalUser?.name
                                                                 }
-                                                                className="h-full w-full object-cover rounded-full ring-2 ring-blue-800"
+                                                                className="h-full w-full rounded-full object-cover"
                                                             />
                                                         </div>
                                                         <div>
-                                                            <div className="font-semibold text-gray-900">
+                                                            <div className="font-semibold text-ink-900">
                                                                 {
                                                                     roleModalUser?.name
                                                                 }
                                                             </div>
-                                                            <div className="text-sm text-gray-500">
+                                                            <div className="text-sm text-slate-500">
                                                                 {
                                                                     roleModalUser?.email
                                                                 }
@@ -1176,7 +1173,7 @@ export default function User() {
 
                                                     <div className="space-y-4">
                                                         <div>
-                                                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                            <label className="field-label">
                                                                 Role User
                                                             </label>
                                                             <Listbox
@@ -1188,7 +1185,7 @@ export default function User() {
                                                                 }
                                                             >
                                                                 <div className="relative">
-                                                                    <Listbox.Button className="relative w-full cursor-default rounded-xl bg-white py-2.5 pl-3 pr-10 text-left border border-gray-200 focus:outline-none focus:ring-2 focus:ring-sky-500 sm:text-sm">
+                                                                    <Listbox.Button className="field-input relative cursor-pointer pr-10 text-left">
                                                                         <span className="block truncate">
                                                                             {roleModalCurrent
                                                                                 ? roleModalRoles.find(
@@ -1201,8 +1198,8 @@ export default function User() {
                                                                                       ?.name
                                                                                 : "Pilih Role"}
                                                                         </span>
-                                                                        <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2">
-                                                                            <FaChevronRight className="h-4 w-4 text-gray-400 rotate-90" />
+                                                                        <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
+                                                                            <FaChevronRight className="h-3 w-3 rotate-90 text-slate-400" />
                                                                         </span>
                                                                     </Listbox.Button>
                                                                     <Transition
@@ -1213,7 +1210,7 @@ export default function User() {
                                                                         leaveFrom="opacity-100"
                                                                         leaveTo="opacity-0"
                                                                     >
-                                                                        <Listbox.Options className="absolute z-50 mt-1 max-h-60 w-full overflow-auto rounded-xl bg-white py-1 text-base shadow-xl ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm border border-gray-100">
+                                                                        <Listbox.Options className="absolute z-50 mt-1.5 max-h-60 w-full overflow-auto rounded-xl border border-slate-200 bg-white py-1 text-sm shadow-lift focus:outline-none">
                                                                             {roleModalRoles.map(
                                                                                 (
                                                                                     role,
@@ -1225,10 +1222,10 @@ export default function User() {
                                                                                         className={({
                                                                                             active,
                                                                                         }) =>
-                                                                                            `relative cursor-default select-none py-2.5 pl-10 pr-4 ${
+                                                                                            `relative cursor-pointer select-none py-2 pl-10 pr-4 ${
                                                                                                 active
-                                                                                                    ? "bg-sky-50 text-sky-900"
-                                                                                                    : "text-gray-900"
+                                                                                                    ? "bg-slate-50 text-ink-900"
+                                                                                                    : "text-slate-700"
                                                                                             }`
                                                                                         }
                                                                                         value={
@@ -1251,7 +1248,7 @@ export default function User() {
                                                                                                     }
                                                                                                 </span>
                                                                                                 {selected && (
-                                                                                                    <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-sky-600">
+                                                                                                    <span className="absolute inset-y-0 left-0 flex items-center pl-3.5 text-brand-600">
                                                                                                         <FaCheck
                                                                                                             className="h-4 w-4"
                                                                                                             aria-hidden="true"
@@ -1270,7 +1267,7 @@ export default function User() {
                                                         </div>
 
                                                         <div>
-                                                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                            <label className="field-label">
                                                                 Bidang
                                                             </label>
                                                             <Listbox
@@ -1282,13 +1279,13 @@ export default function User() {
                                                                 }
                                                             >
                                                                 <div className="relative">
-                                                                    <Listbox.Button className="relative w-full cursor-default rounded-xl bg-white py-2.5 pl-3 pr-10 text-left border border-gray-200 focus:outline-none focus:ring-2 focus:ring-sky-500 sm:text-sm">
+                                                                    <Listbox.Button className="field-input relative cursor-pointer pr-10 text-left">
                                                                         <span className="block truncate">
                                                                             {roleModalBidang ||
                                                                                 "Pilih Bidang"}
                                                                         </span>
-                                                                        <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2">
-                                                                            <FaChevronRight className="h-4 w-4 text-gray-400 rotate-90" />
+                                                                        <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
+                                                                            <FaChevronRight className="h-3 w-3 rotate-90 text-slate-400" />
                                                                         </span>
                                                                     </Listbox.Button>
                                                                     <Transition
@@ -1299,7 +1296,7 @@ export default function User() {
                                                                         leaveFrom="opacity-100"
                                                                         leaveTo="opacity-0"
                                                                     >
-                                                                        <Listbox.Options className="absolute z-50 mt-1 max-h-60 w-full overflow-auto rounded-xl bg-white py-1 text-base shadow-xl ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm border border-gray-100">
+                                                                        <Listbox.Options className="absolute z-50 mt-1.5 max-h-60 w-full overflow-auto rounded-xl border border-slate-200 bg-white py-1 text-sm shadow-lift focus:outline-none">
                                                                             {BIDANG_OPTIONS.map(
                                                                                 (
                                                                                     bidang,
@@ -1311,10 +1308,10 @@ export default function User() {
                                                                                         className={({
                                                                                             active,
                                                                                         }) =>
-                                                                                            `relative cursor-default select-none py-2.5 pl-10 pr-4 ${
+                                                                                            `relative cursor-pointer select-none py-2 pl-10 pr-4 ${
                                                                                                 active
-                                                                                                    ? "bg-sky-50 text-sky-900"
-                                                                                                    : "text-gray-900"
+                                                                                                    ? "bg-slate-50 text-ink-900"
+                                                                                                    : "text-slate-700"
                                                                                             }`
                                                                                         }
                                                                                         value={
@@ -1337,7 +1334,7 @@ export default function User() {
                                                                                                     }
                                                                                                 </span>
                                                                                                 {selected && (
-                                                                                                    <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-sky-600">
+                                                                                                    <span className="absolute inset-y-0 left-0 flex items-center pl-3.5 text-brand-600">
                                                                                                         <FaCheck
                                                                                                             className="h-4 w-4"
                                                                                                             aria-hidden="true"
@@ -1356,7 +1353,7 @@ export default function User() {
                                                         </div>
 
                                                         <div>
-                                                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                            <label className="field-label">
                                                                 Wilayah
                                                             </label>
                                                             <Listbox
@@ -1368,13 +1365,13 @@ export default function User() {
                                                                 }
                                                             >
                                                                 <div className="relative">
-                                                                    <Listbox.Button className="relative w-full cursor-default rounded-xl bg-white py-2.5 pl-3 pr-10 text-left border border-gray-200 focus:outline-none focus:ring-2 focus:ring-sky-500 sm:text-sm">
+                                                                    <Listbox.Button className="field-input relative cursor-pointer pr-10 text-left">
                                                                         <span className="block truncate">
                                                                             {roleModalWilayah ||
                                                                                 "Pilih Wilayah"}
                                                                         </span>
-                                                                        <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2">
-                                                                            <FaChevronRight className="h-4 w-4 text-gray-400 rotate-90" />
+                                                                        <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
+                                                                            <FaChevronRight className="h-3 w-3 rotate-90 text-slate-400" />
                                                                         </span>
                                                                     </Listbox.Button>
                                                                     <Transition
@@ -1385,7 +1382,7 @@ export default function User() {
                                                                         leaveFrom="opacity-100"
                                                                         leaveTo="opacity-0"
                                                                     >
-                                                                        <Listbox.Options className="absolute z-50 mt-1 max-h-60 w-full overflow-auto rounded-xl bg-white py-1 text-base shadow-xl ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm border border-gray-100">
+                                                                        <Listbox.Options className="absolute z-50 mt-1.5 max-h-60 w-full overflow-auto rounded-xl border border-slate-200 bg-white py-1 text-sm shadow-lift focus:outline-none">
                                                                             {WILAYAH_OPTIONS.map(
                                                                                 (
                                                                                     wilayah,
@@ -1397,10 +1394,10 @@ export default function User() {
                                                                                         className={({
                                                                                             active,
                                                                                         }) =>
-                                                                                            `relative cursor-default select-none py-2.5 pl-10 pr-4 ${
+                                                                                            `relative cursor-pointer select-none py-2 pl-10 pr-4 ${
                                                                                                 active
-                                                                                                    ? "bg-sky-50 text-sky-900"
-                                                                                                    : "text-gray-900"
+                                                                                                    ? "bg-slate-50 text-ink-900"
+                                                                                                    : "text-slate-700"
                                                                                             }`
                                                                                         }
                                                                                         value={
@@ -1423,7 +1420,7 @@ export default function User() {
                                                                                                     }
                                                                                                 </span>
                                                                                                 {selected && (
-                                                                                                    <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-sky-600">
+                                                                                                    <span className="absolute inset-y-0 left-0 flex items-center pl-3.5 text-brand-600">
                                                                                                         <FaCheck
                                                                                                             className="h-4 w-4"
                                                                                                             aria-hidden="true"
@@ -1442,7 +1439,7 @@ export default function User() {
                                                         </div>
 
                                                         <div>
-                                                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                            <label className="field-label">
                                                                 Gardu Induk
                                                             </label>
                                                             <ComboboxMultiple
@@ -1460,7 +1457,7 @@ export default function User() {
                                                     </div>
 
                                                     {roleModalError && (
-                                                        <div className="p-3 rounded-lg bg-red-50 text-red-600 text-sm border border-red-100">
+                                                        <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-medium text-rose-700">
                                                             {roleModalError}
                                                         </div>
                                                     )}
@@ -1468,10 +1465,10 @@ export default function User() {
                                             )}
                                         </div>
 
-                                        <div className="bg-gray-50 px-6 py-4 flex justify-end gap-3 border-t border-gray-100">
+                                        <div className="flex justify-end gap-2 border-t border-slate-100 bg-slate-50/60 px-6 py-3">
                                             <button
                                                 type="button"
-                                                className="inline-flex justify-center rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+                                                className="btn-ghost"
                                                 onClick={() =>
                                                     setRoleModalOpen(false)
                                                 }
@@ -1481,7 +1478,7 @@ export default function User() {
                                             </button>
                                             <button
                                                 type="button"
-                                                className="inline-flex justify-center rounded-lg border border-transparent bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:opacity-50"
+                                                className="btn-brand"
                                                 onClick={handleRoleModalSave}
                                                 disabled={
                                                     roleModalSaving ||
@@ -1528,7 +1525,7 @@ export default function User() {
                             leaveFrom="opacity-100"
                             leaveTo="opacity-0"
                         >
-                            <div className="fixed inset-0 bg-black/30 backdrop-blur-sm" />
+                            <div className="fixed inset-0 bg-ink-950/50 backdrop-blur-sm" />
                         </Transition.Child>
 
                         <div className="fixed inset-0 overflow-hidden">
@@ -1544,17 +1541,17 @@ export default function User() {
                                         leaveTo="translate-x-full"
                                     >
                                         <Dialog.Panel className="pointer-events-auto w-screen max-w-2xl">
-                                            <div className="flex h-full flex-col bg-white shadow-xl">
-                                                <div className="px-6 py-4 border-b border-gray-100 bg-gray-50 flex items-center justify-between">
+                                            <div className="flex h-full flex-col bg-white shadow-lift">
+                                                <div className="flex items-center justify-between gap-3 border-b border-slate-100 px-6 py-4">
                                                     <div className="flex items-center gap-3">
-                                                        <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-sky-500 via-sky-400 to-cyan-400 flex items-center justify-center text-white shadow-md">
+                                                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand-50 text-brand-700">
                                                             <FaPlus className="w-5 h-5" />
                                                         </div>
                                                         <div>
-                                                            <Dialog.Title className="text-lg font-bold text-gray-900">
+                                                            <Dialog.Title className="text-base font-bold text-ink-900">
                                                                 Tambah User Baru
                                                             </Dialog.Title>
-                                                            <p className="text-sm text-gray-500 mt-0.5">
+                                                            <p className="mt-0.5 text-sm text-slate-500">
                                                                 Isi form berikut
                                                                 untuk
                                                                 menambahkan user
@@ -1564,7 +1561,8 @@ export default function User() {
                                                     </div>
                                                     <button
                                                         type="button"
-                                                        className="text-gray-400 hover:text-gray-500 transition-colors"
+                                                        className="btn-icon"
+                                                aria-label="Tutup"
                                                         onClick={() =>
                                                             setCreateModalOpen(
                                                                 false,
@@ -1576,7 +1574,7 @@ export default function User() {
                                                     </button>
                                                 </div>
 
-                                                <div className="flex-1 overflow-y-auto p-6 bg-gray-50">
+                                                <div className="flex-1 overflow-y-auto bg-slate-50 p-6">
                                                     <form
                                                         onSubmit={(e) => {
                                                             e.preventDefault();
@@ -1585,9 +1583,9 @@ export default function User() {
                                                         className="space-y-6"
                                                     >
                                                         {/* Informasi Pribadi */}
-                                                        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
-                                                            <h4 className="text-base font-semibold text-gray-800 mb-4 flex items-center gap-2">
-                                                                <span className="flex items-center justify-center w-6 h-6 rounded-full bg-blue-100 text-blue-600 text-xs font-bold">
+                                                        <div className="rounded-2xl border border-slate-200/80 bg-white p-5">
+                                                            <h4 className="mb-4 flex items-center gap-2 text-sm font-bold text-ink-900">
+                                                                <span className="flex h-6 w-6 items-center justify-center rounded-full bg-ink-900 text-[11px] font-bold text-white">
                                                                     1
                                                                 </span>
                                                                 Informasi
@@ -1595,14 +1593,14 @@ export default function User() {
                                                             </h4>
                                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                                 <div>
-                                                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                                    <label className="field-label">
                                                                         Nama
                                                                         Lengkap
                                                                     </label>
                                                                     <input
                                                                         type="text"
                                                                         required
-                                                                        className="w-full rounded-lg border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                                                                        className="field-input"
                                                                         value={
                                                                             createName
                                                                         }
@@ -1618,7 +1616,7 @@ export default function User() {
                                                                         placeholder="Nama Lengkap"
                                                                     />
                                                                     {createError.name && (
-                                                                        <p className="text-red-500 text-xs mt-1">
+                                                                        <p className="field-error">
                                                                             {
                                                                                 createError.name
                                                                             }
@@ -1626,13 +1624,13 @@ export default function User() {
                                                                     )}
                                                                 </div>
                                                                 <div>
-                                                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                                    <label className="field-label">
                                                                         Email
                                                                     </label>
                                                                     <input
                                                                         type="email"
                                                                         required
-                                                                        className="w-full rounded-lg border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                                                                        className="field-input"
                                                                         value={
                                                                             createEmail
                                                                         }
@@ -1648,7 +1646,7 @@ export default function User() {
                                                                         placeholder="email@example.com"
                                                                     />
                                                                     {createError.email && (
-                                                                        <p className="text-red-500 text-xs mt-1">
+                                                                        <p className="field-error">
                                                                             {
                                                                                 createError.email
                                                                             }
@@ -1659,21 +1657,21 @@ export default function User() {
                                                         </div>
 
                                                         {/* Keamanan */}
-                                                        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
-                                                            <h4 className="text-base font-semibold text-gray-800 mb-4 flex items-center gap-2">
-                                                                <span className="flex items-center justify-center w-6 h-6 rounded-full bg-green-100 text-green-600 text-xs font-bold">
+                                                        <div className="rounded-2xl border border-slate-200/80 bg-white p-5">
+                                                            <h4 className="mb-4 flex items-center gap-2 text-sm font-bold text-ink-900">
+                                                                <span className="flex h-6 w-6 items-center justify-center rounded-full bg-ink-900 text-[11px] font-bold text-white">
                                                                     2
                                                                 </span>
                                                                 Keamanan
                                                             </h4>
                                                             <div>
-                                                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                                <label className="field-label">
                                                                     Password
                                                                 </label>
                                                                 <input
                                                                     type="password"
                                                                     required
-                                                                    className="w-full rounded-lg border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                                                                    className="field-input"
                                                                     value={
                                                                         createPassword
                                                                     }
@@ -1689,7 +1687,7 @@ export default function User() {
                                                                     placeholder="••••••••"
                                                                 />
                                                                 {createError.password && (
-                                                                    <p className="text-red-500 text-xs mt-1">
+                                                                    <p className="field-error">
                                                                         {
                                                                             createError.password
                                                                         }
@@ -1699,16 +1697,16 @@ export default function User() {
                                                         </div>
 
                                                         {/* Role & Akses */}
-                                                        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
-                                                            <h4 className="text-base font-semibold text-gray-800 mb-4 flex items-center gap-2">
-                                                                <span className="flex items-center justify-center w-6 h-6 rounded-full bg-purple-100 text-purple-600 text-xs font-bold">
+                                                        <div className="rounded-2xl border border-slate-200/80 bg-white p-5">
+                                                            <h4 className="mb-4 flex items-center gap-2 text-sm font-bold text-ink-900">
+                                                                <span className="flex h-6 w-6 items-center justify-center rounded-full bg-ink-900 text-[11px] font-bold text-white">
                                                                     3
                                                                 </span>
                                                                 Role & Akses
                                                             </h4>
                                                             <div className="grid grid-cols-1 gap-4">
                                                                 <div>
-                                                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                                    <label className="field-label">
                                                                         Role
                                                                     </label>
                                                                     <Listbox
@@ -1720,7 +1718,7 @@ export default function User() {
                                                                         }
                                                                     >
                                                                         <div className="relative">
-                                                                            <Listbox.Button className="relative w-full cursor-default rounded-xl bg-white py-2.5 pl-3 pr-10 text-left border border-gray-200 focus:outline-none focus:ring-2 focus:ring-sky-500 sm:text-sm">
+                                                                            <Listbox.Button className="field-input relative cursor-pointer pr-10 text-left">
                                                                                 <span className="block truncate">
                                                                                     {createRole
                                                                                         ? allRoles.find(
@@ -1733,8 +1731,8 @@ export default function User() {
                                                                                               ?.name
                                                                                         : "Pilih Role"}
                                                                                 </span>
-                                                                                <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2">
-                                                                                    <FaChevronRight className="h-4 w-4 text-gray-400 rotate-90" />
+                                                                                <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
+                                                                                    <FaChevronRight className="h-3 w-3 rotate-90 text-slate-400" />
                                                                                 </span>
                                                                             </Listbox.Button>
                                                                             <Transition
@@ -1745,7 +1743,7 @@ export default function User() {
                                                                                 leaveFrom="opacity-100"
                                                                                 leaveTo="opacity-0"
                                                                             >
-                                                                                <Listbox.Options className="absolute z-10 mt-1 max-h-60 w-full overflow-auto rounded-xl bg-white py-1 text-base shadow-xl ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm border border-gray-100">
+                                                                                <Listbox.Options className="absolute z-10 mt-1.5 max-h-60 w-full overflow-auto rounded-xl border border-slate-200 bg-white py-1 text-sm shadow-lift focus:outline-none">
                                                                                     {allRoles.map(
                                                                                         (
                                                                                             role,
@@ -1757,10 +1755,10 @@ export default function User() {
                                                                                                 className={({
                                                                                                     active,
                                                                                                 }) =>
-                                                                                                    `relative cursor-default select-none py-2.5 pl-10 pr-4 ${
+                                                                                                    `relative cursor-pointer select-none py-2 pl-10 pr-4 ${
                                                                                                         active
-                                                                                                            ? "bg-sky-50 text-sky-900"
-                                                                                                            : "text-gray-900"
+                                                                                                            ? "bg-slate-50 text-ink-900"
+                                                                                                            : "text-slate-700"
                                                                                                     }`
                                                                                                 }
                                                                                                 value={
@@ -1783,7 +1781,7 @@ export default function User() {
                                                                                                             }
                                                                                                         </span>
                                                                                                         {selected && (
-                                                                                                            <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-sky-600">
+                                                                                                            <span className="absolute inset-y-0 left-0 flex items-center pl-3.5 text-brand-600">
                                                                                                                 <FaCheck
                                                                                                                     className="h-4 w-4"
                                                                                                                     aria-hidden="true"
@@ -1800,7 +1798,7 @@ export default function User() {
                                                                         </div>
                                                                     </Listbox>
                                                                     {createError.role && (
-                                                                        <p className="text-red-500 text-xs mt-1">
+                                                                        <p className="field-error">
                                                                             {
                                                                                 createError.role
                                                                             }
@@ -1809,7 +1807,7 @@ export default function User() {
                                                                 </div>
 
                                                                 <div>
-                                                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                                    <label className="field-label">
                                                                         Bidang
                                                                     </label>
                                                                     <Listbox
@@ -1821,13 +1819,13 @@ export default function User() {
                                                                         }
                                                                     >
                                                                         <div className="relative">
-                                                                            <Listbox.Button className="relative w-full cursor-default rounded-lg bg-white py-2 pl-3 pr-10 text-left border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 sm:text-sm">
+                                                                            <Listbox.Button className="field-input relative cursor-pointer pr-10 text-left">
                                                                                 <span className="block truncate">
                                                                                     {createBidang ||
                                                                                         "Pilih Bidang"}
                                                                                 </span>
-                                                                                <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2">
-                                                                                    <FaChevronRight className="h-4 w-4 text-gray-400 rotate-90" />
+                                                                                <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
+                                                                                    <FaChevronRight className="h-3 w-3 rotate-90 text-slate-400" />
                                                                                 </span>
                                                                             </Listbox.Button>
                                                                             <Transition
@@ -1838,7 +1836,7 @@ export default function User() {
                                                                                 leaveFrom="opacity-100"
                                                                                 leaveTo="opacity-0"
                                                                             >
-                                                                                <Listbox.Options className="absolute z-10 mt-1 max-h-60 w-full overflow-auto rounded-md bg-white py-1 text-base shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm">
+                                                                                <Listbox.Options className="absolute z-10 mt-1.5 max-h-60 w-full overflow-auto rounded-xl border border-slate-200 bg-white py-1 text-sm shadow-lift focus:outline-none">
                                                                                     {BIDANG_OPTIONS.map(
                                                                                         (
                                                                                             bidang,
@@ -1850,10 +1848,10 @@ export default function User() {
                                                                                                 className={({
                                                                                                     active,
                                                                                                 }) =>
-                                                                                                    `relative cursor-default select-none py-2 pl-10 pr-4 ${
+                                                                                                    `relative cursor-pointer select-none py-2 pl-10 pr-4 ${
                                                                                                         active
-                                                                                                            ? "bg-blue-100 text-blue-900"
-                                                                                                            : "text-gray-900"
+                                                                                                            ? "bg-slate-50 text-ink-900"
+                                                                                                            : "text-slate-700"
                                                                                                     }`
                                                                                                 }
                                                                                                 value={
@@ -1876,7 +1874,7 @@ export default function User() {
                                                                                                             }
                                                                                                         </span>
                                                                                                         {selected && (
-                                                                                                            <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-blue-600">
+                                                                                                            <span className="absolute inset-y-0 left-0 flex items-center pl-3.5 text-brand-600">
                                                                                                                 <FaCheck
                                                                                                                     className="h-5 w-5"
                                                                                                                     aria-hidden="true"
@@ -1893,7 +1891,7 @@ export default function User() {
                                                                         </div>
                                                                     </Listbox>
                                                                     {createError.bidang && (
-                                                                        <p className="text-red-500 text-xs mt-1">
+                                                                        <p className="field-error">
                                                                             {
                                                                                 createError.bidang
                                                                             }
@@ -1902,7 +1900,7 @@ export default function User() {
                                                                 </div>
 
                                                                 <div>
-                                                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                                    <label className="field-label">
                                                                         Wilayah
                                                                     </label>
                                                                     <Listbox
@@ -1914,13 +1912,13 @@ export default function User() {
                                                                         }
                                                                     >
                                                                         <div className="relative">
-                                                                            <Listbox.Button className="relative w-full cursor-default rounded-lg bg-white py-2 pl-3 pr-10 text-left border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 sm:text-sm">
+                                                                            <Listbox.Button className="field-input relative cursor-pointer pr-10 text-left">
                                                                                 <span className="block truncate">
                                                                                     {createWilayah ||
                                                                                         "Pilih Wilayah"}
                                                                                 </span>
-                                                                                <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2">
-                                                                                    <FaChevronRight className="h-4 w-4 text-gray-400 rotate-90" />
+                                                                                <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
+                                                                                    <FaChevronRight className="h-3 w-3 rotate-90 text-slate-400" />
                                                                                 </span>
                                                                             </Listbox.Button>
                                                                             <Transition
@@ -1931,7 +1929,7 @@ export default function User() {
                                                                                 leaveFrom="opacity-100"
                                                                                 leaveTo="opacity-0"
                                                                             >
-                                                                                <Listbox.Options className="absolute z-10 mt-1 max-h-60 w-full overflow-auto rounded-md bg-white py-1 text-base shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm">
+                                                                                <Listbox.Options className="absolute z-10 mt-1.5 max-h-60 w-full overflow-auto rounded-xl border border-slate-200 bg-white py-1 text-sm shadow-lift focus:outline-none">
                                                                                     {WILAYAH_OPTIONS.map(
                                                                                         (
                                                                                             wilayah,
@@ -1943,10 +1941,10 @@ export default function User() {
                                                                                                 className={({
                                                                                                     active,
                                                                                                 }) =>
-                                                                                                    `relative cursor-default select-none py-2 pl-10 pr-4 ${
+                                                                                                    `relative cursor-pointer select-none py-2 pl-10 pr-4 ${
                                                                                                         active
-                                                                                                            ? "bg-blue-100 text-blue-900"
-                                                                                                            : "text-gray-900"
+                                                                                                            ? "bg-slate-50 text-ink-900"
+                                                                                                            : "text-slate-700"
                                                                                                     }`
                                                                                                 }
                                                                                                 value={
@@ -1969,7 +1967,7 @@ export default function User() {
                                                                                                             }
                                                                                                         </span>
                                                                                                         {selected && (
-                                                                                                            <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-blue-600">
+                                                                                                            <span className="absolute inset-y-0 left-0 flex items-center pl-3.5 text-brand-600">
                                                                                                                 <FaCheck
                                                                                                                     className="h-5 w-5"
                                                                                                                     aria-hidden="true"
@@ -1990,15 +1988,15 @@ export default function User() {
                                                         </div>
 
                                                         {/* Gardu Induk */}
-                                                        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
-                                                            <h4 className="text-base font-semibold text-gray-800 mb-4 flex items-center gap-2">
-                                                                <span className="flex items-center justify-center w-6 h-6 rounded-full bg-orange-100 text-orange-600 text-xs font-bold">
+                                                        <div className="rounded-2xl border border-slate-200/80 bg-white p-5">
+                                                            <h4 className="mb-4 flex items-center gap-2 text-sm font-bold text-ink-900">
+                                                                <span className="flex h-6 w-6 items-center justify-center rounded-full bg-ink-900 text-[11px] font-bold text-white">
                                                                     4
                                                                 </span>
                                                                 Gardu Induk
                                                             </h4>
                                                             <div>
-                                                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                                <label className="field-label">
                                                                     Pilih Gardu
                                                                     Induk
                                                                 </label>
@@ -2018,10 +2016,10 @@ export default function User() {
                                                     </form>
                                                 </div>
 
-                                                <div className="bg-white px-6 py-4 flex justify-end gap-3 border-t border-gray-100">
+                                                <div className="flex justify-end gap-2 border-t border-slate-100 bg-white px-6 py-3">
                                                     <button
                                                         type="button"
-                                                        className="inline-flex justify-center rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+                                                        className="btn-ghost"
                                                         onClick={() =>
                                                             setCreateModalOpen(
                                                                 false,
@@ -2033,7 +2031,7 @@ export default function User() {
                                                     </button>
                                                     <button
                                                         type="button"
-                                                        className="inline-flex justify-center rounded-lg border border-transparent bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:opacity-50"
+                                                        className="btn-brand"
                                                         onClick={
                                                             handleCreateUser
                                                         }
@@ -2081,7 +2079,7 @@ export default function User() {
                             leaveFrom="opacity-100"
                             leaveTo="opacity-0"
                         >
-                            <div className="fixed inset-0 bg-black/25 backdrop-blur-sm" />
+                            <div className="fixed inset-0 bg-ink-950/50 backdrop-blur-sm" />
                         </Transition.Child>
 
                         <div className="fixed inset-0 overflow-y-auto">
@@ -2095,17 +2093,17 @@ export default function User() {
                                     leaveFrom="opacity-100 scale-100"
                                     leaveTo="opacity-0 scale-95"
                                 >
-                                    <Dialog.Panel className="w-full max-w-md transform overflow-hidden rounded-2xl bg-white/95 backdrop-blur-sm text-left align-middle shadow-xl transition-all border border-gray-100">
-                                        <div className="px-6 py-4 border-b border-gray-100 bg-gray-50 flex items-center justify-between">
+                                    <Dialog.Panel className="w-full max-w-md transform overflow-hidden rounded-2xl border border-slate-200/80 bg-white text-left align-middle shadow-lift transition-all">
+                                        <div className="flex items-center justify-between gap-3 border-b border-slate-100 px-6 py-4">
                                             <div className="flex items-center gap-3">
-                                                <div className="h-10 w-10 rounded-xl bg-red-100 flex items-center justify-center text-red-600 shadow-sm">
+                                                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-rose-50 text-rose-600">
                                                     <FaTrash className="w-5 h-5" />
                                                 </div>
                                                 <div>
-                                                    <Dialog.Title className="text-lg font-bold text-gray-900">
+                                                    <Dialog.Title className="text-base font-bold text-ink-900">
                                                         Hapus User
                                                     </Dialog.Title>
-                                                    <p className="text-sm text-gray-500 mt-0.5">
+                                                    <p className="mt-0.5 text-sm text-slate-500">
                                                         Konfirmasi penghapusan
                                                         data.
                                                     </p>
@@ -2117,7 +2115,8 @@ export default function User() {
                                                     !deleteLoading &&
                                                     setDeleteModalOpen(false)
                                                 }
-                                                className="text-gray-400 hover:text-gray-500 transition-colors"
+                                                className="btn-icon"
+                                                aria-label="Tutup"
                                                 disabled={deleteLoading}
                                             >
                                                 <FaTimes className="w-5 h-5" />
@@ -2125,10 +2124,10 @@ export default function User() {
                                         </div>
 
                                         <div className="p-6">
-                                            <p className="text-gray-600">
+                                            <p className="text-sm leading-relaxed text-slate-600">
                                                 Apakah Anda yakin ingin
                                                 menghapus user{" "}
-                                                <span className="font-bold text-gray-900">
+                                                <span className="font-semibold text-ink-900">
                                                     {deleteUser?.name}
                                                 </span>
                                                 ? Data yang dihapus tidak dapat
@@ -2136,10 +2135,10 @@ export default function User() {
                                             </p>
                                         </div>
 
-                                        <div className="bg-gray-50 px-6 py-4 flex justify-end gap-3 border-t border-gray-100">
+                                        <div className="flex justify-end gap-2 border-t border-slate-100 bg-slate-50/60 px-6 py-3">
                                             <button
                                                 type="button"
-                                                className="inline-flex justify-center rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+                                                className="btn-ghost"
                                                 onClick={() =>
                                                     setDeleteModalOpen(false)
                                                 }
@@ -2149,7 +2148,7 @@ export default function User() {
                                             </button>
                                             <button
                                                 type="button"
-                                                className="inline-flex justify-center rounded-lg border border-transparent bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2 disabled:opacity-50"
+                                                className="btn-danger"
                                                 onClick={handleDeleteUser}
                                                 disabled={deleteLoading}
                                             >

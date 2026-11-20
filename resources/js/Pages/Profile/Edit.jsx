@@ -4,8 +4,10 @@ import DeleteUserForm from "./Partials/DeleteUserForm";
 import UpdatePasswordForm from "./Partials/UpdatePasswordForm";
 import UpdateProfileInformationForm from "./Partials/UpdateProfileInformationForm";
 import DashboardLayout from "@/Layouts/DashboardLayout";
-import { FaSignature } from "react-icons/fa";
+import { FaLock, FaSignature, FaTrashAlt, FaUserCog } from "react-icons/fa";
 import TandaTanganForm from "./Partials/TandaTanganForm";
+import PageHeader from "@/Components/Dashboard/PageHeader";
+import { Card } from "@/Components/Dashboard/ui";
 
 export default function Edit({
     mustVerifyEmail,
@@ -16,138 +18,61 @@ export default function Edit({
     return (
         <DashboardLayout title="Pengaturan">
             <Head title="Profile" />
-            <div className="min-h-full">
-                <div className="max-w-full space-y-6">
-                    <div className="surface overflow-hidden w-full">
-                        <div className="px-6 py-4 border-b border-gray-100">
-                            <div className="flex items-center gap-3">
-                                <div className="h-11 w-11 rounded-2xl bg-blue-50 flex items-center justify-center border border-blue-100">
-                                    <svg
-                                        width="24"
-                                        height="24"
-                                        fill="none"
-                                        viewBox="0 0 24 24"
-                                    >
-                                        <path
-                                            d="M12 12a5 5 0 1 0 0-10 5 5 0 0 0 0 10Zm0 2c-4.418 0-8 2.239-8 5v1a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-1c0-2.761-3.582-5-8-5Z"
-                                            fill="#2563eb"
-                                        />
-                                    </svg>
-                                </div>
-                                <div>
-                                    <h2 className="text-base md:text-lg font-semibold text-gray-900">
-                                        Informasi Profil
-                                    </h2>
-                                    <p className="text-xs md:text-sm text-gray-500 mt-0.5">
-                                        Atur data profil dan informasi akun
-                                        Anda.
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-                        <div className="p-6">
-                            <UpdateProfileInformationForm
-                                mustVerifyEmail={mustVerifyEmail}
-                                status={status}
-                                fotoProfilUrl={foto_profil_url}
-                                className="w-full"
-                            />
-                        </div>
-                    </div>
+            <PageHeader
+                icon={FaUserCog}
+                title="Pengaturan Akun"
+                description="Kelola profil, foto, tanda tangan digital, dan keamanan akun Anda."
+            />
 
-                    <div className="surface overflow-hidden w-full">
-                        <div className="px-6 py-4 border-b border-gray-100">
-                            <div className="flex items-center gap-3">
-                                <div className="h-11 w-11 rounded-2xl bg-blue-50 flex items-center justify-center border border-blue-100">
-                                    <FaSignature className="text-blue-500 text-xl" />
-                                </div>
-                                <div>
-                                    <h2 className="text-base md:text-lg font-semibold text-gray-900">
-                                        Tanda Tangan Digital
-                                    </h2>
-                                    <p className="text-xs md:text-sm text-gray-500 mt-0.5">
-                                        Kelola tanda tangan digital untuk proses
-                                        persetujuan.
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-                        <div className="p-6">
-                            <div className="w-full max-w-5xl">
-                                <TandaTanganForm
-                                    existingSignatureUrl={tanda_tangan_url}
-                                />
-                            </div>
-                        </div>
-                    </div>
+            <div className="mx-auto max-w-5xl space-y-6">
+                <Card
+                    icon={FaUserCog}
+                    title="Informasi Profil"
+                    description="Atur data profil, foto, dan informasi akun Anda."
+                >
+                    <UpdateProfileInformationForm
+                        mustVerifyEmail={mustVerifyEmail}
+                        status={status}
+                        fotoProfilUrl={foto_profil_url}
+                        className="w-full"
+                    />
+                </Card>
 
-                    <div className="surface overflow-hidden w-full">
-                        <div className="px-6 py-4 border-b border-gray-100">
-                            <div className="flex items-center gap-3">
-                                <div className="h-11 w-11 rounded-2xl bg-blue-50 flex items-center justify-center border border-blue-100">
-                                    <svg
-                                        width="24"
-                                        height="24"
-                                        fill="none"
-                                        viewBox="0 0 24 24"
-                                    >
-                                        <path
-                                            d="M12 17a2 2 0 1 0 0-4 2 2 0 0 0 0 4Zm6-7V7a6 6 0 1 0-12 0v3a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7a2 2 0 0 0-2-2Zm-8-3a4 4 0 1 1 8 0v3H6V7Z"
-                                            fill="#2563eb"
-                                        />
-                                    </svg>
-                                </div>
-                                <div>
-                                    <h2 className="text-base md:text-lg font-semibold text-gray-900">
-                                        Ubah Password
-                                    </h2>
-                                    <p className="text-xs md:text-sm text-gray-500 mt-0.5">
-                                        Perbarui password untuk keamanan akun
-                                        Anda.
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-                        <div className="p-6">
-                            <UpdatePasswordForm className="w-full" />
-                        </div>
-                    </div>
+                <Card
+                    icon={FaSignature}
+                    title="Tanda Tangan Digital"
+                    description="Kelola tanda tangan digital untuk proses persetujuan."
+                >
+                    <TandaTanganForm existingSignatureUrl={tanda_tangan_url} />
+                </Card>
 
-                    <div className="surface overflow-hidden w-full">
-                        <div className="px-6 py-4 border-b border-gray-100 bg-gradient-to-r from-red-50 via-white to-red-50">
-                            <div className="flex items-center gap-3">
-                                <div className="h-11 w-11 rounded-2xl bg-red-50 flex items-center justify-center border border-red-100">
-                                    <svg
-                                        width="24"
-                                        height="24"
-                                        fill="none"
-                                        viewBox="0 0 24 24"
-                                    >
-                                        <path
-                                            d="M6 7V6a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v1m-1 0v12a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2V7h10Zm-7 4v6m4-6v6"
-                                            stroke="#ef4444"
-                                            strokeWidth="2"
-                                            strokeLinecap="round"
-                                            strokeLinejoin="round"
-                                        />
-                                    </svg>
-                                </div>
-                                <div>
-                                    <h2 className="text-base md:text-lg font-semibold text-red-700">
-                                        Hapus Akun
-                                    </h2>
-                                    <p className="text-xs md:text-sm text-red-500 mt-0.5">
-                                        Hapus akun dan seluruh data terkait
-                                        secara permanen.
-                                    </p>
-                                </div>
-                            </div>
+                <Card
+                    icon={FaLock}
+                    title="Ubah Password"
+                    description="Perbarui password untuk keamanan akun Anda."
+                >
+                    <UpdatePasswordForm className="w-full max-w-xl" />
+                </Card>
+
+                <section className="overflow-hidden rounded-2xl border border-rose-200 bg-white shadow-soft">
+                    <header className="flex items-center gap-3 border-b border-rose-100 bg-rose-50/60 px-5 py-4 sm:px-6">
+                        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-rose-100 text-rose-600">
+                            <FaTrashAlt className="h-4 w-4" aria-hidden="true" />
+                        </span>
+                        <div className="min-w-0">
+                            <h2 className="text-base font-bold text-rose-700">
+                                Hapus Akun
+                            </h2>
+                            <p className="mt-0.5 text-sm text-rose-600/80">
+                                Hapus akun dan seluruh data terkait secara
+                                permanen.
+                            </p>
                         </div>
-                        <div className="p-6">
-                            <DeleteUserForm className="w-full" />
-                        </div>
+                    </header>
+                    <div className="p-5 sm:p-6">
+                        <DeleteUserForm className="w-full" />
                     </div>
-                </div>
+                </section>
             </div>
         </DashboardLayout>
     );

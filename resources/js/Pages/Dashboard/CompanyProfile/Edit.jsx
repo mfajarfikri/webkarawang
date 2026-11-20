@@ -1,9 +1,11 @@
 import DashboardLayout from "@/Layouts/DashboardLayout";
 import InputError from "@/Components/InputError";
 import InputLabel from "@/Components/InputLabel";
-import PrimaryButton from "@/Components/PrimaryButton";
+
 import TextInput from "@/Components/TextInput";
 import Modal from "@/Components/Modal";
+import PageHeader from "@/Components/Dashboard/PageHeader";
+import { Badge } from "@/Components/Dashboard/ui";
 import {
     DesignConfigProvider,
     useDesignConfig,
@@ -19,6 +21,7 @@ import {
     FaChevronDown,
     FaChevronLeft,
     FaChevronRight,
+    FaBuilding,
     FaCloudUploadAlt,
     FaEye,
     FaFileAlt,
@@ -251,7 +254,7 @@ function RichTextEditor({ id, initialData, onChange, placeholder }) {
     }, [holderId]);
 
     return (
-        <div className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <div className="rounded-xl border border-slate-200 bg-white shadow-sm transition hover:border-slate-300 focus-within:border-brand-500 focus-within:ring-2 focus-within:ring-brand-500/20">
             <div className="p-3 sm:p-4">
                 <div id={holderId} className="prose max-w-none" />
             </div>
@@ -323,15 +326,15 @@ function ImageUploadCard({
     };
 
     return (
-        <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
-            <div className="p-5 border-b border-slate-100">
+        <div className="rounded-2xl border border-slate-200/80 bg-white overflow-hidden">
+            <div className="px-5 py-4 border-b border-slate-100">
                 <div className="flex items-start justify-between gap-4">
                     <div className="min-w-0">
-                        <div className="text-sm font-semibold text-slate-900">
+                        <div className="text-sm font-bold text-ink-900">
                             {title}
                         </div>
                         {subtitle ? (
-                            <div className="mt-1 text-sm text-slate-600">
+                            <div className="mt-0.5 text-sm text-slate-500">
                                 {subtitle}
                             </div>
                         ) : null}
@@ -341,13 +344,13 @@ function ImageUploadCard({
                             </div>
                         ) : null}
                     </div>
-                    <label className="inline-flex items-center rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer">
+                    <label className="btn-ghost btn-sm shrink-0 cursor-pointer">
                         {uploading ? (
                             <FaSpinner className="h-4 w-4 animate-spin" />
                         ) : (
                             <FaCloudUploadAlt className="h-4 w-4" />
                         )}
-                        <span className="ml-2">Upload</span>
+                        <span>Upload</span>
                         <input
                             ref={inputRef}
                             type="file"
@@ -362,7 +365,7 @@ function ImageUploadCard({
 
             <div className="p-5">
                 {items.length === 0 ? (
-                    <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-6 text-sm text-slate-600">
+                    <div className="rounded-xl border-2 border-dashed border-slate-200 bg-slate-50/60 p-6 text-center text-sm text-slate-500">
                         Belum ada gambar.
                     </div>
                 ) : (
@@ -379,7 +382,7 @@ function ImageUploadCard({
                             return (
                                 <div
                                     key={url || idx}
-                                    className="rounded-2xl border border-slate-200 bg-white overflow-hidden"
+                                    className="rounded-xl border border-slate-200 bg-white overflow-hidden"
                                 >
                                     <div className="aspect-[4/3] bg-slate-100">
                                         {url ? (
@@ -403,7 +406,7 @@ function ImageUploadCard({
                                                     };
                                                     onChange(next);
                                                 }}
-                                                className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
+                                                className="field-input py-2"
                                                 placeholder="Caption"
                                             />
                                             <input
@@ -416,7 +419,7 @@ function ImageUploadCard({
                                                     };
                                                     onChange(next);
                                                 }}
-                                                className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
+                                                className="field-input py-2"
                                                 placeholder="Kredit"
                                             />
                                             <button
@@ -427,10 +430,10 @@ function ImageUploadCard({
                                                     );
                                                     onChange(next);
                                                 }}
-                                                className="w-full inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                                                className="btn btn-sm w-full text-rose-600 hover:bg-rose-50"
                                             >
-                                                <FaTimes className="h-4 w-4" />
-                                                <span className="ml-2">
+                                                <FaTimes className="h-3 w-3" />
+                                                <span>
                                                     Hapus
                                                 </span>
                                             </button>
@@ -440,10 +443,10 @@ function ImageUploadCard({
                                             <button
                                                 type="button"
                                                 onClick={() => onChange(null)}
-                                                className="w-full inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                                                className="btn btn-sm w-full text-rose-600 hover:bg-rose-50"
                                             >
-                                                <FaTimes className="h-4 w-4" />
-                                                <span className="ml-2">
+                                                <FaTimes className="h-3 w-3" />
+                                                <span>
                                                     Hapus
                                                 </span>
                                             </button>
@@ -476,19 +479,19 @@ function VersionDrawer({ open, onClose, versions, onRestore, onPublish }) {
     return (
         <Modal show={open} onClose={onClose} maxWidth="5xl">
             <div className="bg-white">
-                <div className="p-5 border-b border-slate-100 flex items-center justify-between gap-4">
+                <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between gap-4">
                     <div>
-                        <div className="text-sm font-semibold text-slate-900">
+                        <div className="text-base font-bold text-ink-900">
                             Riwayat Versi
                         </div>
-                        <div className="text-xs text-slate-500">
+                        <div className="mt-0.5 text-sm text-slate-500">
                             Pulihkan draft atau terbitkan versi tertentu.
                         </div>
                     </div>
                     <button
                         type="button"
                         onClick={onClose}
-                        className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                        className="btn-ghost btn-sm"
                     >
                         Tutup
                     </button>
@@ -505,15 +508,15 @@ function VersionDrawer({ open, onClose, versions, onRestore, onPublish }) {
                                         type="button"
                                         onClick={() => setSelected(v)}
                                         className={classNames(
-                                            "w-full text-left rounded-2xl border p-4 transition-colors",
+                                            "w-full text-left rounded-xl border p-4 transition-colors",
                                             active
-                                                ? "border-sky-200 bg-sky-50"
+                                                ? "border-brand-200 bg-brand-50 ring-1 ring-brand-200"
                                                 : "border-slate-200 bg-white hover:bg-slate-50",
                                         )}
                                     >
                                         <div className="flex items-start justify-between gap-3">
                                             <div className="min-w-0">
-                                                <div className="text-sm font-semibold text-slate-900 truncate">
+                                                <div className="text-sm font-bold text-ink-900 truncate tabular-nums">
                                                     v{v.version_number}
                                                 </div>
                                                 <div className="mt-0.5 text-xs text-slate-500 truncate">
@@ -533,10 +536,10 @@ function VersionDrawer({ open, onClose, versions, onRestore, onPublish }) {
                                             </div>
                                             <span
                                                 className={classNames(
-                                                    "text-[11px] font-semibold px-2 py-1 rounded-full border",
+                                                    "text-[11px] font-semibold px-2.5 py-0.5 rounded-full ring-1 ring-inset",
                                                     v.state === "published"
-                                                        ? "border-emerald-200 bg-emerald-50 text-emerald-700"
-                                                        : "border-amber-200 bg-amber-50 text-amber-800",
+                                                        ? "ring-emerald-200 bg-emerald-50 text-emerald-800"
+                                                        : "ring-amber-200 bg-amber-50 text-amber-800",
                                                 )}
                                             >
                                                 {v.state === "published"
@@ -550,23 +553,23 @@ function VersionDrawer({ open, onClose, versions, onRestore, onPublish }) {
                         </div>
                     </div>
 
-                    <div className="lg:col-span-7 p-5">
+                    <div className="lg:col-span-7 p-5 bg-slate-50/60">
                         {!selectedVersion ? (
-                            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-6 text-sm text-slate-600">
+                            <div className="rounded-xl border-2 border-dashed border-slate-200 bg-white p-6 text-center text-sm text-slate-500">
                                 Belum ada versi.
                             </div>
                         ) : (
                             <div className="space-y-4">
-                                <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                                <div className="surface p-5">
                                     <div className="flex items-start justify-between gap-4">
                                         <div>
-                                            <div className="text-sm font-semibold text-slate-900">
+                                            <div className="text-base font-bold text-ink-900 tabular-nums">
                                                 v
                                                 {selectedVersion.version_number}
                                             </div>
                                             <div className="mt-1 text-sm text-slate-600">
                                                 Status:{" "}
-                                                <span className="font-semibold">
+                                                <span className="font-semibold text-ink-900">
                                                     {selectedVersion.state ===
                                                     "published"
                                                         ? "Terbit"
@@ -583,24 +586,27 @@ function VersionDrawer({ open, onClose, versions, onRestore, onPublish }) {
                                         <FaHistory className="h-5 w-5 text-slate-400" />
                                     </div>
                                     {selectedVersion.change_note ? (
-                                        <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
+                                        <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
                                             {selectedVersion.change_note}
                                         </div>
                                     ) : null}
                                 </div>
 
-                                <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-                                    <div className="text-sm font-semibold text-slate-900">
+                                <div className="surface p-5">
+                                    <div className="text-base font-bold text-ink-900">
                                         Aksi
                                     </div>
                                     <div className="mt-3">
-                                        <InputLabel value="Catatan perubahan (opsional)" />
+                                        <InputLabel
+                                            value="Catatan perubahan (opsional)"
+                                            className="mb-1.5"
+                                        />
                                         <textarea
                                             value={note}
                                             onChange={(e) =>
                                                 setNote(e.target.value)
                                             }
-                                            className="mt-1 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700"
+                                            className="field-input"
                                             rows={3}
                                             placeholder="Contoh: Revisi kontak dan update logo"
                                         />
@@ -611,10 +617,10 @@ function VersionDrawer({ open, onClose, versions, onRestore, onPublish }) {
                                             onClick={() =>
                                                 onRestore(selectedVersion.id)
                                             }
-                                            className="inline-flex items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                                            className="btn-ghost"
                                         >
-                                            <FaFileAlt className="h-4 w-4" />
-                                            <span className="ml-2">
+                                            <FaFileAlt className="h-3.5 w-3.5" />
+                                            <span>
                                                 Pulihkan sebagai Draft
                                             </span>
                                         </button>
@@ -626,10 +632,10 @@ function VersionDrawer({ open, onClose, versions, onRestore, onPublish }) {
                                                     note,
                                                 )
                                             }
-                                            className="inline-flex items-center justify-center rounded-2xl bg-sky-700 px-4 py-3 text-sm font-semibold text-white hover:bg-sky-800"
+                                            className="btn-brand"
                                         >
-                                            <FaCheck className="h-4 w-4" />
-                                            <span className="ml-2">
+                                            <FaCheck className="h-3.5 w-3.5" />
+                                            <span>
                                                 Terbitkan Versi Ini
                                             </span>
                                         </button>
@@ -656,10 +662,10 @@ function DeviceSelector({ value, onChange }) {
     return (
         <Listbox value={selected} onChange={(v) => onChange(v.key)}>
             <div className="relative">
-                <Listbox.Button className="relative cursor-pointer rounded-xl bg-slate-50 py-2 pl-3 pr-9 text-left border border-slate-200 text-sm font-semibold text-slate-700 hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500/20 whitespace-nowrap">
+                <Listbox.Button className="relative cursor-pointer rounded-full bg-white py-2 pl-4 pr-9 text-left border border-slate-200 text-sm font-semibold text-slate-700 hover:border-slate-300 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-brand-500/20 whitespace-nowrap">
                     <span className="block truncate">{selected.label}</span>
                     <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
-                        <FaChevronDown className="h-4 w-4 text-slate-400" />
+                        <FaChevronDown className="h-3 w-3 text-slate-400" />
                     </span>
                 </Listbox.Button>
                 <Transition
@@ -668,17 +674,17 @@ function DeviceSelector({ value, onChange }) {
                     leaveFrom="opacity-100"
                     leaveTo="opacity-0"
                 >
-                    <Listbox.Options className="absolute right-0 z-50 mt-2 max-h-60 w-44 overflow-auto rounded-2xl bg-white py-1 text-base shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm">
+                    <Listbox.Options className="absolute right-0 z-50 mt-2 max-h-60 w-44 overflow-auto rounded-xl border border-slate-200/80 bg-white p-1 text-base shadow-lift focus:outline-none sm:text-sm">
                         {options.map((o) => (
                             <Listbox.Option
                                 key={o.key}
                                 value={o}
                                 className={({ active }) =>
                                     classNames(
-                                        "relative cursor-default select-none py-2 pl-10 pr-4",
+                                        "relative cursor-default select-none rounded-lg py-2 pl-10 pr-4",
                                         active
-                                            ? "bg-sky-50 text-sky-700"
-                                            : "text-slate-900",
+                                            ? "bg-brand-50 text-brand-800"
+                                            : "text-slate-700",
                                     )
                                 }
                             >
@@ -695,7 +701,8 @@ function DeviceSelector({ value, onChange }) {
                                             {o.label}
                                         </span>
                                         {selected ? (
-                                            <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-sky-600">
+                                            <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-brand-600">
+
                                                 <FaCheck className="h-4 w-4" />
                                             </span>
                                         ) : null}
@@ -743,25 +750,25 @@ function PreviewPanel({ draft, device }) {
     return (
         <div className="flex justify-center">
             <div
-                className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden"
+                className="max-w-full rounded-2xl border border-slate-200/80 bg-white shadow-soft overflow-hidden"
                 style={{ width: Math.min(deviceWidth, 1024) }}
             >
-                <div className="p-6 border-b border-slate-100 bg-gradient-to-b from-sky-50 to-white">
+                <div className="p-6 border-b border-slate-100 bg-slate-50/70">
                     <div className="flex items-start justify-between gap-4">
                         <div className="min-w-0">
-                            <div className="text-xs font-semibold uppercase tracking-widest text-slate-500">
+                            <div className="eyebrow">
                                 Profil Perusahaan
                             </div>
-                            <div className="mt-1 text-xl font-extrabold text-slate-900 tracking-tight">
+                            <div className="mt-2 font-display text-xl font-extrabold text-ink-900 tracking-tight">
                                 {draft?.company_name || "-"}
                             </div>
                             {draft?.tagline ? (
-                                <div className="mt-2 text-sm font-semibold text-sky-700">
+                                <div className="mt-1 text-sm font-semibold text-brand-700">
                                     {draft.tagline}
                                 </div>
                             ) : null}
                         </div>
-                        <div className="h-12 w-12 rounded-2xl border border-slate-200 bg-white overflow-hidden">
+                        <div className="h-12 w-12 shrink-0 rounded-xl border border-slate-200 bg-white overflow-hidden">
                             {draft?.logo?.url ? (
                                 <img
                                     src={draft.logo.url}
@@ -774,8 +781,8 @@ function PreviewPanel({ draft, device }) {
                 </div>
 
                 <div className="p-6 space-y-6">
-                    <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
-                        <div className="text-sm font-semibold text-slate-900">
+                    <div className="rounded-xl border border-slate-200 bg-slate-50 p-5">
+                        <div className="text-sm font-bold text-ink-900">
                             Deskripsi Singkat
                         </div>
                         {aboutHtml ? (
@@ -791,8 +798,8 @@ function PreviewPanel({ draft, device }) {
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div className="rounded-2xl border border-slate-200 bg-white p-5">
-                            <div className="text-sm font-semibold text-slate-900">
+                        <div className="rounded-xl border border-slate-200 bg-white p-5">
+                            <div className="text-sm font-bold text-ink-900">
                                 Kontak
                             </div>
                             <div className="mt-2 text-sm text-slate-600 space-y-1">
@@ -801,8 +808,8 @@ function PreviewPanel({ draft, device }) {
                                 <div>{draft?.website || "-"}</div>
                             </div>
                         </div>
-                        <div className="rounded-2xl border border-slate-200 bg-white p-5">
-                            <div className="text-sm font-semibold text-slate-900">
+                        <div className="rounded-xl border border-slate-200 bg-white p-5">
+                            <div className="text-sm font-bold text-ink-900">
                                 Alamat
                             </div>
                             <div className="mt-2 text-sm text-slate-600 whitespace-pre-line">
@@ -811,8 +818,8 @@ function PreviewPanel({ draft, device }) {
                         </div>
                     </div>
 
-                    <div className="rounded-2xl border border-slate-200 bg-white p-5">
-                        <div className="text-sm font-semibold text-slate-900">
+                    <div className="rounded-xl border border-slate-200 bg-white p-5">
+                        <div className="text-sm font-bold text-ink-900">
                             Visi
                         </div>
                         {visionHtml ? (
@@ -825,13 +832,13 @@ function PreviewPanel({ draft, device }) {
                                 [VISI_PERUSAHAAN]
                             </div>
                         )}
-                        <div className="mt-4 text-sm font-semibold text-slate-900">
+                        <div className="mt-4 text-sm font-bold text-ink-900">
                             Misi
                         </div>
                         <ul className="mt-2 space-y-2 text-sm text-slate-700">
                             {(draft?.missions || []).map((m, idx) => (
                                 <li key={idx} className="flex gap-2">
-                                    <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-slate-400" />
+                                    <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-brand-500" />
                                     <span className="min-w-0">{m}</span>
                                 </li>
                             ))}
@@ -839,9 +846,9 @@ function PreviewPanel({ draft, device }) {
                     </div>
 
                     {mapSrc ? (
-                        <div className="rounded-2xl border border-slate-200 bg-white overflow-hidden">
-                            <div className="p-5 border-b border-slate-100">
-                                <div className="text-sm font-semibold text-slate-900">
+                        <div className="rounded-xl border border-slate-200 bg-white overflow-hidden">
+                            <div className="px-5 py-4 border-b border-slate-100">
+                                <div className="text-sm font-bold text-ink-900">
                                     Lokasi (Peta)
                                 </div>
                             </div>
@@ -855,8 +862,8 @@ function PreviewPanel({ draft, device }) {
                         </div>
                     ) : null}
 
-                    <div className="rounded-2xl border border-slate-200 bg-white p-5">
-                        <div className="text-sm font-semibold text-slate-900">
+                    <div className="rounded-xl border border-slate-200 bg-white p-5">
+                        <div className="text-sm font-bold text-ink-900">
                             Galeri
                         </div>
                         <div className="mt-3 grid grid-cols-2 sm:grid-cols-3 gap-3">
@@ -865,7 +872,7 @@ function PreviewPanel({ draft, device }) {
                                 .map((g, idx) => (
                                     <div
                                         key={g?.image?.url || idx}
-                                        className="rounded-2xl border border-slate-200 overflow-hidden"
+                                        className="rounded-xl border border-slate-200 overflow-hidden"
                                     >
                                         <div className="aspect-[4/3] bg-slate-100">
                                             {g?.image?.url ? (
@@ -959,11 +966,11 @@ function EditContent({ profile, versions = [], flash }) {
         profile?.status === "published"
             ? {
                   label: "TERBIT",
-                  cls: "border-emerald-200 bg-emerald-50 text-emerald-700",
+                  cls: "ring-emerald-200 bg-emerald-50 text-emerald-800",
               }
             : {
                   label: "DRAFT",
-                  cls: "border-amber-200 bg-amber-50 text-amber-800",
+                  cls: "ring-amber-200 bg-amber-50 text-amber-800",
               };
 
     const saveDraft = () => {
@@ -1048,21 +1055,21 @@ function EditContent({ profile, versions = [], flash }) {
     };
 
     const editorTab = (
-        <div className="space-y-5">
-            <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
-                <div className="p-5 border-b border-slate-100">
+        <div className="space-y-6">
+            <div className="surface overflow-hidden">
+                <div className="px-5 py-4 sm:px-6 border-b border-slate-100">
                     <div className="flex items-center justify-between gap-4">
                         <div>
-                            <div className="text-sm font-semibold text-slate-900">
+                            <div className="text-base font-bold text-ink-900">
                                 Informasi Umum
                             </div>
-                            <div className="mt-1 text-sm text-slate-600">
+                            <div className="mt-0.5 text-sm text-slate-500">
                                 Identitas dan ringkasan perusahaan.
                             </div>
                         </div>
                         <span
                             className={classNames(
-                                "text-[11px] font-semibold px-2 py-1 rounded-full border",
+                                "text-[11px] font-semibold px-2.5 py-0.5 rounded-full ring-1 ring-inset",
                                 statusBadge.cls,
                             )}
                         >
@@ -1071,16 +1078,16 @@ function EditContent({ profile, versions = [], flash }) {
                     </div>
                 </div>
                 <div
-                    className="p-5 space-y-4"
+                    className="p-5 sm:p-6 space-y-5"
                     style={{ borderRadius: "var(--ds-radius)" }}
                 >
                     <div>
                         <InputLabel
                             value="Nama perusahaan"
-                            className="text-sm"
+                            className="mb-1.5"
                         />
                         <TextInput
-                            className="mt-1 block w-full"
+                            className="block w-full"
                             value={data.draft_data?.company_name || ""}
                             onChange={(e) =>
                                 setDraft("company_name", e.target.value)
@@ -1093,9 +1100,9 @@ function EditContent({ profile, versions = [], flash }) {
                     </div>
 
                     <div>
-                        <InputLabel value="Tagline" className="text-sm" />
+                        <InputLabel value="Tagline" className="mb-1.5" />
                         <TextInput
-                            className="mt-1 block w-full"
+                            className="block w-full"
                             value={data.draft_data?.tagline || ""}
                             onChange={(e) =>
                                 setDraft("tagline", e.target.value)
@@ -1106,7 +1113,7 @@ function EditContent({ profile, versions = [], flash }) {
                     <div>
                         <InputLabel
                             value="Deskripsi singkat (rich text)"
-                            className="text-sm"
+                            className="mb-1.5"
                         />
                         <div className="mt-2">
                             <RichTextEditor
@@ -1122,7 +1129,7 @@ function EditContent({ profile, versions = [], flash }) {
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <ImageUploadCard
                     title="Logo Perusahaan"
                     subtitle="Unggah logo dan lihat pratinjau."
@@ -1144,24 +1151,24 @@ function EditContent({ profile, versions = [], flash }) {
             </div>
 
             <div
-                className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden"
+                className="surface overflow-hidden"
                 style={{ borderRadius: "var(--ds-radius)" }}
             >
-                <div className="p-5 border-b border-slate-100">
-                    <div className="text-sm font-semibold text-slate-900">
+                <div className="px-5 py-4 sm:px-6 border-b border-slate-100">
+                    <div className="text-base font-bold text-ink-900">
                         Kontak & Lokasi
                     </div>
-                    <div className="mt-1 text-sm text-slate-600">
+                    <div className="mt-0.5 text-sm text-slate-500">
                         Informasi alamat, kontak, media sosial, dan koordinat
                         peta.
                     </div>
                 </div>
                 <div
-                    className="p-5 space-y-4"
+                    className="p-5 sm:p-6 space-y-5"
                     style={{ borderRadius: "var(--ds-radius)" }}
                 >
                     <div>
-                        <InputLabel value="Alamat" className="text-sm" />
+                        <InputLabel value="Alamat" className="mb-1.5" />
                         <textarea
                             className="mt-1 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700"
                             rows={4}
@@ -1174,9 +1181,9 @@ function EditContent({ profile, versions = [], flash }) {
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
-                            <InputLabel value="Telepon" className="text-sm" />
+                            <InputLabel value="Telepon" className="mb-1.5" />
                             <TextInput
-                                className="mt-1 block w-full"
+                                className="block w-full"
                                 value={data.draft_data?.phone || ""}
                                 onChange={(e) =>
                                     setDraft("phone", e.target.value)
@@ -1188,9 +1195,9 @@ function EditContent({ profile, versions = [], flash }) {
                             />
                         </div>
                         <div>
-                            <InputLabel value="Email" className="text-sm" />
+                            <InputLabel value="Email" className="mb-1.5" />
                             <TextInput
-                                className="mt-1 block w-full"
+                                className="block w-full"
                                 value={data.draft_data?.email || ""}
                                 onChange={(e) =>
                                     setDraft("email", e.target.value)
@@ -1204,9 +1211,9 @@ function EditContent({ profile, versions = [], flash }) {
                     </div>
 
                     <div>
-                        <InputLabel value="Website" className="text-sm" />
+                        <InputLabel value="Website" className="mb-1.5" />
                         <TextInput
-                            className="mt-1 block w-full"
+                            className="block w-full"
                             value={data.draft_data?.website || ""}
                             onChange={(e) =>
                                 setDraft("website", e.target.value)
@@ -1214,8 +1221,8 @@ function EditContent({ profile, versions = [], flash }) {
                         />
                     </div>
 
-                    <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                        <div className="text-sm font-semibold text-slate-900">
+                    <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-4">
+                        <div className="text-sm font-bold text-ink-900">
                             Media Sosial
                         </div>
                         <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -1226,11 +1233,11 @@ function EditContent({ profile, versions = [], flash }) {
                                 ["twitter", "Twitter"],
                             ].map(([k, label]) => (
                                 <div key={k}>
-                                    <div className="text-xs font-semibold text-slate-500">
+                                    <div className="mb-1 text-xs font-semibold text-slate-500">
                                         {label}
                                     </div>
                                     <TextInput
-                                        className="mt-1 block w-full"
+                                        className="block w-full"
                                         value={
                                             data.draft_data?.social?.[k] || ""
                                         }
@@ -1251,10 +1258,10 @@ function EditContent({ profile, versions = [], flash }) {
                         <div>
                             <InputLabel
                                 value="Koordinat Latitude"
-                                className="text-sm"
+                                className="mb-1.5"
                             />
                             <TextInput
-                                className="mt-1 block w-full"
+                                className="block w-full"
                                 value={data.draft_data?.map?.lat ?? ""}
                                 onChange={(e) =>
                                     setDraftDeep(["map", "lat"], e.target.value)
@@ -1265,10 +1272,10 @@ function EditContent({ profile, versions = [], flash }) {
                         <div>
                             <InputLabel
                                 value="Koordinat Longitude"
-                                className="text-sm"
+                                className="mb-1.5"
                             />
                             <TextInput
-                                className="mt-1 block w-full"
+                                className="block w-full"
                                 value={data.draft_data?.map?.lng ?? ""}
                                 onChange={(e) =>
                                     setDraftDeep(["map", "lng"], e.target.value)
@@ -1281,21 +1288,21 @@ function EditContent({ profile, versions = [], flash }) {
             </div>
 
             <div
-                className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden"
+                className="surface overflow-hidden"
                 style={{ borderRadius: "var(--ds-radius)" }}
             >
-                <div className="p-5 border-b border-slate-100">
-                    <div className="text-sm font-semibold text-slate-900">
+                <div className="px-5 py-4 sm:px-6 border-b border-slate-100">
+                    <div className="text-base font-bold text-ink-900">
                         Visi & Misi
                     </div>
-                    <div className="mt-1 text-sm text-slate-600">
+                    <div className="mt-0.5 text-sm text-slate-500">
                         Visi (rich text) dan daftar misi yang bisa
                         ditambah/hapus.
                     </div>
                 </div>
-                <div className="p-5 space-y-4">
+                <div className="p-5 sm:p-6 space-y-5">
                     <div>
-                        <InputLabel value="Visi" className="text-sm" />
+                        <InputLabel value="Visi" className="mb-1.5" />
                         <div className="mt-2">
                             <RichTextEditor
                                 id="vision"
@@ -1310,7 +1317,7 @@ function EditContent({ profile, versions = [], flash }) {
 
                     <div>
                         <div className="flex items-center justify-between gap-3">
-                            <InputLabel value="Misi" className="text-sm" />
+                            <InputLabel value="Misi" className="mb-1.5" />
                             <button
                                 type="button"
                                 onClick={() => {
@@ -1320,10 +1327,10 @@ function EditContent({ profile, versions = [], flash }) {
                                     ];
                                     setDraft("missions", next);
                                 }}
-                                className="inline-flex items-center rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                                className="btn-ghost btn-sm"
                             >
-                                <FaPlus className="h-4 w-4" />
-                                <span className="ml-2">Tambah</span>
+                                <FaPlus className="h-3 w-3" />
+                                <span>Tambah</span>
                             </button>
                         </div>
                         <div className="mt-3 space-y-3">
@@ -1352,7 +1359,7 @@ function EditContent({ profile, versions = [], flash }) {
                                             ).filter((_, i) => i !== idx);
                                             setDraft("missions", next);
                                         }}
-                                        className="p-3 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50"
+                                        className="btn-icon mt-0.5 shrink-0 hover:bg-rose-50 hover:text-rose-600"
                                         aria-label="Hapus misi"
                                     >
                                         <FaTimes className="h-4 w-4" />
@@ -1364,7 +1371,7 @@ function EditContent({ profile, versions = [], flash }) {
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <ImageUploadCard
                     title="Foto Tim (banner)"
                     subtitle="Foto umum tim untuk seksi organisasi."
@@ -1375,14 +1382,14 @@ function EditContent({ profile, versions = [], flash }) {
                     hint="Gunakan foto landscape agar tampil optimal."
                 />
 
-                <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
-                    <div className="p-5 border-b border-slate-100">
+                <div className="surface overflow-hidden">
+                    <div className="px-5 py-4 sm:px-6 border-b border-slate-100">
                         <div className="flex items-center justify-between gap-4">
                             <div>
-                                <div className="text-sm font-semibold text-slate-900">
+                                <div className="text-base font-bold text-ink-900">
                                     Anggota Tim
                                 </div>
-                                <div className="mt-1 text-sm text-slate-600">
+                                <div className="mt-0.5 text-sm text-slate-500">
                                     Tambah/hapus anggota dan unggah fotonya.
                                 </div>
                             </div>
@@ -1401,26 +1408,26 @@ function EditContent({ profile, versions = [], flash }) {
                                     ];
                                     setDraftDeep(["team", "members"], members);
                                 }}
-                                className="inline-flex items-center rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                                className="btn-ghost btn-sm"
                             >
-                                <FaPlus className="h-4 w-4" />
-                                <span className="ml-2">Tambah</span>
+                                <FaPlus className="h-3 w-3" />
+                                <span>Tambah</span>
                             </button>
                         </div>
                     </div>
 
                     <div
-                        className="p-5 space-y-4"
+                        className="p-5 sm:p-6 space-y-5"
                         style={{ borderRadius: "var(--ds-radius)" }}
                     >
                         {(data.draft_data?.team?.members || []).map(
                             (m, idx) => (
                                 <div
                                     key={idx}
-                                    className="rounded-2xl border border-slate-200 bg-slate-50 p-4"
+                                    className="rounded-xl border border-slate-200 bg-slate-50/60 p-4"
                                 >
-                                    <div className="flex items-start justify-between gap-3">
-                                        <div className="text-sm font-semibold text-slate-900">
+                                    <div className="flex items-center justify-between gap-3">
+                                        <div className="text-sm font-bold text-ink-900">
                                             Anggota #{idx + 1}
                                         </div>
                                         <button
@@ -1435,7 +1442,7 @@ function EditContent({ profile, versions = [], flash }) {
                                                     next,
                                                 );
                                             }}
-                                            className="p-2 rounded-xl border border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+                                            className="btn-icon h-8 w-8 hover:bg-rose-50 hover:text-rose-600"
                                             aria-label="Hapus anggota"
                                         >
                                             <FaTimes className="h-4 w-4" />
@@ -1444,11 +1451,11 @@ function EditContent({ profile, versions = [], flash }) {
 
                                     <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3">
                                         <div>
-                                            <div className="text-xs font-semibold text-slate-500">
+                                            <div className="mb-1 text-xs font-semibold text-slate-500">
                                                 Nama
                                             </div>
                                             <TextInput
-                                                className="mt-1 block w-full"
+                                                className="block w-full"
                                                 value={m.name || ""}
                                                 onChange={(e) => {
                                                     const members = [
@@ -1468,11 +1475,11 @@ function EditContent({ profile, versions = [], flash }) {
                                             />
                                         </div>
                                         <div>
-                                            <div className="text-xs font-semibold text-slate-500">
+                                            <div className="mb-1 text-xs font-semibold text-slate-500">
                                                 Jabatan
                                             </div>
                                             <TextInput
-                                                className="mt-1 block w-full"
+                                                className="block w-full"
                                                 value={m.position || ""}
                                                 onChange={(e) => {
                                                     const members = [
@@ -1494,7 +1501,7 @@ function EditContent({ profile, versions = [], flash }) {
                                         </div>
                                     </div>
                                     <div className="mt-3">
-                                        <div className="text-xs font-semibold text-slate-500">
+                                        <div className="mb-1 text-xs font-semibold text-slate-500">
                                             Deskripsi
                                         </div>
                                         <textarea
@@ -1513,7 +1520,7 @@ function EditContent({ profile, versions = [], flash }) {
                                                     members,
                                                 );
                                             }}
-                                            className="mt-1 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700"
+                                            className="field-input"
                                             rows={3}
                                         />
                                     </div>
@@ -1559,21 +1566,21 @@ function EditContent({ profile, versions = [], flash }) {
                 hint="Maksimal 5MB per file."
             />
 
-            <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
-                <div className="p-5 border-b border-slate-100">
-                    <div className="text-sm font-semibold text-slate-900">
+            <div className="surface overflow-hidden">
+                <div className="px-5 py-4 sm:px-6 border-b border-slate-100">
+                    <div className="text-base font-bold text-ink-900">
                         Catatan Perubahan (opsional)
                     </div>
-                    <div className="mt-1 text-sm text-slate-600">
+                    <div className="mt-0.5 text-sm text-slate-500">
                         Catatan ini akan tercatat di riwayat versi saat
                         simpan/terbit.
                     </div>
                 </div>
-                <div className="p-5">
+                <div className="p-5 sm:p-6">
                     <textarea
                         value={data.change_note}
                         onChange={(e) => setData("change_note", e.target.value)}
-                        className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700"
+                        className="field-input"
                         rows={3}
                         placeholder="Contoh: Update logo & perbaikan kontak"
                     />
@@ -1584,33 +1591,35 @@ function EditContent({ profile, versions = [], flash }) {
     );
 
     const previewTab = (
-        <div className="space-y-4">
-            <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
-                <div className="p-4 border-b border-slate-100 flex items-center justify-between gap-3">
-                    <div className="flex items-center gap-2">
-                        <FaEye className="h-4 w-4 text-slate-500" />
-                        <div className="text-sm font-semibold text-slate-900">
+        <div className="space-y-4 lg:sticky lg:top-24">
+            <div className="surface overflow-hidden">
+                <div className="px-5 py-3 border-b border-slate-100 flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-2.5">
+                        <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-slate-100 text-slate-600">
+                            <FaEye className="h-3.5 w-3.5" />
+                        </span>
+                        <div className="text-base font-bold text-ink-900">
                             Pratinjau Langsung
                         </div>
                     </div>
                     <DeviceSelector value={device} onChange={setDevice} />
                 </div>
-                <div className="p-4 bg-slate-50">
+                <div className="p-4 bg-slate-100/70">
                     <PreviewPanel draft={data.draft_data} device={device} />
                 </div>
             </div>
-            <div className="rounded-2xl border border-slate-200 bg-white shadow-sm p-4">
-                <div className="text-xs text-slate-500">
+            <div className="surface p-5">
+                <div className="text-sm text-slate-600">
                     Publik akan melihat versi yang sudah diterbitkan. Pratinjau
                     ini menampilkan draft saat ini.
                 </div>
                 <div className="mt-3 flex flex-wrap gap-2">
                     <Link
                         href={route("profil")}
-                        className="inline-flex items-center rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                        className="btn-ghost btn-sm"
                     >
-                        <FaEye className="h-4 w-4" />
-                        <span className="ml-2">Buka halaman publik</span>
+                        <FaEye className="h-3 w-3" />
+                        <span>Buka halaman publik</span>
                     </Link>
                 </div>
             </div>
@@ -1626,24 +1635,20 @@ function EditContent({ profile, versions = [], flash }) {
                 className="max-w-full pb-10"
                 style={vars}
             >
-                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                    <div className="min-w-0">
-                        <div className="text-[11px] font-semibold uppercase tracking-widest text-slate-500">
-                            Dashboard
-                        </div>
-                        <h1 className="mt-1 text-2xl font-extrabold tracking-tight text-slate-900">
-                            Profil Perusahaan
-                        </h1>
-                        <div className="mt-2 flex flex-wrap items-center gap-2">
+                <PageHeader
+                    icon={FaBuilding}
+                    title="Profil Perusahaan"
+                    description={
+                        <span className="flex flex-wrap items-center gap-2">
                             <span
                                 className={classNames(
-                                    "text-[11px] font-semibold px-2 py-1 rounded-full border",
+                                    "text-[11px] font-semibold px-2.5 py-0.5 rounded-full ring-1 ring-inset",
                                     statusBadge.cls,
                                 )}
                             >
                                 {statusBadge.label}
                             </span>
-                            <span className="text-xs text-slate-500">
+                            <span className="text-slate-500">
                                 Terakhir update:{" "}
                                 {profile?.updated_at
                                     ? new Date(
@@ -1652,52 +1657,50 @@ function EditContent({ profile, versions = [], flash }) {
                                     : "-"}
                             </span>
                             {isDirty ? (
-                                <span className="text-xs font-semibold text-amber-700">
+                                <Badge tone="amber" dot>
                                     Belum disimpan
-                                </span>
+                                </Badge>
                             ) : null}
-                        </div>
-                    </div>
+                        </span>
+                    }
+                >
+                    <button
+                        type="button"
+                        onClick={() => setVersionsOpen(true)}
+                        className="btn-ghost"
+                    >
+                        <FaHistory className="h-3.5 w-3.5" />
+                        <span>Riwayat Versi</span>
+                    </button>
+                    <button
+                        type="button"
+                        onClick={saveDraft}
+                        disabled={processing}
+                        className="btn-ghost"
+                    >
+                        {processing ? (
+                            <FaSpinner className="h-3.5 w-3.5 animate-spin" />
+                        ) : (
+                            <FaSave className="h-3.5 w-3.5" />
+                        )}
+                        <span>Simpan Draft</span>
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => setPublishConfirm(true)}
+                        disabled={processing}
+                        className="btn-brand"
+                    >
+                        {processing ? (
+                            <FaSpinner className="h-3.5 w-3.5 animate-spin" />
+                        ) : (
+                            <FaCheck className="h-3.5 w-3.5" />
+                        )}
+                        <span>Terbitkan</span>
+                    </button>
+                </PageHeader>
 
-                    <div className="flex flex-wrap items-center gap-2">
-                        <button
-                            type="button"
-                            onClick={() => setVersionsOpen(true)}
-                            className="inline-flex items-center rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50"
-                        >
-                            <FaHistory className="h-4 w-4" />
-                            <span className="ml-2">Riwayat Versi</span>
-                        </button>
-                        <button
-                            type="button"
-                            onClick={saveDraft}
-                            disabled={processing}
-                            className="inline-flex items-center rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-60"
-                        >
-                            {processing ? (
-                                <FaSpinner className="h-4 w-4 animate-spin" />
-                            ) : (
-                                <FaSave className="h-4 w-4" />
-                            )}
-                            <span className="ml-2">Simpan Draft</span>
-                        </button>
-                        <PrimaryButton
-                            type="button"
-                            onClick={() => setPublishConfirm(true)}
-                            disabled={processing}
-                            className="rounded-2xl"
-                        >
-                            {processing ? (
-                                <FaSpinner className="h-4 w-4 animate-spin" />
-                            ) : (
-                                <FaCheck className="h-4 w-4" />
-                            )}
-                            <span className="ml-2">Terbitkan</span>
-                        </PrimaryButton>
-                    </div>
-                </div>
-
-                <div className="mt-6">
+                <div>
                     <DesignControl />
                 </div>
 
@@ -1708,16 +1711,16 @@ function EditContent({ profile, versions = [], flash }) {
                                 <div>{editorTab}</div>
                             ) : (
                                 <Tab.Group>
-                                    <Tab.List className="flex space-x-1 rounded-2xl bg-slate-100 p-1">
+                                    <Tab.List className="flex space-x-1 rounded-full border border-slate-200 bg-slate-50 p-1">
                                         {["Editor", "Pratinjau"].map((t) => (
                                             <Tab
                                                 key={t}
                                                 className={({ selected }) =>
                                                     classNames(
-                                                        "w-full rounded-2xl py-2.5 text-sm font-semibold",
+                                                        "w-full rounded-full py-2 text-sm font-semibold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/30",
                                                         selected
-                                                            ? "bg-white text-slate-900 shadow"
-                                                            : "text-slate-600 hover:bg-white/60",
+                                                            ? "bg-white text-ink-900 shadow-soft"
+                                                            : "text-slate-500 hover:text-ink-900",
                                                     )
                                                 }
                                             >
@@ -1757,47 +1760,50 @@ function EditContent({ profile, versions = [], flash }) {
                 maxWidth="2xl"
             >
                 <div className="bg-white">
-                    <div className="p-5 border-b border-slate-100">
-                        <div className="text-sm font-semibold text-slate-900">
+                    <div className="px-6 py-4 border-b border-slate-100">
+                        <div className="text-base font-bold text-ink-900">
                             Konfirmasi Terbitkan
                         </div>
-                        <div className="mt-1 text-sm text-slate-600">
+                        <div className="mt-0.5 text-sm text-slate-500">
                             Pastikan pratinjau sudah sesuai. Kamu tetap dapat
                             memulihkan versi sebelumnya melalui riwayat.
                         </div>
                     </div>
-                    <div className="p-5">
+                    <div className="p-6">
                         <div>
-                            <InputLabel value="Catatan perubahan (opsional)" />
+                            <InputLabel
+                                value="Catatan perubahan (opsional)"
+                                className="mb-1.5"
+                            />
                             <textarea
                                 value={data.change_note}
                                 onChange={(e) =>
                                     setData("change_note", e.target.value)
                                 }
-                                className="mt-1 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700"
+                                className="field-input"
                                 rows={3}
                             />
                         </div>
-                        <div className="mt-4 flex items-center justify-end gap-2">
+                        <div className="mt-6 flex items-center justify-end gap-2">
                             <button
                                 type="button"
                                 onClick={() => setPublishConfirm(false)}
-                                className="inline-flex items-center rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                                className="btn-ghost"
                             >
                                 Batal
                             </button>
                             <button
                                 type="button"
                                 onClick={publish}
-                                className="inline-flex items-center rounded-2xl bg-sky-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-sky-800"
+                                className="btn-brand"
                                 disabled={processing}
                             >
                                 {processing ? (
-                                    <FaSpinner className="h-4 w-4 animate-spin" />
+                                    <FaSpinner className="h-3.5 w-3.5 animate-spin" />
                                 ) : (
-                                    <FaCheck className="h-4 w-4" />
+                                    <FaCheck className="h-3.5 w-3.5" />
                                 )}
-                                <span className="ml-2">Terbitkan</span>
+                                <span>Terbitkan</span>
                             </button>
                         </div>
                     </div>

@@ -110,18 +110,18 @@ export default function UpdateProfileInformation({
 
     return (
         <section className={className + " w-full"}>
-            <div className="grid grid-cols-3 gap-6">
-                <div className="col-span-2">
+            <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+                <div className="lg:col-span-2">
                     <header className="w-full space-y-1">
-                        <h3 className="text-base md:text-lg font-semibold text-gray-900 w-full">
+                        <h3 className="w-full text-sm font-bold text-ink-900">
                             Data akun
                         </h3>
-                        <p className="text-xs md:text-sm text-gray-600 w-full">
+                        <p className="w-full text-sm text-slate-500">
                             Perbarui informasi profil dan alamat email yang
                             digunakan untuk akun Anda.
                         </p>
                     </header>
-                    <form onSubmit={submit} className="mt-6 space-y-6 w-full">
+                    <form onSubmit={submit} className="mt-5 w-full space-y-5">
                         <div className="w-full">
                             <InputLabel
                                 htmlFor="name"
@@ -168,27 +168,27 @@ export default function UpdateProfileInformation({
                         </div>
                         {mustVerifyEmail && user.email_verified_at === null && (
                             <div className="w-full">
-                                <p className="mt-2 text-sm text-gray-800 w-full">
+                                <p className="mt-2 w-full rounded-xl border border-amber-200 bg-amber-50 px-3.5 py-2.5 text-sm text-amber-800">
                                     Your email address is unverified.
                                     <Link
                                         href={route("verification.send")}
                                         method="post"
                                         as="button"
-                                        className="rounded-md text-sm text-gray-600 underline hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+                                        className="ml-1 rounded-md text-sm font-semibold text-amber-900 underline hover:text-ink-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2"
                                     >
                                         Click here to re-send the verification
                                         email.
                                     </Link>
                                 </p>
                                 {status === "verification-link-sent" && (
-                                    <div className="mt-2 text-sm font-medium text-green-600 w-full">
+                                    <div className="mt-2 w-full text-sm font-semibold text-emerald-700">
                                         A new verification link has been sent to
                                         your email address.
                                     </div>
                                 )}
                             </div>
                         )}
-                        <div className="flex items-center gap-4 w-full">
+                        <div className="flex w-full items-center gap-3 pt-1">
                             <PrimaryButton
                                 disabled={processing}
                                 className="w-full sm:w-auto"
@@ -202,17 +202,18 @@ export default function UpdateProfileInformation({
                                 leave="transition ease-in-out"
                                 leaveTo="opacity-0"
                             >
-                                <p className="text-sm text-gray-600 w-full">
+                                <p className="w-full text-sm font-medium text-emerald-700">
                                     Saved.
                                 </p>
                             </Transition>
                         </div>
                     </form>
                 </div>
-                <div className="col-span-1">
-                    <div className="bg-blue-50/80 border border-blue-200 h-full rounded-2xl shadow-sm flex flex-col items-center justify-center p-4 gap-4">
+                <div className="lg:col-span-1">
+                    <div className="flex h-full flex-col items-center justify-center gap-4 rounded-2xl border border-slate-200 bg-slate-50/70 p-5">
+                        <p className="eyebrow self-start">Foto profil</p>
                         <div className="flex flex-col items-center gap-2 w-full">
-                            <div className="w-32 h-32 rounded-full overflow-hidden border-4 border-blue-200 bg-white flex items-center justify-center">
+                            <div className="flex h-28 w-28 items-center justify-center overflow-hidden rounded-full bg-white ring-4 ring-white shadow-soft">
                                 {fotoProfilPreview ? (
                                     <img
                                         src={fotoProfilPreview}
@@ -220,19 +221,19 @@ export default function UpdateProfileInformation({
                                         className="object-cover w-full h-full"
                                     />
                                 ) : (
-                                    <span className="text-gray-400 text-5xl">
+                                    <span className="text-4xl font-bold text-slate-300">
                                         ?
                                     </span>
                                 )}
                             </div>
-                            <span className="text-xs text-gray-500 text-center">
+                            <span className="text-center text-xs text-slate-500">
                                 Foto Profil Saat Ini
                             </span>
                         </div>
                         <input
                             type="file"
                             accept="image/png, image/jpeg, image/gif"
-                            className="block w-full text-sm text-gray-700 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-100 file:text-blue-700 hover:file:bg-blue-200 mt-2"
+                            className="block w-full text-xs text-slate-600 file:mr-3 file:cursor-pointer file:rounded-full file:border-0 file:bg-white file:px-4 file:py-2 file:text-xs file:font-semibold file:text-slate-700 file:shadow-sm file:ring-1 file:ring-inset file:ring-slate-200 hover:file:bg-slate-50"
                             onChange={handleFotoProfilChange}
                             ref={fotoProfilInput}
                         />
@@ -244,7 +245,7 @@ export default function UpdateProfileInformation({
                             {uploadLoading ? (
                                 <>
                                     <svg
-                                        className="animate-spin h-5 w-5 mr-2 text-white"
+                                        className="h-4 w-4 animate-spin text-white"
                                         viewBox="0 0 24 24"
                                     >
                                         <circle
@@ -266,7 +267,7 @@ export default function UpdateProfileInformation({
                                 </>
                             ) : (
                                 <>
-                                    <FaCamera className="text-lg" />
+                                    <FaCamera className="h-4 w-4" aria-hidden="true" />
                                     Simpan Foto
                                 </>
                             )}

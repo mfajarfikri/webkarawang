@@ -2,6 +2,7 @@ import DashboardLayout from "@/Layouts/DashboardLayout";
 import { Head, Link } from "@inertiajs/react";
 import { useState } from "react";
 import {
+    FaArrowLeft,
     FaFileAlt,
     FaCalendarAlt,
     FaBuilding,
@@ -21,10 +22,8 @@ import {
     FaBarcode,
     FaClock,
     FaHistory,
-    FaMapMarkedAlt,
     FaClipboardList,
     FaExclamationCircle,
-    FaFileDownload,
     FaChartLine,
     FaCheckCircle,
     FaTimesCircle,
@@ -44,94 +43,97 @@ import {
 import { formatRupiah } from "@/utils/formatter";
 import PdfDownloadButton from "@/Components/Dashboard/Anomali/PdfDownloadButton";
 import { GiElectric } from "react-icons/gi";
+import PageHeader from "@/Components/Dashboard/PageHeader";
+import { Badge, Card, EmptyState } from "@/Components/Dashboard/ui";
+import StageBadge from "@/Components/Anomali/StageBadge";
+
+const TABS = [
+    { id: "informasi", icon: FaInfoCircle, label: "Informasi Umum" },
+    { id: "detail", icon: FaTools, label: "Detail Peralatan" },
+    { id: "analisis", icon: FaChartLine, label: "Analisis Anomali" },
+    { id: "lampiran", icon: FaClipboardList, label: "Lampiran" },
+    { id: "approval", icon: FaCalendarCheck, label: "Status Approval" },
+    { id: "timeline", icon: FaHistory, label: "Timeline" },
+];
+
+/** Warna & ikon titik timeline berdasarkan makna peristiwa. */
+const TIMELINE_EVENTS = {
+    created: { icon: FaCheckCircle, cls: "bg-amber-50 text-amber-600 ring-amber-200" },
+    status_changed: { icon: FaExclamationCircle, cls: "bg-brand-50 text-brand-600 ring-brand-200" },
+    assigned: { icon: FaUserCheck, cls: "bg-brand-50 text-brand-600 ring-brand-200" },
+    approved: { icon: FaCheckCircle, cls: "bg-emerald-50 text-emerald-600 ring-emerald-200" },
+    rejected: { icon: FaTimesCircle, cls: "bg-rose-50 text-rose-600 ring-rose-200" },
+    completed: { icon: FaCheckCircle, cls: "bg-emerald-50 text-emerald-600 ring-emerald-200" },
+    scheduled: { icon: FaCalendarAlt, cls: "bg-violet-50 text-violet-600 ring-violet-200" },
+};
+const TIMELINE_DEFAULT = {
+    icon: FaInfoCircle,
+    cls: "bg-slate-100 text-slate-500 ring-slate-200",
+};
 
 // Komponen untuk menampilkan item data dengan ikon
 const DataItem = ({ icon, label, value, className = "" }) => {
     const Icon = icon;
     return (
         <div
-            className={`group bg-white p-5 rounded-2xl border border-slate-100 shadow-[0_2px_15px_-3px_rgba(0,0,0,0.07),0_10px_20px_-2px_rgba(0,0,0,0.04)] hover:shadow-xl hover:-translate-y-1 transition-all duration-300 ${className}`}
+            className={`rounded-xl border border-slate-200/80 bg-white p-4 transition hover:border-slate-300 ${className}`}
         >
-            <div className="flex items-center mb-3">
-                <div className="p-2.5 bg-slate-50 text-slate-400 rounded-xl group-hover:bg-blue-600 group-hover:text-white transition-colors duration-300 shadow-sm">
-                    <Icon className="text-sm" />
-                </div>
-                <span className="ml-3 text-xs font-bold text-slate-400 uppercase tracking-wider group-hover:text-blue-600 transition-colors">
-                    {label}
-                </span>
+            <div className="flex items-center gap-2 text-xs font-medium text-slate-500">
+                <Icon className="h-3.5 w-3.5 text-slate-400" aria-hidden="true" />
+                <span>{label}</span>
             </div>
-            <div className="font-semibold text-slate-800 text-lg tracking-tight pl-1">
+            <div className="mt-1.5 text-sm font-semibold text-ink-900">
                 {value || "-"}
             </div>
         </div>
     );
 };
 
-// Komponen untuk menampilkan status anomali
-function StatusBadge({ status }) {
-    let styles = "bg-slate-50 text-slate-700 ring-slate-600/20";
-    let icon = FaInfoCircle;
-
-    if (status === "New") {
-        styles = "bg-blue-50 text-blue-700 ring-blue-700/10";
-        icon = FaInfoCircle;
-    } else if (status === "In Progress") {
-        styles = "bg-amber-50 text-amber-700 ring-amber-600/20";
-        icon = FaTools;
-    } else if (status === "Open") {
-        styles = "bg-sky-50 text-sky-700 ring-sky-600/20";
-        icon = FaExclamationCircle;
-    } else if (status === "Pending") {
-        styles = "bg-orange-50 text-orange-800 ring-orange-600/20";
-        icon = FaUserClock;
-    } else if (status === "Close") {
-        styles = "bg-emerald-50 text-emerald-700 ring-emerald-600/20";
-        icon = FaCheckCircle;
-    } else if (status === "Rejected") {
-        styles = "bg-rose-50 text-rose-700 ring-rose-600/20";
-        icon = FaTimesCircle;
-    }
-
-    const Icon = icon;
-
-    return (
-        <span
-            className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide ring-1 ring-inset shadow-sm ${styles}`}
-        >
-            <Icon className="mr-1.5" />
-            {status}
-        </span>
-    );
-}
-
 function TipeBadge({ tipe }) {
-    let styles = "bg-slate-50 text-slate-700 ring-slate-600/20";
-    if (tipe === "Major") styles = "bg-rose-50 text-rose-700 ring-rose-600/20";
-    else if (tipe === "Minor")
-        styles = "bg-emerald-50 text-emerald-700 ring-emerald-600/20";
+    let tone = "slate";
+    if (tipe === "Major") tone = "rose";
+    else if (tipe === "Minor") tone = "emerald";
 
-    return (
-        <span
-            className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide ring-1 ring-inset shadow-sm ${styles}`}
-        >
-            {tipe}
-        </span>
-    );
+    return <Badge tone={tone}>{tipe}</Badge>;
 }
 
 function UltgBadge({ ultg }) {
-    let styles = "bg-slate-50 text-slate-700 ring-slate-600/20";
-    if (ultg === "ULTG Karawang")
-        styles = "bg-indigo-50 text-indigo-700 ring-indigo-600/20";
-    else if (ultg === "ULTG Purwakarta")
-        styles = "bg-violet-50 text-violet-700 ring-violet-600/20";
+    return <Badge tone="slate">{ultg}</Badge>;
+}
 
+function AnalysisBlock({ icon: Icon, tone, label, children }) {
     return (
-        <span
-            className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide ring-1 ring-inset shadow-sm ${styles}`}
-        >
-            {ultg}
-        </span>
+        <div className="rounded-xl border border-slate-200/80 bg-white p-5">
+            <div className="flex items-center gap-3">
+                <span
+                    className={`flex h-8 w-8 items-center justify-center rounded-lg ${tone}`}
+                >
+                    <Icon className="h-3.5 w-3.5" aria-hidden="true" />
+                </span>
+                <h3 className="text-sm font-bold text-ink-900">{label}</h3>
+            </div>
+            <div className="mt-3 whitespace-pre-line text-sm leading-relaxed text-slate-700">
+                {children}
+            </div>
+        </div>
+    );
+}
+
+function SectionTitle({ icon: Icon, title, description }) {
+    return (
+        <div className="mb-6 flex items-center gap-3">
+            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-100 text-slate-600">
+                <Icon className="h-4 w-4" aria-hidden="true" />
+            </span>
+            <div>
+                <h3 className="text-base font-bold text-ink-900">{title}</h3>
+                {description ? (
+                    <p className="mt-0.5 text-sm text-slate-500">
+                        {description}
+                    </p>
+                ) : null}
+            </div>
+        </div>
     );
 }
 
@@ -139,29 +141,28 @@ function UltgBadge({ ultg }) {
 const ApprovalStatus = ({ approve, rejectReason }) => {
     if (approve === null) {
         return (
-            <div className="flex items-center justify-center p-6 bg-slate-50 rounded-xl border border-slate-200 shadow-inner">
-                <div className="flex items-center space-x-3">
-                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-slate-500"></div>
-                    <span className="text-slate-600 font-medium">
-                        Menunggu Direview
-                    </span>
-                </div>
+            <div className="flex items-center gap-3 rounded-xl border border-amber-200 bg-amber-50 p-5">
+                <span className="relative flex h-2.5 w-2.5">
+                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-amber-400 opacity-60"></span>
+                    <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-amber-500"></span>
+                </span>
+                <span className="text-sm font-semibold text-amber-800">
+                    Menunggu Direview
+                </span>
             </div>
         );
     }
 
     if (approve === "Yes") {
         return (
-            <div className="p-6 bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl border border-green-200 shadow-sm">
-                <div className="flex items-center space-x-3">
-                    <div className="flex-shrink-0 bg-green-100 p-2 rounded-full">
-                        <FaCheckCircle className="h-6 w-6 text-green-600" />
-                    </div>
+            <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-5">
+                <div className="flex items-center gap-3">
+                    <FaCheckCircle className="h-6 w-6 shrink-0 text-emerald-600" />
                     <div>
-                        <p className="font-bold text-green-800 uppercase tracking-wide text-sm">
+                        <p className="text-sm font-bold text-emerald-800">
                             Disetujui
                         </p>
-                        <p className="text-sm text-green-700 mt-1">
+                        <p className="mt-0.5 text-sm text-emerald-700">
                             Anomali telah disetujui dan diverifikasi
                         </p>
                     </div>
@@ -171,24 +172,20 @@ const ApprovalStatus = ({ approve, rejectReason }) => {
     }
 
     return (
-        <div className="p-6 bg-gradient-to-br from-red-50 to-rose-50 rounded-xl border border-red-200 shadow-sm">
-            <div className="flex items-center space-x-3 mb-4">
-                <div className="flex-shrink-0 bg-red-100 p-2 rounded-full">
-                    <FaTimesCircle className="h-6 w-6 text-red-600" />
-                </div>
+        <div className="rounded-xl border border-rose-200 bg-rose-50 p-5">
+            <div className="flex items-center gap-3">
+                <FaTimesCircle className="h-6 w-6 shrink-0 text-rose-600" />
                 <div>
-                    <p className="font-bold text-red-800 uppercase tracking-wide text-sm">
-                        Ditolak
-                    </p>
-                    <p className="text-sm text-red-700 mt-1">
+                    <p className="text-sm font-bold text-rose-800">Ditolak</p>
+                    <p className="mt-0.5 text-sm text-rose-700">
                         Anomali tidak disetujui
                     </p>
                 </div>
             </div>
             {rejectReason && (
-                <div className="mt-3 p-4 bg-white rounded-xl border border-red-100 shadow-sm">
+                <div className="mt-4 rounded-xl border border-rose-100 bg-white p-4">
                     <p className="text-sm text-slate-700">
-                        <span className="font-semibold text-red-600 block mb-1">
+                        <span className="mb-1 block font-semibold text-rose-700">
                             Alasan Penolakan:
                         </span>
                         {rejectReason}
@@ -199,6 +196,17 @@ const ApprovalStatus = ({ approve, rejectReason }) => {
     );
 };
 
+function SummaryItem({ label, children }) {
+    return (
+        <div className="min-w-0">
+            <dt className="text-xs font-medium text-slate-500">{label}</dt>
+            <dd className="mt-1 truncate text-sm font-semibold text-ink-900">
+                {children}
+            </dd>
+        </div>
+    );
+}
+
 export default function Detail({ anomalis }) {
     const [activeTab, setActiveTab] = useState("informasi");
     const [selectedImage, setSelectedImage] = useState(null);
@@ -206,22 +214,18 @@ export default function Detail({ anomalis }) {
     if (!anomalis) {
         return (
             <DashboardLayout title="Detail Anomali">
-                <div className="p-8 text-center text-slate-500 bg-white rounded-xl shadow-sm border border-slate-200">
-                    <FaExclamationCircle className="mx-auto text-4xl text-slate-400 mb-4" />
-                    <h3 className="text-xl font-semibold mb-2">
-                        Data Anomali Tidak Ditemukan
-                    </h3>
-                    <p>
-                        Maaf, data anomali yang Anda cari tidak tersedia atau
-                        telah dihapus.
-                    </p>
-                    <Link
-                        href="/dashboard/anomali"
-                        className="mt-4 inline-block px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors"
-                    >
-                        Kembali ke Daftar Anomali
-                    </Link>
-                </div>
+                <Card>
+                    <EmptyState
+                        icon={FaExclamationCircle}
+                        title="Data Anomali Tidak Ditemukan"
+                        description="Maaf, data anomali yang Anda cari tidak tersedia atau telah dihapus."
+                        action={
+                            <Link href="/dashboard/anomali" className="btn-brand">
+                                Kembali ke Daftar Anomali
+                            </Link>
+                        }
+                    />
+                </Card>
             </DashboardLayout>
         );
     }
@@ -249,677 +253,505 @@ export default function Detail({ anomalis }) {
         <>
             <Head title={`Detail Anomali - ${anomalis.judul || ""}`} />
             <DashboardLayout title="Detail Anomali">
-                <div className="container mx-auto px-4 py-8">
-                    {/* Header */}
-                    <div className="relative bg-white rounded-2xl shadow-[0_20px_50px_-12px_rgba(0,0,0,0.1)] border border-slate-100 p-8 mb-8 overflow-hidden">
-                        {/* Decorative Background Elements */}
-                        <div className="absolute top-0 right-0 -mr-20 -mt-20 w-64 h-64 rounded-full bg-blue-50 blur-3xl opacity-60 pointer-events-none"></div>
-                        <div className="absolute bottom-0 left-0 -ml-20 -mb-20 w-64 h-64 rounded-full bg-indigo-50 blur-3xl opacity-60 pointer-events-none"></div>
-
-                        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-8">
-                            <div className="flex items-start gap-5">
-                                <div className="bg-ink-900 p-4 rounded-2xl shadow-soft text-volt shrink-0">
-                                    <FaFileAlt className="text-2xl" />
-                                </div>
-                                <div>
-                                    <div className="flex items-center gap-2 mb-2">
-                                        <span className="px-2.5 py-0.5 rounded-md bg-blue-50 text-blue-600 text-[10px] font-bold uppercase tracking-wider border border-blue-100">
-                                            Detail Anomali
-                                        </span>
-                                        <StatusBadge status={anomalis.status} />
-                                    </div>
-                                    <h2 className="text-3xl font-extrabold text-slate-900 tracking-tight mb-3 leading-tight">
-                                        {anomalis.judul}
-                                    </h2>
-                                    <div className="flex flex-wrap items-center gap-4 text-sm font-medium text-slate-500">
-                                        <div className="flex items-center gap-2">
-                                            <FaCalendarAlt className="text-blue-400" />
-                                            {formatDate(
-                                                anomalis.tanggal_kejadian
-                                            )}
-                                        </div>
-                                        <div className="w-1 h-1 rounded-full bg-slate-300"></div>
-                                        <div className="flex items-center gap-2">
-                                            <FaUser className="text-blue-400" />
-                                            {anomalis.user?.name || "-"}
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-                                <PdfDownloadButton
-                                    url={`/dashboard/anomali/${anomalis.slug}/pdf`}
-                                    fileName={`anomali_${anomalis.slug}.pdf`}
+                <PageHeader
+                    title={anomalis.judul}
+                    description={
+                        <span className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                            <span className="inline-flex items-center gap-1.5">
+                                <FaCalendarAlt
+                                    className="h-3 w-3 text-slate-400"
+                                    aria-hidden="true"
                                 />
-                            </div>
-                        </div>
-                    </div>
+                                {formatDate(anomalis.tanggal_kejadian)}
+                            </span>
+                            <span className="inline-flex items-center gap-1.5">
+                                <FaUser
+                                    className="h-3 w-3 text-slate-400"
+                                    aria-hidden="true"
+                                />
+                                {anomalis.user?.name || "-"}
+                            </span>
+                        </span>
+                    }
+                    leading={
+                        <Link
+                            href={route("dashboard.anomali.index")}
+                            className="btn-icon shrink-0 border border-slate-200 bg-white"
+                            aria-label="Kembali"
+                            title="Kembali ke daftar anomali"
+                        >
+                            <FaArrowLeft
+                                className="h-3.5 w-3.5"
+                                aria-hidden="true"
+                            />
+                        </Link>
+                    }
+                >
+                    <StageBadge anomali={anomalis} />
+                    <PdfDownloadButton
+                        url={`/dashboard/anomali/${anomalis.slug}/pdf`}
+                        fileName={`anomali_${anomalis.slug}.pdf`}
+                    />
+                </PageHeader>
 
-                    {/* Tabs */}
-                    <div className="bg-white rounded-2xl shadow-sm border border-slate-100 mb-8 overflow-hidden">
-                        <div className="p-8">
-                            <div className="flex p-1.5 bg-slate-100/80 backdrop-blur-sm rounded-2xl overflow-x-auto gap-1 border border-slate-200 mb-8">
-                                {[
-                                    {
-                                        id: "informasi",
-                                        icon: FaInfoCircle,
-                                        label: "Informasi Umum",
-                                    },
-                                    {
-                                        id: "detail",
-                                        icon: FaTools,
-                                        label: "Detail Peralatan",
-                                    },
-                                    {
-                                        id: "analisis",
-                                        icon: FaChartLine,
-                                        label: "Analisis Anomali",
-                                    },
-                                    {
-                                        id: "lampiran",
-                                        icon: FaClipboardList,
-                                        label: "Lampiran",
-                                    },
-                                    {
-                                        id: "approval",
-                                        icon: FaCalendarCheck,
-                                        label: "Status Approval",
-                                    },
-                                    {
-                                        id: "timeline",
-                                        icon: FaHistory,
-                                        label: "Timeline",
-                                    },
-                                ].map((tab) => (
+                {/* Ringkasan */}
+                <Card className="mb-6">
+                    <dl className="grid grid-cols-2 gap-x-6 gap-y-4 md:grid-cols-3 xl:grid-cols-6">
+                        <SummaryItem label="Gardu Induk">
+                            {anomalis.gardu_induk?.name || "-"}
+                        </SummaryItem>
+                        <SummaryItem label="Bay">
+                            {anomalis.bay || "-"}
+                        </SummaryItem>
+                        <SummaryItem label="Peralatan">
+                            {anomalis.peralatan || "-"}
+                        </SummaryItem>
+                        <SummaryItem label="Tipe">
+                            {anomalis.tipe ? (
+                                <TipeBadge tipe={anomalis.tipe} />
+                            ) : (
+                                "-"
+                            )}
+                        </SummaryItem>
+                        <SummaryItem label="Status">
+                            {anomalis.status || "-"}
+                        </SummaryItem>
+                        <SummaryItem label="Ditugaskan ke">
+                            {anomalis.assigned_user?.name || "-"}
+                        </SummaryItem>
+                    </dl>
+                </Card>
+
+                {/* Tabs */}
+                <section className="surface overflow-hidden">
+                    <div className="overflow-x-auto border-b border-slate-100 px-3 sm:px-4">
+                        <div className="flex gap-1">
+                            {TABS.map((tab) => {
+                                const isActive = activeTab === tab.id;
+                                return (
                                     <button
                                         key={tab.id}
                                         onClick={() => setActiveTab(tab.id)}
-                                        className={`px-5 py-3 rounded-xl font-bold text-sm flex items-center transition-all duration-300 whitespace-nowrap ${
-                                            activeTab === tab.id
-                                                ? "bg-white text-blue-600 shadow-md shadow-slate-200/50 ring-1 ring-slate-100"
-                                                : "text-slate-500 hover:text-slate-700 hover:bg-white/50"
+                                        aria-current={
+                                            isActive ? "page" : undefined
+                                        }
+                                        className={`-mb-px flex items-center gap-2 whitespace-nowrap border-b-2 px-3 py-3.5 text-sm font-semibold transition ${
+                                            isActive
+                                                ? "border-brand-600 text-ink-900"
+                                                : "border-transparent text-slate-500 hover:text-ink-900"
                                         }`}
                                     >
                                         <tab.icon
-                                            className={`mr-2.5 ${
-                                                activeTab === tab.id
-                                                    ? "text-blue-500"
+                                            className={`h-3.5 w-3.5 ${
+                                                isActive
+                                                    ? "text-brand-600"
                                                     : "text-slate-400"
                                             }`}
                                         />
                                         {tab.label}
                                     </button>
-                                ))}
+                                );
+                            })}
+                        </div>
+                    </div>
+
+                    <div className="min-h-[400px] p-5 sm:p-6">
+                        {/* Tab Informasi Umum */}
+                        {activeTab === "informasi" && (
+                            <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">
+                                <DataItem
+                                    icon={FaBuilding}
+                                    label="ULTG"
+                                    value={<UltgBadge ultg={anomalis.ultg} />}
+                                />
+                                <DataItem
+                                    icon={FaMapMarkerAlt}
+                                    label="Gardu Induk"
+                                    value={anomalis.gardu_induk?.name}
+                                />
+                                <DataItem
+                                    icon={FaLayerGroup}
+                                    label="Bagian"
+                                    value={anomalis.bagian}
+                                />
+                                <DataItem
+                                    icon={FaThLarge}
+                                    label="Tipe"
+                                    value={<TipeBadge tipe={anomalis.tipe} />}
+                                />
+                                <DataItem
+                                    icon={FaList}
+                                    label="Kategori"
+                                    value={anomalis.kategori?.name}
+                                />
+                                <DataItem
+                                    icon={GiElectric}
+                                    label="Bay"
+                                    value={anomalis.bay}
+                                />
+                                <DataItem
+                                    icon={FaMapPin}
+                                    label="Penempatan Alat"
+                                    value={anomalis.penempatan_alat}
+                                />
                             </div>
+                        )}
 
-                            <div className="min-h-[400px]">
-                                {/* Tab Informasi Umum */}
-                                {activeTab === "informasi" && (
-                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 animate-fade-in-up">
-                                        <DataItem
-                                            icon={FaBuilding}
-                                            label="ULTG"
-                                            value={
-                                                <UltgBadge
-                                                    ultg={anomalis.ultg}
-                                                />
-                                            }
-                                        />
-                                        <DataItem
-                                            icon={FaMapMarkerAlt}
-                                            label="Gardu Induk"
-                                            value={anomalis.gardu_induk?.name}
-                                        />
-                                        <DataItem
-                                            icon={FaLayerGroup}
-                                            label="Bagian"
-                                            value={anomalis.bagian}
-                                        />
-                                        <DataItem
-                                            icon={FaThLarge}
-                                            label="Tipe"
-                                            value={
-                                                <TipeBadge
-                                                    tipe={anomalis.tipe}
-                                                />
-                                            }
-                                        />
-                                        <DataItem
-                                            icon={FaList}
-                                            label="Kategori"
-                                            value={anomalis.kategori?.name}
-                                        />
-                                        <DataItem
-                                            icon={GiElectric}
-                                            label="Bay"
-                                            value={anomalis.bay}
-                                        />
-                                        <DataItem
-                                            icon={FaMapPin}
-                                            label="Penempatan Alat"
-                                            value={anomalis.penempatan_alat}
-                                        />
-                                    </div>
-                                )}
+                        {/* Tab Detail Peralatan */}
+                        {activeTab === "detail" && (
+                            <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">
+                                <DataItem
+                                    icon={FaTools}
+                                    label="Peralatan"
+                                    value={anomalis.peralatan}
+                                />
+                                <DataItem
+                                    icon={FaTag}
+                                    label="Merek"
+                                    value={anomalis.merek}
+                                />
+                                <DataItem
+                                    icon={FaLightbulb}
+                                    label="Tipe Alat"
+                                    value={anomalis.tipe_alat}
+                                />
+                                <DataItem
+                                    icon={FaBarcode}
+                                    label="No Seri"
+                                    value={anomalis.no_seri}
+                                />
+                                <DataItem
+                                    icon={FaMoneyBillAlt}
+                                    label="Harga"
+                                    value={
+                                        anomalis.harga
+                                            ? formatRupiah(anomalis.harga)
+                                            : "-"
+                                    }
+                                />
+                                <DataItem
+                                    icon={FaBarcode}
+                                    label="Kode Asset"
+                                    value={anomalis.kode_asset}
+                                />
+                                <DataItem
+                                    icon={FaClock}
+                                    label="Tahun Operasi"
+                                    value={anomalis.tahun_operasi}
+                                />
+                                <DataItem
+                                    icon={FaHistory}
+                                    label="Tahun Buat"
+                                    value={anomalis.tahun_buat}
+                                />
+                            </div>
+                        )}
 
-                                {/* Tab Detail Peralatan */}
-                                {activeTab === "detail" && (
-                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 animate-fade-in-up">
-                                        <DataItem
-                                            icon={FaTools}
-                                            label="Peralatan"
-                                            value={anomalis.peralatan}
-                                        />
-                                        <DataItem
-                                            icon={FaTag}
-                                            label="Merek"
-                                            value={anomalis.merek}
-                                        />
-                                        <DataItem
-                                            icon={FaLightbulb}
-                                            label="Tipe Alat"
-                                            value={anomalis.tipe_alat}
-                                        />
-                                        <DataItem
-                                            icon={FaBarcode}
-                                            label="No Seri"
-                                            value={anomalis.no_seri}
-                                        />
-                                        <DataItem
-                                            icon={FaMoneyBillAlt}
-                                            label="Harga"
-                                            value={
-                                                anomalis.harga
-                                                    ? formatRupiah(
-                                                          anomalis.harga
-                                                      )
-                                                    : "-"
-                                            }
-                                        />
-                                        <DataItem
-                                            icon={FaBarcode}
-                                            label="Kode Asset"
-                                            value={anomalis.kode_asset}
-                                        />
-                                        <DataItem
-                                            icon={FaClock}
-                                            label="Tahun Operasi"
-                                            value={anomalis.tahun_operasi}
-                                        />
-                                        <DataItem
-                                            icon={FaHistory}
-                                            label="Tahun Buat"
-                                            value={anomalis.tahun_buat}
-                                        />
-                                    </div>
-                                )}
+                        {/* Tab Analisis Anomali */}
+                        {activeTab === "analisis" && (
+                            <div className="grid grid-cols-1 gap-4">
+                                <AnalysisBlock
+                                    icon={FaExclamationTriangle}
+                                    tone="bg-amber-50 text-amber-700"
+                                    label="Penyebab Anomali"
+                                >
+                                    {anomalis.penyebab ||
+                                        "Tidak ada data penyebab."}
+                                </AnalysisBlock>
+                                <AnalysisBlock
+                                    icon={FaBolt}
+                                    tone="bg-rose-50 text-rose-700"
+                                    label="Akibat yang Ditimbulkan"
+                                >
+                                    {anomalis.akibat || "Tidak ada data akibat."}
+                                </AnalysisBlock>
+                                <AnalysisBlock
+                                    icon={FaLightbulb}
+                                    tone="bg-brand-50 text-brand-700"
+                                    label="Usulan & Saran Perbaikan"
+                                >
+                                    {anomalis.usul_saran || "-"}
+                                </AnalysisBlock>
+                            </div>
+                        )}
 
-                                {/* Tab Analisis Anomali */}
-                                {activeTab === "analisis" && (
-                                    <div className="grid grid-cols-1 gap-6 animate-fade-in-up">
-                                        <div className="bg-white p-6 rounded-2xl shadow-[0_2px_15px_-3px_rgba(0,0,0,0.07),0_10px_20px_-2px_rgba(0,0,0,0.04)] border border-slate-100 hover:shadow-xl transition-all duration-300 group">
-                                            <div className="flex items-center mb-4">
-                                                <div className="p-2.5 bg-yellow-50 text-yellow-600 rounded-xl group-hover:bg-yellow-500 group-hover:text-white transition-colors duration-300 shadow-sm ring-1 ring-yellow-100">
-                                                    <FaExclamationTriangle className="text-lg" />
-                                                </div>
-                                                <span className="ml-3 text-sm font-bold text-slate-500 uppercase tracking-wider">
-                                                    Penyebab Anomali
-                                                </span>
-                                            </div>
-                                            <div className="text-slate-800 whitespace-pre-line text-lg leading-relaxed font-medium pl-1">
-                                                {anomalis.penyebab ||
-                                                    "Tidak ada data penyebab."}
-                                            </div>
-                                        </div>
+                        {/* Tab Lampiran */}
+                        {activeTab === "lampiran" && (
+                            <div>
+                                <SectionTitle
+                                    icon={FaClipboardList}
+                                    title="Lampiran Foto"
+                                />
 
-                                        <div className="bg-white p-6 rounded-2xl shadow-[0_2px_15px_-3px_rgba(0,0,0,0.07),0_10px_20px_-2px_rgba(0,0,0,0.04)] border border-slate-100 hover:shadow-xl transition-all duration-300 group">
-                                            <div className="flex items-center mb-4">
-                                                <div className="p-2.5 bg-red-50 text-red-600 rounded-xl group-hover:bg-red-500 group-hover:text-white transition-colors duration-300 shadow-sm ring-1 ring-red-100">
-                                                    <FaBolt className="text-lg" />
-                                                </div>
-                                                <span className="ml-3 text-sm font-bold text-slate-500 uppercase tracking-wider">
-                                                    Akibat yang Ditimbulkan
-                                                </span>
-                                            </div>
-                                            <div className="text-slate-800 whitespace-pre-line text-lg leading-relaxed font-medium pl-1">
-                                                {anomalis.akibat ||
-                                                    "Tidak ada data akibat."}
-                                            </div>
-                                        </div>
-
-                                        <div className="bg-white p-6 rounded-2xl shadow-[0_2px_15px_-3px_rgba(0,0,0,0.07),0_10px_20px_-2px_rgba(0,0,0,0.04)] border border-slate-100 hover:shadow-xl transition-all duration-300 group">
-                                            <div className="flex items-center mb-4">
-                                                <div className="p-2.5 bg-blue-50 text-blue-600 rounded-xl group-hover:bg-blue-500 group-hover:text-white transition-colors duration-300 shadow-sm ring-1 ring-blue-100">
-                                                    <FaLightbulb className="text-lg" />
-                                                </div>
-                                                <span className="ml-3 text-sm font-bold text-slate-500 uppercase tracking-wider">
-                                                    Usulan & Saran Perbaikan
-                                                </span>
-                                            </div>
-                                            <div className="text-slate-800 whitespace-pre-line text-lg leading-relaxed font-medium pl-1">
-                                                {anomalis.usul_saran || "-"}
-                                            </div>
-                                        </div>
-                                    </div>
-                                )}
-
-                                {/* Tab Lampiran */}
-                                {activeTab === "lampiran" && (
-                                    <div className="animate-fade-in-up">
-                                        <div className="flex items-center mb-6">
-                                            <div className="bg-blue-50 p-2 rounded-lg text-blue-600 mr-3">
-                                                <FaClipboardList className="text-xl" />
-                                            </div>
-                                            <h3 className="text-xl font-bold text-slate-900">
-                                                Lampiran Foto
-                                            </h3>
-                                        </div>
-
-                                        {lampiranFoto &&
-                                        lampiranFoto.length > 0 ? (
-                                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
-                                                {lampiranFoto.map(
-                                                    (foto, idx) => (
-                                                        <div
-                                                            key={idx}
-                                                            className="relative group cursor-pointer"
-                                                            onClick={() =>
-                                                                setSelectedImage(
-                                                                    `/storage/${foto}`
-                                                                )
-                                                            }
-                                                        >
-                                                            <div className="aspect-w-1 aspect-h-1 overflow-hidden rounded-2xl shadow-sm border border-slate-200 group-hover:shadow-lg transition-all duration-300 group-hover:-translate-y-1">
-                                                                <img
-                                                                    src={`/storage/${foto}`}
-                                                                    alt={`Lampiran Foto ${
-                                                                        idx + 1
-                                                                    }`}
-                                                                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                                                                />
-                                                            </div>
-                                                            <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 flex items-center justify-center transition-all duration-300 rounded-2xl">
-                                                                <FaSearch className="text-white text-2xl transform scale-50 group-hover:scale-100 transition-all duration-300" />
-                                                            </div>
-                                                        </div>
-                                                    )
-                                                )}
-                                            </div>
-                                        ) : (
-                                            <div className="text-center py-12 bg-slate-50 rounded-2xl border border-dashed border-slate-300">
-                                                <div className="bg-white p-4 rounded-full inline-block shadow-sm mb-4">
-                                                    <FaClipboardList className="text-4xl text-slate-300" />
-                                                </div>
-                                                <p className="text-slate-500 font-medium">
-                                                    Tidak ada lampiran foto
-                                                    tersedia
-                                                </p>
-                                            </div>
-                                        )}
-
-                                        {/* Modal untuk preview gambar */}
-                                        {selectedImage && (
+                                {lampiranFoto && lampiranFoto.length > 0 ? (
+                                    <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+                                        {lampiranFoto.map((foto, idx) => (
                                             <div
-                                                className="fixed inset-0 bg-black/90 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+                                                key={idx}
+                                                className="group relative cursor-pointer"
+                                                onClick={() =>
+                                                    setSelectedImage(
+                                                        `/storage/${foto}`,
+                                                    )
+                                                }
+                                            >
+                                                <div className="aspect-w-1 aspect-h-1 overflow-hidden rounded-xl border border-slate-200">
+                                                    <img
+                                                        src={`/storage/${foto}`}
+                                                        alt={`Lampiran Foto ${
+                                                            idx + 1
+                                                        }`}
+                                                        className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                                                    />
+                                                </div>
+                                                <div className="absolute inset-0 flex items-center justify-center rounded-xl bg-gradient-to-t from-black/60 to-transparent opacity-0 transition-all duration-300 group-hover:opacity-100">
+                                                    <FaSearch className="text-xl text-white" />
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50/70">
+                                        <EmptyState
+                                            icon={FaClipboardList}
+                                            title="Tidak ada lampiran foto tersedia"
+                                        />
+                                    </div>
+                                )}
+
+                                {/* Modal untuk preview gambar */}
+                                {selectedImage && (
+                                    <div
+                                        className="fixed inset-0 z-50 flex items-center justify-center bg-ink-950/90 p-4 backdrop-blur-sm"
+                                        onClick={() => setSelectedImage(null)}
+                                    >
+                                        <div className="relative flex max-h-[90vh] w-full max-w-5xl flex-col items-center">
+                                            <img
+                                                src={selectedImage}
+                                                alt="Preview"
+                                                className="max-h-[85vh] max-w-full rounded-xl object-contain shadow-lift"
+                                                onClick={(e) =>
+                                                    e.stopPropagation()
+                                                }
+                                            />
+                                            <button
+                                                className="absolute -top-12 right-0 rounded-full bg-white/10 p-2 text-white/80 backdrop-blur-md transition-colors hover:bg-white/20 hover:text-white md:-right-12"
                                                 onClick={() =>
                                                     setSelectedImage(null)
                                                 }
                                             >
-                                                <div className="relative max-w-5xl w-full max-h-[90vh] flex flex-col items-center">
-                                                    <img
-                                                        src={selectedImage}
-                                                        alt="Preview"
-                                                        className="max-w-full max-h-[85vh] object-contain rounded-lg shadow-2xl"
-                                                        onClick={(e) =>
-                                                            e.stopPropagation()
-                                                        }
-                                                    />
-                                                    <button
-                                                        className="absolute -top-12 right-0 md:-right-12 text-white/80 hover:text-white transition-colors bg-white/10 hover:bg-white/20 p-2 rounded-full backdrop-blur-md"
-                                                        onClick={() =>
-                                                            setSelectedImage(
-                                                                null
-                                                            )
-                                                        }
-                                                    >
-                                                        <FaTimesCircle className="w-8 h-8" />
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        )}
-                                    </div>
-                                )}
-
-                                {/* Tab Status Approval */}
-                                {activeTab === "approval" && (
-                                    <div className="space-y-8 animate-fade-in-up">
-                                        <div className="">
-                                            <div className="flex items-center mb-8">
-                                                <div className="bg-blue-50 p-2.5 rounded-xl text-blue-600 mr-3 ring-1 ring-blue-100">
-                                                    <FaCalendarCheck className="text-2xl" />
-                                                </div>
-                                                <div>
-                                                    <h3 className="text-xl font-bold text-slate-800">
-                                                        Status Persetujuan
-                                                    </h3>
-                                                    <p className="text-slate-500 text-sm mt-1">
-                                                        Informasi detail
-                                                        mengenai status
-                                                        persetujuan anomali
-                                                    </p>
-                                                </div>
-                                            </div>
-
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                                <div className="col-span-2">
-                                                    <div className="mb-3 text-sm font-bold text-slate-700 uppercase tracking-wider">
-                                                        Status Saat Ini
-                                                    </div>
-                                                    <ApprovalStatus
-                                                        approve={
-                                                            anomalis.approve
-                                                        }
-                                                        rejectReason={
-                                                            anomalis.reject_reason
-                                                        }
-                                                    />
-                                                </div>
-
-                                                {anomalis.approved_by && (
-                                                    <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-[0_2px_15px_-3px_rgba(0,0,0,0.07),0_10px_20px_-2px_rgba(0,0,0,0.04)] hover:shadow-xl transition-all duration-300 group">
-                                                        <div className="flex items-center mb-4">
-                                                            <div className="p-2.5 bg-blue-50 text-blue-600 rounded-xl group-hover:bg-blue-500 group-hover:text-white transition-colors duration-300 shadow-sm ring-1 ring-blue-100 mr-3">
-                                                                <FaUser className="text-lg" />
-                                                            </div>
-                                                            <span className="text-sm font-medium text-slate-500 uppercase tracking-wider">
-                                                                {anomalis.status ===
-                                                                "Rejected"
-                                                                    ? "Ditolak Oleh"
-                                                                    : "Disetujui Oleh"}
-                                                            </span>
-                                                        </div>
-                                                        <div className="font-bold text-slate-800 text-lg pl-1">
-                                                            {anomalis
-                                                                .approved_by
-                                                                ?.name || "-"}
-                                                        </div>
-                                                    </div>
-                                                )}
-
-                                                {anomalis.tanggal_approve && (
-                                                    <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-[0_2px_15px_-3px_rgba(0,0,0,0.07),0_10px_20px_-2px_rgba(0,0,0,0.04)] hover:shadow-xl transition-all duration-300 group">
-                                                        <div className="flex items-center mb-4">
-                                                            <div className="p-2.5 bg-blue-50 text-blue-600 rounded-xl group-hover:bg-blue-500 group-hover:text-white transition-colors duration-300 shadow-sm ring-1 ring-blue-100 mr-3">
-                                                                <FaCalendarAlt className="text-lg" />
-                                                            </div>
-                                                            <span className="text-sm font-medium text-slate-500 uppercase tracking-wider">
-                                                                Tanggal
-                                                                Persetujuan
-                                                            </span>
-                                                        </div>
-                                                        <div className="font-bold text-slate-800 text-lg pl-1">
-                                                            {formatDate(
-                                                                anomalis.tanggal_approve
-                                                            )}
-                                                        </div>
-                                                    </div>
-                                                )}
-
-                                                {anomalis.assigned_user && (
-                                                    <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-[0_2px_15px_-3px_rgba(0,0,0,0.07),0_10px_20px_-2px_rgba(0,0,0,0.04)] hover:shadow-xl transition-all duration-300 group">
-                                                        <div className="flex items-center mb-4">
-                                                            <div className="p-2.5 bg-blue-50 text-blue-600 rounded-xl group-hover:bg-blue-500 group-hover:text-white transition-colors duration-300 shadow-sm ring-1 ring-blue-100 mr-3">
-                                                                <FaUserClock className="text-lg" />
-                                                            </div>
-                                                            <span className="text-sm font-medium text-slate-500 uppercase tracking-wider">
-                                                                Ditugaskan
-                                                                Kepada
-                                                            </span>
-                                                        </div>
-                                                        <div className="font-bold text-slate-800 text-lg pl-1">
-                                                            {anomalis
-                                                                .assigned_user
-                                                                ?.name || "-"}
-                                                        </div>
-                                                    </div>
-                                                )}
-
-                                                {anomalis.tanggal_mulai && (
-                                                    <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-[0_2px_15px_-3px_rgba(0,0,0,0.07),0_10px_20px_-2px_rgba(0,0,0,0.04)] hover:shadow-xl transition-all duration-300 group">
-                                                        <div className="flex items-center mb-4">
-                                                            <div className="p-2.5 bg-blue-50 text-blue-600 rounded-xl group-hover:bg-blue-500 group-hover:text-white transition-colors duration-300 shadow-sm ring-1 ring-blue-100 mr-3">
-                                                                <FaClock className="text-lg" />
-                                                            </div>
-                                                            <span className="text-sm font-medium text-slate-500 uppercase tracking-wider">
-                                                                Tanggal Mulai
-                                                            </span>
-                                                        </div>
-                                                        <div className="font-bold text-slate-800 text-lg pl-1">
-                                                            {formatDate(
-                                                                anomalis.tanggal_mulai
-                                                            )}
-                                                        </div>
-                                                    </div>
-                                                )}
-
-                                                {anomalis.tanggal_selesai && (
-                                                    <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-[0_2px_15px_-3px_rgba(0,0,0,0.07),0_10px_20px_-2px_rgba(0,0,0,0.04)] hover:shadow-xl transition-all duration-300 group">
-                                                        <div className="flex items-center mb-4">
-                                                            <div className="p-2.5 bg-blue-50 text-blue-600 rounded-xl group-hover:bg-blue-500 group-hover:text-white transition-colors duration-300 shadow-sm ring-1 ring-blue-100 mr-3">
-                                                                <FaCheckCircle className="text-lg" />
-                                                            </div>
-                                                            <span className="text-sm font-medium text-slate-500 uppercase tracking-wider">
-                                                                Tanggal Selesai
-                                                            </span>
-                                                        </div>
-                                                        <div className="font-bold text-slate-800 text-lg pl-1">
-                                                            {formatDate(
-                                                                anomalis.tanggal_selesai
-                                                            )}
-                                                        </div>
-                                                    </div>
-                                                )}
-                                            </div>
+                                                <FaTimesCircle className="h-8 w-8" />
+                                            </button>
                                         </div>
-                                    </div>
-                                )}
-
-                                {/* Tab Timeline */}
-                                {activeTab === "timeline" && (
-                                    <div className="space-y-6 animate-fade-in-up">
-                                        <div className="flex items-center mb-8">
-                                            <div className="p-2.5 bg-blue-50 text-blue-600 rounded-xl mr-3 ring-1 ring-blue-100">
-                                                <FaHistory className="text-2xl" />
-                                            </div>
-                                            <div>
-                                                <h3 className="text-xl font-bold text-slate-800">
-                                                    Riwayat Aktivitas
-                                                </h3>
-                                                <p className="text-slate-500 text-sm mt-1">
-                                                    Jejak audit perubahan status
-                                                    anomali
-                                                </p>
-                                            </div>
-                                        </div>
-
-                                        {anomalis.timelines &&
-                                        anomalis.timelines.length > 0 ? (
-                                            <div className="space-y-0 relative pl-4">
-                                                <div className="absolute left-[39px] top-6 bottom-6 w-0.5 bg-slate-200"></div>
-                                                {anomalis.timelines.map(
-                                                    (timeline, index) => (
-                                                        <div
-                                                            key={timeline.id}
-                                                            className="relative pl-12 py-4 group"
-                                                        >
-                                                            {/* Timeline Item */}
-                                                            <div className="flex items-start">
-                                                                {/* Timeline Icon */}
-                                                                <div className="absolute left-0 top-4">
-                                                                    <div
-                                                                        className={`w-14 h-14 rounded-full flex items-center justify-center border-4 border-white shadow-md z-10 relative transition-transform duration-300 group-hover:scale-110 ${
-                                                                            timeline.event_type ===
-                                                                            "created"
-                                                                                ? "bg-green-100 text-green-600"
-                                                                                : timeline.event_type ===
-                                                                                  "status_changed"
-                                                                                ? "bg-blue-100 text-blue-600"
-                                                                                : timeline.event_type ===
-                                                                                  "assigned"
-                                                                                ? "bg-yellow-100 text-yellow-600"
-                                                                                : timeline.event_type ===
-                                                                                  "approved"
-                                                                                ? "bg-emerald-100 text-emerald-600"
-                                                                                : timeline.event_type ===
-                                                                                  "rejected"
-                                                                                ? "bg-red-100 text-red-600"
-                                                                                : timeline.event_type ===
-                                                                                  "completed"
-                                                                                ? "bg-purple-100 text-purple-600"
-                                                                                : timeline.event_type ===
-                                                                                  "scheduled"
-                                                                                ? "bg-indigo-100 text-indigo-600"
-                                                                                : "bg-slate-100 text-slate-600"
-                                                                        }`}
-                                                                    >
-                                                                        {timeline.event_type ===
-                                                                            "created" && (
-                                                                            <FaCheckCircle className="text-xl" />
-                                                                        )}
-                                                                        {timeline.event_type ===
-                                                                            "status_changed" && (
-                                                                            <FaExclamationCircle className="text-xl" />
-                                                                        )}
-                                                                        {timeline.event_type ===
-                                                                            "assigned" && (
-                                                                            <FaUserCheck className="text-xl" />
-                                                                        )}
-                                                                        {timeline.event_type ===
-                                                                            "approved" && (
-                                                                            <FaCheckCircle className="text-xl" />
-                                                                        )}
-                                                                        {timeline.event_type ===
-                                                                            "rejected" && (
-                                                                            <FaTimesCircle />
-                                                                        )}
-                                                                        {timeline.event_type ===
-                                                                            "completed" && (
-                                                                            <FaCheckCircle />
-                                                                        )}
-                                                                        {timeline.event_type ===
-                                                                            "scheduled" && (
-                                                                            <FaCalendarAlt />
-                                                                        )}
-                                                                        {![
-                                                                            "created",
-                                                                            "status_changed",
-                                                                            "assigned",
-                                                                            "approved",
-                                                                            "rejected",
-                                                                            "completed",
-                                                                            "scheduled",
-                                                                        ].includes(
-                                                                            timeline.event_type
-                                                                        ) && (
-                                                                            <FaInfoCircle />
-                                                                        )}
-                                                                    </div>
-                                                                </div>
-
-                                                                {/* Timeline Content */}
-                                                                <div className="flex-1 min-w-0">
-                                                                    <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm hover:shadow-md transition-all duration-300">
-                                                                        <div className="flex items-center justify-between mb-2">
-                                                                            <h4 className="text-sm font-semibold text-slate-900">
-                                                                                {
-                                                                                    timeline.description
-                                                                                }
-                                                                            </h4>
-                                                                            <span className="text-xs text-slate-500">
-                                                                                {formatDate(
-                                                                                    timeline.created_at
-                                                                                )}
-                                                                            </span>
-                                                                        </div>
-
-                                                                        {timeline.old_value &&
-                                                                            timeline.new_value && (
-                                                                                <div className="text-sm text-slate-600 mb-2">
-                                                                                    <span className="font-medium">
-                                                                                        Dari:
-                                                                                    </span>{" "}
-                                                                                    <span
-                                                                                        title={
-                                                                                            timeline.old_value ||
-                                                                                            ""
-                                                                                        }
-                                                                                    >
-                                                                                        {formatMaybeDateRange(
-                                                                                            timeline.old_value
-                                                                                        )}
-                                                                                    </span>
-                                                                                    <span className="mx-2">
-                                                                                        →
-                                                                                    </span>
-                                                                                    <span className="font-medium">
-                                                                                        Ke:
-                                                                                    </span>{" "}
-                                                                                    <span
-                                                                                        title={
-                                                                                            timeline.new_value ||
-                                                                                            ""
-                                                                                        }
-                                                                                    >
-                                                                                        {formatMaybeDateRange(
-                                                                                            timeline.new_value
-                                                                                        )}
-                                                                                    </span>
-                                                                                </div>
-                                                                            )}
-
-                                                                        {timeline.comment && (
-                                                                            <div className="text-sm text-slate-600 mb-2">
-                                                                                <span className="font-medium">
-                                                                                    Keterangan
-                                                                                    :
-                                                                                </span>{" "}
-                                                                                {
-                                                                                    timeline.comment
-                                                                                }
-                                                                            </div>
-                                                                        )}
-
-                                                                        <div className="flex items-center text-xs text-slate-500">
-                                                                            <FaUser className="mr-1" />
-                                                                            <span>
-                                                                                {timeline
-                                                                                    .user
-                                                                                    ?.name ||
-                                                                                    "Sistem"}
-                                                                            </span>
-                                                                        </div>
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    )
-                                                )}
-                                            </div>
-                                        ) : (
-                                            <div className="text-center py-8 text-slate-500">
-                                                <FaHistory className="mx-auto text-4xl text-slate-300 mb-4" />
-                                                <p>
-                                                    Belum ada riwayat aktivitas
-                                                </p>
-                                            </div>
-                                        )}
                                     </div>
                                 )}
                             </div>
-                        </div>
+                        )}
+
+                        {/* Tab Status Approval */}
+                        {activeTab === "approval" && (
+                            <div>
+                                <SectionTitle
+                                    icon={FaCalendarCheck}
+                                    title="Status Persetujuan"
+                                    description="Informasi detail mengenai status persetujuan anomali"
+                                />
+
+                                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                                    <div className="col-span-2">
+                                        <div className="field-label">
+                                            Status Saat Ini
+                                        </div>
+                                        <ApprovalStatus
+                                            approve={anomalis.approve}
+                                            rejectReason={anomalis.reject_reason}
+                                        />
+                                    </div>
+
+                                    {anomalis.approved_by && (
+                                        <DataItem
+                                            icon={FaUser}
+                                            label={
+                                                anomalis.status === "Rejected"
+                                                    ? "Ditolak Oleh"
+                                                    : "Disetujui Oleh"
+                                            }
+                                            value={
+                                                anomalis.approved_by?.name || "-"
+                                            }
+                                        />
+                                    )}
+
+                                    {anomalis.tanggal_approve && (
+                                        <DataItem
+                                            icon={FaCalendarAlt}
+                                            label="Tanggal Persetujuan"
+                                            value={formatDate(
+                                                anomalis.tanggal_approve,
+                                            )}
+                                        />
+                                    )}
+
+                                    {anomalis.assigned_user && (
+                                        <DataItem
+                                            icon={FaUserClock}
+                                            label="Ditugaskan Kepada"
+                                            value={
+                                                anomalis.assigned_user?.name ||
+                                                "-"
+                                            }
+                                        />
+                                    )}
+
+                                    {anomalis.tanggal_mulai && (
+                                        <DataItem
+                                            icon={FaClock}
+                                            label="Tanggal Mulai"
+                                            value={formatDate(
+                                                anomalis.tanggal_mulai,
+                                            )}
+                                        />
+                                    )}
+
+                                    {anomalis.tanggal_selesai && (
+                                        <DataItem
+                                            icon={FaCheckCircle}
+                                            label="Tanggal Selesai"
+                                            value={formatDate(
+                                                anomalis.tanggal_selesai,
+                                            )}
+                                        />
+                                    )}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Tab Timeline */}
+                        {activeTab === "timeline" && (
+                            <div>
+                                <SectionTitle
+                                    icon={FaHistory}
+                                    title="Riwayat Aktivitas"
+                                    description="Jejak audit perubahan status anomali"
+                                />
+
+                                {anomalis.timelines &&
+                                anomalis.timelines.length > 0 ? (
+                                    <ol className="relative">
+                                        {anomalis.timelines.map(
+                                            (timeline, index) => {
+                                                const event =
+                                                    TIMELINE_EVENTS[
+                                                        timeline.event_type
+                                                    ] ?? TIMELINE_DEFAULT;
+                                                const EventIcon = event.icon;
+                                                const isLast =
+                                                    index ===
+                                                    anomalis.timelines.length -
+                                                        1;
+                                                return (
+                                                    <li
+                                                        key={timeline.id}
+                                                        className="relative flex gap-4 pb-6 last:pb-0"
+                                                    >
+                                                        {!isLast ? (
+                                                            <span
+                                                                className="absolute left-4 top-9 bottom-0 w-px -translate-x-1/2 bg-slate-200"
+                                                                aria-hidden="true"
+                                                            />
+                                                        ) : null}
+                                                        <span
+                                                            className={`relative z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-full ring-1 ring-inset ${event.cls}`}
+                                                        >
+                                                            <EventIcon className="h-3.5 w-3.5" />
+                                                        </span>
+
+                                                        <div className="min-w-0 flex-1 pt-1">
+                                                            <div className="flex flex-col gap-1 sm:flex-row sm:items-baseline sm:justify-between sm:gap-4">
+                                                                <h4 className="text-sm font-semibold text-ink-900">
+                                                                    {
+                                                                        timeline.description
+                                                                    }
+                                                                </h4>
+                                                                <span className="shrink-0 text-xs text-slate-500">
+                                                                    {formatDate(
+                                                                        timeline.created_at,
+                                                                    )}
+                                                                </span>
+                                                            </div>
+
+                                                            {timeline.old_value &&
+                                                                timeline.new_value && (
+                                                                    <div className="mt-1.5 text-sm text-slate-600">
+                                                                        <span className="font-medium">
+                                                                            Dari:
+                                                                        </span>{" "}
+                                                                        <span
+                                                                            title={
+                                                                                timeline.old_value ||
+                                                                                ""
+                                                                            }
+                                                                        >
+                                                                            {formatMaybeDateRange(
+                                                                                timeline.old_value,
+                                                                            )}
+                                                                        </span>
+                                                                        <span className="mx-2 text-slate-400">
+                                                                            →
+                                                                        </span>
+                                                                        <span className="font-medium">
+                                                                            Ke:
+                                                                        </span>{" "}
+                                                                        <span
+                                                                            title={
+                                                                                timeline.new_value ||
+                                                                                ""
+                                                                            }
+                                                                        >
+                                                                            {formatMaybeDateRange(
+                                                                                timeline.new_value,
+                                                                            )}
+                                                                        </span>
+                                                                    </div>
+                                                                )}
+
+                                                            {timeline.comment && (
+                                                                <div className="mt-1.5 text-sm text-slate-600">
+                                                                    <span className="font-medium">
+                                                                        Keterangan
+                                                                        :
+                                                                    </span>{" "}
+                                                                    {
+                                                                        timeline.comment
+                                                                    }
+                                                                </div>
+                                                            )}
+
+                                                            <div className="mt-1.5 flex items-center text-xs text-slate-500">
+                                                                <FaUser className="mr-1" />
+                                                                <span>
+                                                                    {timeline
+                                                                        .user
+                                                                        ?.name ||
+                                                                        "Sistem"}
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                    </li>
+                                                );
+                                            },
+                                        )}
+                                    </ol>
+                                ) : (
+                                    <EmptyState
+                                        icon={FaHistory}
+                                        title="Belum ada riwayat aktivitas"
+                                    />
+                                )}
+                            </div>
+                        )}
                     </div>
-                </div>
+                </section>
             </DashboardLayout>
         </>
     );
